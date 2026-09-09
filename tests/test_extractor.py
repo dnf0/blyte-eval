@@ -71,7 +71,7 @@ def test_extract_and_grade_failing_reward_json(tmp_path: Path) -> None:
     assert "Verification failed" in str(result.failure_reason)
 
 
-def test_extract_and_grade_missing_reward_json_fallback_exit_code(tmp_path: Path) -> None:
+def test_extract_and_grade_missing_reward_json_fails(tmp_path: Path) -> None:
     logs_dir = tmp_path / "logs"
     logs_dir.mkdir(parents=True)
 
@@ -86,7 +86,8 @@ def test_extract_and_grade_missing_reward_json_fallback_exit_code(tmp_path: Path
         logs_dir=logs_dir,
     )
 
-    # When reward.json is missing, exit_code 0 is accepted as pass
-    assert result.passed is True
+    # Missing reward.json must fail per evaluation specification
+    assert result.passed is False
     assert result.reward is None
     assert result.exit_code == 0
+    assert "Missing or invalid verifier/reward.json" in str(result.failure_reason)

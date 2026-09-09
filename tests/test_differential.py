@@ -7,25 +7,67 @@ plan fixtures to verify state machine transitions, DAG parsing, and gate behavio
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
+from typing import Optional
+
+from deepdiff import DeepDiff
 import pytest
 
-SUPERSTATE_BIN = Path("/Users/danielfisher/repos/superstate/target/debug/superstate")
-AGENT_RULES_BIN = Path("/Users/danielfisher/repos/agent-rules/.venv/bin/agent-rules")
+
+def _resolve_binary(
+    env_var: str, cmd_name: str, candidate_paths: list[Path]
+) -> Optional[Path]:
+    """Dynamically resolve binary executable from env, PATH, or fallback locations."""
+    env_path = os.getenv(env_var)
+    if env_path and Path(env_path).is_file():
+        return Path(env_path)
+
+    which_path = shutil.which(cmd_name)
+    if which_path and Path(which_path).is_file():
+        return Path(which_path)
+
+    for p in candidate_paths:
+        if p.is_file():
+            return p
+    return None
+
+
+SUPERSTATE_BIN = _resolve_binary(
+    "SUPERSTATE_BIN",
+    "superstate",
+    [
+        Path.home() / ".local" / "bin" / "superstate",
+        Path.home() / "repos" / "superstate" / "target" / "debug" / "superstate",
+    ],
+)
+
+AGENT_RULES_BIN = _resolve_binary(
+    "AGENT_RULES_BIN",
+    "agent-rules",
+    [
+        Path.home() / "repos" / "agent-rules" / ".venv" / "bin" / "agent-rules",
+        Path.home() / ".local" / "bin" / "agent-rules",
+    ],
+)
+
 FIXTURES_DIR = Path(__file__).parent.parent / "lab" / "parity" / "fixtures"
 
 
 @pytest.fixture
-def check_binaries() -> None:
-    if not SUPERSTATE_BIN.exists():
-        pytest.skip(f"Superstate debug binary not found at {SUPERSTATE_BIN}")
-    if not AGENT_RULES_BIN.exists():
+def check_binaries() -> tuple[Path, Path]:
+    if not SUPERSTATE_BIN or not SUPERSTATE_BIN.is_file():
+        pytest.skip(f"Superstate binary not found at {SUPERSTATE_BIN}")
+    if not AGENT_RULES_BIN or not AGENT_RULES_BIN.is_file():
         pytest.skip(f"Agent-rules binary not found at {AGENT_RULES_BIN}")
+    return SUPERSTATE_BIN, AGENT_RULES_BIN
 
 
-def test_init_state_creates_valid_state_files(check_binaries: None) -> None:
+def test_init_state_creates_valid_state_files(check_binaries: tuple[Path, Path]) -> None:
+    superstate_bin, agent_rules_bin = check_binaries
     plan_path = (FIXTURES_DIR / "linear_plan.md").resolve()
 
     with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
@@ -35,12 +77,12 @@ def test_init_state_creates_valid_state_files(check_binaries: None) -> None:
         # Superstate (Rust)
         subprocess.run(
             [
-                str(SUPERSTATE_BIN),
+                str(superstate_bin),
                 "state",
                 "init",
                 "--plan",
                 str(plan_path),
-                "--state",
+                "--out",
                 str(state_rs),
             ],
             check=True,
@@ -50,7 +92,7 @@ def test_init_state_creates_valid_state_files(check_binaries: None) -> None:
         # Agent-Rules (Python)
         subprocess.run(
             [
-                str(AGENT_RULES_BIN),
+                str(agent_rules_bin),
                 "state",
                 "init",
                 "--plan",
@@ -62,26 +104,20 @@ def test_init_state_creates_valid_state_files(check_binaries: None) -> None:
             capture_output=True,
         )
 
-        rs_data = json.loads(state_rs.read_text())
-        py_data = json.loads(state_py.read_text())
+        rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
+        py_data = json.loads(state_py.read_text(encoding="utf-8"))
 
-        # Core state machine initial invariants
-        assert rs_data["step"] == 1
-        assert py_data["step"] == 0 or py_data["step"] == 1
-        assert rs_data["completed_tasks"] == []
-        assert py_data["completed_tasks"] == []
-
-        # Superstate models active_task as a structured TaskSpec; agent-rules as string
-        if isinstance(rs_data["active_task"], dict):
-            assert rs_data["active_task"]["id"] == "Task 1"
-            assert "Setup database schema" in rs_data["active_task"]["title"]
-        else:
-            assert "Task 1" in rs_data["active_task"]
-
-        assert "Task 1" in str(py_data["active_task"])
+        # DeepDiff structural parity assertion across all fields except engine_metadata and local plan_path
+        diff = DeepDiff(
+            rs_data,
+            py_data,
+            exclude_paths=["root['plan_path']", "root['engine_metadata']"],
+        )
+        assert diff == {}, f"State parity mismatch on init: {diff}"
 
 
-def test_verification_gate_failure_parity(check_binaries: None) -> None:
+def test_verification_gate_failure_parity(check_binaries: tuple[Path, Path]) -> None:
+    superstate_bin, agent_rules_bin = check_binaries
     plan_path = (FIXTURES_DIR / "linear_plan.md").resolve()
 
     with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
@@ -91,19 +127,19 @@ def test_verification_gate_failure_parity(check_binaries: None) -> None:
         # Initialize both
         subprocess.run(
             [
-                str(SUPERSTATE_BIN),
+                str(superstate_bin),
                 "state",
                 "init",
                 "--plan",
                 str(plan_path),
-                "--state",
+                "--out",
                 str(state_rs),
             ],
             check=True,
         )
         subprocess.run(
             [
-                str(AGENT_RULES_BIN),
+                str(agent_rules_bin),
                 "state",
                 "init",
                 "--plan",
@@ -117,7 +153,7 @@ def test_verification_gate_failure_parity(check_binaries: None) -> None:
         # Execute failing gate on Superstate
         res_rs = subprocess.run(
             [
-                str(SUPERSTATE_BIN),
+                str(superstate_bin),
                 "state",
                 "next",
                 "--state",
@@ -131,7 +167,7 @@ def test_verification_gate_failure_parity(check_binaries: None) -> None:
         # Execute failing gate on Agent-Rules
         res_py = subprocess.run(
             [
-                str(AGENT_RULES_BIN),
+                str(agent_rules_bin),
                 "state",
                 "next",
                 "--state",
@@ -147,14 +183,19 @@ def test_verification_gate_failure_parity(check_binaries: None) -> None:
         assert res_rs.returncode != 0
         assert res_py.returncode != 0
 
-        # States must remain unadvanced
-        rs_data = json.loads(state_rs.read_text())
-        py_data = json.loads(state_py.read_text())
-        assert len(rs_data["completed_tasks"]) == 0
-        assert len(py_data["completed_tasks"]) == 0
+        # States must remain unadvanced and identical
+        rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
+        py_data = json.loads(state_py.read_text(encoding="utf-8"))
+        diff = DeepDiff(
+            rs_data,
+            py_data,
+            exclude_paths=["root['plan_path']", "root['engine_metadata']"],
+        )
+        assert diff == {}, f"State parity mismatch after failed verification gate: {diff}"
 
 
-def test_verification_gate_success_parity(check_binaries: None) -> None:
+def test_verification_gate_success_parity(check_binaries: tuple[Path, Path]) -> None:
+    superstate_bin, agent_rules_bin = check_binaries
     plan_path = (FIXTURES_DIR / "linear_plan.md").resolve()
 
     with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
@@ -164,19 +205,19 @@ def test_verification_gate_success_parity(check_binaries: None) -> None:
         # Initialize both
         subprocess.run(
             [
-                str(SUPERSTATE_BIN),
+                str(superstate_bin),
                 "state",
                 "init",
                 "--plan",
                 str(plan_path),
-                "--state",
+                "--out",
                 str(state_rs),
             ],
             check=True,
         )
         subprocess.run(
             [
-                str(AGENT_RULES_BIN),
+                str(agent_rules_bin),
                 "state",
                 "init",
                 "--plan",
@@ -190,7 +231,7 @@ def test_verification_gate_success_parity(check_binaries: None) -> None:
         # Execute passing gate on Superstate
         res_rs = subprocess.run(
             [
-                str(SUPERSTATE_BIN),
+                str(superstate_bin),
                 "state",
                 "next",
                 "--state",
@@ -204,7 +245,7 @@ def test_verification_gate_success_parity(check_binaries: None) -> None:
         # Execute passing gate on Agent-Rules
         res_py = subprocess.run(
             [
-                str(AGENT_RULES_BIN),
+                str(agent_rules_bin),
                 "state",
                 "next",
                 "--state",
@@ -219,9 +260,13 @@ def test_verification_gate_success_parity(check_binaries: None) -> None:
         assert res_rs.returncode == 0
         assert res_py.returncode == 0
 
-        rs_data = json.loads(state_rs.read_text())
-        py_data = json.loads(state_py.read_text())
+        rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
+        py_data = json.loads(state_py.read_text(encoding="utf-8"))
 
-        # Both must advance step and record 1 completed task
-        assert len(rs_data["completed_tasks"]) == 1
-        assert len(py_data["completed_tasks"]) == 1
+        # Both must advance step and record 1 completed task with exact deep parity
+        diff = DeepDiff(
+            rs_data,
+            py_data,
+            exclude_paths=["root['plan_path']", "root['engine_metadata']"],
+        )
+        assert diff == {}, f"State parity mismatch after successful verification gate: {diff}"

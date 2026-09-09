@@ -11,9 +11,18 @@ import logging
 from pathlib import Path
 import time
 from typing import Any, Callable, Dict, List, Optional
+import uuid
 
+from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.adapters.base import AgentAdapter, AgentDriver
+from lab.engine.adapters.superpowers import SuperpowersAdapter
+from lab.engine.adapters.superstate import SuperstateAdapter
+from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
+from lab.engine.extractor import extract_and_grade
 from lab.engine.governor import ConcurrencyGovernor
+from lab.engine.pilot import PilotMockDriver
+from lab.engine.progress_tracker import ProgressTracker
 from lab.sandbox.docker_manager import DockerManager
 
 logger = logging.getLogger("superstate_eval.runner")
@@ -28,11 +37,22 @@ class AblationRunner:
         governor: ConcurrencyGovernor | None = None,
         workspace_root: Path | None = None,
         min_free_disk_gb: float = 20.0,
+        default_driver: Optional[AgentDriver] = None,
     ) -> None:
         self.docker_manager = docker_manager or DockerManager()
         self.governor = governor or ConcurrencyGovernor()
         self.workspace_root = workspace_root or Path("/tmp/superstate_eval_workspaces")
         self.min_free_disk_gb = min_free_disk_gb
+        self.default_driver = default_driver
+
+    def _get_adapter(self, arm: str) -> AgentAdapter:
+        if arm == "vanilla":
+            return VanillaAdapter()
+        elif arm == "superpowers":
+            return SuperpowersAdapter()
+        elif arm == "superstate":
+            return SuperstateAdapter()
+        raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(
         self,
@@ -42,6 +62,8 @@ class AblationRunner:
         base_budget_sec: float,
         lease_extension_sec: float = 1200.0,
         executor_fn: Optional[Callable[[BudgetPolicy], Dict[str, Any]]] = None,
+        task_spec: Optional[TaskSpec] = None,
+        driver: Optional[AgentDriver] = None,
     ) -> RunTelemetry:
         """Execute a single task under the specified arm and budget policy.
 
@@ -67,7 +89,7 @@ class AblationRunner:
         failure_reason = None
 
         try:
-            logger.info(f"Starting task '{task_id}' [Arm: {arm}] (Base budget: {base_budget_sec}s)")
+            logger.info("Starting task '%s' [Arm: %s] (Base budget: %.1fs)", task_id, arm, base_budget_sec)
             if executor_fn is not None:
                 result = executor_fn(budget_policy)
                 passed = bool(result.get("passed", False))
@@ -75,8 +97,63 @@ class AblationRunner:
                 input_tokens = int(result.get("input_tokens", 0))
                 output_tokens = int(result.get("output_tokens", 0))
                 failure_reason = result.get("failure_reason")
+            else:
+                # Full live execution path with container sandbox and grading
+                with self.governor.slot() as acquired:
+                    if not acquired:
+                        raise RuntimeError("Failed to acquire concurrency governor slot within timeout")
+
+                    adapter = self._get_adapter(arm)
+                    run_id = f"eval-{task_id.replace('/', '_')}-{arm}-{uuid.uuid4().hex[:8]}"
+                    task_workspace = self.workspace_root / run_id
+                    logs_dir = task_workspace / "logs"
+                    workspace_dir = task_workspace / "workspace"
+                    logs_dir.mkdir(parents=True, exist_ok=True)
+                    workspace_dir.mkdir(parents=True, exist_ok=True)
+
+                    active_task = task_spec or TaskSpec(
+                        id=task_id,
+                        name=task_id.split("/")[-1],
+                        instruction=f"Solve benchmark task {task_id}",
+                        docker_image=image,
+                        timeout_sec=base_budget_sec,
+                    )
+
+                    with self.docker_manager.run_sandbox(
+                        image=image or "alpine:latest",
+                        logs_dir=logs_dir,
+                        container_name=run_id,
+                    ) as container:
+                        tracker = ProgressTracker(
+                            policy=budget_policy,
+                            workspace_path=workspace_dir,
+                            arm=arm,
+                        )
+                        active_driver = driver or self.default_driver or PilotMockDriver(arm=arm)
+
+                        run_result = adapter.execute(
+                            workspace_dir,
+                            active_task,
+                            active_driver,
+                            timeout_sec=budget_policy.current_granted_budget_sec,
+                        )
+                        tracker.poll_for_progress()
+
+                        grade_res = extract_and_grade(
+                            container=container,
+                            task=active_task,
+                            arm=arm,
+                            logs_dir=logs_dir,
+                            workspace_path=workspace_dir,
+                        )
+
+                        passed = grade_res.passed
+                        cost_usd = run_result.cost_usd
+                        input_tokens = run_result.input_tokens
+                        output_tokens = run_result.output_tokens
+                        failure_reason = grade_res.failure_reason or run_result.error_message
         except Exception as e:
-            logger.exception(f"Error during execution of task '{task_id}' [Arm: {arm}]: {e}")
+            logger.exception("Error during execution of task '%s' [Arm: %s]: %s", task_id, arm, e)
             failure_reason = str(e)
             passed = False
         finally:
@@ -99,9 +176,13 @@ class AblationRunner:
         )
 
         logger.info(
-            f"Finished task '{task_id}' [Arm: {arm}]: Passed={passed}, "
-            f"WallClock={wall_clock_sec}s, Cost=${cost_usd:.2f}, "
-            f"TotalGrantedBudget={telemetry.total_granted_budget_sec}s"
+            "Finished task '%s' [Arm: %s]: Passed=%s, WallClock=%.2fs, Cost=$%.2f, TotalGrantedBudget=%.1fs",
+            task_id,
+            arm,
+            passed,
+            wall_clock_sec,
+            cost_usd,
+            telemetry.total_granted_budget_sec,
         )
         return telemetry
 
@@ -116,8 +197,11 @@ class AblationRunner:
         """Execute a matrix of tasks x arms concurrently using the dynamic governor."""
         concurrency = self.governor.calculate_max_concurrency(user_max=max_workers)
         logger.info(
-            f"Dispatching cohort: {len(tasks)} tasks across {len(arms)} arms "
-            f"({len(tasks) * len(arms)} total runs) with concurrency={concurrency}"
+            "Dispatching cohort: %d tasks across %d arms (%d total runs) with concurrency=%d",
+            len(tasks),
+            len(arms),
+            len(tasks) * len(arms),
+            concurrency,
         )
 
         futures_map = {}
@@ -147,7 +231,7 @@ class AblationRunner:
                     res = future.result()
                     results.append(res)
                 except Exception as err:
-                    logger.error(f"Task {t_id} under arm {a_name} failed catastrophically: {err}")
+                    logger.error("Task %s under arm %s failed catastrophically: %s", t_id, a_name, err)
                     results.append(
                         RunTelemetry(
                             task_id=t_id,

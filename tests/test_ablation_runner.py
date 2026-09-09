@@ -133,3 +133,36 @@ def test_ablation_runner_execution_and_cleanup() -> None:
     # Check that disk check and cleanup were called
     mock_docker_mgr.check_disk_space_or_prune.assert_called_once()
     mock_docker_mgr.prune_ephemeral_resources.assert_called_once()
+
+
+def test_ablation_runner_default_execution_without_executor_fn(tmp_path) -> None:
+    from contextlib import contextmanager
+    from lab.engine.runner import AblationRunner
+
+    mock_docker_mgr = MagicMock()
+    mock_container = MagicMock()
+
+    @contextmanager
+    def fake_run_sandbox(image, logs_dir, container_name, **kwargs):
+        # Write simulated verifier output into logs_dir
+        vdir = logs_dir / "verifier"
+        vdir.mkdir(parents=True, exist_ok=True)
+        (vdir / "reward.json").write_text('{"reward": 1.0, "exit_code": 0}')
+        mock_container.exec_run.return_value = (0, b"All tests passed")
+        yield mock_container
+
+    mock_docker_mgr.run_sandbox.side_effect = fake_run_sandbox
+    runner = AblationRunner(docker_manager=mock_docker_mgr, workspace_root=tmp_path / "workspaces")
+
+    telemetry = runner.run_task(
+        task_id="test/sample-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+    )
+
+    assert telemetry.passed is True
+    assert telemetry.arm == "vanilla"
+    assert telemetry.task_id == "test/sample-task"
+    mock_docker_mgr.run_sandbox.assert_called_once()
+    mock_docker_mgr.prune_ephemeral_resources.assert_called_once()

@@ -1,7 +1,8 @@
-"""Mechanical User and autonomous continuation engine for non-interactive benchmark runs.
+"""Mechanical User and Autonomous Human-in-the-Loop Interceptor.
 
-Eliminates human-in-the-loop blocking by inspecting agent responses for approval requests,
-clarifications, or option prompts, and automatically supplying decisive approvals.
+Prevents benchmark evaluation stall-outs by intercepting agent prompts,
+clarifying questions, and planning confirmation gates, delivering automated
+mechanical approval.
 """
 
 from __future__ import annotations
@@ -11,42 +12,46 @@ from typing import Optional
 
 logger = logging.getLogger("superstate_eval.approval")
 
-MECHANICAL_APPROVAL_PROMPT: str = (
-    "Proceed with the recommended option (Option 1). "
-    "Accept all recommended planning decisions and continue autonomously to implement and verify each task. "
-    "Do not stop to ask for confirmation; complete the task end-to-end."
+MECHANICAL_APPROVAL_PROMPT = (
+    "Proceed with the recommended option (Option 1). Do not pause for human feedback or approval. "
+    "Execute all tasks autonomously to completion, write tests, verify changes, and finalize your work."
 )
 
-APPROVAL_SIGNALS: tuple[str, ...] = (
+APPROVAL_SIGNALS = [
+    "proceed with option",
     "how would you like to proceed",
     "should i proceed",
-    "would you like me to",
-    "please confirm",
-    "please review",
-    "let me know how you would like",
-    "let me know if you would like",
-    "let me know if you'd like",
+    "would you like me to proceed",
     "do you approve",
-    "shall i proceed",
-    "ready to proceed",
+    "please approve",
+    "select an option",
     "which option would you prefer",
-    "what would you like to build",
-    "how would you like to continue",
-    "choose an execution mode",
+    "please confirm",
+    "confirm whether to proceed",
+    "awaiting your confirmation",
+    "awaiting user input",
     "select an execution mode",
-    "looks good to you",
-    "look good to you",
-    "awaiting spec review",
-    "awaiting plan review",
-    "any adjustments before",
-    "before we proceed",
-    "before i proceed",
-    "before i write",
+    "ready to execute plan?",
+]
+
+INTERACTIVE_QUESTION_PREFIXES = (
+    "should i",
+    "would you like",
+    "do you want",
+    "how would you like",
+    "shall i",
+    "please confirm",
+    "please let me know",
+    "can you confirm",
+    "which option",
+    "which approach",
+    "which of these",
+    "what would you like",
 )
 
 
 def is_waiting_for_user_input(response: str) -> bool:
-    """Determine whether the agent response is waiting for user feedback, approval, or input.
+    """Analyze agent response text to detect if the agent paused for human approval or clarification.
 
     Parameters:
         response: Output text or error payload returned by the agent.
@@ -73,10 +78,18 @@ def is_waiting_for_user_input(response: str) -> bool:
     if any(sig in lower for sig in APPROVAL_SIGNALS):
         return True
 
-    # 4. If the response ends with a direct question to the user
+    # 4. If the response ends with an interactive question to the user (not a rhetorical question)
     non_empty_lines = [line.strip() for line in resp.splitlines() if line.strip()]
-    if non_empty_lines and non_empty_lines[-1].rstrip("*_`'\" \t\r\n").endswith("?"):
-        return True
+    if non_empty_lines:
+        last_line = non_empty_lines[-1].rstrip("*_`'\" \t\r\n").lower()
+        if last_line.endswith("?"):
+            if any(
+                last_line.startswith(prefix) or f" {prefix} " in f" {last_line} "
+                for prefix in INTERACTIVE_QUESTION_PREFIXES
+            ):
+                return True
+            if "option 1" in lower or "proceed with" in lower or "confirm" in lower:
+                return True
 
     return False
 

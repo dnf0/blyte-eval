@@ -171,3 +171,45 @@ def test_superstate_adapter_enforces_zero_superpowers_and_bounded_milestones(
     prompt_0 = str(driver.calls[0]["prompt"])
     assert "TARGETED EXECUTION CONTRACT" in prompt_0
     assert "ZERO GLOBAL EXPLORATION" in prompt_0
+    assert (tmp_path / ".agent-state" / "state.json").exists(), (
+        "Superstate must initialize .agent-state/state.json"
+    )
+
+
+def test_turn_cap_exhaustion_reports_failure(tmp_path: Path) -> None:
+    # Driver asks for approval on every turn indefinitely
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=True,
+                raw_response="Should I proceed with Option 1?",
+                duration_seconds=1.0,
+            )
+            for _ in range(12)
+        ]
+    )
+    adapter = VanillaAdapter()
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is False
+    assert result.turns == 10
+    assert "Exhausted maximum turns (10)" in str(result.error_message)
+
+
+def test_superstate_planning_failure_aborts_immediately(tmp_path: Path) -> None:
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="Model failed to generate plan.",
+                duration_seconds=2.0,
+                error_message="Model context overflow during planning",
+            )
+        ]
+    )
+    adapter = SuperstateAdapter()
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is False
+    assert result.turns == 1
+    assert "Model context overflow during planning" in str(result.error_message)

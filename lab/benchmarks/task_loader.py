@@ -1,16 +1,15 @@
-"""Benchmark task ingestion and loader module.
+"""Benchmark task specification and loader module.
 
-Parses task.toml and instruction.md from task directories, resolving metadata,
-container images, timeouts, verifier parameters, and collection commands.
+Parses SWE-bench / Harbor style benchmark task definitions (task.toml and instruction.md).
 """
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
+import logging
 from pathlib import Path
-from typing import Any
 import tomllib
+from typing import Any
 
 logger = logging.getLogger("superstate_eval.task_loader")
 
@@ -30,6 +29,11 @@ class TaskSpec:
     task_dir: Path | None = None
     collect_commands: list[str] = field(default_factory=list)
     base_commit: str | None = None
+    verification_cmd: str | None = None
+
+    @property
+    def task_id(self) -> str:
+        return self.id
 
 
 def _extract_collect_commands(verifier_meta: dict[str, Any]) -> list[str]:
@@ -85,6 +89,16 @@ def load_task_from_dir(task_dir: Path) -> TaskSpec:
 
     collect_commands = _extract_collect_commands(verifier_meta)
 
+    # Resolve verification command from verifier table or standard test files
+    verification_cmd = verifier_meta.get("command")
+    if not verification_cmd:
+        if (task_dir / "tests" / "test.sh").is_file():
+            verification_cmd = "bash /tests/test.sh"
+        elif (task_dir / "tests" / "test_outputs.py").is_file():
+            verification_cmd = "pytest /tests/test_outputs.py"
+        else:
+            verification_cmd = "pytest tests/"
+
     return TaskSpec(
         id=task_id,
         name=task_dir.name,
@@ -97,6 +111,7 @@ def load_task_from_dir(task_dir: Path) -> TaskSpec:
         task_dir=task_dir,
         collect_commands=collect_commands,
         base_commit=base_commit,
+        verification_cmd=verification_cmd,
     )
 
 

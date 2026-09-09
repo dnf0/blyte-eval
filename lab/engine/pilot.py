@@ -66,9 +66,21 @@ class PilotMockDriver(AgentDriver):
 
 
 class MockContainer:
-    """Mock container for testing evaluation extractors."""
+    """Mock container for testing evaluation extractors without live Docker."""
+
+    def __init__(self, logs_dir: Optional[Path] = None, arm: str = "vanilla") -> None:
+        self.logs_dir = logs_dir
+        self.arm = arm
 
     def exec_run(self, cmd: str) -> tuple[int, bytes]:
+        if self.logs_dir is not None:
+            # Simulate container-side verifier generating reward
+            vdir = self.logs_dir / "verifier"
+            vdir.mkdir(parents=True, exist_ok=True)
+            (vdir / "reward.json").write_text('{"reward": 1.0, "exit_code": 0}', encoding="utf-8")
+            adir = self.logs_dir / "artifacts"
+            adir.mkdir(parents=True, exist_ok=True)
+            (adir / "model.patch").write_text(f"# Patch by {self.arm}\n", encoding="utf-8")
         return (0, b"Verification passed\n")
 
 
@@ -103,7 +115,7 @@ class PilotShowdownRunner:
         mock_mode: bool,
     ) -> Generator[Any, None, None]:
         if mock_mode:
-            yield MockContainer()
+            yield MockContainer(logs_dir=logs_dir, arm=arm)
         else:
             with self.docker_manager.run_sandbox(
                 image=task.docker_image or "alpine:latest",
@@ -140,50 +152,38 @@ class PilotShowdownRunner:
             active_driver = driver or PilotMockDriver(arm=arm)
 
             with self._acquire_container(task, arm, run_id, logs_dir, mock_mode) as container:
-                # Execute adapter in isolated workspace
                 workspace = logs_dir / "workspace"
                 workspace.mkdir(parents=True, exist_ok=True)
                 run_result = adapter.execute(workspace, task, active_driver)
 
-                # Simulate blind git patch generation in logs/artifacts
-                patch_file = logs_dir / "artifacts" / "model.patch"
-                patch_file.parent.mkdir(parents=True, exist_ok=True)
-                patch_file.write_text(
-                    f"--- /dev/null\n+++ b/solution.py\n@@ -0,0 +1 @@\n+# Solution by {arm}\n"
-                )
-
-                # Simulate held-out verification outcome
-                reward_file = logs_dir / "verifier" / "reward.json"
-                reward_file.parent.mkdir(parents=True, exist_ok=True)
-                reward_file.write_text('{"reward": 1.0, "exit_code": 0}')
-
-                # Task adapter object compatible with extract_and_grade
-                class TaskCompat:
-                    task_id = task.id
-                    base_commit = task.base_commit or "HEAD~1"
-                    verification_cmd = "echo 'All tests passed'"
-
-                verification = extract_and_grade(
+                # Blind extraction and grading from the container
+                grade_res = extract_and_grade(
                     container=container,
-                    task=TaskCompat(),
+                    task=task,
                     arm=arm,
                     logs_dir=logs_dir,
                     workspace_path=workspace,
                 )
 
-                summary["results"].append(
-                    {
-                        "arm": arm,
-                        "success": run_result.success and verification.passed,
-                        "duration_seconds": run_result.duration_seconds,
-                        "input_tokens": run_result.input_tokens,
-                        "output_tokens": run_result.output_tokens,
-                        "cost_usd": run_result.cost_usd,
-                        "turns": run_result.turns,
-                        "patch_path": str(verification.patch_path or patch_file),
-                        "reward": verification.reward,
-                        "failure_reason": run_result.error_message or verification.failure_reason,
-                    }
-                )
+                arm_summary = {
+                    "arm": arm,
+                    "run_id": run_id,
+                    "success": run_result.success,
+                    "passed": grade_res.passed,
+                    "reward": grade_res.reward,
+                    "exit_code": grade_res.exit_code,
+                    "turns": run_result.turns,
+                    "duration_sec": run_result.duration_seconds,
+                    "cost_usd": run_result.cost_usd,
+                    "input_tokens": run_result.input_tokens,
+                    "output_tokens": run_result.output_tokens,
+                    "patch_path": str(grade_res.patch_path) if grade_res.patch_path else None,
+                    "state_json_path": str(grade_res.state_json_path)
+                    if grade_res.state_json_path
+                    else None,
+                    "failure_reason": grade_res.failure_reason,
+                    "error_message": run_result.error_message,
+                }
+                summary["results"].append(arm_summary)
 
         return summary

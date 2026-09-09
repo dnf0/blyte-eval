@@ -9,9 +9,9 @@ from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
 def test_budget_policy_initial_allowance() -> None:
     policy = BudgetPolicy(
         base_timeout_sec=900.0,
-        lease_extension_sec=1200.0,
-        max_lease_extensions=5,
     )
+    assert policy.max_lease_extensions == 5
+    assert policy.lease_extension_sec == 1200.0
     assert policy.current_granted_budget_sec == 900.0
     assert policy.milestones_completed == 0
     assert policy.lease_extensions_earned_sec == 0.0

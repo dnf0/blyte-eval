@@ -31,5 +31,7 @@ line-length = 100
 
 [tool.pyright]
 pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
 typeCheckingMode = "basic"
 include = ["lab", "tests"]

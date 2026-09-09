@@ -45,6 +45,8 @@ def test_is_waiting_for_user_input_ignores_normal_completions() -> None:
         "Implementation complete. All 12 unit tests pass.",
         "Fixed the issue by adding validation in user.py.",
         "Refactoring complete.",
+        "What did this accomplish? It simplified the routing table.",
+        "Why was this needed? The base commit had a memory leak.",
     ]
     for s in samples:
         assert is_waiting_for_user_input(s) is False, f"False positive on: {s}"

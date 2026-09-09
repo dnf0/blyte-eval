@@ -20,7 +20,7 @@ class BudgetPolicy:
 
     base_timeout_sec: float
     lease_extension_sec: float = 1200.0
-    max_lease_extensions: int = 10
+    max_lease_extensions: int = 5
     milestones_completed: int = 0
     extensions_granted_count: int = 0
     completed_milestone_titles: List[str] = field(default_factory=list)
