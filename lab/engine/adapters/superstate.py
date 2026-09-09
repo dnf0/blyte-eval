@@ -690,6 +690,14 @@ class SuperstateAdapter(AgentAdapter):
             milestone_failed: Optional[str] = None
             milestone_turns = 0
             last_response = ""
+            advanced = False
+            milestone = Milestone(title=active, verify_cmd=verify_by_title.get(active))
+            gate_detail: Dict[str, Any] = {
+                "gate_ran": False,
+                "gate_passed": None,
+                "gate_exit_code": None,
+                "gate_output": None,
+            }
 
             for _turn in range(self.max_turns_per_milestone):
                 turn_timeout = budget - duration
@@ -726,43 +734,40 @@ class SuperstateAdapter(AgentAdapter):
                 if budget_hook is not None:
                     budget = max(budget, budget_hook())
 
+                # If the agent is asking for approval / input, provide mechanical approval
+                next_prompt = resolve_next_turn_prompt(last_response)
+                if next_prompt is not None:
+                    current_prompt = next_prompt
+                    continue
+
+                # The agent concluded its work for this milestone.
+                # Evaluate targeted verification gate & rescue: if the targeted verification passes on disk,
+                # the milestone succeeded and state advances regardless of driver status quirks.
+                advanced = self._advance_state(
+                    workspace_path, active, milestone.verify_cmd, container, gate_detail
+                )
+                if advanced:
+                    milestone_failed = None
+                    break
+
                 if not telemetry.success:
                     milestone_failed = telemetry.error_message or f"Milestone '{active}' failed"
                     break
 
-                next_prompt = resolve_next_turn_prompt(last_response)
-                if next_prompt is None:
-                    break
-                current_prompt = next_prompt
+                # Agent concluded without asking for user approval, but verification gate failed
+                milestone_failed = f"Verification gate failed for milestone '{active}'"
+                break
 
             # Carry what this turn learned into the ledger, so later milestones
             # inherit it rather than starting blind.
             if last_response:
                 self.record_note(workspace_path, f"[{active}] {last_response[:1500]}")
 
-            gate_detail: Dict[str, Any] = {
-                "gate_ran": False,
-                "gate_passed": None,
-                "gate_exit_code": None,
-                "gate_output": None,
-            }
-            milestone = Milestone(title=active, verify_cmd=verify_by_title.get(active))
-
-            if milestone_failed is not None:
-                self._record_milestone(
-                    recorder, milestone_index, milestone, milestone_turns, gate_detail, False
-                )
-                error_msg = milestone_failed
-                break
-
-            advanced = self._advance_state(
-                workspace_path, active, milestone.verify_cmd, container, gate_detail
-            )
             self._record_milestone(
                 recorder, milestone_index, milestone, milestone_turns, gate_detail, advanced
             )
             if not advanced:
-                error_msg = f"Verification gate failed for milestone '{active}'"
+                error_msg = milestone_failed or f"Verification gate failed for milestone '{active}'"
                 break
 
         return result(error_msg is None, error_msg)
