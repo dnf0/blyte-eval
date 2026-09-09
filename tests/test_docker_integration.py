@@ -22,7 +22,7 @@ from lab.sandbox.docker_manager import DockerManager, WorkspaceSeedError
 IMAGE_TAG = "superstate-eval-itest"
 
 DOCKERFILE = """FROM alpine:latest
-RUN apk add --no-cache git >/dev/null && mkdir -p /app && cd /app && \\
+RUN apk add --no-cache git bash >/dev/null && mkdir -p /app && cd /app && \\
     echo "print('original source')" > main.py && \\
     git init -q && git config user.email e@l && git config user.name E && \\
     git add -A && git commit -q -m "base commit"
@@ -120,3 +120,82 @@ def test_seeding_fails_loudly_when_image_is_missing(tmp_path: Path) -> None:
         manager.seed_workspace_from_image(
             image="superstate-eval-no-such-image:v0", dest=tmp_path / "ws"
         )
+
+
+@requires_docker
+def test_held_out_verifier_builds_and_grades_in_its_own_container(tmp_path: Path) -> None:
+    """End-to-end: build the verifier image and have it write reward.json.
+
+    Mirrors the real contract -- Dockerfile FROM the task image with hidden tests
+    layered on, /logs shared, no workspace mount.
+    """
+    from lab.engine.verifier import HeldOutVerifier
+
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "Dockerfile").write_text(
+        f"FROM {IMAGE_TAG}\nCOPY test.sh /tests/test.sh\nRUN chmod +x /tests/test.sh\n",
+        encoding="utf-8",
+    )
+    # Stand-in for grader.py: apply the patch to a pristine /app, then grade.
+    (tests_dir / "test.sh").write_text(
+        "#!/bin/bash\n"
+        "mkdir -p /logs/verifier\n"
+        "cd /app || exit 6\n"
+        "if [ -f /logs/artifacts/model.patch ]; then git apply /logs/artifacts/model.patch; fi\n"
+        'if grep -q FIXED /app/main.py; then echo \'{"reward": 1}\' > /logs/verifier/reward.json;\n'
+        'else echo \'{"reward": 0}\' > /logs/verifier/reward.json; fi\n',
+        encoding="utf-8",
+    )
+
+    class Task:
+        id = "org/itest"
+        cpus = None
+        memory_mb = None
+
+        def __init__(self, td: Path) -> None:
+            self.tests_dir = td
+
+    manager = DockerManager()
+    verifier = HeldOutVerifier(docker_manager=manager)
+    logs_dir = tmp_path / "logs"
+    (logs_dir / "artifacts").mkdir(parents=True)
+
+    try:
+        # No patch -> the pristine repo fails the hidden check.
+        outcome = verifier.run(task=Task(tests_dir), logs_dir=logs_dir)
+        assert outcome.reward == 0.0
+        assert outcome.passed is False
+
+        # A patch that makes the change -> passes.
+        (logs_dir / "artifacts" / "model.patch").write_text(
+            "diff --git a/main.py b/main.py\n"
+            "--- a/main.py\n"
+            "+++ b/main.py\n"
+            "@@ -1 +1 @@\n"
+            "-print('original source')\n"
+            "+print('FIXED')\n",
+            encoding="utf-8",
+        )
+        outcome = verifier.run(task=Task(tests_dir), logs_dir=logs_dir)
+        assert outcome.reward == 1.0
+        assert outcome.passed is True
+        assert outcome.reward_source == "reward.json"
+    finally:
+        if outcome.image_tag:
+            subprocess.run(["docker", "rmi", "-f", outcome.image_tag], capture_output=True)
+
+
+@requires_docker
+def test_verifier_crash_sentinel_is_not_treated_as_a_score(tmp_path: Path) -> None:
+    """reward.txt == -1 is an infrastructure failure, not a legitimate 0."""
+    from lab.engine.verifier import read_reward_artifacts
+
+    logs_dir = tmp_path / "logs"
+    (logs_dir / "verifier").mkdir(parents=True)
+    (logs_dir / "verifier" / "reward.txt").write_text("-1", encoding="utf-8")
+
+    reward, source, crashed, _stats = read_reward_artifacts(logs_dir)
+    assert crashed is True
+    assert reward is None, "a crashed verifier must not be scored"
+    assert source == "reward.txt"

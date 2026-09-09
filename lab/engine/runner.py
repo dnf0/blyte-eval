@@ -23,6 +23,7 @@ from lab.engine.extractor import extract_and_grade
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.progress_tracker import ProgressTracker
 from lab.engine.trace import RunRecorder
+from lab.engine.verifier import HeldOutVerifier
 from lab.sandbox.docker_manager import DockerManager
 
 logger = logging.getLogger("superstate_eval.runner")
@@ -71,6 +72,7 @@ class AblationRunner:
         default_driver: Optional[AgentDriver] = None,
         nano_cpus: int = DEFAULT_NANO_CPUS,
         mem_limit: str = DEFAULT_MEM_LIMIT,
+        verifier: Optional[HeldOutVerifier] = None,
     ) -> None:
         self.docker_manager = docker_manager or DockerManager()
         self.governor = governor or ConcurrencyGovernor()
@@ -79,6 +81,7 @@ class AblationRunner:
         self.default_driver = default_driver
         self.nano_cpus = nano_cpus
         self.mem_limit = mem_limit
+        self.verifier = verifier or HeldOutVerifier(docker_manager=self.docker_manager)
 
     def _get_adapter(self, arm: str) -> AgentAdapter:
         if arm == "vanilla":
@@ -240,6 +243,7 @@ class AblationRunner:
                             logs_dir=logs_dir,
                             workspace_path=workspace_dir,
                             recorder=recorder,
+                            verifier=self.verifier,
                         )
 
                         passed = grade_res.passed
@@ -259,6 +263,7 @@ class AblationRunner:
                             if grade_res.patch_path
                             else None,
                             "logs_dir": str(logs_dir),
+                            "held_out_verifier": active_task.tests_dir is not None,
                             **run_result.provenance,
                         }
         except Exception as e:

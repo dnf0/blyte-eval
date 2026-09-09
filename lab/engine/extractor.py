@@ -53,6 +53,7 @@ def extract_and_grade(
     logs_dir: Path,
     workspace_path: Path | None = None,
     recorder: Any = None,
+    verifier: Any = None,
 ) -> EvaluationResult:
     """Execute blind grading against the container and extract patches/telemetry.
 
@@ -103,31 +104,59 @@ def extract_and_grade(
             arm,
         )
 
-    # 2. Run held-out verification command
-    verification_cmd = getattr(task, "verification_cmd", None) or "pytest"
-    exec_res = container.exec_run(verification_cmd)
-    if isinstance(exec_res, tuple):
-        exit_code, output = exec_res
-    else:
-        exit_code = getattr(exec_res, "exit_code", 1)
-        output = getattr(exec_res, "output", b"")
+    # 2. Grade. The task's own verifier image is authoritative when it exists:
+    #    it applies model.patch to a pristine /app in a separate container, so the
+    #    agent cannot influence its own grade by editing tests or the workspace.
+    verifier_reward: float | None = None
+    verifier_ran_held_out = False
 
-    output_str = output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+    if verifier is not None and getattr(task, "tests_dir", None) is not None:
+        try:
+            outcome = verifier.run(task=task, logs_dir=logs_dir)
+            exit_code = outcome.exit_code
+            output_str = outcome.output
+            verifier_reward = outcome.reward
+            verifier_ran_held_out = True
+            if outcome.crashed:
+                logger.error("Held-out verifier crashed for %s; grading as failure", task_id)
+        except Exception as err:
+            logger.error("Held-out verifier failed for %s: %s", task_id, err)
+            exit_code = 1
+            output_str = f"Held-out verifier could not run: {err}"
+    else:
+        if getattr(task, "tests_dir", None) is None:
+            logger.warning(
+                "Task %s ships no tests/Dockerfile; falling back to running the "
+                "verification command inside the agent's own container. Grading is "
+                "NOT held out and the agent could have influenced it.",
+                task_id,
+            )
+        verification_cmd = getattr(task, "verification_cmd", None) or "pytest"
+        exec_res = container.exec_run(verification_cmd)
+        if isinstance(exec_res, tuple):
+            exit_code, output = exec_res
+        else:
+            exit_code = getattr(exec_res, "exit_code", 1)
+            output = getattr(exec_res, "output", b"")
+        output_str = (
+            output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+        )
 
     # Persist the verifier's full output: the tail alone rarely explains a failure.
     if recorder is not None:
         recorder.record_verifier_output(output_str)
 
-    # 3. Parse reward artifact from logs_dir / verifier / reward.json
-    reward_json_path = logs_dir / "verifier" / "reward.json"
-    reward: float | None = None
-    if reward_json_path.is_file():
-        try:
-            data = json.loads(reward_json_path.read_text(encoding="utf-8"))
-            if "reward" in data and data["reward"] is not None:
-                reward = float(data["reward"])
-        except Exception as err:
-            logger.warning("Failed to parse %s: %s", reward_json_path, err)
+    # 3. Reward: from the held-out verifier when it ran, else from reward.json.
+    reward: float | None = verifier_reward
+    if not verifier_ran_held_out:
+        reward_json_path = logs_dir / "verifier" / "reward.json"
+        if reward_json_path.is_file():
+            try:
+                data = json.loads(reward_json_path.read_text(encoding="utf-8"))
+                if "reward" in data and data["reward"] is not None:
+                    reward = float(data["reward"])
+            except Exception as err:
+                logger.warning("Failed to parse %s: %s", reward_json_path, err)
 
     # 4. Strict evaluation gate:
     # PASS requires exit_code == 0 AND reward is defined AND reward >= 1.0.

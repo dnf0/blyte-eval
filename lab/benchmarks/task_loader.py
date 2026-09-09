@@ -41,6 +41,14 @@ class TaskSpec:
     def task_id(self) -> str:
         return self.id
 
+    @property
+    def tests_dir(self) -> Path | None:
+        """Directory holding the held-out verifier (Dockerfile, test.sh, grader.py)."""
+        if self.task_dir is None:
+            return None
+        candidate = self.task_dir / "tests"
+        return candidate if (candidate / "Dockerfile").is_file() else None
+
 
 def _extract_collect_commands(verifier_meta: dict[str, Any]) -> list[str]:
     """Ingest collector command sequences used to extract test or run artifacts."""

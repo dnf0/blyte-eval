@@ -28,6 +28,10 @@ class WorkspaceSeedError(RuntimeError):
     """Raised when the task repository cannot be materialized onto the host."""
 
 
+class ImageBuildError(RuntimeError):
+    """Raised when an image (typically the held-out verifier) cannot be built."""
+
+
 class DockerManager:
     """Manages Docker containers and host disk resource reclamation."""
 
@@ -155,6 +159,60 @@ class DockerManager:
 
         logger.info("Seeded workspace %s from %s:%s (%d entries)", dest_path, image, source_path, extracted)
         return extracted
+
+    def build_image(self, context_dir: Path | str, tag: str, timeout: int = 1800) -> str:
+        """Build an image from `context_dir` and return its tag.
+
+        Used for the held-out verifier, whose Dockerfile layers the hidden tests
+        on top of the task image. The agent never sees this image.
+        """
+        context = Path(context_dir)
+        if not (context / "Dockerfile").is_file():
+            raise ImageBuildError(f"No Dockerfile in build context {context}")
+        with self._suppressed_registry_auth():
+            try:
+                _image, _logs = self.client.images.build(
+                    path=str(context), tag=tag, rm=True, forcerm=True, timeout=timeout
+                )
+            except Exception as err:
+                raise ImageBuildError(
+                    f"Failed to build image '{tag}' from {context}: {err}"
+                ) from err
+        logger.info("Built image %s from %s", tag, context)
+        return tag
+
+    @contextmanager
+    def _suppressed_registry_auth(self) -> Generator[None, None, None]:
+        """Stop docker-py invoking every configured credential helper on build.
+
+        docker-py attaches auth for *all* registries in the user's docker config
+        to a build request, so one unauthenticated helper (a stale gcloud or ECR
+        login) fails an entirely local build. Task and verifier images come from
+        public registries, so building without those headers is both safe and
+        markedly more robust.
+        """
+        api: Any = getattr(self.client, "api", None)
+        original = getattr(api, "_auth_configs", None) if api is not None else None
+        if api is None or original is None:
+            yield
+            return
+        try:
+            from docker import auth as docker_auth
+
+            # NOT AuthConfig({}): docker-py reloads the on-disk config whenever
+            # the in-memory one looks empty, which re-invokes the helpers. A
+            # single inert entry keeps it non-empty and helper-free.
+            api._auth_configs = docker_auth.AuthConfig(
+                {"auths": {"superstate-eval.invalid": {}}}
+            )
+        except Exception as err:  # pragma: no cover - defensive
+            logger.debug("Could not suppress registry auth: %s", err)
+            yield
+            return
+        try:
+            yield
+        finally:
+            api._auth_configs = original
 
     def prune_ephemeral_resources(self) -> None:
         """Prune dangling images, stopped containers, and unreferenced volumes."""
