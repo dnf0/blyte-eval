@@ -174,6 +174,7 @@ class PilotShowdownRunner:
                     "exit_code": grade_res.exit_code,
                     "turns": run_result.turns,
                     "duration_sec": run_result.duration_seconds,
+                    "duration_seconds": run_result.duration_seconds,
                     "cost_usd": run_result.cost_usd,
                     "input_tokens": run_result.input_tokens,
                     "output_tokens": run_result.output_tokens,

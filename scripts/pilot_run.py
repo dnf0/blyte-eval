@@ -88,10 +88,11 @@ def main() -> None:
     logger.info("-" * 80)
 
     for r in summary["results"]:
-        status = "PASS" if r["success"] else "FAIL"
+        status = "PASS" if r.get("passed", r.get("success", False)) else "FAIL"
+        duration = r.get("duration_sec", r.get("duration_seconds", 0.0))
         row = (
             f"{r['arm']:<15} | {status:<8} | {r['turns']:<6} | "
-            f"{r['duration_seconds']:<9.1f}s | {str(r['reward']):<8} | {r['patch_path']}"
+            f"{duration:<9.1f}s | {str(r.get('reward')):<8} | {r.get('patch_path')}"
         )
         logger.info(row)
 
