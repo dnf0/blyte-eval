@@ -24,6 +24,7 @@ from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.progress_tracker import ProgressTracker
 from lab.engine.trace import RunRecorder
 from lab.engine.verifier import HeldOutVerifier
+from lab.sandbox.answer_key import AnswerKeyGuard
 from lab.sandbox.docker_manager import DockerManager
 
 logger = logging.getLogger("superstate_eval.runner")
@@ -82,6 +83,7 @@ class AblationRunner:
         self.nano_cpus = nano_cpus
         self.mem_limit = mem_limit
         self.verifier = verifier or HeldOutVerifier(docker_manager=self.docker_manager)
+        self.answer_key_guard = AnswerKeyGuard()
 
     def _get_adapter(self, arm: str) -> AgentAdapter:
         if arm == "vanilla":
@@ -234,15 +236,29 @@ class AblationRunner:
                             tracker.poll_for_progress()
                             return budget_policy.current_granted_budget_sec
 
-                        run_result = adapter.execute(
-                            workspace_dir,
-                            active_task,
-                            active_driver,
-                            timeout_sec=budget_policy.current_granted_budget_sec,
-                            container=container,
-                            budget_hook=budget_hook,
-                            recorder=recorder,
+                        # A host-side agent runs as this user and could read the
+                        # task's tests/ directory. Seal it while the agent works.
+                        # An in-container agent cannot reach the path at all, so
+                        # there is nothing to seal.
+                        isolated = bool(
+                            getattr(active_driver, "provides_isolated_execution", False)
                         )
+                        seal_paths = (
+                            []
+                            if isolated or active_task.tests_dir is None
+                            else [active_task.tests_dir]
+                        )
+
+                        with self.answer_key_guard.sealed(seal_paths) as sealed_paths:
+                            run_result = adapter.execute(
+                                workspace_dir,
+                                active_task,
+                                active_driver,
+                                timeout_sec=budget_policy.current_granted_budget_sec,
+                                container=container,
+                                budget_hook=budget_hook,
+                                recorder=recorder,
+                            )
 
                         grade_res = extract_and_grade(
                             container=container,
@@ -282,9 +298,9 @@ class AblationRunner:
                             # had a host shell and could read the held-out tests, so
                             # the result carries a weaker guarantee than an isolated
                             # run and must not be compared with one unqualified.
-                            "isolated_execution": bool(
-                                getattr(active_driver, "provides_isolated_execution", False)
-                            ),
+                            "isolated_execution": isolated,
+                            # Held-out tests made unreadable while the agent worked.
+                            "answer_key_sealed": [str(p) for p in sealed_paths],
                             **run_result.provenance,
                         }
         except Exception as e:
