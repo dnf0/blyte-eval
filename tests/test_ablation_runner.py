@@ -280,3 +280,44 @@ def test_run_cohort_forwards_task_specs_and_driver() -> None:
     assert kwargs["task_id"] == "org/task-1"
     assert kwargs["image"] == "img:latest"
     assert kwargs["base_budget_sec"] == 1234.0
+
+
+def _failed(arm: str, reason: str) -> RunTelemetry:
+    return RunTelemetry(
+        task_id="t",
+        arm=arm,
+        passed=False,
+        wall_clock_sec=1.0,
+        cost_usd=0.1,
+        input_tokens=1,
+        output_tokens=1,
+        failure_reason=reason,
+    )
+
+
+def test_summarize_failures_clusters_like_failures() -> None:
+    from lab.engine.reporter import summarize_failures
+
+    runs = [
+        _failed("superstate", "Verification gate failed for milestone 'Task 2: Wire adapter'"),
+        _failed("superstate", "Verification gate failed for milestone 'Task 9: Add CLI'"),
+        _failed("vanilla", "Exhausted maximum turns (50) without completion"),
+        RunTelemetry(
+            task_id="t",
+            arm="vanilla",
+            passed=True,
+            wall_clock_sec=1.0,
+            cost_usd=0.1,
+            input_tokens=1,
+            output_tokens=1,
+        ),
+    ]
+    clusters = summarize_failures(runs)
+
+    # Two gate failures differing only by milestone name must collapse to one cluster.
+    assert clusters["superstate"] == [
+        {"signature": "Verification gate failed for milestone '...'", "count": 2}
+    ]
+    assert clusters["vanilla"][0]["count"] == 1
+    # Passing runs contribute nothing.
+    assert sum(e["count"] for e in clusters["vanilla"]) == 1

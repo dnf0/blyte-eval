@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+import re
 from typing import Any, Dict, List
 
 from lab.engine.budget_policy import RunTelemetry
@@ -67,3 +69,51 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
             f"{tok_out if tok_out is not None else 'N/A'} |"
         )
     return "\n".join(lines)
+
+
+def _failure_signature(reason: str | None) -> str:
+    """Collapse a failure reason to a comparable class, stripping run-specific detail."""
+    if not reason:
+        return "unknown"
+    first = reason.strip().splitlines()[0]
+    # Drop identifiers that differ per run so like failures group together.
+    first = re.sub(r"'[^']*'", "'...'", first)
+    first = re.sub(r"\b\d+(\.\d+)?\b", "N", first)
+    return first[:120]
+
+
+def summarize_failures(runs: List[RunTelemetry]) -> Dict[str, List[Dict[str, Any]]]:
+    """Cluster failures per arm so recurring defects are visible.
+
+    A pass rate says an arm underperformed; this says how it failed and how often,
+    which is the signal you act on when improving the state engine.
+    """
+    per_arm: Dict[str, Counter[str]] = {}
+    for run in runs:
+        if run.passed:
+            continue
+        per_arm.setdefault(run.arm, Counter())[_failure_signature(run.failure_reason)] += 1
+
+    return {
+        arm: [
+            {"signature": sig, "count": count}
+            for sig, count in counter.most_common()
+        ]
+        for arm, counter in per_arm.items()
+    }
+
+
+def render_failure_report(runs: List[RunTelemetry]) -> str:
+    """Render clustered failures as text, most frequent first."""
+    clusters = summarize_failures(runs)
+    if not clusters:
+        return "No failures recorded."
+
+    lines = ["## Failure clusters by arm", ""]
+    for arm in sorted(clusters):
+        entries = clusters[arm]
+        lines.append(f"### {arm} ({sum(e['count'] for e in entries)} failures)")
+        for entry in entries:
+            lines.append(f"- {entry['count']}x  {entry['signature']}")
+        lines.append("")
+    return "\n".join(lines).rstrip()

@@ -88,6 +88,7 @@ class AgentAdapter(abc.ABC):
         timeout_sec: Optional[float] = None,
         container: Any = None,
         budget_hook: Optional[BudgetHook] = None,
+        recorder: Any = None,
     ) -> TaskRunResult:
         """Execute a task in the given workspace using the provided driver."""
 
@@ -95,7 +96,11 @@ class AgentAdapter(abc.ABC):
 class TurnBasedAdapter(AgentAdapter):
     """Base template adapter managing bounded turn execution and mechanical approval."""
 
-    max_turns: int = 10
+    # Loop-breaker, NOT a budget. Per the design spec a run halts when the agent
+    # signals completion or exhausts its progress-earned time budget; this only
+    # stops a pathological agent from spinning forever. Set high enough that it
+    # does not bind on real work, and raise it rather than letting it decide runs.
+    max_turns: int = 50
 
     @abc.abstractmethod
     def prepare_workspace(self, workspace_path: Path) -> None:
@@ -117,6 +122,7 @@ class TurnBasedAdapter(AgentAdapter):
         timeout_sec: Optional[float] = None,
         container: Any = None,
         budget_hook: Optional[BudgetHook] = None,
+        recorder: Any = None,
     ) -> TaskRunResult:
         """Execute task across sequential turns with bounded caps and autonomous approval."""
         self.prepare_workspace(workspace_path)
@@ -147,6 +153,11 @@ class TurnBasedAdapter(AgentAdapter):
                 timeout_sec=turn_timeout,
                 container=container,
             )
+
+            if recorder is not None:
+                recorder.record_turn(
+                    phase="implementation", prompt=current_prompt, telemetry=telemetry
+                )
 
             duration += telemetry.duration_seconds
             input_tokens += telemetry.input_tokens

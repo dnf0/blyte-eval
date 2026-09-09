@@ -30,6 +30,12 @@ class TaskSpec:
     collect_commands: list[str] = field(default_factory=list)
     base_commit: str | None = None
     verification_cmd: str | None = None
+    # Sandbox contract declared by the task; the harness must honour these rather
+    # than substituting its own defaults.
+    agent_network_mode: str | None = None
+    verifier_network_mode: str | None = None
+    cpus: float | None = None
+    memory_mb: int | None = None
 
     @property
     def task_id(self) -> str:
@@ -89,6 +95,12 @@ def load_task_from_dir(task_dir: Path) -> TaskSpec:
 
     collect_commands = _extract_collect_commands(verifier_meta)
 
+    # Sandbox contract: network isolation and resource quotas declared by the task.
+    agent_network_mode = agent_meta.get("network_mode") or environment_meta.get("network_mode")
+    verifier_network_mode = verifier_meta.get("network_mode")
+    cpus = environment_meta.get("cpus")
+    memory_mb = environment_meta.get("memory_mb")
+
     # Resolve verification command from verifier table or standard test files
     verification_cmd = verifier_meta.get("command")
     if not verification_cmd:
@@ -112,6 +124,10 @@ def load_task_from_dir(task_dir: Path) -> TaskSpec:
         collect_commands=collect_commands,
         base_commit=base_commit,
         verification_cmd=verification_cmd,
+        agent_network_mode=agent_network_mode,
+        verifier_network_mode=verifier_network_mode,
+        cpus=float(cpus) if cpus is not None else None,
+        memory_mb=int(memory_mb) if memory_mb is not None else None,
     )
 
 

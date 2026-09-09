@@ -16,6 +16,21 @@ from typing import Any
 
 logger = logging.getLogger("superstate_eval.extractor")
 
+# Files the harness itself writes into the workspace. They differ by arm
+# (Superpowers installs AGENTS.md and a skills library, Superstate writes plan.md
+# and .agent-state), so leaving them in the diff makes the archived patch an
+# arm-dependent artifact rather than a comparable record of the agent's work.
+HARNESS_ARTIFACTS = (
+    "AGENTS.md",
+    "GEMINI.md",
+    "CLAUDE.md",
+    ".cursorrules",
+    ".windsurfrules",
+    ".agents/",
+    "plan.md",
+    ".agent-state/",
+)
+
 
 @dataclass
 class EvaluationResult:
@@ -37,6 +52,7 @@ def extract_and_grade(
     arm: str,
     logs_dir: Path,
     workspace_path: Path | None = None,
+    recorder: Any = None,
 ) -> EvaluationResult:
     """Execute blind grading against the container and extract patches/telemetry.
 
@@ -49,7 +65,15 @@ def extract_and_grade(
 
     task_id = getattr(task, "id", None) or getattr(task, "task_id", "unknown_task")
 
-    # 1. Commit unstaged changes in /app and extract diff against task base_commit
+    # 1. Keep harness scaffolding out of the graded artifact, then commit the
+    #    agent's work in /app and extract the diff against the task base commit.
+    exclusions = " ".join(HARNESS_ARTIFACTS)
+    container.exec_run(
+        'bash -c "'
+        "mkdir -p /app/.git/info && "
+        f"printf '%s\n' {exclusions} >> /app/.git/info/exclude"
+        '"'
+    )
     base_commit = getattr(task, "base_commit", None)
     container.exec_run(
         'bash -c "'
@@ -58,7 +82,14 @@ def extract_and_grade(
         "git -C /app -c user.name='Eval' -c user.email='eval@local' commit -m 'Auto-commit agent solution' || true"
         '"'
     )
-    if base_commit:
+
+    # Prefer the task's own collect command: it is the benchmark's definition of
+    # how a patch is produced, and diverging from it makes our artifact non-comparable.
+    collect_commands = list(getattr(task, "collect_commands", None) or [])
+    if collect_commands:
+        for collect_cmd in collect_commands:
+            container.exec_run(f'bash -c "{collect_cmd}"')
+    elif base_commit:
         diff_cmd = f"git -C /app diff --binary {base_commit} HEAD > /logs/artifacts/model.patch || true"
         container.exec_run(f'bash -c "mkdir -p /logs/artifacts && {diff_cmd}"')
     else:
@@ -82,6 +113,10 @@ def extract_and_grade(
         output = getattr(exec_res, "output", b"")
 
     output_str = output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+
+    # Persist the verifier's full output: the tail alone rarely explains a failure.
+    if recorder is not None:
+        recorder.record_verifier_output(output_str)
 
     # 3. Parse reward artifact from logs_dir / verifier / reward.json
     reward_json_path = logs_dir / "verifier" / "reward.json"

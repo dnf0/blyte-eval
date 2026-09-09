@@ -7,9 +7,11 @@ disk space safety checks to prevent host filesystem saturation.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import io
 import logging
 from pathlib import Path
 import shutil
+import tarfile
 from typing import Any, Generator, Mapping
 
 import docker
@@ -20,6 +22,10 @@ logger = logging.getLogger("superstate_eval.docker_manager")
 
 class DiskSpaceError(RuntimeError):
     """Raised when host disk space falls below the critical emergency threshold."""
+
+
+class WorkspaceSeedError(RuntimeError):
+    """Raised when the task repository cannot be materialized onto the host."""
 
 
 class DockerManager:
@@ -86,6 +92,69 @@ class DockerManager:
                 container.remove(force=True)
             except Exception as e:
                 logger.warning(f"Error removing container {container.id[:12]}: {e}")
+
+    def seed_workspace_from_image(
+        self,
+        image: str,
+        dest: Path | str,
+        source_path: str = "/app",
+    ) -> int:
+        """Copy the task repository out of `image` into the host directory `dest`.
+
+        A bind mount SHADOWS whatever the image ships at the mount point, so
+        mounting an empty host directory onto /app hides the task repository from
+        both the agent and the grader. The workspace must therefore be seeded from
+        the image before it is mounted.
+
+        Returns the number of entries extracted. Raises WorkspaceSeedError if the
+        image has nothing at `source_path`.
+        """
+        dest_path = Path(dest)
+        dest_path.mkdir(parents=True, exist_ok=True)
+
+        try:
+            container = self.client.containers.create(image=image, command="true")
+        except Exception as err:
+            raise WorkspaceSeedError(
+                f"Cannot seed workspace: image '{image}' is unavailable ({err}). "
+                "Pull or build the task image before running the evaluation."
+            ) from err
+        try:
+            try:
+                stream, _stat = container.get_archive(source_path)
+            except Exception as err:
+                raise WorkspaceSeedError(
+                    f"Image '{image}' has no '{source_path}' to seed the workspace from: {err}"
+                ) from err
+
+            raw = io.BytesIO(b"".join(stream))
+            prefix = Path(source_path).name + "/"
+            extracted = 0
+            with tarfile.open(fileobj=raw, mode="r:*") as tar:
+                for member in tar.getmembers():
+                    # get_archive tars the directory itself; strip the leading component.
+                    if member.name == Path(source_path).name:
+                        continue
+                    if not member.name.startswith(prefix):
+                        continue
+                    member.name = member.name[len(prefix) :]
+                    if not member.name:
+                        continue
+                    tar.extract(member, path=dest_path, filter="tar")
+                    extracted += 1
+        finally:
+            try:
+                container.remove(force=True)
+            except Exception as err:
+                logger.warning("Failed to remove seed container: %s", err)
+
+        if extracted == 0:
+            raise WorkspaceSeedError(
+                f"Image '{image}' produced an empty workspace from '{source_path}'"
+            )
+
+        logger.info("Seeded workspace %s from %s:%s (%d entries)", dest_path, image, source_path, extracted)
+        return extracted
 
     def prune_ephemeral_resources(self) -> None:
         """Prune dangling images, stopped containers, and unreferenced volumes."""

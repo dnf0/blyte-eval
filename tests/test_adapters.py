@@ -284,8 +284,9 @@ def test_adapter_passes_container_handle_to_driver(tmp_path: Path) -> None:
     assert driver.calls[0]["container"] is sentinel
 
 
-def test_turn_cap_exhaustion_reports_failure(tmp_path: Path) -> None:
-    # Driver asks for approval on every turn indefinitely
+def test_turn_loop_breaker_reports_failure(tmp_path: Path) -> None:
+    # The turn cap is a loop-breaker, not a budget. Set it explicitly rather than
+    # depending on the production value, which must stay high enough not to bind.
     driver = MockDriver(
         [
             DriverTelemetry(
@@ -297,11 +298,52 @@ def test_turn_cap_exhaustion_reports_failure(tmp_path: Path) -> None:
         ]
     )
     adapter = VanillaAdapter()
+    adapter.max_turns = 4
     result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
 
     assert result.success is False
-    assert result.turns == 10
-    assert "Exhausted maximum turns (10)" in str(result.error_message)
+    assert result.turns == 4
+    assert "Exhausted maximum turns (4)" in str(result.error_message)
+
+
+def test_production_turn_caps_do_not_bind_on_ordinary_runs() -> None:
+    # Guard against a future edit quietly turning the loop-breakers back into
+    # budgets that decide evaluation outcomes.
+    assert VanillaAdapter().max_turns >= 50
+    assert SuperpowersAdapter().max_turns >= 50
+    assert SuperstateAdapter().max_milestones >= 50
+
+
+def test_superstate_never_silently_truncates_a_long_plan(tmp_path: Path) -> None:
+    # Dropping milestones and still reporting success would score an agent as
+    # having solved work it never attempted.
+    adapter = SuperstateAdapter()
+    adapter.max_milestones = 3
+    plan = "\n\n".join(
+        f"### Task {i}: M{i}\n- Verification Command: true" for i in range(1, 6)
+    )
+    (tmp_path / "plan.md").write_text(plan, encoding="utf-8")
+
+    driver = MockDriver([])
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is False
+    assert "exceeding the max_milestones" in str(result.error_message)
+    assert result.turns == 0, "must refuse before spending any budget"
+
+
+def test_superstate_executes_every_milestone_in_a_long_plan(tmp_path: Path) -> None:
+    # A flawless agent with a long plan must complete every milestone.
+    plan = "\n\n".join(
+        f"### Task {i}: M{i}\n- Verification Command: true" for i in range(1, 16)
+    )
+    (tmp_path / "plan.md").write_text(plan, encoding="utf-8")
+
+    driver = MockDriver([])
+    result = SuperstateAdapter().execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is True
+    assert result.turns == 15, "every milestone must get its turn"
 
 
 def test_superstate_planning_failure_aborts_immediately(tmp_path: Path) -> None:
@@ -321,3 +363,41 @@ def test_superstate_planning_failure_aborts_immediately(tmp_path: Path) -> None:
     assert result.success is False
     assert result.turns == 1
     assert "Model context overflow during planning" in str(result.error_message)
+
+
+def test_recorder_captures_prompts_responses_and_gate_verdicts(tmp_path: Path) -> None:
+    """The trace must explain a failure, not merely report one."""
+    import json
+
+    from lab.engine.trace import RunRecorder
+
+    logs = tmp_path / "logs"
+    recorder = RunRecorder(logs_dir=logs, task_id="t", arm="superstate")
+
+    (tmp_path / "plan.md").write_text(
+        "### Task 1: Alpha\n- Verification Command: false\n", encoding="utf-8"
+    )
+    driver = MockDriver(
+        [DriverTelemetry(success=True, raw_response="Did the thing.", duration_seconds=1.0)]
+    )
+    result = SuperstateAdapter().execute(
+        tmp_path, _make_dummy_task(tmp_path), driver, recorder=recorder
+    )
+
+    assert result.success is False
+
+    turns = [json.loads(ln) for ln in (logs / "transcript.jsonl").read_text().splitlines()]
+    assert turns[0]["phase"] == "milestone"
+    assert "TARGETED EXECUTION CONTRACT" in turns[0]["prompt"]
+    assert turns[0]["response"] == "Did the thing."
+
+    milestones = [json.loads(ln) for ln in (logs / "milestones.jsonl").read_text().splitlines()]
+    assert milestones[0]["verify_cmd"] == "false"
+    assert milestones[0]["gate_ran"] is True
+    assert milestones[0]["gate_passed"] is False
+    assert milestones[0]["advanced"] is False
+
+    run_record_path = recorder.write_run_record(result)
+    assert run_record_path is not None
+    record = json.loads(run_record_path.read_text())
+    assert record["gates_failed"] == ["Task 1: Alpha"]

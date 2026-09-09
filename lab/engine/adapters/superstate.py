@@ -131,7 +131,10 @@ You are executing **{milestone.title}**.
 class SuperstateAdapter(AgentAdapter):
     """Adapter executing tasks under the deterministic Superstate engine."""
 
-    max_milestones: int = 10
+    # Loop-breaker only. A plan longer than this is a hard failure, never a
+    # silent truncation: dropping milestones and still reporting success would
+    # score an agent as having solved work it never attempted.
+    max_milestones: int = 50
     # Bounded continuation turns per milestone, mirroring the mechanical approval
     # allowance the Vanilla and Superpowers arms receive.
     max_turns_per_milestone: int = 3
@@ -222,14 +225,70 @@ class SuperstateAdapter(AgentAdapter):
         (state_dir / "state.json").write_text(json.dumps(state_data, indent=2), encoding="utf-8")
         return True
 
+    def _run_gate_command(
+        self, workspace_path: Path, verify_cmd: str, container: Any = None
+    ) -> tuple[bool, Optional[int], str]:
+        """Run a milestone's verification command where the task actually lives.
+
+        With a sandbox present the command must run inside it: the host has neither
+        the task's toolchain nor its dependencies, and running it on the host would
+        breach the isolation the evaluation depends on.
+        """
+        if container is not None:
+            exec_res = container.exec_run(verify_cmd)
+            if isinstance(exec_res, tuple):
+                exit_code, raw = exec_res[0], exec_res[1]
+            else:
+                exit_code = getattr(exec_res, "exit_code", 1)
+                raw = getattr(exec_res, "output", b"")
+            output = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)
+            return exit_code == 0, exit_code, output
+        try:
+            res = subprocess.run(
+                verify_cmd,
+                shell=True,
+                cwd=str(workspace_path),
+                capture_output=True,
+                text=True,
+                timeout=300.0,
+            )
+            return res.returncode == 0, res.returncode, (res.stdout or "") + (res.stderr or "")
+        except Exception as e:
+            logger.warning("Verification command failed to run: %s", e)
+            return False, None, f"gate command could not be executed: {e}"
+
     def _advance_state(
-        self, workspace_path: Path, milestone: str, verify_cmd: Optional[str] = None
+        self,
+        workspace_path: Path,
+        milestone: str,
+        verify_cmd: Optional[str] = None,
+        container: Any = None,
+        gate_detail: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Advance state machine to next milestone through the verification gate."""
+        # Evaluate the gate where the task lives, then let the state engine record
+        # the verdict. This keeps superstate's gate semantics while ensuring the
+        # test itself runs inside the sandbox.
+        gate_cmd: Optional[str] = None
+        if verify_cmd:
+            passed, exit_code, output = self._run_gate_command(
+                workspace_path, verify_cmd, container
+            )
+            if gate_detail is not None:
+                gate_detail.update(
+                    {"gate_ran": True, "gate_passed": passed,
+                     "gate_exit_code": exit_code, "gate_output": output}
+                )
+            if not passed:
+                logger.warning(
+                    "Verification gate failed for '%s' (cmd: %s)", milestone, verify_cmd
+                )
+            gate_cmd = "exit 0" if passed else "exit 1"
+
         if self.superstate_bin:
             cmd = [str(self.superstate_bin), "state", "next"]
-            if verify_cmd:
-                cmd.extend(["--verify-cmd", verify_cmd])
+            if gate_cmd:
+                cmd.extend(["--verify-cmd", gate_cmd])
             try:
                 res = subprocess.run(
                     cmd,
@@ -249,6 +308,8 @@ class SuperstateAdapter(AgentAdapter):
 
         # Fallback state advancement
         self._record_engine(ENGINE_PYTHON_FALLBACK)
+        if gate_cmd == "exit 1":
+            return False
         state_file = workspace_path / ".agent-state" / "state.json"
         if not state_file.is_file():
             logger.warning("Cannot advance state: %s does not exist", state_file)
@@ -271,6 +332,31 @@ class SuperstateAdapter(AgentAdapter):
             logger.warning("Fallback state advance failed: %s", e)
             return False
 
+    @staticmethod
+    def _record_milestone(
+        recorder: Any,
+        index: int,
+        milestone: Milestone,
+        turns_used: int,
+        gate_detail: Dict[str, Any],
+        advanced: bool,
+    ) -> None:
+        """Persist a milestone attempt and its gate verdict, if tracing is enabled."""
+        if recorder is None:
+            return
+        from lab.engine.trace import MilestoneRecord
+
+        recorder.record_milestone(
+            MilestoneRecord(
+                index=index,
+                title=milestone.title,
+                verify_cmd=milestone.verify_cmd,
+                turns_used=turns_used,
+                advanced=advanced,
+                **gate_detail,
+            )
+        )
+
     def execute(
         self,
         workspace_path: Path,
@@ -279,6 +365,7 @@ class SuperstateAdapter(AgentAdapter):
         timeout_sec: Optional[float] = None,
         container: Any = None,
         budget_hook: Optional[BudgetHook] = None,
+        recorder: Any = None,
     ) -> TaskRunResult:
         """Execute task across discrete milestones with O(1) bounded turns."""
         self.setup_workspace(workspace_path)
@@ -323,6 +410,11 @@ class SuperstateAdapter(AgentAdapter):
                 timeout_sec=min(budget - duration, 600.0),
                 container=container,
             )
+            if recorder is not None:
+                recorder.record_turn(
+                    phase="planning", prompt=planning_prompt, telemetry=telemetry
+                )
+
             duration += telemetry.duration_seconds
             input_tokens += telemetry.input_tokens
             output_tokens += telemetry.output_tokens
@@ -341,7 +433,13 @@ class SuperstateAdapter(AgentAdapter):
                 plan_text = telemetry.raw_response
                 plan_file.write_text(plan_text, encoding="utf-8")
 
-        milestones = _extract_plan_milestones(plan_text)[: self.max_milestones]
+        milestones = _extract_plan_milestones(plan_text)
+        if len(milestones) > self.max_milestones:
+            return result(
+                False,
+                f"Plan declares {len(milestones)} milestones, exceeding the "
+                f"max_milestones loop-breaker ({self.max_milestones})",
+            )
 
         # Ensure plan_file has valid Task headings for superstate state init
         if not any(TASK_HEADING_RE.match(line.strip()) for line in plan_text.splitlines()):
@@ -353,7 +451,7 @@ class SuperstateAdapter(AgentAdapter):
         self._init_state(workspace_path, plan_file)
 
         # Phase 2: Discrete milestone execution
-        for milestone in milestones:
+        for milestone_index, milestone in enumerate(milestones, start=1):
             if duration >= budget:
                 error_msg = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
                 break
@@ -361,6 +459,7 @@ class SuperstateAdapter(AgentAdapter):
             current_prompt = compose_turnkey_milestone_prompt(milestone, plan_text, task.instruction)
             conversation_id: Optional[str] = None
             milestone_failed: Optional[str] = None
+            milestone_turns = 0
 
             for _ in range(self.max_turns_per_milestone):
                 turn_timeout = budget - duration
@@ -377,11 +476,20 @@ class SuperstateAdapter(AgentAdapter):
                     container=container,
                 )
 
+                if recorder is not None:
+                    recorder.record_turn(
+                        phase="milestone",
+                        prompt=current_prompt,
+                        telemetry=telemetry,
+                        milestone=milestone.title,
+                    )
+
                 duration += telemetry.duration_seconds
                 input_tokens += telemetry.input_tokens
                 output_tokens += telemetry.output_tokens
                 cost_usd += telemetry.cost_usd
                 turns += 1
+                milestone_turns += 1
                 conversation_id = telemetry.conversation_id or conversation_id
 
                 if budget_hook is not None:
@@ -399,12 +507,28 @@ class SuperstateAdapter(AgentAdapter):
                     break
                 current_prompt = next_prompt
 
+            gate_detail: Dict[str, Any] = {
+                "gate_ran": False,
+                "gate_passed": None,
+                "gate_exit_code": None,
+                "gate_output": None,
+            }
+
             if milestone_failed is not None:
+                self._record_milestone(
+                    recorder, milestone_index, milestone, milestone_turns, gate_detail, False
+                )
                 error_msg = milestone_failed
                 break
 
             # Advance the state machine through the milestone's verification gate.
-            if not self._advance_state(workspace_path, milestone.title, milestone.verify_cmd):
+            advanced = self._advance_state(
+                workspace_path, milestone.title, milestone.verify_cmd, container, gate_detail
+            )
+            self._record_milestone(
+                recorder, milestone_index, milestone, milestone_turns, gate_detail, advanced
+            )
+            if not advanced:
                 error_msg = f"Verification gate failed for milestone '{milestone.title}'"
                 break
 

@@ -22,6 +22,7 @@ from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
 from lab.engine.extractor import extract_and_grade
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.progress_tracker import ProgressTracker
+from lab.engine.trace import RunRecorder
 from lab.sandbox.docker_manager import DockerManager
 
 logger = logging.getLogger("superstate_eval.runner")
@@ -32,6 +33,22 @@ DEFAULT_MEM_LIMIT = "4g"
 # Host workspace is bind-mounted here so the agent and the blind grader operate
 # on the same files.
 CONTAINER_WORKSPACE = "/app"
+
+
+def resolve_network_mode(declared: str | None) -> str | None:
+    """Translate a task's declared network policy into a docker network_mode.
+
+    A task that declares "no-network" must not be handed an agent with internet
+    access: the upstream fix for the very bug under test is usually one fetch away.
+    """
+    if declared is None:
+        return None
+    normalized = declared.strip().lower()
+    if normalized in {"no-network", "none", "disabled", "off"}:
+        return "none"
+    if normalized in {"host", "bridge", "default"}:
+        return None if normalized == "default" else normalized
+    return declared
 
 
 class NoDriverConfiguredError(RuntimeError):
@@ -110,6 +127,7 @@ class AblationRunner:
         output_tokens = 0
         failure_reason = None
         extra: Dict[str, Any] = {}
+        recorder: Optional[RunRecorder] = None
 
         try:
             logger.info(
@@ -153,8 +171,28 @@ class AblationRunner:
                         timeout_sec=base_budget_sec,
                     )
 
+                    # The task's own image is authoritative when a spec is supplied.
+                    run_image = active_task.docker_image or image or "alpine:latest"
+
+                    # A bind mount shadows the image's /app, so the task repository
+                    # must be copied onto the host before the mount exists.
+                    self.docker_manager.seed_workspace_from_image(
+                        image=run_image,
+                        dest=workspace_dir,
+                        source_path=CONTAINER_WORKSPACE,
+                    )
+
+                    # Honour the task's declared sandbox contract over harness defaults.
+                    nano_cpus = (
+                        int(active_task.cpus * 1e9) if active_task.cpus else self.nano_cpus
+                    )
+                    mem_limit = (
+                        f"{active_task.memory_mb}m" if active_task.memory_mb else self.mem_limit
+                    )
+                    network_mode = resolve_network_mode(active_task.agent_network_mode)
+
                     with self.docker_manager.run_sandbox(
-                        image=image or "alpine:latest",
+                        image=run_image,
                         logs_dir=logs_dir,
                         container_name=run_id,
                         # The agent's workspace and the blind grader's /app must be
@@ -166,9 +204,14 @@ class AblationRunner:
                             }
                         },
                         working_dir=CONTAINER_WORKSPACE,
-                        nano_cpus=self.nano_cpus,
-                        mem_limit=self.mem_limit,
+                        network_mode=network_mode,
+                        environment=active_task.env,
+                        nano_cpus=nano_cpus,
+                        mem_limit=mem_limit,
                     ) as container:
+                        recorder = RunRecorder(
+                            logs_dir=logs_dir, task_id=task_id, arm=arm
+                        )
                         tracker = ProgressTracker(
                             policy=budget_policy,
                             workspace_path=workspace_dir,
@@ -187,6 +230,7 @@ class AblationRunner:
                             timeout_sec=budget_policy.current_granted_budget_sec,
                             container=container,
                             budget_hook=budget_hook,
+                            recorder=recorder,
                         )
 
                         grade_res = extract_and_grade(
@@ -195,6 +239,7 @@ class AblationRunner:
                             arm=arm,
                             logs_dir=logs_dir,
                             workspace_path=workspace_dir,
+                            recorder=recorder,
                         )
 
                         passed = grade_res.passed
@@ -204,12 +249,16 @@ class AblationRunner:
                         failure_reason = grade_res.failure_reason or run_result.error_message
                         extra = {
                             "run_id": run_id,
+                            "network_mode": network_mode,
+                            "nano_cpus": nano_cpus,
+                            "mem_limit": mem_limit,
                             "turns": run_result.turns,
                             "agent_succeeded": run_result.success,
                             "reward": grade_res.reward,
                             "patch_path": str(grade_res.patch_path)
                             if grade_res.patch_path
                             else None,
+                            "logs_dir": str(logs_dir),
                             **run_result.provenance,
                         }
         except Exception as e:
@@ -235,6 +284,17 @@ class AblationRunner:
             failure_reason=failure_reason,
             extra=extra,
         )
+
+        if recorder is not None:
+            recorder.write_run_record(
+                telemetry,
+                image=extra.get("image"),
+                sandbox={
+                    "network_mode": extra.get("network_mode"),
+                    "nano_cpus": extra.get("nano_cpus"),
+                    "mem_limit": extra.get("mem_limit"),
+                },
+            )
 
         logger.info(
             "Finished task '%s' [Arm: %s]: Passed=%s, WallClock=%.2fs, Cost=$%.2f, "
