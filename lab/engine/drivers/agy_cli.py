@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 from pathlib import Path
 import shutil
@@ -128,6 +129,7 @@ class AgyCliDriver(AgentDriver):
         self,
         prompt: str,
         conversation_id: Optional[str] = None,
+        timeout_sec: float = 3600.0,
     ) -> list[str]:
         """Construct the argv list for the agy invocation."""
         cmd = [
@@ -137,6 +139,11 @@ class AgyCliDriver(AgentDriver):
             "--output-format",
             "json",
             "--dangerously-skip-permissions",
+            # agy's own --print-timeout defaults to 5m. Without this every turn
+            # longer than that is truncated by the CLI regardless of the budget
+            # the harness granted, and the arm is scored as having failed.
+            "--print-timeout",
+            f"{max(60, int(math.ceil(timeout_sec)))}s",
         ]
 
         if conversation_id:
@@ -167,7 +174,9 @@ class AgyCliDriver(AgentDriver):
             self._setup_container_bridge(workspace_path, container)
             prompt = prompt + CONTAINER_GUIDANCE_TEMPLATE
 
-        cmd = self._build_command(prompt=prompt, conversation_id=conversation_id)
+        cmd = self._build_command(
+            prompt=prompt, conversation_id=conversation_id, timeout_sec=timeout_sec
+        )
         run_env = os.environ.copy()
         run_env.update(self.env)
 
