@@ -17,3 +17,9 @@ runs/
 
 # OS artifacts
 .DS_Store
+
+# Knowledge graph
+graphify-out/*.json
+graphify-out/*.sig
+graphify-out/cache/
+graphify-out/obsidian/
