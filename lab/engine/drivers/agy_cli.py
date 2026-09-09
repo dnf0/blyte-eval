@@ -47,10 +47,31 @@ class AgyCliDriverError(RuntimeError):
     """Raised when the agy driver fails unrecoverably."""
 
 
+# agy exposes one model per effort level (gemini-3.8-flash-low/-medium/-high).
+# Effort changes how many tokens are spent, not the price per token, so an effort
+# variant is priced as its base model rather than needing its own entry.
+EFFORT_SUFFIXES = ("-low", "-medium", "-high", "-xhigh", "-max")
+
+
+def base_model_name(model: str) -> str:
+    """Strip an effort suffix so variants resolve to the base model's pricing."""
+    for suffix in EFFORT_SUFFIXES:
+        if model.endswith(suffix):
+            return model[: -len(suffix)]
+    return model
+
+
 def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
-    """Calculate USD cost for a given model and token counts."""
-    pricing = MODEL_PRICING.get(model)
+    """Calculate USD cost for a given model and token counts.
+
+    Returns 0.0 for an unpriced model rather than guessing: cost per solve is a
+    headline metric of this evaluation and a fabricated rate would corrupt it.
+    """
+    pricing = MODEL_PRICING.get(model) or MODEL_PRICING.get(base_model_name(model))
     if not pricing:
+        logger.warning(
+            "No pricing for model %s: cost will be reported as $0.00, not estimated.", model
+        )
         return 0.0
     in_rate, out_rate = pricing
     return (input_tokens * in_rate + output_tokens * out_rate) / 1_000_000.0

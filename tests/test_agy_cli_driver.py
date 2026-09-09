@@ -200,3 +200,24 @@ def test_pricing_table_covers_gemini_models() -> None:
     assert estimate_cost_usd("gemini-3.8-flash-high", 1_000_000, 1_000_000) == pytest.approx(0.75)
     assert estimate_cost_usd("gemini-3.8-flash", 1_000_000, 1_000_000) == pytest.approx(0.75)
     assert estimate_cost_usd("unknown-model", 1_000_000, 1_000_000) == 0.0
+
+
+def test_effort_variants_are_priced_as_their_base_model() -> None:
+    """agy exposes one model per effort level; effort changes tokens, not price."""
+    from lab.engine.drivers.agy_cli import base_model_name, estimate_cost_usd
+
+    assert base_model_name("gemini-3.8-flash-low") == "gemini-3.8-flash"
+    assert base_model_name("gemini-3.8-flash-high") == "gemini-3.8-flash"
+    assert base_model_name("gemini-3.8-flash") == "gemini-3.8-flash"
+
+    # All variants cost the same per token as the base entry.
+    low = estimate_cost_usd("gemini-3.8-flash-low", 1_000_000, 0)
+    high = estimate_cost_usd("gemini-3.8-flash-high", 1_000_000, 0)
+    assert low == high == pytest.approx(0.15)
+
+
+def test_unpriced_model_reports_zero_rather_than_a_guess() -> None:
+    # Cost per solve is a headline metric; a fabricated rate would corrupt it.
+    from lab.engine.drivers.agy_cli import estimate_cost_usd
+
+    assert estimate_cost_usd("some-unlisted-model", 1_000_000, 1_000_000) == 0.0
