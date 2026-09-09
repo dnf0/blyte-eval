@@ -44,6 +44,90 @@ class EvaluationResult:
     patch_path: Path | None
     state_json_path: Path | None
     failure_reason: str | None = None
+    stats: dict[str, Any] | None = None
+
+
+def compute_test_metrics(stats: dict[str, Any] | None, passed: bool) -> dict[str, Any]:
+    """Compute normalized test pass fractions and counts from verifier statistics.
+
+    Extracts granular Fail-to-Pass (F2P) and Pass-to-Pass (P2P) statistics when
+    available, falling back to top-level pass/fail status when test telemetry is absent.
+
+    Parameters:
+        stats: Raw dictionary of verifier output metrics (e.g. from reward.json), or None.
+        passed: Boolean indicating whether evaluation strictly passed.
+
+    Returns:
+        Dictionary containing:
+            - test_pass_fraction: Float in [0.0, 1.0] representing overall test passing fraction.
+            - f2p_fraction: Float in [0.0, 1.0] or None if F2P tests are absent.
+            - p2p_fraction: Float in [0.0, 1.0] or None if P2P tests are absent.
+            - tests_passed: Total integer count of passed tests or None if absent.
+            - tests_total: Total integer count of executed tests or None if absent.
+    """
+    if stats is None:
+        # Fallback when no granular test statistics exist in reward.json.
+        return {
+            "test_pass_fraction": 1.0 if passed else 0.0,
+            "f2p_fraction": None,
+            "p2p_fraction": None,
+            "tests_passed": None,
+            "tests_total": None,
+        }
+
+    # Check for CTRF / SWE-bench f2p and p2p metrics in the statistics dictionary.
+    has_f2p = stats.get("f2p_total") is not None
+    has_p2p = stats.get("p2p_total") is not None
+
+    if has_f2p or has_p2p:
+        f2p_total = int(stats.get("f2p_total") or 0)
+        f2p_passed = int(stats.get("f2p_passed") or 0)
+        p2p_total = int(stats.get("p2p_total") or 0)
+        p2p_passed = int(stats.get("p2p_passed") or 0)
+
+        # Calculate suite fractions, returning None when no tests were present in that suite.
+        f2p_fraction = (f2p_passed / f2p_total) if f2p_total > 0 else None
+        p2p_fraction = (p2p_passed / p2p_total) if p2p_total > 0 else None
+
+        # Aggregate total test counts across fail-to-pass and pass-to-pass suites.
+        tests_passed = f2p_passed + p2p_passed
+        tests_total = f2p_total + p2p_total
+
+        # Guard against division by zero when both suites are empty.
+        if tests_total > 0:
+            test_pass_fraction = tests_passed / tests_total
+        else:
+            test_pass_fraction = 1.0 if passed else 0.0
+
+        return {
+            "test_pass_fraction": test_pass_fraction,
+            "f2p_fraction": f2p_fraction,
+            "p2p_fraction": p2p_fraction,
+            "tests_passed": tests_passed,
+            "tests_total": tests_total,
+        }
+
+    # Check for generic test counters if f2p/p2p are not provided.
+    if stats.get("tests_total") is not None:
+        tests_total = int(stats.get("tests_total") or 0)
+        tests_passed = int(stats.get("tests_passed") or 0)
+        test_pass_fraction = (tests_passed / tests_total) if tests_total > 0 else (1.0 if passed else 0.0)
+        return {
+            "test_pass_fraction": test_pass_fraction,
+            "f2p_fraction": None,
+            "p2p_fraction": None,
+            "tests_passed": tests_passed,
+            "tests_total": tests_total,
+        }
+
+    # Fallback when stats dictionary contains neither f2p/p2p nor tests_total counters.
+    return {
+        "test_pass_fraction": 1.0 if passed else 0.0,
+        "f2p_fraction": None,
+        "p2p_fraction": None,
+        "tests_passed": None,
+        "tests_total": None,
+    }
 
 
 def extract_and_grade(
@@ -108,6 +192,7 @@ def extract_and_grade(
     #    it applies model.patch to a pristine /app in a separate container, so the
     #    agent cannot influence its own grade by editing tests or the workspace.
     verifier_reward: float | None = None
+    verifier_stats: dict[str, Any] | None = None
     verifier_ran_held_out = False
 
     if verifier is not None and getattr(task, "tests_dir", None) is not None:
@@ -116,6 +201,7 @@ def extract_and_grade(
             exit_code = outcome.exit_code
             output_str = outcome.output
             verifier_reward = outcome.reward
+            verifier_stats = outcome.stats
             verifier_ran_held_out = True
             if outcome.crashed:
                 logger.error("Held-out verifier crashed for %s; grading as failure", task_id)
@@ -146,13 +232,16 @@ def extract_and_grade(
     if recorder is not None:
         recorder.record_verifier_output(output_str)
 
-    # 3. Reward: from the held-out verifier when it ran, else from reward.json.
+    # 3. Reward and stats: from the held-out verifier when it ran, else from reward.json.
+    # Preserve full verifier metadata to enable granular test fraction computations.
     reward: float | None = verifier_reward
+    stats: dict[str, Any] | None = verifier_stats
     if not verifier_ran_held_out:
         reward_json_path = logs_dir / "verifier" / "reward.json"
         if reward_json_path.is_file():
             try:
                 data = json.loads(reward_json_path.read_text(encoding="utf-8"))
+                stats = data
                 if "reward" in data and data["reward"] is not None:
                     reward = float(data["reward"])
             except Exception as err:
@@ -203,4 +292,6 @@ def extract_and_grade(
         patch_path=actual_patch_path,
         state_json_path=state_json_path,
         failure_reason=failure_reason,
+        stats=stats,
     )
+

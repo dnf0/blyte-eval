@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from lab.engine.extractor import extract_and_grade
+from lab.engine.extractor import compute_test_metrics, extract_and_grade
 
 
 class MockTask:
@@ -187,3 +187,143 @@ def test_harness_artifacts_are_excluded_from_the_patch(tmp_path: Path) -> None:
     for artifact in ("AGENTS.md", ".agents/", "plan.md", ".agent-state/"):
         assert artifact in exclude_cmd
     assert "/app/.git/info/exclude" in exclude_cmd
+
+
+def test_compute_test_metrics_full_counts() -> None:
+    stats = {
+        "reward": 1.0,
+        "f2p_total": 137,
+        "f2p_passed": 137,
+        "p2p_total": 3134,
+        "p2p_passed": 3134,
+    }
+    metrics = compute_test_metrics(stats, passed=True)
+    assert metrics["test_pass_fraction"] == 1.0
+    assert metrics["f2p_fraction"] == 1.0
+    assert metrics["p2p_fraction"] == 1.0
+    assert metrics["tests_passed"] == 3271
+    assert metrics["tests_total"] == 3271
+
+
+def test_compute_test_metrics_zero_totals() -> None:
+    stats = {"f2p_total": 0, "f2p_passed": 0, "p2p_total": 0, "p2p_passed": 0}
+    # When passed=True, fraction is 1.0, but per-suite fractions are None since totals are 0
+    metrics_pass = compute_test_metrics(stats, passed=True)
+    assert metrics_pass["test_pass_fraction"] == 1.0
+    assert metrics_pass["f2p_fraction"] is None
+    assert metrics_pass["p2p_fraction"] is None
+    assert metrics_pass["tests_passed"] == 0
+    assert metrics_pass["tests_total"] == 0
+
+    # When passed=False, fraction is 0.0
+    metrics_fail = compute_test_metrics(stats, passed=False)
+    assert metrics_fail["test_pass_fraction"] == 0.0
+    assert metrics_fail["f2p_fraction"] is None
+    assert metrics_fail["p2p_fraction"] is None
+    assert metrics_fail["tests_passed"] == 0
+    assert metrics_fail["tests_total"] == 0
+
+
+def test_compute_test_metrics_partial_failures() -> None:
+    stats = {
+        "f2p_total": 20,
+        "f2p_passed": 10,
+        "p2p_total": 80,
+        "p2p_passed": 80,
+    }
+    metrics = compute_test_metrics(stats, passed=False)
+    assert abs(metrics["test_pass_fraction"] - 0.9) < 1e-6
+    assert abs(metrics["f2p_fraction"] - 0.5) < 1e-6
+    assert metrics["p2p_fraction"] == 1.0
+    assert metrics["tests_passed"] == 90
+    assert metrics["tests_total"] == 100
+
+
+def test_compute_test_metrics_none_stats() -> None:
+    metrics_pass = compute_test_metrics(None, passed=True)
+    assert metrics_pass["test_pass_fraction"] == 1.0
+    assert metrics_pass["f2p_fraction"] is None
+    assert metrics_pass["p2p_fraction"] is None
+    assert metrics_pass["tests_passed"] is None
+    assert metrics_pass["tests_total"] is None
+
+    metrics_fail = compute_test_metrics(None, passed=False)
+    assert metrics_fail["test_pass_fraction"] == 0.0
+    assert metrics_fail["f2p_fraction"] is None
+    assert metrics_fail["p2p_fraction"] is None
+    assert metrics_fail["tests_passed"] is None
+    assert metrics_fail["tests_total"] is None
+
+
+def test_extract_and_grade_propagates_stats_from_reward_json(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "logs"
+    verifier_dir = logs_dir / "verifier"
+    verifier_dir.mkdir(parents=True)
+    reward_file = verifier_dir / "reward.json"
+    stats_data = {
+        "reward": 1.0,
+        "f2p_total": 5,
+        "f2p_passed": 5,
+        "p2p_total": 10,
+        "p2p_passed": 10,
+    }
+    reward_file.write_text(json.dumps(stats_data), encoding="utf-8")
+
+    mock_container = MagicMock()
+    mock_container.exec_run.return_value = (0, b"Passed")
+
+    task = MockTask(task_id="task-stats-1", verification_cmd="pytest")
+    result = extract_and_grade(
+        container=mock_container,
+        task=task,
+        arm="vanilla",
+        logs_dir=logs_dir,
+    )
+
+    assert result.stats == stats_data
+
+
+def test_extract_and_grade_propagates_stats_from_held_out_verifier(tmp_path: Path) -> None:
+    from lab.engine.verifier import VerifierOutcome
+
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir()
+
+    stats_data = {
+        "reward": 0.5,
+        "f2p_total": 4,
+        "f2p_passed": 2,
+        "p2p_total": 10,
+        "p2p_passed": 10,
+    }
+    verifier = MagicMock()
+    verifier.run.return_value = VerifierOutcome(
+        reward=0.5,
+        exit_code=1,
+        output="2 f2p tests failed",
+        reward_source="reward.json",
+        stats=stats_data,
+    )
+
+    task = _HeldOutTask(tests_dir=tmp_path / "tests")
+    result = extract_and_grade(
+        container=MagicMock(),
+        task=task,
+        arm="superstate",
+        logs_dir=logs_dir,
+        verifier=verifier,
+    )
+
+    assert result.stats == stats_data
+
+
+def test_compute_test_metrics_generic_total_passed() -> None:
+    stats = {"tests_total": 50, "tests_passed": 45}
+    metrics = compute_test_metrics(stats, passed=False)
+    assert metrics["test_pass_fraction"] == 0.9
+    assert metrics["tests_total"] == 50
+    assert metrics["tests_passed"] == 45
+    assert metrics["f2p_fraction"] is None
+    assert metrics["p2p_fraction"] is None
+
+

@@ -91,6 +91,33 @@ def main() -> None:
     logger.info("Reward:       %s", result.extra.get("reward"))
     logger.info("Turns:        %s", result.extra.get("turns"))
 
+    # Extract granular verifier and test passing metrics from telemetry extra
+    test_pass_fraction = result.extra.get("test_pass_fraction")
+    f2p_fraction = result.extra.get("f2p_fraction")
+    p2p_fraction = result.extra.get("p2p_fraction")
+    tests_passed = result.extra.get("tests_passed")
+    tests_total = result.extra.get("tests_total")
+
+    # Format and report overall test pass fraction with passed/total test counts
+    if test_pass_fraction is not None:
+        if tests_passed is not None and tests_total is not None:
+            logger.info(
+                "Test Pass Frac: %.2f%% (%d/%d)",
+                test_pass_fraction * 100,
+                tests_passed,
+                tests_total,
+            )
+        else:
+            logger.info("Test Pass Frac: %.2f%%", test_pass_fraction * 100)
+    else:
+        logger.info("Test Pass Frac: N/A")
+
+    # Report fail-to-pass and pass-to-pass suite breakdown if present
+    f2p_display = f"{f2p_fraction * 100:.2f}%" if f2p_fraction is not None else "N/A"
+    p2p_display = f"{p2p_fraction * 100:.2f}%" if p2p_fraction is not None else "N/A"
+    logger.info("F2P Fraction:  %s", f2p_display)
+    logger.info("P2P Fraction:  %s", p2p_display)
+
 
 if __name__ == "__main__":
     main()

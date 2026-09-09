@@ -19,7 +19,7 @@ from lab.engine.adapters.superpowers import SuperpowersAdapter
 from lab.engine.adapters.superstate import SuperstateAdapter
 from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
-from lab.engine.extractor import extract_and_grade
+from lab.engine.extractor import compute_test_metrics, extract_and_grade
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.progress_tracker import ProgressTracker
 from lab.engine.trace import RunRecorder
@@ -254,6 +254,9 @@ class AblationRunner:
                             verifier=self.verifier,
                         )
 
+                        # Compute granular test metrics and pass fraction from verifier stats
+                        test_metrics = compute_test_metrics(grade_res.stats, grade_res.passed)
+
                         passed = grade_res.passed
                         cost_usd = run_result.cost_usd
                         input_tokens = run_result.input_tokens
@@ -267,6 +270,8 @@ class AblationRunner:
                             "turns": run_result.turns,
                             "agent_succeeded": run_result.success,
                             "reward": grade_res.reward,
+                            "test_stats": grade_res.stats,
+                            **test_metrics,
                             "patch_path": str(grade_res.patch_path)
                             if grade_res.patch_path
                             else None,
