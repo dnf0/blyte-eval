@@ -1,0 +1,19 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local benchmark and evaluation runs
+runs/
+.eval_runs/
+
+# Ephemeral agent execution state
+.agent-state/
+
+# OS artifacts
+.DS_Store
