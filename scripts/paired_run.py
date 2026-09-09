@@ -37,7 +37,7 @@ def main() -> int:
     ap.add_argument("--only-with-verifier", action="store_true",
                     help="Skip tasks that ship no held-out verifier")
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
-    ap.add_argument("--model", default="gemini-3.8-flash-low")
+    ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=1200.0)
     ap.add_argument("--workspace-root", type=Path,
                     default=Path("/tmp/superstate_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
