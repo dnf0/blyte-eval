@@ -14,7 +14,7 @@ def test_calculate_concurrency_high_spec_machine() -> None:
         free_disk_gb=120.0,
     )
     # 12 cpus // 2.5 = 4
-    # 18 gb available // 4 = 4
+    # (24 total - 8 reserve) // 4 = 4
     # (120 - 20) // 10 = 10
     concurrency = governor.calculate_max_concurrency(specs)
     assert concurrency == 4
@@ -24,15 +24,32 @@ def test_calculate_concurrency_ram_constrained_machine() -> None:
     governor = ConcurrencyGovernor()
     specs = SystemSpecs(
         logical_cpus=16,
-        total_ram_gb=16.0,
-        available_ram_gb=4.0,
+        total_ram_gb=12.0,
+        available_ram_gb=9.0,
         free_disk_gb=100.0,
     )
     # 16 // 2.5 = 6
-    # 4 // 4 = 1
-    # Available RAM is the bottleneck
+    # (12 total - 8 reserve) // 4 = 1
+    # Installed RAM is the bottleneck
     concurrency = governor.calculate_max_concurrency(specs)
     assert concurrency == 1
+
+
+def test_concurrency_ignores_transient_os_reported_availability() -> None:
+    """A busy desktop must not shrink the cohort.
+
+    macOS reports available as free+inactive, excluding cached/compressed pages
+    the kernel reclaims on demand, so a 24 GB host under load can report under
+    5 GB available while being perfectly able to run the cohort.
+    """
+    governor = ConcurrencyGovernor()
+    idle = SystemSpecs(
+        logical_cpus=12, total_ram_gb=24.0, available_ram_gb=20.0, free_disk_gb=120.0
+    )
+    busy = SystemSpecs(
+        logical_cpus=12, total_ram_gb=24.0, available_ram_gb=4.7, free_disk_gb=120.0
+    )
+    assert governor.calculate_max_concurrency(idle) == governor.calculate_max_concurrency(busy)
 
 
 def test_calculate_concurrency_zero_when_disk_headroom_breached() -> None:
@@ -52,8 +69,8 @@ def test_calculate_concurrency_zero_when_insufficient_ram() -> None:
     governor = ConcurrencyGovernor()
     specs = SystemSpecs(
         logical_cpus=12,
-        total_ram_gb=32.0,
-        available_ram_gb=1.5,  # Less than 4.0 GB per worker
+        total_ram_gb=10.0,  # Only 2 GB usable after the 8 GB host reserve
+        available_ram_gb=9.0,
         free_disk_gb=100.0,
     )
     concurrency = governor.calculate_max_concurrency(specs)

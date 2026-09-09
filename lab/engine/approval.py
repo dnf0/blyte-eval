@@ -88,7 +88,12 @@ def is_waiting_for_user_input(response: str) -> bool:
                 for prefix in INTERACTIVE_QUESTION_PREFIXES
             ):
                 return True
-            if "option 1" in lower or "proceed with" in lower or "confirm" in lower:
+            # Scope the catch-all to the question itself; scanning the whole
+            # response matches incidental words like "confirmation dialog".
+            if any(
+                marker in last_line
+                for marker in ("option 1", "proceed with", "confirm", "approve")
+            ):
                 return True
 
     return False

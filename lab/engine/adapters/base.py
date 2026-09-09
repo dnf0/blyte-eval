@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Dict, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.approval import resolve_next_turn_prompt
 
 logger = logging.getLogger("superstate_eval.adapters")
+
+# Returns the currently granted budget in seconds, after polling for progress.
+BudgetHook = Callable[[], float]
 
 
 @dataclass
@@ -42,10 +45,18 @@ class TaskRunResult:
     error_message: Optional[str] = None
     turns: int = 0
     reward: Optional[float] = None
+    # Arm-specific provenance (e.g. which state engine or skill set actually ran).
+    provenance: Dict[str, Any] = field(default_factory=dict)
 
 
 class AgentDriver(abc.ABC):
-    """Abstract driver interface communicating with an underlying agent runtime."""
+    """Abstract driver interface communicating with an underlying agent runtime.
+
+    `container` is the sandbox the evaluation runs in, when one exists. Drivers
+    that execute the agent inside the sandbox must use it; drivers that execute
+    on the host operate on `workspace_path`, which the runner bind-mounts into
+    the container so both views refer to the same files.
+    """
 
     @abc.abstractmethod
     def run(
@@ -55,6 +66,7 @@ class AgentDriver(abc.ABC):
         prompt_override: Optional[str] = None,
         conversation_id: Optional[str] = None,
         timeout_sec: float = 3600.0,
+        container: Any = None,
     ) -> DriverTelemetry:
         """Run an agent session or turn within the target workspace."""
 
@@ -74,12 +86,16 @@ class AgentAdapter(abc.ABC):
         task: TaskSpec,
         driver: AgentDriver,
         timeout_sec: Optional[float] = None,
+        container: Any = None,
+        budget_hook: Optional[BudgetHook] = None,
     ) -> TaskRunResult:
         """Execute a task in the given workspace using the provided driver."""
 
 
 class TurnBasedAdapter(AgentAdapter):
     """Base template adapter managing bounded turn execution and mechanical approval."""
+
+    max_turns: int = 10
 
     @abc.abstractmethod
     def prepare_workspace(self, workspace_path: Path) -> None:
@@ -89,12 +105,18 @@ class TurnBasedAdapter(AgentAdapter):
         """Provide initial instruction prompt for the task."""
         return task.instruction
 
+    def get_provenance(self) -> Dict[str, Any]:
+        """Report arm-specific facts about how this run was actually configured."""
+        return {}
+
     def execute(
         self,
         workspace_path: Path,
         task: TaskSpec,
         driver: AgentDriver,
         timeout_sec: Optional[float] = None,
+        container: Any = None,
+        budget_hook: Optional[BudgetHook] = None,
     ) -> TaskRunResult:
         """Execute task across sequential turns with bounded caps and autonomous approval."""
         self.prepare_workspace(workspace_path)
@@ -110,9 +132,8 @@ class TurnBasedAdapter(AgentAdapter):
         error_msg: Optional[str] = None
         last_response = ""
 
-        max_turns = 10
         completed_cleanly = False
-        for _ in range(max_turns):
+        for _ in range(self.max_turns):
             if duration >= budget:
                 error_msg = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
                 break
@@ -124,6 +145,7 @@ class TurnBasedAdapter(AgentAdapter):
                 prompt_override=current_prompt,
                 conversation_id=conversation_id,
                 timeout_sec=turn_timeout,
+                container=container,
             )
 
             duration += telemetry.duration_seconds
@@ -133,6 +155,10 @@ class TurnBasedAdapter(AgentAdapter):
             turns += 1
             conversation_id = telemetry.conversation_id or conversation_id
             last_response = telemetry.raw_response
+
+            # Poll for verifiable progress; the budget may grow mid-run as a result.
+            if budget_hook is not None:
+                budget = max(budget, budget_hook())
 
             if not telemetry.success:
                 error_msg = telemetry.error_message or "Agent turn failed"
@@ -148,7 +174,7 @@ class TurnBasedAdapter(AgentAdapter):
         else:
             # Exhausted all turns without agent finishing
             if error_msg is None and not completed_cleanly:
-                error_msg = f"Exhausted maximum turns ({max_turns}) without completion"
+                error_msg = f"Exhausted maximum turns ({self.max_turns}) without completion"
 
         success = error_msg is None and completed_cleanly
         return TaskRunResult(
@@ -161,4 +187,5 @@ class TurnBasedAdapter(AgentAdapter):
             cost_usd=cost_usd,
             error_message=error_msg,
             turns=turns,
+            provenance=self.get_provenance(),
         )

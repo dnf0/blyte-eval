@@ -60,12 +60,17 @@ def extract_and_grade(
     )
     if base_commit:
         diff_cmd = f"git -C /app diff --binary {base_commit} HEAD > /logs/artifacts/model.patch || true"
+        container.exec_run(f'bash -c "mkdir -p /logs/artifacts && {diff_cmd}"')
     else:
-        diff_cmd = (
-            "BASE=$(git -C /app rev-list --max-parents=0 HEAD 2>/dev/null || echo 'HEAD~1') && "
-            "git -C /app diff --binary $BASE HEAD > /logs/artifacts/model.patch || true"
+        # Without a base commit there is no honest diff range: diffing from the
+        # root commit yields the whole repository, and HEAD~1 yields only the
+        # agent's final commit. Emit no patch rather than a misleading one.
+        logger.warning(
+            "Task %s has no base_commit; skipping patch extraction for arm %s "
+            "(set metadata.base_commit_hash in task.toml to capture patches).",
+            task_id,
+            arm,
         )
-    container.exec_run(f'bash -c "mkdir -p /logs/artifacts && {diff_cmd}"')
 
     # 2. Run held-out verification command
     verification_cmd = getattr(task, "verification_cmd", None) or "pytest"

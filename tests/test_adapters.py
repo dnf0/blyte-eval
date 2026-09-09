@@ -7,7 +7,7 @@ from pathlib import Path
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry, TaskRunResult
 from lab.engine.adapters.superpowers import SuperpowersAdapter
-from lab.engine.adapters.superstate import SuperstateAdapter
+from lab.engine.adapters.superstate import SuperstateAdapter, _extract_plan_milestones
 from lab.engine.adapters.vanilla import VanillaAdapter
 
 
@@ -25,6 +25,7 @@ class MockDriver(AgentDriver):
         prompt_override: str | None = None,
         conversation_id: str | None = None,
         timeout_sec: float = 3600.0,
+        container: object = None,
     ) -> DriverTelemetry:
         self.calls.append(
             {
@@ -32,6 +33,8 @@ class MockDriver(AgentDriver):
                 "workspace": workspace_path,
                 "prompt": prompt_override,
                 "conversation_id": conversation_id,
+                "timeout_sec": timeout_sec,
+                "container": container,
             }
         )
         if self.responses:
@@ -128,11 +131,11 @@ def test_superpowers_adapter_installs_guidance_and_handles_approval(tmp_path: Pa
 def test_superstate_adapter_enforces_zero_superpowers_and_bounded_milestones(
     tmp_path: Path,
 ) -> None:
-    # Prepare dummy plan
+    # Plan whose per-milestone verification gates pass, so the state machine advances.
     plan_file = tmp_path / "plan.md"
     plan_file.write_text(
-        "### Task 1: Module A\n- Verification Command: pytest tests/test_a.py\n\n"
-        "### Task 2: Module B\n- Verification Command: pytest tests/test_b.py\n",
+        "### Task 1: Module A\n- Verification Command: true\n\n"
+        "### Task 2: Module B\n- Verification Command: true\n",
         encoding="utf-8",
     )
 
@@ -174,6 +177,111 @@ def test_superstate_adapter_enforces_zero_superpowers_and_bounded_milestones(
     assert (tmp_path / ".agent-state" / "state.json").exists(), (
         "Superstate must initialize .agent-state/state.json"
     )
+
+
+def test_superstate_milestone_verification_gate_blocks_advancement(tmp_path: Path) -> None:
+    # A milestone whose targeted verification command fails must not advance.
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text(
+        "### Task 1: Module A\n- Verification Command: false\n\n"
+        "### Task 2: Module B\n- Verification Command: true\n",
+        encoding="utf-8",
+    )
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=True,
+                raw_response="Milestone 1 completed.",
+                duration_seconds=8.0,
+            ),
+        ]
+    )
+
+    adapter = SuperstateAdapter()
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is False
+    assert "Verification gate failed" in str(result.error_message)
+    # Execution stopped at the failed gate rather than running Task 2.
+    assert result.turns == 1
+
+
+def test_superstate_extracts_per_milestone_verification_commands() -> None:
+    milestones = _extract_plan_milestones(
+        "### Task 1: Alpha\n- Verification Command: `pytest tests/test_alpha.py`\n\n"
+        "### Task 2: Beta\n- Files: b.py\n"
+    )
+    assert [m.title for m in milestones] == ["Task 1: Alpha", "Task 2: Beta"]
+    assert milestones[0].verify_cmd == "pytest tests/test_alpha.py"
+    assert milestones[1].verify_cmd is None
+
+
+def test_superstate_records_python_fallback_when_binary_missing(tmp_path: Path) -> None:
+    # No binary available: the arm must still run, but must declare that the
+    # system under test was NOT the superstate binary.
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text("### Task 1: Module A\n- Files: a.py\n", encoding="utf-8")
+
+    driver = MockDriver([DriverTelemetry(success=True, raw_response="Done.", duration_seconds=1.0)])
+    adapter = SuperstateAdapter(superstate_bin=Path("/nonexistent/superstate"))
+    adapter.superstate_bin = None  # simulate discovery failure
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is True
+    assert result.provenance["state_engine"] == "python_fallback"
+    assert result.provenance["superstate_bin"] is None
+
+
+def test_superstate_strips_pre_existing_guidance_files(tmp_path: Path) -> None:
+    # Arm C must start from the same blank slate as Arm A, or it inherits an advantage.
+    (tmp_path / "AGENTS.md").write_text("inherited rules", encoding="utf-8")
+    (tmp_path / "CLAUDE.md").write_text("inherited rules", encoding="utf-8")
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text("### Task 1: Module A\n- Verification Command: true\n", encoding="utf-8")
+
+    driver = MockDriver([DriverTelemetry(success=True, raw_response="Done.", duration_seconds=1.0)])
+    SuperstateAdapter().execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert not (tmp_path / "AGENTS.md").exists()
+    assert not (tmp_path / "CLAUDE.md").exists()
+
+
+def test_budget_hook_extends_budget_mid_run(tmp_path: Path) -> None:
+    # A run that earns progress must actually get the extra runway, not merely
+    # have it recorded after the fact.
+    from lab.engine.budget_policy import BudgetPolicy
+
+    policy = BudgetPolicy(base_timeout_sec=10.0, lease_extension_sec=100.0)
+
+    def budget_hook() -> float:
+        policy.record_milestone_progress("commit")
+        return policy.current_granted_budget_sec
+
+    # Each turn burns 8s; without extensions the second turn would exceed the 10s budget.
+    driver = MockDriver(
+        [
+            DriverTelemetry(success=True, raw_response="Should I proceed?", duration_seconds=8.0),
+            DriverTelemetry(success=True, raw_response="Should I proceed?", duration_seconds=8.0),
+            DriverTelemetry(success=True, raw_response="All done.", duration_seconds=8.0),
+        ]
+    )
+    result = VanillaAdapter().execute(
+        tmp_path, _make_dummy_task(tmp_path), driver, timeout_sec=10.0, budget_hook=budget_hook
+    )
+
+    assert result.success is True
+    assert result.turns == 3
+    assert policy.extensions_granted_count == 3
+
+
+def test_adapter_passes_container_handle_to_driver(tmp_path: Path) -> None:
+    sentinel = object()
+    driver = MockDriver([DriverTelemetry(success=True, raw_response="Done.", duration_seconds=1.0)])
+    VanillaAdapter().execute(
+        tmp_path, _make_dummy_task(tmp_path), driver, container=sentinel
+    )
+    assert driver.calls[0]["container"] is sentinel
 
 
 def test_turn_cap_exhaustion_reports_failure(tmp_path: Path) -> None:

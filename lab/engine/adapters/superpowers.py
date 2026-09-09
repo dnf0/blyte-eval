@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 import shutil
+from typing import Any, Dict
 
 from lab.engine.adapters.base import TurnBasedAdapter
 
@@ -73,3 +74,7 @@ class SuperpowersAdapter(TurnBasedAdapter):
     def prepare_workspace(self, workspace_path: Path) -> None:
         """Configure workspace with Superpowers guidance before execution begins."""
         self.setup_workspace(workspace_path)
+
+    def get_provenance(self) -> Dict[str, Any]:
+        """Record whether the vendored skills library was actually installed."""
+        return {"skills_installed": self.skills_installed}

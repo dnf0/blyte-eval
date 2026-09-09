@@ -34,6 +34,7 @@ class PilotMockDriver(AgentDriver):
         prompt_override: Optional[str] = None,
         conversation_id: Optional[str] = None,
         timeout_sec: float = 3600.0,
+        container: Any = None,
     ) -> DriverTelemetry:
         self.turn += 1
         # Create simulated patch file in the workspace
@@ -132,13 +133,24 @@ class PilotShowdownRunner:
         mock_mode: bool = True,
         driver: Optional[AgentDriver] = None,
     ) -> dict[str, Any]:
-        """Execute task across arms and return structured benchmark outcomes."""
+        """Execute task across arms and return structured benchmark outcomes.
+
+        With `mock_mode=True` (the default) the sandbox is a `MockContainer` whose
+        verifier always reports success. Such a summary exercises the pipeline; it
+        is not a measurement, and every record is tagged `mock_mode: True`.
+        """
+        if mock_mode:
+            logger.warning(
+                "run_pilot called with mock_mode=True: verification outcomes are simulated "
+                "and must not be reported as evaluation results."
+            )
         selected_arms = arms or ["vanilla", "superpowers", "superstate"]
         summary: dict[str, Any] = {
             "task_id": task.id,
             "image": task.docker_image,
             "base_commit": task.base_commit,
             "started_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "mock_mode": mock_mode,
             "results": [],
         }
 
@@ -154,7 +166,9 @@ class PilotShowdownRunner:
             with self._acquire_container(task, arm, run_id, logs_dir, mock_mode) as container:
                 workspace = logs_dir / "workspace"
                 workspace.mkdir(parents=True, exist_ok=True)
-                run_result = adapter.execute(workspace, task, active_driver)
+                run_result = adapter.execute(
+                    workspace, task, active_driver, container=container
+                )
 
                 # Blind extraction and grading from the container
                 grade_res = extract_and_grade(
@@ -168,6 +182,7 @@ class PilotShowdownRunner:
                 arm_summary = {
                     "arm": arm,
                     "run_id": run_id,
+                    "mock_mode": mock_mode,
                     "success": run_result.success,
                     "passed": grade_res.passed,
                     "reward": grade_res.reward,
@@ -184,6 +199,7 @@ class PilotShowdownRunner:
                     else None,
                     "failure_reason": grade_res.failure_reason,
                     "error_message": run_result.error_message,
+                    "provenance": run_result.provenance,
                 }
                 summary["results"].append(arm_summary)
 

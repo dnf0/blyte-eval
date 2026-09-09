@@ -270,3 +270,93 @@ def test_verification_gate_success_parity(check_binaries: tuple[Path, Path]) -> 
             exclude_paths=["root['plan_path']", "root['engine_metadata']"],
         )
         assert diff == {}, f"State parity mismatch after successful verification gate: {diff}"
+
+
+def test_dag_plan_full_traversal_parity(check_binaries: tuple[Path, Path]) -> None:
+    """Both engines must parse a DAG plan and traverse every task identically."""
+    superstate_bin, agent_rules_bin = check_binaries
+    plan_path = (FIXTURES_DIR / "dag_plan.md").resolve()
+
+    with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
+        state_rs = Path(d1) / "state.json"
+        state_py = Path(d2) / "state.json"
+
+        for binary, state in ((superstate_bin, state_rs), (agent_rules_bin, state_py)):
+            subprocess.run(
+                [str(binary), "state", "init", "--plan", str(plan_path), "--out", str(state)],
+                check=True,
+                capture_output=True,
+            )
+
+        rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
+        py_data = json.loads(state_py.read_text(encoding="utf-8"))
+        diff = DeepDiff(
+            rs_data,
+            py_data,
+            exclude_paths=["root['plan_path']", "root['engine_metadata']"],
+        )
+        assert diff == {}, f"DAG plan parity mismatch on init: {diff}"
+
+        # Traverse every task in the DAG through a passing verification gate.
+        task_count = 1 + len(rs_data["pending_tasks"])
+        for step in range(task_count):
+            for binary, state in ((superstate_bin, state_rs), (agent_rules_bin, state_py)):
+                res = subprocess.run(
+                    [
+                        str(binary),
+                        "state",
+                        "next",
+                        "--state",
+                        str(state),
+                        "--verify-cmd",
+                        "exit 0",
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+                assert res.returncode == 0, (
+                    f"{binary.name} failed to advance at step {step}: {res.stderr}"
+                )
+
+            rs_step = json.loads(state_rs.read_text(encoding="utf-8"))
+            py_step = json.loads(state_py.read_text(encoding="utf-8"))
+            diff = DeepDiff(
+                rs_step,
+                py_step,
+                exclude_paths=["root['plan_path']", "root['engine_metadata']"],
+            )
+            assert diff == {}, f"DAG traversal parity mismatch after step {step + 1}: {diff}"
+
+        assert len(json.loads(state_rs.read_text(encoding="utf-8"))["completed_tasks"]) == task_count
+
+
+def test_note_ledger_parity(check_binaries: tuple[Path, Path]) -> None:
+    """Recording an epistemic note must produce identical state on both engines."""
+    superstate_bin, agent_rules_bin = check_binaries
+    plan_path = (FIXTURES_DIR / "linear_plan.md").resolve()
+
+    with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
+        state_rs = Path(d1) / "state.json"
+        state_py = Path(d2) / "state.json"
+
+        for binary, state in ((superstate_bin, state_rs), (agent_rules_bin, state_py)):
+            subprocess.run(
+                [str(binary), "state", "init", "--plan", str(plan_path), "--out", str(state)],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [str(binary), "state", "note", "Chose adjacency list over matrix", "--state", str(state)],
+                check=True,
+                capture_output=True,
+            )
+
+        rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
+        py_data = json.loads(state_py.read_text(encoding="utf-8"))
+        diff = DeepDiff(
+            rs_data,
+            py_data,
+            exclude_paths=["root['plan_path']", "root['engine_metadata']"],
+        )
+        assert diff == {}, f"Note ledger parity mismatch: {diff}"
+        assert rs_data["notes"] == ["Chose adjacency list over matrix"]

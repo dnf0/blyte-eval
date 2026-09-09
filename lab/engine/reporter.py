@@ -22,7 +22,11 @@ def generate_comparison_summary(runs: List[RunTelemetry]) -> Dict[str, Dict[str,
         total_cost = round(sum(r.cost_usd for r in arm_runs), 2)
         total_wall_clock_sec = round(sum(r.wall_clock_sec for r in arm_runs), 1)
         total_extensions = round(sum(r.lease_extensions_earned_sec for r in arm_runs), 1)
+        total_input_tokens = sum(r.input_tokens for r in arm_runs)
+        total_output_tokens = sum(r.output_tokens for r in arm_runs)
         cost_per_solve = round(total_cost / passes, 2) if passes > 0 else None
+        input_tokens_per_solve = round(total_input_tokens / passes) if passes > 0 else None
+        output_tokens_per_solve = round(total_output_tokens / passes) if passes > 0 else None
 
         summary[arm] = {
             "total_tasks": total_tasks,
@@ -32,6 +36,10 @@ def generate_comparison_summary(runs: List[RunTelemetry]) -> Dict[str, Dict[str,
             "cost_per_solve_usd": cost_per_solve,
             "total_wall_clock_sec": total_wall_clock_sec,
             "total_lease_extensions_sec": total_extensions,
+            "total_input_tokens": total_input_tokens,
+            "total_output_tokens": total_output_tokens,
+            "input_tokens_per_solve": input_tokens_per_solve,
+            "output_tokens_per_solve": output_tokens_per_solve,
         }
 
     return summary
@@ -40,8 +48,9 @@ def generate_comparison_summary(runs: List[RunTelemetry]) -> Dict[str, Dict[str,
 def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
     """Render summary as a formatted text table for reports."""
     lines = [
-        "| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | "
+        "Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for arm, stats in summary.items():
         wall_min = round(stats["total_wall_clock_sec"] / 60.0, 1)
@@ -49,8 +58,12 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
         cost_solve = (
             f"${stats['cost_per_solve_usd']}" if stats["cost_per_solve_usd"] is not None else "N/A"
         )
+        tok_in = stats.get("input_tokens_per_solve")
+        tok_out = stats.get("output_tokens_per_solve")
         lines.append(
             f"| {arm} | {stats['total_tasks']} | {stats['passes']} | {stats['pass_rate_pct']}% | "
-            f"${stats['total_cost_usd']} | {cost_solve} | {wall_min}m | {ext_min}m |"
+            f"${stats['total_cost_usd']} | {cost_solve} | {wall_min}m | {ext_min}m | "
+            f"{tok_in if tok_in is not None else 'N/A'} | "
+            f"{tok_out if tok_out is not None else 'N/A'} |"
         )
     return "\n".join(lines)

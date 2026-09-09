@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from lab.engine.budget_policy import RunTelemetry
 from lab.engine.reporter import generate_comparison_summary
@@ -135,24 +138,78 @@ def test_ablation_runner_execution_and_cleanup() -> None:
     mock_docker_mgr.prune_ephemeral_resources.assert_called_once()
 
 
-def test_ablation_runner_default_execution_without_executor_fn(tmp_path) -> None:
+def _fake_sandbox_factory(mock_container):
+    """Build a run_sandbox stand-in that writes a passing verifier artifact."""
     from contextlib import contextmanager
-    from lab.engine.runner import AblationRunner
-
-    mock_docker_mgr = MagicMock()
-    mock_container = MagicMock()
 
     @contextmanager
     def fake_run_sandbox(image, logs_dir, container_name, **kwargs):
-        # Write simulated verifier output into logs_dir
         vdir = logs_dir / "verifier"
         vdir.mkdir(parents=True, exist_ok=True)
         (vdir / "reward.json").write_text('{"reward": 1.0, "exit_code": 0}')
+        adir = logs_dir / "artifacts"
+        adir.mkdir(parents=True, exist_ok=True)
+        (adir / "model.patch").write_text("diff --git a/x b/x")
         mock_container.exec_run.return_value = (0, b"All tests passed")
+        fake_run_sandbox.kwargs = kwargs
         yield mock_container
 
-    mock_docker_mgr.run_sandbox.side_effect = fake_run_sandbox
+    return fake_run_sandbox
+
+
+def test_ablation_runner_live_path_requires_explicit_driver(tmp_path) -> None:
+    # The live path must never silently substitute a mock agent.
+    from lab.engine.runner import AblationRunner
+
+    mock_docker_mgr = MagicMock()
     runner = AblationRunner(docker_manager=mock_docker_mgr, workspace_root=tmp_path / "workspaces")
+
+    telemetry = runner.run_task(
+        task_id="test/sample-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+    )
+
+    assert telemetry.passed is False
+    assert "No agent driver configured" in str(telemetry.failure_reason)
+    mock_docker_mgr.run_sandbox.assert_not_called()
+
+
+def test_ablation_runner_default_execution_mounts_workspace_into_container(tmp_path) -> None:
+    from lab.engine.adapters.base import AgentDriver, DriverTelemetry
+    from lab.engine.runner import CONTAINER_WORKSPACE, AblationRunner
+
+    class StubDriver(AgentDriver):
+        def run(
+            self,
+            task,
+            workspace_path,
+            prompt_override=None,
+            conversation_id=None,
+            timeout_sec=3600.0,
+            container=None,
+        ) -> DriverTelemetry:
+            (workspace_path / "solution.py").write_text("# solved\n")
+            return DriverTelemetry(
+                success=True,
+                raw_response="Done.",
+                duration_seconds=1.0,
+                input_tokens=10,
+                output_tokens=5,
+                cost_usd=0.01,
+            )
+
+    mock_docker_mgr = MagicMock()
+    mock_container = MagicMock()
+    fake_sandbox = _fake_sandbox_factory(mock_container)
+    mock_docker_mgr.run_sandbox.side_effect = fake_sandbox
+
+    runner = AblationRunner(
+        docker_manager=mock_docker_mgr,
+        workspace_root=tmp_path / "workspaces",
+        default_driver=StubDriver(),
+    )
 
     telemetry = runner.run_task(
         task_id="test/sample-task",
@@ -166,3 +223,60 @@ def test_ablation_runner_default_execution_without_executor_fn(tmp_path) -> None
     assert telemetry.task_id == "test/sample-task"
     mock_docker_mgr.run_sandbox.assert_called_once()
     mock_docker_mgr.prune_ephemeral_resources.assert_called_once()
+
+    # The agent's workspace and the grader's /app must be the same filesystem.
+    kwargs = fake_sandbox.kwargs
+    volumes = kwargs["volumes"]
+    assert len(volumes) == 1
+    host_path, bind_spec = next(iter(volumes.items()))
+    assert bind_spec == {"bind": CONTAINER_WORKSPACE, "mode": "rw"}
+    assert (Path(host_path) / "solution.py").is_file(), (
+        "The mounted host directory must contain the agent's work"
+    )
+    # Spec-mandated container quotas.
+    assert kwargs["nano_cpus"] == int(2.5 * 1e9)
+    assert kwargs["mem_limit"] == "4g"
+
+
+def test_run_cohort_refuses_to_dispatch_when_host_is_exhausted() -> None:
+    from lab.engine.runner import AblationRunner, InsufficientResourcesError
+
+    governor = MagicMock()
+    governor.calculate_max_concurrency.return_value = 0
+    runner = AblationRunner(docker_manager=MagicMock(), governor=governor)
+
+    with pytest.raises(InsufficientResourcesError):
+        runner.run_cohort(
+            tasks=[{"task_id": "t1"}],
+            arms=["vanilla"],
+            executor_fn=lambda policy: {"passed": True},
+        )
+
+
+def test_run_cohort_forwards_task_specs_and_driver() -> None:
+    from lab.benchmarks.task_loader import TaskSpec
+    from lab.engine.runner import AblationRunner
+
+    governor = MagicMock()
+    governor.calculate_max_concurrency.return_value = 2
+    runner = AblationRunner(docker_manager=MagicMock(), governor=governor)
+
+    spec = TaskSpec(
+        id="org/task-1",
+        name="task-1",
+        instruction="Fix it.",
+        docker_image="img:latest",
+        agent_timeout_sec=1234.0,
+    )
+    driver = MagicMock()
+
+    with patch.object(runner, "run_task") as mock_run_task:
+        mock_run_task.return_value = MagicMock(passed=True)
+        runner.run_cohort(tasks=[spec], arms=["vanilla"], driver=driver)
+
+    kwargs = mock_run_task.call_args.kwargs
+    assert kwargs["task_spec"] is spec
+    assert kwargs["driver"] is driver
+    assert kwargs["task_id"] == "org/task-1"
+    assert kwargs["image"] == "img:latest"
+    assert kwargs["base_budget_sec"] == 1234.0

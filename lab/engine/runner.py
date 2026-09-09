@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 from pathlib import Path
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence
 import uuid
 
 from lab.benchmarks.task_loader import TaskSpec
@@ -21,11 +21,25 @@ from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
 from lab.engine.extractor import extract_and_grade
 from lab.engine.governor import ConcurrencyGovernor
-from lab.engine.pilot import PilotMockDriver
 from lab.engine.progress_tracker import ProgressTracker
 from lab.sandbox.docker_manager import DockerManager
 
 logger = logging.getLogger("superstate_eval.runner")
+
+# Spec: every evaluation container is capped at 2.5 CPUs and 4 GB of memory.
+DEFAULT_NANO_CPUS = int(2.5 * 1e9)
+DEFAULT_MEM_LIMIT = "4g"
+# Host workspace is bind-mounted here so the agent and the blind grader operate
+# on the same files.
+CONTAINER_WORKSPACE = "/app"
+
+
+class NoDriverConfiguredError(RuntimeError):
+    """Raised when a live evaluation is requested without an agent driver."""
+
+
+class InsufficientResourcesError(RuntimeError):
+    """Raised when the host cannot safely run even a single concurrent evaluation."""
 
 
 class AblationRunner:
@@ -38,12 +52,16 @@ class AblationRunner:
         workspace_root: Path | None = None,
         min_free_disk_gb: float = 20.0,
         default_driver: Optional[AgentDriver] = None,
+        nano_cpus: int = DEFAULT_NANO_CPUS,
+        mem_limit: str = DEFAULT_MEM_LIMIT,
     ) -> None:
         self.docker_manager = docker_manager or DockerManager()
         self.governor = governor or ConcurrencyGovernor()
         self.workspace_root = workspace_root or Path("/tmp/superstate_eval_workspaces")
         self.min_free_disk_gb = min_free_disk_gb
         self.default_driver = default_driver
+        self.nano_cpus = nano_cpus
+        self.mem_limit = mem_limit
 
     def _get_adapter(self, arm: str) -> AgentAdapter:
         if arm == "vanilla":
@@ -71,6 +89,10 @@ class AblationRunner:
         1. Pre-flight host disk space check and opportunistic pruning.
         2. Universal progress-earned lease extensions tracked via BudgetPolicy across all arms.
         3. Deterministic teardown of containers and temporary volumes.
+
+        The live path requires an explicit `driver` (or a `default_driver` on the
+        runner): there is deliberately no mock fallback, so a misconfigured run
+        fails loudly instead of reporting fabricated telemetry.
         """
         # 1. Pre-flight disk space safety check
         self.docker_manager.check_disk_space_or_prune(min_free_gb=self.min_free_disk_gb)
@@ -87,9 +109,12 @@ class AblationRunner:
         input_tokens = 0
         output_tokens = 0
         failure_reason = None
+        extra: Dict[str, Any] = {}
 
         try:
-            logger.info("Starting task '%s' [Arm: %s] (Base budget: %.1fs)", task_id, arm, base_budget_sec)
+            logger.info(
+                "Starting task '%s' [Arm: %s] (Base budget: %.1fs)", task_id, arm, base_budget_sec
+            )
             if executor_fn is not None:
                 result = executor_fn(budget_policy)
                 passed = bool(result.get("passed", False))
@@ -98,16 +123,25 @@ class AblationRunner:
                 output_tokens = int(result.get("output_tokens", 0))
                 failure_reason = result.get("failure_reason")
             else:
+                active_driver = driver or self.default_driver
+                if active_driver is None:
+                    raise NoDriverConfiguredError(
+                        f"No agent driver configured for task '{task_id}' [Arm: {arm}]. "
+                        "Pass driver= or default_driver=; the live path has no mock fallback."
+                    )
+
                 # Full live execution path with container sandbox and grading
                 with self.governor.slot() as acquired:
                     if not acquired:
-                        raise RuntimeError("Failed to acquire concurrency governor slot within timeout")
+                        raise RuntimeError(
+                            "Failed to acquire concurrency governor slot within timeout"
+                        )
 
                     adapter = self._get_adapter(arm)
                     run_id = f"eval-{task_id.replace('/', '_')}-{arm}-{uuid.uuid4().hex[:8]}"
-                    task_workspace = self.workspace_root / run_id
-                    logs_dir = task_workspace / "logs"
-                    workspace_dir = task_workspace / "workspace"
+                    task_run_root = self.workspace_root / run_id
+                    logs_dir = task_run_root / "logs"
+                    workspace_dir = task_run_root / "workspace"
                     logs_dir.mkdir(parents=True, exist_ok=True)
                     workspace_dir.mkdir(parents=True, exist_ok=True)
 
@@ -123,21 +157,37 @@ class AblationRunner:
                         image=image or "alpine:latest",
                         logs_dir=logs_dir,
                         container_name=run_id,
+                        # The agent's workspace and the blind grader's /app must be
+                        # the same filesystem, or the grader scores an empty repo.
+                        volumes={
+                            str(workspace_dir.resolve()): {
+                                "bind": CONTAINER_WORKSPACE,
+                                "mode": "rw",
+                            }
+                        },
+                        working_dir=CONTAINER_WORKSPACE,
+                        nano_cpus=self.nano_cpus,
+                        mem_limit=self.mem_limit,
                     ) as container:
                         tracker = ProgressTracker(
                             policy=budget_policy,
                             workspace_path=workspace_dir,
                             arm=arm,
                         )
-                        active_driver = driver or self.default_driver or PilotMockDriver(arm=arm)
+
+                        def budget_hook() -> float:
+                            """Poll for verifiable progress and report the granted budget."""
+                            tracker.poll_for_progress()
+                            return budget_policy.current_granted_budget_sec
 
                         run_result = adapter.execute(
                             workspace_dir,
                             active_task,
                             active_driver,
                             timeout_sec=budget_policy.current_granted_budget_sec,
+                            container=container,
+                            budget_hook=budget_hook,
                         )
-                        tracker.poll_for_progress()
 
                         grade_res = extract_and_grade(
                             container=container,
@@ -152,6 +202,16 @@ class AblationRunner:
                         input_tokens = run_result.input_tokens
                         output_tokens = run_result.output_tokens
                         failure_reason = grade_res.failure_reason or run_result.error_message
+                        extra = {
+                            "run_id": run_id,
+                            "turns": run_result.turns,
+                            "agent_succeeded": run_result.success,
+                            "reward": grade_res.reward,
+                            "patch_path": str(grade_res.patch_path)
+                            if grade_res.patch_path
+                            else None,
+                            **run_result.provenance,
+                        }
         except Exception as e:
             logger.exception("Error during execution of task '%s' [Arm: %s]: %s", task_id, arm, e)
             failure_reason = str(e)
@@ -173,10 +233,12 @@ class AblationRunner:
             lease_extensions_earned_sec=budget_policy.lease_extensions_earned_sec,
             total_granted_budget_sec=budget_policy.current_granted_budget_sec,
             failure_reason=failure_reason,
+            extra=extra,
         )
 
         logger.info(
-            "Finished task '%s' [Arm: %s]: Passed=%s, WallClock=%.2fs, Cost=$%.2f, TotalGrantedBudget=%.1fs",
+            "Finished task '%s' [Arm: %s]: Passed=%s, WallClock=%.2fs, Cost=$%.2f, "
+            "TotalGrantedBudget=%.1fs",
             task_id,
             arm,
             passed,
@@ -186,16 +248,42 @@ class AblationRunner:
         )
         return telemetry
 
+    @staticmethod
+    def _normalize_task(entry: TaskSpec | Dict[str, Any]) -> tuple[str, str, float, Optional[TaskSpec]]:
+        """Resolve a cohort entry into (task_id, image, base_budget_sec, task_spec)."""
+        if isinstance(entry, TaskSpec):
+            budget = entry.agent_timeout_sec or entry.timeout_sec
+            return entry.id, entry.docker_image, float(budget), entry
+
+        spec = entry.get("task_spec")
+        if isinstance(spec, TaskSpec):
+            budget = entry.get("base_budget_sec") or spec.agent_timeout_sec or spec.timeout_sec
+            return spec.id, spec.docker_image or entry.get("image", ""), float(budget), spec
+
+        return (
+            entry["task_id"],
+            entry.get("image", "ubuntu:latest"),
+            float(entry.get("base_budget_sec", 1800.0)),
+            None,
+        )
+
     def run_cohort(
         self,
-        tasks: List[Dict[str, Any]],
+        tasks: Sequence[TaskSpec | Dict[str, Any]],
         arms: List[str],
         max_workers: int | None = None,
         lease_extension_sec: float = 1200.0,
         executor_fn: Optional[Callable[[BudgetPolicy], Dict[str, Any]]] = None,
+        driver: Optional[AgentDriver] = None,
     ) -> List[RunTelemetry]:
         """Execute a matrix of tasks x arms concurrently using the dynamic governor."""
         concurrency = self.governor.calculate_max_concurrency(user_max=max_workers)
+        if concurrency < 1:
+            raise InsufficientResourcesError(
+                "Host resources are below the safety margins required to run a single "
+                "evaluation (concurrency=0). Free disk/RAM or lower the governor thresholds."
+            )
+
         logger.info(
             "Dispatching cohort: %d tasks across %d arms (%d total runs) with concurrency=%d",
             len(tasks),
@@ -208,10 +296,8 @@ class AblationRunner:
         results: List[RunTelemetry] = []
 
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
-            for task_spec in tasks:
-                task_id = task_spec["task_id"]
-                image = task_spec.get("image", "ubuntu:latest")
-                base_budget = task_spec.get("base_budget_sec", 1800.0)
+            for entry in tasks:
+                task_id, image, base_budget, spec = self._normalize_task(entry)
 
                 for arm in arms:
                     future = pool.submit(
@@ -222,6 +308,8 @@ class AblationRunner:
                         base_budget_sec=base_budget,
                         lease_extension_sec=lease_extension_sec,
                         executor_fn=executor_fn,
+                        task_spec=spec,
+                        driver=driver,
                     )
                     futures_map[future] = (task_id, arm)
 
@@ -231,7 +319,9 @@ class AblationRunner:
                     res = future.result()
                     results.append(res)
                 except Exception as err:
-                    logger.error("Task %s under arm %s failed catastrophically: %s", t_id, a_name, err)
+                    logger.error(
+                        "Task %s under arm %s failed catastrophically: %s", t_id, a_name, err
+                    )
                     results.append(
                         RunTelemetry(
                             task_id=t_id,

@@ -32,12 +32,14 @@ class ConcurrencyGovernor:
         self,
         cpus_per_worker: float = 2.5,
         ram_gb_per_worker: float = 4.0,
+        ram_headroom_gb: float = 8.0,
         disk_headroom_gb: float = 20.0,
         disk_gb_per_worker: float = 10.0,
         disk_check_path: Path | str = "/",
     ) -> None:
         self.cpus_per_worker = cpus_per_worker
         self.ram_gb_per_worker = ram_gb_per_worker
+        self.ram_headroom_gb = ram_headroom_gb
         self.disk_headroom_gb = disk_headroom_gb
         self.disk_gb_per_worker = disk_gb_per_worker
         self.disk_check_path = Path(disk_check_path)
@@ -57,9 +59,16 @@ class ConcurrencyGovernor:
             total_ram_gb = round(mem.total / (1024**3), 2)
             available_ram_gb = round(mem.available / (1024**3), 2)
         except ImportError:
-            # Fallback if psutil is not installed
+            # Fallback if psutil is not installed. These are invented numbers, and
+            # available_ram_gb is a binding constraint on concurrency, so say so.
             total_ram_gb = 16.0
             available_ram_gb = 8.0
+            logger.warning(
+                "psutil is not installed: falling back to assumed %.1f GB total / %.1f GB "
+                "available RAM. Concurrency is being computed from invented specs.",
+                total_ram_gb,
+                available_ram_gb,
+            )
 
         # Disk space detection
         disk = shutil.disk_usage(self.disk_check_path)
@@ -77,7 +86,9 @@ class ConcurrencyGovernor:
     ) -> int:
         """Calculate maximum safe concurrency given hardware capacity and optional user ceiling.
 
-        Returns 0 if available resources (RAM or Disk) are below minimum safety margins.
+        RAM capacity is total memory minus `ram_headroom_gb` reserved for the host,
+        not the OS-reported "available" figure, which understates reclaimable memory.
+        Returns 0 if RAM or disk capacity is below the minimum safety margins.
         """
         if specs is None:
             specs = self.get_system_specs()
@@ -87,8 +98,17 @@ class ConcurrencyGovernor:
         if cpu_workers < 1:
             cpu_workers = 1 if specs.logical_cpus >= 1 else 0
 
-        # 2. Available RAM-based allowance (never use total_ram_gb)
-        ram_workers = int(specs.available_ram_gb // self.ram_gb_per_worker)
+        # 2. RAM-based allowance: total capacity minus an explicit host reserve.
+        #
+        # Deliberately NOT specs.available_ram_gb. On macOS psutil reports
+        # available as free+inactive, which excludes cached, purgeable and
+        # compressed pages that the OS reclaims on demand -- a 24 GB host under
+        # ordinary desktop load reports ~4.7 GB available while the kernel itself
+        # reports 40% free. Binding on that number makes concurrency a function
+        # of unrelated desktop activity and systematically under-provisions.
+        # A fixed reserve is both predictable and honest about the safety margin.
+        usable_ram = max(0.0, specs.total_ram_gb - self.ram_headroom_gb)
+        ram_workers = int(usable_ram // self.ram_gb_per_worker)
 
         # 3. Disk-based allowance (strictly enforce disk_headroom_gb margin)
         usable_disk = max(0.0, specs.free_disk_gb - self.disk_headroom_gb)
@@ -103,10 +123,14 @@ class ConcurrencyGovernor:
             final_concurrency = hardware_max
 
         logger.info(
-            "Calculated concurrency: %d (CPU limit=%d, RAM limit=%d, Disk limit=%d, User override=%s)",
+            "Calculated concurrency: %d (CPU limit=%d, RAM limit=%d [%.1f GB total - %.1f GB "
+            "reserve; %.1f GB reported available], Disk limit=%d, User override=%s)",
             final_concurrency,
             cpu_workers,
             ram_workers,
+            specs.total_ram_gb,
+            self.ram_headroom_gb,
+            specs.available_ram_gb,
             disk_workers,
             user_max,
         )
