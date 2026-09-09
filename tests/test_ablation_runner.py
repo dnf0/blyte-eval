@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-import pytest
+from unittest.mock import MagicMock
 
 from lab.engine.budget_policy import RunTelemetry
 from lab.engine.reporter import generate_comparison_summary

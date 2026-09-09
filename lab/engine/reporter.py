@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List
-from rich.console import Console
-from rich.table import Table
 
 from lab.engine.budget_policy import RunTelemetry
 
