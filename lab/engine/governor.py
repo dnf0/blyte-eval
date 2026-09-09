@@ -8,7 +8,6 @@ import os
 from pathlib import Path
 import shutil
 import threading
-from typing import Optional
 
 logger = logging.getLogger("superstate_eval.governor")
 

@@ -6,7 +6,6 @@ import json
 import logging
 from pathlib import Path
 import subprocess
-from typing import Optional
 
 from lab.engine.budget_policy import BudgetPolicy
 

@@ -10,7 +10,7 @@ from contextlib import contextmanager
 import logging
 from pathlib import Path
 import shutil
-from typing import Generator, Mapping
+from typing import Any, Generator, Mapping
 
 import docker
 from docker.models.containers import Container

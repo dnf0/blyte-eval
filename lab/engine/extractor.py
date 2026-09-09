@@ -7,7 +7,7 @@ import json
 import logging
 from pathlib import Path
 import shutil
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("superstate_eval.extractor")
 
@@ -45,14 +45,14 @@ def extract_and_grade(
     # 1. Commit unstaged changes in /app and extract diff
     base_commit = getattr(task, "base_commit", "HEAD~1") or "HEAD~1"
     container.exec_run(
-        "bash -c \""
+        'bash -c "'
         "git config --global --add safe.directory /app && "
         "git -C /app add -A && "
         "git -C /app -c user.name='Eval' -c user.email='eval@local' commit -m 'Auto-commit agent solution' || true"
-        "\""
+        '"'
     )
     container.exec_run(
-        f"bash -c \"mkdir -p /logs/artifacts && git -C /app diff --binary {base_commit} HEAD > /logs/artifacts/model.patch || true\""
+        f'bash -c "mkdir -p /logs/artifacts && git -C /app diff --binary {base_commit} HEAD > /logs/artifacts/model.patch || true"'
     )
 
     # 2. Run held-out verification command
@@ -64,7 +64,9 @@ def extract_and_grade(
         exit_code = getattr(exec_res, "exit_code", 1)
         output = getattr(exec_res, "output", b"")
 
-    output_str = output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+    output_str = (
+        output.decode("utf-8", errors="replace") if isinstance(output, bytes) else str(output)
+    )
 
     # 3. Parse reward artifact from logs_dir / verifier / reward.json
     reward_json_path = logs_dir / "verifier" / "reward.json"

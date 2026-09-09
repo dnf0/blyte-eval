@@ -34,14 +34,30 @@ def test_init_state_creates_valid_state_files(check_binaries: None) -> None:
 
         # Superstate (Rust)
         subprocess.run(
-            [str(SUPERSTATE_BIN), "state", "init", "--plan", str(plan_path), "--state", str(state_rs)],
+            [
+                str(SUPERSTATE_BIN),
+                "state",
+                "init",
+                "--plan",
+                str(plan_path),
+                "--state",
+                str(state_rs),
+            ],
             check=True,
             capture_output=True,
         )
 
         # Agent-Rules (Python)
         subprocess.run(
-            [str(AGENT_RULES_BIN), "state", "init", "--plan", str(plan_path), "--out", str(state_py)],
+            [
+                str(AGENT_RULES_BIN),
+                "state",
+                "init",
+                "--plan",
+                str(plan_path),
+                "--out",
+                str(state_py),
+            ],
             check=True,
             capture_output=True,
         )
@@ -73,18 +89,56 @@ def test_verification_gate_failure_parity(check_binaries: None) -> None:
         state_py = Path(d2) / "state.json"
 
         # Initialize both
-        subprocess.run([str(SUPERSTATE_BIN), "state", "init", "--plan", str(plan_path), "--state", str(state_rs)], check=True)
-        subprocess.run([str(AGENT_RULES_BIN), "state", "init", "--plan", str(plan_path), "--out", str(state_py)], check=True)
+        subprocess.run(
+            [
+                str(SUPERSTATE_BIN),
+                "state",
+                "init",
+                "--plan",
+                str(plan_path),
+                "--state",
+                str(state_rs),
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                str(AGENT_RULES_BIN),
+                "state",
+                "init",
+                "--plan",
+                str(plan_path),
+                "--out",
+                str(state_py),
+            ],
+            check=True,
+        )
 
         # Execute failing gate on Superstate
         res_rs = subprocess.run(
-            [str(SUPERSTATE_BIN), "state", "next", "--state", str(state_rs), "--verify-cmd", "exit 1"],
+            [
+                str(SUPERSTATE_BIN),
+                "state",
+                "next",
+                "--state",
+                str(state_rs),
+                "--verify-cmd",
+                "exit 1",
+            ],
             capture_output=True,
             text=True,
         )
         # Execute failing gate on Agent-Rules
         res_py = subprocess.run(
-            [str(AGENT_RULES_BIN), "state", "next", "--state", str(state_py), "--verify-cmd", "exit 1"],
+            [
+                str(AGENT_RULES_BIN),
+                "state",
+                "next",
+                "--state",
+                str(state_py),
+                "--verify-cmd",
+                "exit 1",
+            ],
             capture_output=True,
             text=True,
         )
@@ -108,18 +162,56 @@ def test_verification_gate_success_parity(check_binaries: None) -> None:
         state_py = Path(d2) / "state.json"
 
         # Initialize both
-        subprocess.run([str(SUPERSTATE_BIN), "state", "init", "--plan", str(plan_path), "--state", str(state_rs)], check=True)
-        subprocess.run([str(AGENT_RULES_BIN), "state", "init", "--plan", str(plan_path), "--out", str(state_py)], check=True)
+        subprocess.run(
+            [
+                str(SUPERSTATE_BIN),
+                "state",
+                "init",
+                "--plan",
+                str(plan_path),
+                "--state",
+                str(state_rs),
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                str(AGENT_RULES_BIN),
+                "state",
+                "init",
+                "--plan",
+                str(plan_path),
+                "--out",
+                str(state_py),
+            ],
+            check=True,
+        )
 
         # Execute passing gate on Superstate
         res_rs = subprocess.run(
-            [str(SUPERSTATE_BIN), "state", "next", "--state", str(state_rs), "--verify-cmd", "exit 0"],
+            [
+                str(SUPERSTATE_BIN),
+                "state",
+                "next",
+                "--state",
+                str(state_rs),
+                "--verify-cmd",
+                "exit 0",
+            ],
             capture_output=True,
             text=True,
         )
         # Execute passing gate on Agent-Rules
         res_py = subprocess.run(
-            [str(AGENT_RULES_BIN), "state", "next", "--state", str(state_py), "--verify-cmd", "exit 0"],
+            [
+                str(AGENT_RULES_BIN),
+                "state",
+                "next",
+                "--state",
+                str(state_py),
+                "--verify-cmd",
+                "exit 0",
+            ],
             capture_output=True,
             text=True,
         )

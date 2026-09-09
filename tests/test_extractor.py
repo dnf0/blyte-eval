@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from unittest.mock import MagicMock
-import pytest
 
-from lab.engine.extractor import EvaluationResult, extract_and_grade
+from lab.engine.extractor import extract_and_grade
 
 
 class MockTask:

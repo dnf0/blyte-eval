@@ -46,7 +46,9 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
     for arm, stats in summary.items():
         wall_min = round(stats["total_wall_clock_sec"] / 60.0, 1)
         ext_min = round(stats["total_lease_extensions_sec"] / 60.0, 1)
-        cost_solve = f"${stats['cost_per_solve_usd']}" if stats["cost_per_solve_usd"] is not None else "N/A"
+        cost_solve = (
+            f"${stats['cost_per_solve_usd']}" if stats["cost_per_solve_usd"] is not None else "N/A"
+        )
         lines.append(
             f"| {arm} | {stats['total_tasks']} | {stats['passes']} | {stats['pass_rate_pct']}% | "
             f"${stats['total_cost_usd']} | {cost_solve} | {wall_min}m | {ext_min}m |"
