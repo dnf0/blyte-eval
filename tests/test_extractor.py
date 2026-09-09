@@ -316,3 +316,14 @@ def test_extract_and_grade_propagates_stats_from_held_out_verifier(tmp_path: Pat
 
     assert result.stats == stats_data
 
+
+def test_compute_test_metrics_generic_total_passed() -> None:
+    stats = {"tests_total": 50, "tests_passed": 45}
+    metrics = compute_test_metrics(stats, passed=False)
+    assert metrics["test_pass_fraction"] == 0.9
+    assert metrics["tests_total"] == 50
+    assert metrics["tests_passed"] == 45
+    assert metrics["f2p_fraction"] is None
+    assert metrics["p2p_fraction"] is None
+
+
