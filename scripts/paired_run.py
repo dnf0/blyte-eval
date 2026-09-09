@@ -9,14 +9,17 @@ them, so every task is run through every arm.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import logging
 from pathlib import Path
 import sys
 import time
+from typing import Any
 
 from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
 from lab.engine.drivers.agy_cli import AgyCliDriver
+from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table
 from lab.engine.runner import AblationRunner
 
@@ -38,8 +41,10 @@ def main() -> int:
                     help="Skip tasks that ship no held-out verifier")
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
     ap.add_argument("--model", default="gemini-3.8-flash-high")
-    ap.add_argument("--budget-sec", type=float, default=1200.0)
+    ap.add_argument("--budget-sec", type=float, default=None,
+                    help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
     ap.add_argument("--repeats", type=int, default=1, help="Number of repetitions per task/arm")
+    ap.add_argument("--concurrency", type=int, default=3, help="Max concurrent workers (default: 3)")
     ap.add_argument("--workspace-root", type=Path,
                     default=Path("/tmp/superstate_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
     ap.add_argument("--out", type=Path, help="Write results JSON here")
@@ -56,32 +61,58 @@ def main() -> int:
         return 1
 
     driver = AgyCliDriver(model=args.model)
-    runner = AblationRunner(workspace_root=args.workspace_root, default_driver=driver)
+    governor = ConcurrencyGovernor(
+        cpus_per_worker=2.0,
+        ram_gb_per_worker=4.0,
+        ram_headroom_gb=6.0,
+    ) if args.concurrency > 1 else None
+    runner = AblationRunner(
+        workspace_root=args.workspace_root,
+        default_driver=driver,
+        governor=governor,
+    )
 
+    total_runs = len(tasks) * len(args.arms) * args.repeats
+    budget_label = f"{args.budget_sec:.0f}s" if args.budget_sec else "task-default"
     logger.info("=" * 78)
-    logger.info("Harness=%s  model=%s  tasks=%d  arms=%s  repeats=%d",
-                driver.harness_name, args.model, len(tasks), ", ".join(args.arms), args.repeats)
-    logger.info("Runs=%d  budget=%.0fs/arm  workspaces=%s",
-                len(tasks) * len(args.arms) * args.repeats, args.budget_sec, args.workspace_root)
+    logger.info("Harness=%s  model=%s  tasks=%d  arms=%s  repeats=%d  concurrency=%d",
+                driver.harness_name, args.model, len(tasks), ", ".join(args.arms), args.repeats, args.concurrency)
+    logger.info("Runs=%d  budget=%s/arm  workspaces=%s",
+                total_runs, budget_label, args.workspace_root)
     logger.info("=" * 78)
 
-    results = []
+    jobs = []
     for task in tasks:
         for arm in args.arms:
             for rep in range(1, args.repeats + 1):
-                rep_tag = f" [run {rep}/{args.repeats}]" if args.repeats > 1 else ""
-                logger.info("-> %s [%s]%s", task.name, arm, rep_tag)
-                started = time.monotonic()
-                tel = runner.run_task(
-                    task_id=task.id, arm=arm, image=task.docker_image,
-                    base_budget_sec=args.budget_sec, task_spec=task, driver=driver,
-                )
-                results.append(tel)
-                logger.info(
-                    "   %s%s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
-                    arm, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
-                    time.monotonic() - started, tel.failure_reason or "",
-                )
+                jobs.append((task, arm, rep))
+
+    results = []
+
+    def execute_job(t: Any, a: str, r: int) -> Any:
+        rep_tag = f" [run {r}/{args.repeats}]" if args.repeats > 1 else ""
+        task_budget = args.budget_sec or t.agent_timeout_sec or 3600.0
+        logger.info("-> %s [%s]%s (budget: %.0fs)", t.name, a, rep_tag, task_budget)
+        started = time.monotonic()
+        tel = runner.run_task(
+            task_id=t.id, arm=a, image=t.docker_image,
+            base_budget_sec=task_budget, task_spec=t, driver=driver,
+        )
+        logger.info(
+            "   %s%s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
+            a, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
+            time.monotonic() - started, tel.failure_reason or "",
+        )
+        return tel
+
+    if args.concurrency > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = [pool.submit(execute_job, t, a, r) for t, a, r in jobs]
+            for fut in concurrent.futures.as_completed(futures):
+                results.append(fut.result())
+    else:
+        for t, a, r in jobs:
+            results.append(execute_job(t, a, r))
 
     print()
     print(render_summary_table(generate_comparison_summary(results)))

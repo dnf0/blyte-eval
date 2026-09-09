@@ -15,13 +15,16 @@ from lab.engine.adapters.base import TurnBasedAdapter, strip_preexisting_guidanc
 
 logger = logging.getLogger("superstate_eval.adapters.superpowers")
 
-SUPERPOWERS_AGENTS_MD = """# Engineering Guidance
+SUPERPOWERS_AGENTS_MD = """# Engineering Guidance (Superpowers)
 
-- Write tests using pytest.
-- Target high business-logic coverage, prioritizing edge cases.
-- Follow test-driven development: implement reproducing tests first, then minimal fixes.
-- Keep commits atomic; each commit should represent one logical change.
-- Never commit broken code; verify tests pass locally before declaring task complete.
+This workspace is equipped with Superpowers skills in `.agents/skills/`.
+Before taking any action or answering, invoke and follow the `using-superpowers` skill.
+Follow the Superpowers loop:
+1. Brainstorm and explore design requirements.
+2. Formulate a structured step-by-step implementation plan.
+3. Present the plan and options for approval before executing.
+4. Implement using test-driven development (TDD), keeping commits atomic.
+5. Verify all tests pass before completing.
 """
 
 

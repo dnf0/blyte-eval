@@ -1,25 +1,173 @@
 # superstate-eval
 
-Independent local evaluation lab and differential testing testbed for [`superstate`](https://github.com/climate-x-org/superstate) (Rust) and `agent-rules` (Python) state machine architectures.
+An independent lab for measuring what a control plane adds to a coding agent.
 
-## Purpose
+[Superstate](https://github.com/climate-x-org/superstate) is a control plane: it
+sits above the harness, decides which task the agent is given next, and gates
+whether the work may advance. This repository exists to answer whether that
+layer actually helps, and at what cost.
 
-1. **Deterministic Parity Testing**: Prove byte-level, DAG, and verification gate parity between `superstate state` (Rust) and `agent-rules state` (Python) with zero LLM API cost.
-2. **Efficacy & Ablation Evaluation**: Test whether progress-earned milestone state engines provide a measurable win rate and cost-efficiency advantage over unguided (Vanilla) and skill-guided (Superpowers) execution.
-3. **Docker Lifecycle & Disk Management**: Prevent host disk saturation via guaranteed post-task container teardown and pre-flight disk space watchdogs.
+## What is measured
 
-## Quick Start
+The comparison is paired. The same harness, the same model and the same task are
+run with and without a layer on top, and the headline figure is the difference
+between them rather than an absolute pass rate.
+
+| Arm | What runs |
+|---|---|
+| `vanilla` | The harness on its own |
+| `superpowers` | The harness plus a skills library |
+| `superstate` | The harness plus the control plane |
+
+Two axes vary independently: the **driver** (which harness executes the work,
+currently Claude Code or agy) and the **arm** (which layer sits on top). Both are
+recorded on every run, because a result is not interpretable without knowing
+which harness produced it.
+
+Because the design is paired, anything present in all three arms cancels out of
+the difference. That includes the harness's own system prompt and tooling, which
+would otherwise be a confound. What the design does require is symmetry: every
+arm starts from an identical workspace, and anything differing between arms other
+than the treatment is a defect in the harness rather than a finding.
+
+## What is reported
+
+Pass rate alone is a poor signal at small sample sizes, so runs report:
+
+- **Control-plane lift**, paired by harness and task, with the tasks gained and
+  lost listed individually. At nine tasks a single task is worth eleven
+  percentage points, so the gained and lost lists carry more information than the
+  percentage.
+- **Test pass fractions** from the task's own verifier, split into fail-to-pass
+  and pass-to-pass, so a run that implements most of a feature is distinguishable
+  from one that implements none of it.
+- **Tokens and wall clock per solve.** A layer that matches the baseline on pass
+  rate while halving token use is a result worth having.
+- **Provenance**: which engine ran, whether the plan was actually decomposed,
+  whether execution was isolated, and which sandbox contract applied.
+
+## How a run works
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant R as Runner
+    participant D as Docker
+    participant A as Arm adapter
+    participant H as Harness (driver)
+    participant V as Held-out verifier
+
+    R->>D: seed workspace from the task image
+    Note over R,D: a bind mount shadows the image, so the<br/>repository is copied out before mounting
+    R->>D: start sandbox (task's own cpu, memory<br/>and network policy)
+    R->>A: execute arm
+    A->>H: one or more turns
+    H->>D: edit, build and test inside the sandbox
+    A-->>R: telemetry and transcript
+    R->>D: collect model.patch via the task's<br/>own collect command
+    R->>V: build the verifier image from tests/
+    V->>V: apply the patch to a pristine /app,<br/>run the hidden suites
+    V-->>R: reward.json
+    R->>R: write run.json, transcript.jsonl,<br/>milestones.jsonl
+```
+
+Grading is held out. The verifier is built from the task's own `tests/`
+directory and runs in a separate container against the patch applied to an
+untouched checkout, so an agent cannot influence its own score by editing tests
+or leaving artefacts in the workspace. The verifier image is deleted after
+grading, because a cached one is the answer key sitting on the host.
+
+## Quick start
 
 ```bash
-# Setup virtual environment and dependencies
 uv sync
 
-# Run zero-cost differential parity test suite
+# Zero-cost differential parity between the Rust and Python engines
 make parity
 
-# Run all test suites
+# Full suite
 make test
 
-# Manually trigger Docker system and volume cleanup
+# Only the tests that drive a real engine and a real Docker daemon
+make integration
+
+# Lint and type check
+make lint
+
+# Reclaim Docker disk
 make clean-docker
 ```
+
+A live paired run, one task through every arm:
+
+```bash
+uv run python scripts/paired_run.py \
+    --task ~/.cache/agent-rules/frontier-eval/tasks/anko-typed-variable-bindings \
+    --model gemini-3.8-flash-low
+```
+
+Add `--only-with-verifier` to restrict a cohort to tasks that ship a held-out
+verifier.
+
+## Tasks
+
+Tasks come from [FrontierHarness Eval](https://github.com/frontier-harness-eval/eval),
+which is a task corpus and a published result set rather than a runner. Of its
+thirty tasks, nine originate from DeepSWE and ship a `tests/` directory with a
+Dockerfile and grader; those are the ones that can be graded honestly here. The
+remaining twenty-one come from terminal-bench, which keeps its grading logic in
+its own harness.
+
+## Differential parity
+
+`make parity` runs both state engine implementations over identical plan fixtures
+and compares the result. It costs nothing and needs no model.
+
+The comparison is semantic rather than byte-level. The two engines represent
+state differently: the Rust engine stores a structured task specification and
+timestamped ledger entries, the Python engine stores flat strings. That is a
+difference in capability rather than a defect, since the structured form carries
+dependency data in the state itself and can therefore answer `state ready`
+without re-reading the plan. Comparing raw documents would only ever report that
+difference and never test whether the engines behave alike, so both are
+normalised to what they are meant to agree on: which tasks, in what order, with
+which findings.
+
+Engine selection is explicit. `superstate` on `PATH` is a shim into the
+agent-rules Python package, so resolving by name silently selects the Python
+implementation; use `SUPERSTATE_BIN` or the `engine` argument, and note that
+resolution prefers the most recently built artefact so a stale release build
+cannot shadow a fresh one.
+
+## Layout
+
+```
+lab/
+├── benchmarks/task_loader.py   # task.toml and instruction.md, including the sandbox contract
+├── engine/
+│   ├── adapters/               # the three arms
+│   ├── drivers/                # harnesses: Claude Code, agy, in-container
+│   ├── runner.py               # cohort execution, budgets, concurrency
+│   ├── verifier.py             # held-out grading in a separate container
+│   ├── extractor.py            # patch collection and scoring
+│   ├── trace.py                # run.json, transcripts, milestone records
+│   └── reporter.py             # paired lift and failure clustering
+└── sandbox/                    # Docker lifecycle, workspace seeding, answer-key sealing
+```
+
+## A note on what this harness has taught us
+
+Seven defects have been found in this harness by running real tasks, and none of
+them was catchable by the unit suite: each lived in a seam between components
+that were individually well tested. The worst produced no error at all. The
+control-plane arm silently degraded to baseline behaviour while still being
+labelled as the treatment. Across a cohort that reads as "the control plane
+behaves exactly like the baseline", which is a conclusion rather than a crash.
+
+Guards now exist for that specific failure (a run that parses no milestones fails
+rather than impersonating the baseline, and provenance records whether
+decomposition actually happened), and `tests/test_state_engine_loop.py` drives a
+real engine end to end rather than a stub. The general lesson is recorded here
+because it will apply to the next thing added: prefer a test that runs the real
+binary, and when fixing a defect, check whether the same mistake exists
+elsewhere. Two of the seven were the same error repeated in a second place.

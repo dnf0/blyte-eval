@@ -153,10 +153,10 @@ class AblationRunner:
                         "Pass driver= or default_driver=; the live path has no mock fallback."
                     )
 
-                # Size the slot by what this container will actually reserve, not
-                # by the governor's generic default.
+                # Size the slot by what this container will actually reserve, capped
+                # at a reasonable worker slice so multiple sandboxes can run concurrently.
                 task_ram_gb = (
-                    task_spec.memory_mb / 1024
+                    min(task_spec.memory_mb / 1024, 4.0)
                     if task_spec is not None and task_spec.memory_mb
                     else None
                 )
