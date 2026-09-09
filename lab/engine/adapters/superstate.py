@@ -144,6 +144,11 @@ class SuperstateAdapter(AgentAdapter):
     # Bounded continuation turns per milestone, mirroring the mechanical approval
     # allowance the Vanilla and Superpowers arms receive.
     max_turns_per_milestone: int = 3
+    # Share of the run budget planning may consume. This is not a limit on how long
+    # planning is allowed to think -- it exists only so a planning turn cannot starve
+    # the implementation it is planning. Set to None to let planning draw on the whole
+    # budget; a milestone that then finds no time left reports an honest timeout.
+    planning_budget_fraction: float | None = 0.5
 
     def __init__(self, superstate_bin: Optional[Path] = None) -> None:
         self.superstate_bin = superstate_bin or find_superstate_binary()
@@ -421,11 +426,17 @@ class SuperstateAdapter(AgentAdapter):
                 "any wrapper or helper script -- the command is executed directly in the "
                 "project environment, where such a wrapper does not exist."
             )
+            remaining = budget - duration
+            planning_timeout = (
+                remaining
+                if self.planning_budget_fraction is None
+                else min(remaining, budget * self.planning_budget_fraction)
+            )
             telemetry = driver.run(
                 task=task,
                 workspace_path=workspace_path,
                 prompt_override=planning_prompt,
-                timeout_sec=min(budget - duration, 600.0),
+                timeout_sec=planning_timeout,
                 container=container,
             )
             if recorder is not None:
@@ -443,7 +454,15 @@ class SuperstateAdapter(AgentAdapter):
                 budget = max(budget, budget_hook())
 
             if not telemetry.success:
-                return result(False, telemetry.error_message or "Planning turn failed")
+                # Say plainly when our own budget share ended the run, rather than
+                # reporting it as an agent failure.
+                detail = telemetry.error_message or "Planning turn failed"
+                if self.planning_budget_fraction is not None and duration >= planning_timeout:
+                    detail = (
+                        f"Planning exceeded its {self.planning_budget_fraction:.0%} share of "
+                        f"the {budget:.0f}s budget ({planning_timeout:.0f}s): {detail}"
+                    )
+                return result(False, detail)
 
             if plan_file.is_file():
                 plan_text = plan_file.read_text(encoding="utf-8")

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry, TaskRunResult
 from lab.engine.adapters.superpowers import SuperpowersAdapter
@@ -433,3 +435,47 @@ def test_planning_prompt_asks_for_unwrapped_verification_commands(tmp_path: Path
     planning_prompt = str(driver.calls[0]["prompt"])
     assert "PLAIN command" in planning_prompt
     assert "Do not prefix it with" in planning_prompt
+
+
+def test_planning_budget_scales_with_the_run_budget(tmp_path: Path) -> None:
+    """Planning time is a share of the budget, not a hardcoded constant.
+
+    The original code capped planning at a literal 600s regardless of the budget
+    granted, and a planning turn that exceeded it killed the entire run.
+    """
+    driver = MockDriver([DriverTelemetry(success=True, raw_response="### Task 1: X", duration_seconds=1.0)])
+    adapter = SuperstateAdapter()
+    adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver, timeout_sec=3600.0)
+
+    # 50% of 3600s, not 600s.
+    assert driver.calls[0]["timeout_sec"] == pytest.approx(1800.0)
+
+
+def test_planning_can_be_given_the_whole_budget(tmp_path: Path) -> None:
+    driver = MockDriver([DriverTelemetry(success=True, raw_response="### Task 1: X", duration_seconds=1.0)])
+    adapter = SuperstateAdapter()
+    adapter.planning_budget_fraction = None
+    adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver, timeout_sec=1200.0)
+
+    assert driver.calls[0]["timeout_sec"] == pytest.approx(1200.0)
+
+
+def test_planning_timeout_is_reported_as_a_budget_share_not_an_agent_failure(
+    tmp_path: Path,
+) -> None:
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                duration_seconds=500.0,
+                error_message="Agent turn exceeded 450s and was terminated",
+            )
+        ]
+    )
+    result = SuperstateAdapter().execute(
+        tmp_path, _make_dummy_task(tmp_path), driver, timeout_sec=900.0
+    )
+
+    assert result.success is False
+    assert "share of the 900s budget" in str(result.error_message)
