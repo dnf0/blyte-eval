@@ -172,10 +172,12 @@ def test_superstate_adapter_enforces_zero_superpowers_and_bounded_milestones(
     assert not (tmp_path / ".agents" / "skills").exists(), (
         "Superstate must NOT install .agents/skills"
     )
-    # Verify prompt contains targeted negative constraints
+    # The turnkey prompt must come from the state engine, not from a local
+    # template. Generating it is a core function of the control plane, so a
+    # hand-rolled substitute would mean the arm measures the substitute.
     prompt_0 = str(driver.calls[0]["prompt"])
-    assert "TARGETED EXECUTION CONTRACT" in prompt_0
-    assert "ZERO GLOBAL EXPLORATION" in prompt_0
+    assert "Implementer Subagent" in prompt_0, "prompt did not come from `state prompt`"
+    assert "Task 1: Module A" in prompt_0
     assert (tmp_path / ".agent-state" / "state.json").exists(), (
         "Superstate must initialize .agent-state/state.json"
     )
@@ -390,7 +392,7 @@ def test_recorder_captures_prompts_responses_and_gate_verdicts(tmp_path: Path) -
 
     turns = [json.loads(ln) for ln in (logs / "transcript.jsonl").read_text().splitlines()]
     assert turns[0]["phase"] == "milestone"
-    assert "TARGETED EXECUTION CONTRACT" in turns[0]["prompt"]
+    assert "Implementer Subagent" in turns[0]["prompt"]
     assert turns[0]["response"] == "Did the thing."
 
     milestones = [json.loads(ln) for ln in (logs / "milestones.jsonl").read_text().splitlines()]

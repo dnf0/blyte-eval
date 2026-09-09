@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import logging
+import os
 from pathlib import Path
 import re
 import shutil
@@ -25,15 +26,6 @@ logger = logging.getLogger("superstate_eval.adapters.superstate")
 # Engine provenance values recorded in TaskRunResult.provenance.
 ENGINE_BINARY = "superstate_binary"
 ENGINE_PYTHON_FALLBACK = "python_fallback"
-
-SUPERSTATE_STEERING_DIRECTIVE = """
-## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)
-1. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.
-2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.
-3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.
-4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.
-5. **ATOMIC COMMITS:** Make atomic git commits with conventional commit messages once tests pass.
-"""
 
 TASK_HEADING_RE = re.compile(r"^###?\s+Task\s+\d+", re.IGNORECASE)
 
@@ -63,20 +55,41 @@ class Milestone:
     verify_cmd: Optional[str] = None
 
 
-def find_superstate_binary() -> Optional[Path]:
-    """Locate the superstate binary on PATH or standard local paths."""
-    which_bin = shutil.which("superstate")
-    if which_bin:
-        return Path(which_bin)
+# `superstate` on PATH is a shim into the agent-rules Python package, so a bare
+# PATH lookup silently selects the Python engine while the run is labelled Rust.
+# The engine is therefore chosen explicitly and always recorded.
+ENGINE_PYTHON = "agent-rules-python"
+ENGINE_RUST = "superstate-rust"
 
-    candidate_paths = [
+ENGINE_PATHS: dict[str, tuple[Path, ...]] = {
+    ENGINE_PYTHON: (
         Path.home() / ".local/bin/superstate",
+        Path.home() / ".local/bin/agent-rules",
+    ),
+    ENGINE_RUST: (
         Path.home() / "repos/superstate/target/release/superstate",
         Path.home() / "repos/superstate/target/debug/superstate",
-    ]
-    for p in candidate_paths:
-        if p.is_file():
-            return p
+    ),
+}
+
+DEFAULT_ENGINE = ENGINE_PYTHON
+
+
+def find_superstate_binary(engine: str = DEFAULT_ENGINE) -> Optional[Path]:
+    """Resolve the state-engine binary for a named implementation.
+
+    Resolution is explicit: SUPERSTATE_BIN if set, else the known paths for the
+    requested implementation. Never a bare PATH lookup -- two implementations
+    share the name `superstate`, and picking the wrong one is undetectable in the
+    results.
+    """
+    env_path = os.environ.get("SUPERSTATE_BIN")
+    if env_path and Path(env_path).is_file():
+        return Path(env_path)
+
+    for candidate in ENGINE_PATHS.get(engine, ()):
+        if candidate.is_file():
+            return candidate
     return None
 
 
@@ -110,35 +123,6 @@ def _extract_plan_milestones(plan_content: str) -> list[Milestone]:
     return milestones
 
 
-def compose_turnkey_milestone_prompt(
-    milestone: Milestone, plan_content: str, original_task: str
-) -> str:
-    """Construct an O(1) bounded subagent turnkey prompt with negative constraints."""
-    verify_line = (
-        f"Run `{milestone.verify_cmd}` to verify this milestone."
-        if milestone.verify_cmd
-        else "Run your targeted test command to verify correctness."
-    )
-    return f"""# Bounded Implementation Turn: {milestone.title}
-
-{SUPERSTATE_STEERING_DIRECTIVE}
-
-## Active Task
-You are executing **{milestone.title}**.
-
-## Overall Goal
-{original_task}
-
-## Implementation Plan Context
-```markdown
-{plan_content}
-```
-
-## Instructions
-1. Implement the specific changes required for `{milestone.title}`.
-2. {verify_line}
-3. Once verified, create a commit.
-"""
 
 
 class SuperstateAdapter(AgentAdapter):
@@ -160,8 +144,13 @@ class SuperstateAdapter(AgentAdapter):
     # budget; a milestone that then finds no time left reports an honest timeout.
     planning_budget_fraction: float | None = 0.5
 
-    def __init__(self, superstate_bin: Optional[Path] = None) -> None:
-        self.superstate_bin = superstate_bin or find_superstate_binary()
+    def __init__(
+        self,
+        superstate_bin: Optional[Path] = None,
+        engine: str = DEFAULT_ENGINE,
+    ) -> None:
+        self.engine = engine
+        self.superstate_bin = superstate_bin or find_superstate_binary(engine)
         self.engine_used: Optional[str] = None
         self.plan_source: Optional[str] = None
         self.milestones_planned: int = 0
@@ -180,6 +169,9 @@ class SuperstateAdapter(AgentAdapter):
         """Report which state engine actually drove this run."""
         return {
             "state_engine": self.engine_used,
+            # Which implementation was requested, and what actually ran. A result
+            # is not interpretable without both.
+            "engine": self.engine,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
             # Whether this run was actually a control-plane run.
             "plan_source": self.plan_source,
@@ -211,12 +203,79 @@ class SuperstateAdapter(AgentAdapter):
                 except OSError as err:
                     logger.warning("Failed to remove rule file %s: %s", target, err)
 
+    def _run_engine(
+        self, workspace_path: Path, args: list[str], timeout: float = 60.0
+    ) -> tuple[int, str]:
+        """Invoke the state engine, returning (exit_code, stdout)."""
+        if not self.superstate_bin:
+            return 1, "no state engine binary resolved"
+        try:
+            res = subprocess.run(
+                [str(self.superstate_bin), "state", *args],
+                cwd=str(workspace_path),
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+            if res.returncode != 0:
+                logger.warning("state %s failed: %s", args[0], res.stderr.strip()[:200])
+            return res.returncode, res.stdout
+        except Exception as err:
+            logger.warning("state %s could not run: %s", args[0], err)
+            return 1, str(err)
+
+    def ready_tasks(self, workspace_path: Path) -> list[str]:
+        """Unblocked tasks from the plan's dependency DAG (`state ready --json`).
+
+        This replaces linear iteration over headings: the engine decides what is
+        eligible, which is the point of having a DAG.
+        """
+        code, out = self._run_engine(workspace_path, ["ready", "--json"])
+        if code != 0:
+            return []
+        try:
+            data = json.loads(out)
+            return [str(t) for t in data] if isinstance(data, list) else []
+        except json.JSONDecodeError:
+            return []
+
+    def turnkey_prompt(self, workspace_path: Path, task: Optional[str] = None) -> Optional[str]:
+        """The engine's own turnkey prompt (`state prompt --with-graph`).
+
+        Generating this prompt is a core function of the control plane -- bounded
+        context, active task spec, recorded decisions, graph context. Substituting a
+        local template would measure the template, not the engine.
+        """
+        args = ["prompt", "--with-graph"]
+        if task:
+            args += ["--task", task]
+        code, out = self._run_engine(workspace_path, args)
+        return out.strip() if code == 0 and out.strip() else None
+
+    def record_note(self, workspace_path: Path, message: str) -> bool:
+        """Append to the epistemic ledger (`state note`).
+
+        This is what lets a later milestone inherit an earlier one's discoveries;
+        without it, bounded context simply loses information between turns.
+        """
+        code, _ = self._run_engine(workspace_path, ["note", message[:2000]])
+        return code == 0
+
     def _init_state(self, workspace_path: Path, plan_path: Path) -> bool:
         """Initialize .agent-state/state.json using superstate binary or fallback."""
         if self.superstate_bin:
             try:
+                # Flag divergence between implementations: Python writes with
+                # --out, Rust with --state.
+                out_flag = "--state" if self.engine == ENGINE_RUST else "--out"
+                state_path = workspace_path / ".agent-state" / "state.json"
+                state_path.parent.mkdir(parents=True, exist_ok=True)
                 res = subprocess.run(
-                    [str(self.superstate_bin), "state", "init", "--plan", str(plan_path)],
+                    [
+                        str(self.superstate_bin), "state", "init",
+                        "--plan", str(plan_path),
+                        out_flag, str(state_path),
+                    ],
                     cwd=str(workspace_path),
                     capture_output=True,
                     text=True,
@@ -322,7 +381,7 @@ class SuperstateAdapter(AgentAdapter):
             gate_cmd = "exit 0" if passed else "exit 1"
 
         if self.superstate_bin:
-            cmd = [str(self.superstate_bin), "state", "next"]
+            cmd = [str(self.superstate_bin), "state", "next", "--verify-git-clean"]
             if gate_cmd:
                 cmd.extend(["--verify-cmd", gate_cmd])
             try:
@@ -532,18 +591,37 @@ class SuperstateAdapter(AgentAdapter):
         # Initialize deterministic state
         self._init_state(workspace_path, plan_file)
 
-        # Phase 2: Discrete milestone execution
-        for milestone_index, milestone in enumerate(milestones, start=1):
+        # Phase 2: engine-driven execution. The engine chooses what is eligible
+        # (`state ready`), writes the turnkey prompt (`state prompt`), and decides
+        # whether work may advance (`state next`). The harness only carries turns
+        # between those calls -- substituting our own logic for any of them would
+        # measure the substitute rather than the control plane.
+        verify_by_title = {m.title: m.verify_cmd for m in milestones}
+        executed: set[str] = set()
+
+        for _ in range(self.max_milestones):
             if duration >= budget:
                 error_msg = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
                 break
 
-            current_prompt = compose_turnkey_milestone_prompt(milestone, plan_text, task.instruction)
+            ready = [t for t in self.ready_tasks(workspace_path) if t not in executed]
+            if not ready:
+                break
+            active = ready[0]
+            executed.add(active)
+            milestone_index = len(executed)
+
+            current_prompt = self.turnkey_prompt(workspace_path, active)
+            if current_prompt is None:
+                error_msg = f"State engine produced no prompt for '{active}'"
+                break
+
             conversation_id: Optional[str] = None
             milestone_failed: Optional[str] = None
             milestone_turns = 0
+            last_response = ""
 
-            for _ in range(self.max_turns_per_milestone):
+            for _turn in range(self.max_turns_per_milestone):
                 turn_timeout = budget - duration
                 if turn_timeout <= 0:
                     milestone_failed = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
@@ -563,7 +641,7 @@ class SuperstateAdapter(AgentAdapter):
                         phase="milestone",
                         prompt=current_prompt,
                         telemetry=telemetry,
-                        milestone=milestone.title,
+                        milestone=active,
                     )
 
                 duration += telemetry.duration_seconds
@@ -573,21 +651,24 @@ class SuperstateAdapter(AgentAdapter):
                 turns += 1
                 milestone_turns += 1
                 conversation_id = telemetry.conversation_id or conversation_id
+                last_response = telemetry.raw_response or ""
 
                 if budget_hook is not None:
                     budget = max(budget, budget_hook())
 
                 if not telemetry.success:
-                    milestone_failed = (
-                        telemetry.error_message or f"Milestone '{milestone.title}' failed"
-                    )
+                    milestone_failed = telemetry.error_message or f"Milestone '{active}' failed"
                     break
 
-                # Mechanical approval, matching the Vanilla and Superpowers arms.
-                next_prompt = resolve_next_turn_prompt(telemetry.raw_response)
+                next_prompt = resolve_next_turn_prompt(last_response)
                 if next_prompt is None:
                     break
                 current_prompt = next_prompt
+
+            # Carry what this turn learned into the ledger, so later milestones
+            # inherit it rather than starting blind.
+            if last_response:
+                self.record_note(workspace_path, f"[{active}] {last_response[:1500]}")
 
             gate_detail: Dict[str, Any] = {
                 "gate_ran": False,
@@ -595,6 +676,7 @@ class SuperstateAdapter(AgentAdapter):
                 "gate_exit_code": None,
                 "gate_output": None,
             }
+            milestone = Milestone(title=active, verify_cmd=verify_by_title.get(active))
 
             if milestone_failed is not None:
                 self._record_milestone(
@@ -603,15 +685,14 @@ class SuperstateAdapter(AgentAdapter):
                 error_msg = milestone_failed
                 break
 
-            # Advance the state machine through the milestone's verification gate.
             advanced = self._advance_state(
-                workspace_path, milestone.title, milestone.verify_cmd, container, gate_detail
+                workspace_path, active, milestone.verify_cmd, container, gate_detail
             )
             self._record_milestone(
                 recorder, milestone_index, milestone, milestone_turns, gate_detail, advanced
             )
             if not advanced:
-                error_msg = f"Verification gate failed for milestone '{milestone.title}'"
+                error_msg = f"Verification gate failed for milestone '{active}'"
                 break
 
         return result(error_msg is None, error_msg)

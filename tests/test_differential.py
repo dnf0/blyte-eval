@@ -19,14 +19,18 @@ import pytest
 
 
 def _resolve_binary(
-    env_var: str, cmd_name: str, candidate_paths: list[Path]
+    env_var: str, cmd_name: Optional[str], candidate_paths: list[Path]
 ) -> Optional[Path]:
-    """Dynamically resolve binary executable from env, PATH, or fallback locations."""
+    """Resolve a binary from env, then PATH (only if a name is given), then fallbacks.
+
+    `cmd_name=None` skips the PATH lookup, for implementations whose name on PATH
+    belongs to a different implementation.
+    """
     env_path = os.getenv(env_var)
     if env_path and Path(env_path).is_file():
         return Path(env_path)
 
-    which_path = shutil.which(cmd_name)
+    which_path = shutil.which(cmd_name) if cmd_name else None
     if which_path and Path(which_path).is_file():
         return Path(which_path)
 
@@ -36,11 +40,14 @@ def _resolve_binary(
     return None
 
 
+# The Rust engine, resolved explicitly. `superstate` on PATH is a shim into the
+# agent-rules Python package, so a PATH lookup silently yields the Python
+# implementation and the suite compares it with itself.
 SUPERSTATE_BIN = _resolve_binary(
     "SUPERSTATE_BIN",
-    "superstate",
+    None,
     [
-        Path.home() / ".local" / "bin" / "superstate",
+        Path.home() / "repos" / "superstate" / "target" / "release" / "superstate",
         Path.home() / "repos" / "superstate" / "target" / "debug" / "superstate",
     ],
 )
@@ -57,6 +64,17 @@ AGENT_RULES_BIN = _resolve_binary(
 FIXTURES_DIR = Path(__file__).parent.parent / "lab" / "parity" / "fixtures"
 
 
+# The Rust engine implements 5 of the Python engine's 18 state commands and
+# diverges on init flags and state schema, so these fail today by design. They are
+# the specification for Stream 2 (Rust parity) in
+# docs/superpowers/plans/2026-09-09-control-plane-evaluation-plan.md -- not
+# strict, so a test that starts passing shows up as XPASS and can be un-marked.
+known_divergence = pytest.mark.xfail(
+    reason="Rust engine not yet at parity with the Python engine (Stream 2)",
+    strict=False,
+)
+
+
 @pytest.fixture
 def check_binaries() -> tuple[Path, Path]:
     if not SUPERSTATE_BIN or not SUPERSTATE_BIN.is_file():
@@ -66,6 +84,7 @@ def check_binaries() -> tuple[Path, Path]:
     return SUPERSTATE_BIN, AGENT_RULES_BIN
 
 
+@known_divergence
 def test_init_state_creates_valid_state_files(check_binaries: tuple[Path, Path]) -> None:
     superstate_bin, agent_rules_bin = check_binaries
     plan_path = (FIXTURES_DIR / "linear_plan.md").resolve()
@@ -116,6 +135,7 @@ def test_init_state_creates_valid_state_files(check_binaries: tuple[Path, Path])
         assert diff == {}, f"State parity mismatch on init: {diff}"
 
 
+@known_divergence
 def test_verification_gate_failure_parity(check_binaries: tuple[Path, Path]) -> None:
     superstate_bin, agent_rules_bin = check_binaries
     plan_path = (FIXTURES_DIR / "linear_plan.md").resolve()
@@ -194,6 +214,7 @@ def test_verification_gate_failure_parity(check_binaries: tuple[Path, Path]) -> 
         assert diff == {}, f"State parity mismatch after failed verification gate: {diff}"
 
 
+@known_divergence
 def test_verification_gate_success_parity(check_binaries: tuple[Path, Path]) -> None:
     superstate_bin, agent_rules_bin = check_binaries
     plan_path = (FIXTURES_DIR / "linear_plan.md").resolve()
@@ -272,6 +293,7 @@ def test_verification_gate_success_parity(check_binaries: tuple[Path, Path]) -> 
         assert diff == {}, f"State parity mismatch after successful verification gate: {diff}"
 
 
+@known_divergence
 def test_dag_plan_full_traversal_parity(check_binaries: tuple[Path, Path]) -> None:
     """Both engines must parse a DAG plan and traverse every task identically."""
     superstate_bin, agent_rules_bin = check_binaries
@@ -330,6 +352,7 @@ def test_dag_plan_full_traversal_parity(check_binaries: tuple[Path, Path]) -> No
         assert len(json.loads(state_rs.read_text(encoding="utf-8"))["completed_tasks"]) == task_count
 
 
+@known_divergence
 def test_note_ledger_parity(check_binaries: tuple[Path, Path]) -> None:
     """Recording an epistemic note must produce identical state on both engines."""
     superstate_bin, agent_rules_bin = check_binaries
