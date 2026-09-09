@@ -39,6 +39,7 @@ def main() -> int:
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=1200.0)
+    ap.add_argument("--repeats", type=int, default=1, help="Number of repetitions per task/arm")
     ap.add_argument("--workspace-root", type=Path,
                     default=Path("/tmp/superstate_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
     ap.add_argument("--out", type=Path, help="Write results JSON here")
@@ -58,27 +59,29 @@ def main() -> int:
     runner = AblationRunner(workspace_root=args.workspace_root, default_driver=driver)
 
     logger.info("=" * 78)
-    logger.info("Harness=%s  model=%s  tasks=%d  arms=%s",
-                driver.harness_name, args.model, len(tasks), ", ".join(args.arms))
+    logger.info("Harness=%s  model=%s  tasks=%d  arms=%s  repeats=%d",
+                driver.harness_name, args.model, len(tasks), ", ".join(args.arms), args.repeats)
     logger.info("Runs=%d  budget=%.0fs/arm  workspaces=%s",
-                len(tasks) * len(args.arms), args.budget_sec, args.workspace_root)
+                len(tasks) * len(args.arms) * args.repeats, args.budget_sec, args.workspace_root)
     logger.info("=" * 78)
 
     results = []
     for task in tasks:
         for arm in args.arms:
-            logger.info("-> %s [%s]", task.name, arm)
-            started = time.monotonic()
-            tel = runner.run_task(
-                task_id=task.id, arm=arm, image=task.docker_image,
-                base_budget_sec=args.budget_sec, task_spec=task, driver=driver,
-            )
-            results.append(tel)
-            logger.info(
-                "   %s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
-                arm, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
-                time.monotonic() - started, tel.failure_reason or "",
-            )
+            for rep in range(1, args.repeats + 1):
+                rep_tag = f" [run {rep}/{args.repeats}]" if args.repeats > 1 else ""
+                logger.info("-> %s [%s]%s", task.name, arm, rep_tag)
+                started = time.monotonic()
+                tel = runner.run_task(
+                    task_id=task.id, arm=arm, image=task.docker_image,
+                    base_budget_sec=args.budget_sec, task_spec=task, driver=driver,
+                )
+                results.append(tel)
+                logger.info(
+                    "   %s%s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
+                    arm, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
+                    time.monotonic() - started, tel.failure_reason or "",
+                )
 
     print()
     print(render_summary_table(generate_comparison_summary(results)))

@@ -99,10 +99,13 @@ def find_superstate_binary(engine: str = DEFAULT_ENGINE) -> Optional[Path]:
     if env_path and Path(env_path).is_file():
         return Path(env_path)
 
-    for candidate in ENGINE_PATHS.get(engine, ()):
-        if candidate.is_file():
-            return candidate
-    return None
+    # Prefer the most recently built artefact. A stale release build silently
+    # shadows a freshly compiled debug one, and the run then measures old code
+    # while reporting the engine it thinks it used.
+    existing = [c for c in ENGINE_PATHS.get(engine, ()) if c.is_file()]
+    if not existing:
+        return None
+    return max(existing, key=lambda c: c.stat().st_mtime)
 
 
 def _extract_plan_milestones(plan_content: str) -> list[Milestone]:
@@ -196,8 +199,34 @@ class SuperstateAdapter(AgentAdapter):
         if engine == ENGINE_PYTHON_FALLBACK or self.engine_used is None:
             self.engine_used = engine
 
+    #: Harness bookkeeping that must not count as uncommitted agent work.
+    HARNESS_UNTRACKED = (".agent-state/", "plan.md", "plan.normalized.md", "run-in-container")
+
+    def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
+        """Keep harness files from dirtying the tree the git-clean gate inspects.
+
+        The engine writes `.agent-state/` into the workspace, so an untracked
+        state directory makes the working tree dirty and `--verify-git-clean`
+        fails on its own bookkeeping -- the gate can never pass. Excluding these
+        locally leaves the gate measuring what it is for: whether the agent
+        committed its work.
+        """
+        exclude = workspace_path / ".git" / "info" / "exclude"
+        if not exclude.parent.parent.is_dir():
+            return  # not a git repository; nothing to exclude
+        try:
+            exclude.parent.mkdir(parents=True, exist_ok=True)
+            existing = exclude.read_text(encoding="utf-8") if exclude.is_file() else ""
+            missing = [a for a in self.HARNESS_UNTRACKED if a not in existing]
+            if missing:
+                with exclude.open("a", encoding="utf-8") as fh:
+                    fh.write("\n" + "\n".join(missing) + "\n")
+        except OSError as err:
+            logger.warning("Could not exclude harness artifacts from git: %s", err)
+
     def setup_workspace(self, workspace_path: Path) -> None:
         """Sanitize workspace so Arm C sees the same blank slate as the control arm."""
+        self._exclude_harness_artifacts(workspace_path)
         skills_dir = workspace_path / ".agents" / "skills"
         if skills_dir.is_dir():
             try:
