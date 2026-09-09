@@ -23,3 +23,4 @@ graphify-out/*.json
 graphify-out/*.sig
 graphify-out/cache/
 graphify-out/obsidian/
+.superpowers/
