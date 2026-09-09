@@ -479,3 +479,47 @@ def test_planning_timeout_is_reported_as_a_budget_share_not_an_agent_failure(
 
     assert result.success is False
     assert "share of the 900s budget" in str(result.error_message)
+
+
+def test_undecomposed_run_fails_instead_of_impersonating_the_baseline(tmp_path: Path) -> None:
+    """A run that parsed no milestones is not a control-plane run.
+
+    Live regression: the agent wrote plan.md outside the workspace, the harness fell
+    back to the response prose, found no '### Task N:' heading, synthesized one
+    ungated milestone, and would have recorded baseline behaviour under this arm's
+    label -- a wrong result with no error anywhere.
+    """
+    driver = MockDriver(
+        [DriverTelemetry(success=True, raw_response="I wrote the plan elsewhere.", duration_seconds=1.0)]
+    )
+    result = SuperstateAdapter().execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is False
+    assert "no parseable milestones" in str(result.error_message)
+    assert result.provenance["decomposed"] is False
+    assert result.provenance["milestones_planned"] == 1
+
+
+def test_provenance_records_a_real_decomposition(tmp_path: Path) -> None:
+    (tmp_path / "plan.md").write_text(
+        "### Task 1: A\n- Verification Command: true\n\n### Task 2: B\n- Verification Command: true\n",
+        encoding="utf-8",
+    )
+    driver = MockDriver([])
+    result = SuperstateAdapter().execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.provenance["decomposed"] is True
+    assert result.provenance["milestones_planned"] == 2
+    assert result.provenance["plan_source"] is None  # plan pre-existed; no planning turn
+
+
+def test_agents_plan_is_never_overwritten(tmp_path: Path) -> None:
+    # The agent's plan is evidence; the engine's normalised copy goes elsewhere.
+    original = "Some prose plan with no headings at all."
+    driver = MockDriver([DriverTelemetry(success=True, raw_response=original, duration_seconds=1.0)])
+    adapter = SuperstateAdapter()
+    adapter.require_decomposition = False
+    adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert (tmp_path / "plan.md").read_text() == original
+    assert (tmp_path / "plan.normalized.md").is_file()

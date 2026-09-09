@@ -157,6 +157,7 @@ class AgyCliDriver(AgentDriver):
         prompt: str,
         conversation_id: Optional[str] = None,
         timeout_sec: float = 3600.0,
+        workspace_path: Optional[Path] = None,
     ) -> list[str]:
         """Construct the argv list for the agy invocation."""
         cmd = [
@@ -172,6 +173,12 @@ class AgyCliDriver(AgentDriver):
             "--print-timeout",
             f"{max(60, int(math.ceil(timeout_sec)))}s",
         ]
+
+        # agy resolves file paths against its own project root, not the process
+        # cwd. Without this the agent wrote plan.md into the user's home directory
+        # and the harness never found it.
+        if workspace_path is not None:
+            cmd.extend(["--add-dir", str(workspace_path)])
 
         if conversation_id:
             cmd.extend(["--conversation", conversation_id])
@@ -202,7 +209,10 @@ class AgyCliDriver(AgentDriver):
             prompt = prompt + CONTAINER_GUIDANCE_TEMPLATE
 
         cmd = self._build_command(
-            prompt=prompt, conversation_id=conversation_id, timeout_sec=timeout_sec
+            prompt=prompt,
+            conversation_id=conversation_id,
+            timeout_sec=timeout_sec,
+            workspace_path=workspace_path,
         )
         run_env = os.environ.copy()
         run_env.update(self.env)

@@ -43,6 +43,24 @@ class PilotMockDriver(AgentDriver):
             f"# Solution for {task.id} by {self.arm} (turn {self.turn})\n", encoding="utf-8"
         )
 
+        if self.arm == "superstate" and self.turn == 1:
+            # The superstate arm refuses to run undecomposed, so the mock must
+            # actually plan -- as a real agent would.
+            (workspace_path / "plan.md").write_text(
+                "### Task 1: Implement the change\n- Verification Command: true\n\n"
+                "### Task 2: Verify the change\n- Verification Command: true\n",
+                encoding="utf-8",
+            )
+            return DriverTelemetry(
+                success=True,
+                raw_response="Wrote plan.md with two milestones.",
+                duration_seconds=2.0,
+                input_tokens=120,
+                output_tokens=40,
+                cost_usd=0.001,
+                conversation_id="conv-pilot-ss",
+            )
+
         if self.arm == "superpowers" and self.turn == 1:
             # Superpowers asks for approval on Turn 1
             return DriverTelemetry(

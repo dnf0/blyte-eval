@@ -48,6 +48,13 @@ VERIFY_LINE_RE = re.compile(
 )
 
 
+# Emitted when no `### Task N:` heading could be parsed. A run reduced to this has
+# not been decomposed or gated, so it is structurally the baseline arm wearing this
+# arm's label -- the worst possible outcome for a comparison, because it does not
+# fail, it silently reports the baseline's behaviour as the treatment's.
+FALLBACK_MILESTONE_TITLE = "Task 1: Complete Feature Implementation"
+
+
 @dataclass(frozen=True)
 class Milestone:
     """A single plan milestone and its targeted verification gate."""
@@ -99,7 +106,7 @@ def _extract_plan_milestones(plan_content: str) -> list[Milestone]:
     flush()
 
     if not milestones:
-        milestones = [Milestone(title="Task 1: Complete Feature Implementation")]
+        milestones = [Milestone(title=FALLBACK_MILESTONE_TITLE)]
     return milestones
 
 
@@ -144,6 +151,9 @@ class SuperstateAdapter(AgentAdapter):
     # Bounded continuation turns per milestone, mirroring the mechanical approval
     # allowance the Vanilla and Superpowers arms receive.
     max_turns_per_milestone: int = 3
+    #: Fail rather than run undecomposed. A single fallback milestone with no gate
+    #: is not a control-plane run, and recording it as one corrupts the comparison.
+    require_decomposition: bool = True
     # Share of the run budget planning may consume. This is not a limit on how long
     # planning is allowed to think -- it exists only so a planning turn cannot starve
     # the implementation it is planning. Set to None to let planning draw on the whole
@@ -153,6 +163,9 @@ class SuperstateAdapter(AgentAdapter):
     def __init__(self, superstate_bin: Optional[Path] = None) -> None:
         self.superstate_bin = superstate_bin or find_superstate_binary()
         self.engine_used: Optional[str] = None
+        self.plan_source: Optional[str] = None
+        self.milestones_planned: int = 0
+        self.decomposed: bool = False
         if self.superstate_bin is None:
             logger.warning(
                 "SuperstateAdapter: superstate binary not found. Arm C will fall back to the "
@@ -168,6 +181,10 @@ class SuperstateAdapter(AgentAdapter):
         return {
             "state_engine": self.engine_used,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
+            # Whether this run was actually a control-plane run.
+            "plan_source": self.plan_source,
+            "milestones_planned": self.milestones_planned,
+            "decomposed": self.decomposed,
         }
 
     def _record_engine(self, engine: str) -> None:
@@ -466,11 +483,30 @@ class SuperstateAdapter(AgentAdapter):
 
             if plan_file.is_file():
                 plan_text = plan_file.read_text(encoding="utf-8")
+                self.plan_source = "plan.md"
             else:
+                # The agent may have written the plan somewhere we cannot see --
+                # a host-side harness resolves paths against its own project root.
+                logger.warning(
+                    "No plan.md in the workspace after planning; falling back to the "
+                    "response text. Check whether the agent wrote it elsewhere."
+                )
                 plan_text = telemetry.raw_response
-                plan_file.write_text(plan_text, encoding="utf-8")
+                self.plan_source = "response"
 
         milestones = _extract_plan_milestones(plan_text)
+        self.milestones_planned = len(milestones)
+        self.decomposed = not (
+            len(milestones) == 1 and milestones[0].title == FALLBACK_MILESTONE_TITLE
+        )
+        if not self.decomposed and self.require_decomposition:
+            return result(
+                False,
+                "Planning produced no parseable milestones (no '### Task N:' heading "
+                f"found in {self.plan_source}), so this run would have executed as a "
+                "single ungated milestone -- the baseline's behaviour under this arm's "
+                "label. Failing instead of recording a mislabelled result.",
+            )
         if len(milestones) > self.max_milestones:
             return result(
                 False,
@@ -478,11 +514,20 @@ class SuperstateAdapter(AgentAdapter):
                 f"max_milestones loop-breaker ({self.max_milestones})",
             )
 
-        # Ensure plan_file has valid Task headings for superstate state init
+        # Always persist what the agent actually produced: it is the evidence for
+        # why a run decomposed the way it did.
+        if self.plan_source == "response":
+            plan_file.write_text(plan_text, encoding="utf-8")
+
+        # The state engine needs `### Task N:` headings. Where the agent's text does
+        # not have them, the normalised copy goes to its own file rather than
+        # overwriting the agent's plan.
         if not any(TASK_HEADING_RE.match(line.strip()) for line in plan_text.splitlines()):
-            formatted_plan = "\n\n".join(f"### {m.title}\n- Implement {m.title}" for m in milestones)
-            plan_file.write_text(formatted_plan, encoding="utf-8")
-            plan_text = formatted_plan
+            plan_file = workspace_path / "plan.normalized.md"
+            plan_file.write_text(
+                "\n\n".join(f"### {m.title}\n- Implement {m.title}" for m in milestones),
+                encoding="utf-8",
+            )
 
         # Initialize deterministic state
         self._init_state(workspace_path, plan_file)
