@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 import pytest
 
@@ -23,6 +24,31 @@ def test_docker_manager_context_teardown_removes_container() -> None:
 
         # After context exit, container.remove(force=True) must have been called
         mock_container.remove.assert_called_once_with(force=True)
+
+
+def test_docker_manager_resource_constraints_and_logs_mount() -> None:
+    mock_docker_client = MagicMock()
+    mock_container = MagicMock()
+    mock_docker_client.containers.run.return_value = mock_container
+
+    with patch("lab.sandbox.docker_manager.docker.from_env", return_value=mock_docker_client):
+        manager = DockerManager()
+        with manager.run_sandbox(
+            image="ubuntu:latest",
+            nano_cpus=2500000000,
+            mem_limit="4g",
+            logs_dir="/tmp/host_logs",
+            container_name="eval-test-container",
+        ):
+            pass
+
+        call_kwargs = mock_docker_client.containers.run.call_args.kwargs
+        assert call_kwargs["nano_cpus"] == 2500000000
+        assert call_kwargs["mem_limit"] == "4g"
+        assert call_kwargs["name"] == "eval-test-container"
+        expected_logs_path = str(Path("/tmp/host_logs").resolve())
+        assert expected_logs_path in call_kwargs["volumes"]
+        assert call_kwargs["volumes"][expected_logs_path]["bind"] == "/logs"
 
 
 def test_docker_manager_context_teardown_on_exception() -> None:

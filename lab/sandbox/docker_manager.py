@@ -43,22 +43,40 @@ class DockerManager:
         working_dir: str = "/app",
         network_mode: str | None = None,
         environment: Mapping[str, str] | None = None,
+        nano_cpus: int | None = None,
+        mem_limit: str | None = "4g",
+        logs_dir: Path | str | None = None,
+        container_name: str | None = None,
     ) -> Generator[Container, None, None]:
         """Run a container with guaranteed teardown upon context exit.
 
         Guarantees that the container is forcefully removed even if the block
         raises an unhandled exception or times out.
         """
-        container = self.client.containers.run(
-            image=image,
-            command=command,
-            volumes=volumes or {},
-            working_dir=working_dir,
-            network_mode=network_mode,
-            environment=environment or {},
-            detach=True,
-            remove=False,  # We manage removal explicitly in the finally block
-        )
+        combined_volumes = dict(volumes or {})
+        if logs_dir is not None:
+            logs_path = Path(logs_dir).resolve()
+            logs_path.mkdir(parents=True, exist_ok=True)
+            combined_volumes[str(logs_path)] = {"bind": "/logs", "mode": "rw"}
+
+        run_kwargs: dict[str, Any] = {
+            "image": image,
+            "command": command,
+            "volumes": combined_volumes,
+            "working_dir": working_dir,
+            "network_mode": network_mode,
+            "environment": environment or {},
+            "detach": True,
+            "remove": False,  # We manage removal explicitly in the finally block
+        }
+        if nano_cpus is not None:
+            run_kwargs["nano_cpus"] = nano_cpus
+        if mem_limit is not None:
+            run_kwargs["mem_limit"] = mem_limit
+        if container_name is not None:
+            run_kwargs["name"] = container_name
+
+        container = self.client.containers.run(**run_kwargs)
         logger.info(f"Spawned sandbox container: {container.id[:12]} ({image})")
         try:
             yield container
