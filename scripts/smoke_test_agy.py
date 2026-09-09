@@ -100,12 +100,15 @@ def main() -> None:
 
     # Format and report overall test pass fraction with passed/total test counts
     if test_pass_fraction is not None:
-        logger.info(
-            "Test Pass Frac: %.2f%% (%s/%s)",
-            test_pass_fraction * 100,
-            tests_passed if tests_passed is not None else "N/A",
-            tests_total if tests_total is not None else "N/A",
-        )
+        if tests_passed is not None and tests_total is not None:
+            logger.info(
+                "Test Pass Frac: %.2f%% (%d/%d)",
+                test_pass_fraction * 100,
+                tests_passed,
+                tests_total,
+            )
+        else:
+            logger.info("Test Pass Frac: %.2f%%", test_pass_fraction * 100)
     else:
         logger.info("Test Pass Frac: N/A")
 
