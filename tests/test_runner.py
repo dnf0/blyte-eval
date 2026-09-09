@@ -242,3 +242,52 @@ def test_run_telemetry_records_whether_execution_was_isolated(tmp_path) -> None:
     )
 
     assert telemetry.extra["isolated_execution"] is False
+
+
+def test_agent_failure_is_diagnosed_before_the_grading_symptom(tmp_path) -> None:
+    """An agent that times out leaves a bad patch; the timeout is the cause.
+
+    Reporting the grading message first made every agent-side failure -- timeout,
+    crash, driver error -- indistinguishable from a genuinely wrong solution.
+    """
+    from contextlib import contextmanager
+    from unittest.mock import MagicMock
+
+    from lab.benchmarks.task_loader import TaskSpec
+    from lab.engine.adapters.base import AgentDriver, DriverTelemetry
+    from lab.engine.runner import AblationRunner
+
+    class TimingOutDriver(AgentDriver):
+        def run(self, task, workspace_path, prompt_override=None, conversation_id=None,
+                timeout_sec=3600.0, container=None) -> DriverTelemetry:
+            return DriverTelemetry(
+                success=False, raw_response="", duration_seconds=600.0,
+                error_message="agy turn exceeded timeout of 600.0s",
+            )
+
+    mock_docker = MagicMock()
+    container = MagicMock()
+
+    @contextmanager
+    def fake_sandbox(image, logs_dir, container_name, **kwargs):
+        vdir = logs_dir / "verifier"
+        vdir.mkdir(parents=True, exist_ok=True)
+        (vdir / "reward.json").write_text('{"reward": 0.0}')
+        container.exec_run.return_value = (1, b"tests failed")
+        yield container
+
+    mock_docker.run_sandbox.side_effect = fake_sandbox
+
+    telemetry = AblationRunner(
+        docker_manager=mock_docker, workspace_root=tmp_path / "ws",
+        default_driver=TimingOutDriver(),
+    ).run_task(
+        task_id="org/t", arm="superstate", image="img", base_budget_sec=600.0,
+        task_spec=TaskSpec(id="org/t", name="t", instruction="go", docker_image="img"),
+    )
+
+    reason = str(telemetry.failure_reason)
+    assert reason.startswith("Agent run failed:"), reason
+    assert "exceeded timeout" in reason
+    # The grading detail is kept, but as consequence rather than diagnosis.
+    assert "grading then reported" in reason

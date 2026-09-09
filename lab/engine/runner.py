@@ -277,7 +277,16 @@ class AblationRunner:
                         cost_usd = run_result.cost_usd
                         input_tokens = run_result.input_tokens
                         output_tokens = run_result.output_tokens
-                        failure_reason = grade_res.failure_reason or run_result.error_message
+                        # Cause before symptom. When the agent itself failed -- timed
+                        # out, crashed, exhausted its turns -- a low reward is the
+                        # consequence, not the diagnosis. Reporting the grading message
+                        # first made every agent-side failure look like a bad patch.
+                        if run_result.error_message:
+                            failure_reason = f"Agent run failed: {run_result.error_message}"
+                            if grade_res.failure_reason:
+                                failure_reason += f" | grading then reported: {grade_res.failure_reason}"
+                        else:
+                            failure_reason = grade_res.failure_reason
                         extra = {
                             "run_id": run_id,
                             # The two factors of the design: which execution plane
