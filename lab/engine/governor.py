@@ -82,13 +82,21 @@ class ConcurrencyGovernor:
         )
 
     def calculate_max_concurrency(
-        self, specs: SystemSpecs | None = None, user_max: int | None = None
+        self,
+        specs: SystemSpecs | None = None,
+        user_max: int | None = None,
+        ram_gb_per_worker: float | None = None,
     ) -> int:
         """Calculate maximum safe concurrency given hardware capacity and optional user ceiling.
 
         RAM capacity is total memory minus `ram_headroom_gb` reserved for the host,
         not the OS-reported "available" figure, which understates reclaimable memory.
         Returns 0 if RAM or disk capacity is below the minimum safety margins.
+
+        `ram_gb_per_worker` overrides the default footprint. Callers MUST pass the
+        real per-container limit when they know it: benchmark tasks declare their
+        own memory_mb (commonly 8 GB), and sizing the pool on a smaller default
+        overcommits the host by exactly the ratio between them.
         """
         if specs is None:
             specs = self.get_system_specs()
@@ -107,8 +115,9 @@ class ConcurrencyGovernor:
         # reports 40% free. Binding on that number makes concurrency a function
         # of unrelated desktop activity and systematically under-provisions.
         # A fixed reserve is both predictable and honest about the safety margin.
+        per_worker_ram = ram_gb_per_worker or self.ram_gb_per_worker
         usable_ram = max(0.0, specs.total_ram_gb - self.ram_headroom_gb)
-        ram_workers = int(usable_ram // self.ram_gb_per_worker)
+        ram_workers = int(usable_ram // per_worker_ram)
 
         # 3. Disk-based allowance (strictly enforce disk_headroom_gb margin)
         usable_disk = max(0.0, specs.free_disk_gb - self.disk_headroom_gb)
@@ -124,24 +133,33 @@ class ConcurrencyGovernor:
 
         logger.info(
             "Calculated concurrency: %d (CPU limit=%d, RAM limit=%d [%.1f GB total - %.1f GB "
-            "reserve; %.1f GB reported available], Disk limit=%d, User override=%s)",
+            "reserve, %.1f GB per worker; %.1f GB reported available], Disk limit=%d, "
+            "User override=%s)",
             final_concurrency,
             cpu_workers,
             ram_workers,
             specs.total_ram_gb,
             self.ram_headroom_gb,
+            per_worker_ram,
             specs.available_ram_gb,
             disk_workers,
             user_max,
         )
         return max(0, final_concurrency)
 
-    def acquire_slot(self, timeout_sec: float = 300.0, user_max: int | None = None) -> bool:
+    def acquire_slot(
+        self,
+        timeout_sec: float = 300.0,
+        user_max: int | None = None,
+        ram_gb_per_worker: float | None = None,
+    ) -> bool:
         """Block until an execution slot is available under live resource constraints."""
         start_time = time.time()
         with self._condition:
             while True:
-                max_allowed = self.calculate_max_concurrency(user_max=user_max)
+                max_allowed = self.calculate_max_concurrency(
+                    user_max=user_max, ram_gb_per_worker=ram_gb_per_worker
+                )
                 if max_allowed > 0 and self._active_slots < max_allowed:
                     self._active_slots += 1
                     logger.debug(
@@ -166,10 +184,15 @@ class ConcurrencyGovernor:
 
     @contextmanager
     def slot(
-        self, timeout_sec: float = 300.0, user_max: int | None = None
+        self,
+        timeout_sec: float = 300.0,
+        user_max: int | None = None,
+        ram_gb_per_worker: float | None = None,
     ) -> Generator[bool, None, None]:
         """Context manager acquiring a dynamic concurrency slot."""
-        acquired = self.acquire_slot(timeout_sec=timeout_sec, user_max=user_max)
+        acquired = self.acquire_slot(
+            timeout_sec=timeout_sec, user_max=user_max, ram_gb_per_worker=ram_gb_per_worker
+        )
         try:
             yield acquired
         finally:

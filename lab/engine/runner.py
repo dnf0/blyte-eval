@@ -151,8 +151,16 @@ class AblationRunner:
                         "Pass driver= or default_driver=; the live path has no mock fallback."
                     )
 
+                # Size the slot by what this container will actually reserve, not
+                # by the governor's generic default.
+                task_ram_gb = (
+                    task_spec.memory_mb / 1024
+                    if task_spec is not None and task_spec.memory_mb
+                    else None
+                )
+
                 # Full live execution path with container sandbox and grading
-                with self.governor.slot() as acquired:
+                with self.governor.slot(ram_gb_per_worker=task_ram_gb) as acquired:
                     if not acquired:
                         raise RuntimeError(
                             "Failed to acquire concurrency governor slot within timeout"
@@ -342,7 +350,18 @@ class AblationRunner:
         driver: Optional[AgentDriver] = None,
     ) -> List[RunTelemetry]:
         """Execute a matrix of tasks x arms concurrently using the dynamic governor."""
-        concurrency = self.governor.calculate_max_concurrency(user_max=max_workers)
+        # Concurrency must be sized on the largest container the cohort will start.
+        # Tasks commonly declare 8 GB; sizing on the 4 GB default would overcommit
+        # the host two-to-one and put every timing measurement into swap.
+        declared_ram_gb = [
+            spec.memory_mb / 1024
+            for spec in (self._normalize_task(entry)[3] for entry in tasks)
+            if spec is not None and spec.memory_mb
+        ]
+        cohort_ram_gb = max(declared_ram_gb) if declared_ram_gb else None
+        concurrency = self.governor.calculate_max_concurrency(
+            user_max=max_workers, ram_gb_per_worker=cohort_ram_gb
+        )
         if concurrency < 1:
             raise InsufficientResourcesError(
                 "Host resources are below the safety margins required to run a single "

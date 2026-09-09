@@ -321,3 +321,31 @@ def test_summarize_failures_clusters_like_failures() -> None:
     assert clusters["vanilla"][0]["count"] == 1
     # Passing runs contribute nothing.
     assert sum(e["count"] for e in clusters["vanilla"]) == 1
+
+
+def test_run_cohort_sizes_concurrency_on_declared_task_memory() -> None:
+    """A cohort of 8 GB tasks must not be dispatched at the 4 GB default width."""
+    from lab.benchmarks.task_loader import TaskSpec
+    from lab.engine.runner import AblationRunner
+
+    governor = MagicMock()
+    governor.calculate_max_concurrency.return_value = 2
+    runner = AblationRunner(docker_manager=MagicMock(), governor=governor)
+
+    specs = [
+        TaskSpec(
+            id=f"org/t{i}",
+            name=f"t{i}",
+            instruction="go",
+            docker_image="img",
+            memory_mb=8192,
+        )
+        for i in range(3)
+    ]
+
+    with patch.object(runner, "run_task") as mock_run_task:
+        mock_run_task.return_value = MagicMock(passed=True)
+        runner.run_cohort(tasks=specs, arms=["vanilla"], driver=MagicMock())
+
+    kwargs = governor.calculate_max_concurrency.call_args.kwargs
+    assert kwargs["ram_gb_per_worker"] == 8.0

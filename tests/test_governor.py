@@ -109,3 +109,17 @@ def test_get_live_system_specs() -> None:
     assert specs.logical_cpus >= 1
     assert specs.total_ram_gb > 0
     assert specs.free_disk_gb > 0
+
+
+def test_concurrency_is_sized_on_the_real_container_footprint() -> None:
+    """Tasks declare their own memory_mb; sizing on the default overcommits."""
+    governor = ConcurrencyGovernor()
+    specs = SystemSpecs(
+        logical_cpus=12, total_ram_gb=24.0, available_ram_gb=20.0, free_disk_gb=200.0
+    )
+
+    # Default 4 GB/worker: (24 - 8) // 4 = 4, capped by CPU at 4.
+    assert governor.calculate_max_concurrency(specs) == 4
+
+    # Real tasks declare 8 GB. 4 x 8 = 32 GB on a 24 GB host would thrash.
+    assert governor.calculate_max_concurrency(specs, ram_gb_per_worker=8.0) == 2
