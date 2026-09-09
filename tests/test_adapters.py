@@ -401,3 +401,35 @@ def test_recorder_captures_prompts_responses_and_gate_verdicts(tmp_path: Path) -
     assert run_record_path is not None
     record = json.loads(run_record_path.read_text())
     assert record["gates_failed"] == ["Task 1: Alpha"]
+
+
+def test_gate_command_strips_a_host_bridge_wrapper_when_run_in_container() -> None:
+    """Regression from the first live run.
+
+    The agy driver hands the agent `./run-in-container` -- a host script that shells
+    to `docker exec`. The agent wrote its verification command in that form, but the
+    gate runs INSIDE the container, where there is no docker binary. The gate failed
+    with exit 127, milestone 1 never advanced, and the arm scored 0/9 on a bug rather
+    than on its merits.
+    """
+    normalize = SuperstateAdapter.normalize_gate_command
+    wrapped = "./run-in-container goyacc -o parser/parser.go x.y && ./run-in-container go test ./parser/..."
+
+    inside = normalize(wrapped, in_container=True)
+    assert "run-in-container" not in inside
+    assert inside == "goyacc -o parser/parser.go x.y && go test ./parser/..."
+
+    # On the host the bridge is the correct way to reach the sandbox: leave it alone.
+    assert normalize(wrapped, in_container=False) == wrapped
+
+    # A plain command is untouched either way.
+    assert normalize("go test ./vm", in_container=True) == "go test ./vm"
+
+
+def test_planning_prompt_asks_for_unwrapped_verification_commands(tmp_path: Path) -> None:
+    driver = MockDriver([DriverTelemetry(success=True, raw_response="### Task 1: X", duration_seconds=1.0)])
+    SuperstateAdapter().execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    planning_prompt = str(driver.calls[0]["prompt"])
+    assert "PLAIN command" in planning_prompt
+    assert "Do not prefix it with" in planning_prompt

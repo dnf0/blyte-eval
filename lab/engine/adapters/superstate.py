@@ -36,6 +36,12 @@ SUPERSTATE_STEERING_DIRECTIVE = """
 """
 
 TASK_HEADING_RE = re.compile(r"^###?\s+Task\s+\d+", re.IGNORECASE)
+
+# Some drivers hand the agent a host-side bridge script (agy's ./run-in-container)
+# for reaching the sandbox. A verification command written in that form cannot run
+# where the gate runs -- inside the container itself, which has no docker binary --
+# so the wrapper is stripped before the gate executes.
+BRIDGE_PREFIX_RE = re.compile(r"(?:^|(?<=[;&|(]))\s*\.?/?run-in-container\s+")
 VERIFY_LINE_RE = re.compile(
     r"^[-*\s]*\**\s*(?:verification\s+command|verify\s+command|verify)\**\s*:\s*(.+)$",
     re.IGNORECASE,
@@ -225,6 +231,13 @@ class SuperstateAdapter(AgentAdapter):
         (state_dir / "state.json").write_text(json.dumps(state_data, indent=2), encoding="utf-8")
         return True
 
+    @staticmethod
+    def normalize_gate_command(verify_cmd: str, in_container: bool) -> str:
+        """Strip a host-side bridge wrapper when the gate already runs in the sandbox."""
+        if not in_container:
+            return verify_cmd
+        return BRIDGE_PREFIX_RE.sub(lambda m: m.group(0)[: -len(m.group(0).lstrip())] or "", verify_cmd).strip()
+
     def _run_gate_command(
         self, workspace_path: Path, verify_cmd: str, container: Any = None
     ) -> tuple[bool, Optional[int], str]:
@@ -234,6 +247,7 @@ class SuperstateAdapter(AgentAdapter):
         the task's toolchain nor its dependencies, and running it on the host would
         breach the isolation the evaluation depends on.
         """
+        verify_cmd = self.normalize_gate_command(verify_cmd, in_container=container is not None)
         if container is not None:
             exec_res = container.exec_run(verify_cmd)
             if isinstance(exec_res, tuple):
@@ -401,7 +415,11 @@ class SuperstateAdapter(AgentAdapter):
                 f"{task.instruction}\n\n"
                 "Decompose this task into cohesive milestones. Write `plan.md` using "
                 "`### Task N: <Title>` headings, and give every task a "
-                "`- Verification Command: <targeted test command>` line."
+                "`- Verification Command: <targeted test command>` line.\n\n"
+                "Write each verification command as a PLAIN command that runs in the "
+                "project environment, e.g. `go test ./parser/...`. Do not prefix it with "
+                "any wrapper or helper script -- the command is executed directly in the "
+                "project environment, where such a wrapper does not exist."
             )
             telemetry = driver.run(
                 task=task,
