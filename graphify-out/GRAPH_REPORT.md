@@ -1,58 +1,61 @@
 # Graph Report - superstate-eval  (2026-09-09)
 
 ## Corpus Check
-- 53 files · ~25,248 words
+- 57 files · ~28,395 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 600 nodes · 1280 edges · 34 communities (27 shown, 3 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 63 edges (avg confidence: 0.94)
+- 660 nodes · 1399 edges · 37 communities (30 shown, 3 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 68 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ab5a9aa1`
+- Built from commit: `8147eedf`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- TaskSpec
-- SuperstateAdapter
+- AblationRunner
+- DriverTelemetry
 - AgyCliDriver
 - ClaudeCliDriver
 - handle
 - BudgetPolicy
 - ConcurrencyGovernor
 - .execute
-- task_loader.py
-- .execute
+- runner.py
+- TurnBasedAdapter
 - extract_and_grade
 - RunRecorder
-- test_docker_integration.py
-- HeldOutVerifier
 - DockerManager
+- base_cli.py
+- TaskSpec
 - test_differential.py
-- .build_image
+- test_runner.py
 - Architecture Specification: Antigravity CLI Driver (`AgyCliDriver`) & Container Execution Bridge
 - Architecture Specification: Concurrent Evaluation Isolation & Universal Progress-Earned Budgeting
 - Proposed File Changes
-- docker_manager.py
+- 2. Architectural Design
 - Global Constraints
-- .prepare_workspace
-- .clean_workspace
+- AgentDriver
+- Global Constraints
 - Feature Implementation Plan
 - superstate-eval Local Assessment Repository Implementation Plan
 - superstate-eval
 - benchmarks/__init__.py
 - dag_plan.md
 - superstate-eval
+- .run_cohort
+- .run_task
+- StubDriver
 
 ## God Nodes (most connected - your core abstractions)
-1. `TaskSpec` - 49 edges
-2. `DockerManager` - 36 edges
-3. `SuperstateAdapter` - 34 edges
-4. `AblationRunner` - 32 edges
-5. `DriverTelemetry` - 30 edges
-6. `AgentDriver` - 27 edges
+1. `TaskSpec` - 55 edges
+2. `DriverTelemetry` - 37 edges
+3. `DockerManager` - 36 edges
+4. `SuperstateAdapter` - 34 edges
+5. `AblationRunner` - 34 edges
+6. `AgentDriver` - 31 edges
 7. `ClaudeCliDriver` - 24 edges
 8. `AgyCliDriver` - 23 edges
 9. `BudgetPolicy` - 21 edges
@@ -61,27 +64,27 @@
 ## Surprising Connections (you probably didn't know these)
 - `MockDriver` --uses--> `TaskSpec`  [INFERRED]
   tests/test_adapters.py → lab/benchmarks/task_loader.py
+- `StubDriver` --uses--> `TaskSpec`  [INFERRED]
+  tests/test_runner.py → lab/benchmarks/task_loader.py
 - `test_load_task_from_dir_parses_task_toml_and_instruction()` --uses--> `TaskSpec`  [INFERRED]
   tests/test_task_loader.py → lab/benchmarks/task_loader.py
-- `test_run_telemetry_serialization()` --calls--> `RunTelemetry`  [EXTRACTED]
-  tests/test_budget_policy.py → lab/engine/budget_policy.py
-- `test_held_out_verifier_builds_and_grades_in_its_own_container()` --uses--> `HeldOutVerifier`  [INFERRED]
-  tests/test_docker_integration.py → lab/engine/verifier.py
-- `test_check_disk_space_raises_on_emergency_limit()` --uses--> `DiskSpaceError`  [INFERRED]
-  tests/test_docker_manager.py → lab/sandbox/docker_manager.py
+- `StubDriver` --uses--> `DriverTelemetry`  [INFERRED]
+  tests/test_runner.py → lab/engine/adapters/base.py
+- `test_ablation_runner_default_execution_mounts_workspace_into_container()` --uses--> `AgentDriver`  [INFERRED]
+  tests/test_ablation_runner.py → lab/engine/adapters/base.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (34 total, 3 thin omitted)
+## Communities (37 total, 3 thin omitted)
 
-### Community 0 - "TaskSpec"
-Cohesion: 0.05
-Nodes (58): Specification of an evaluation benchmark task., TaskSpec, AgentDriver, Abstract driver interface communicating with an underlying agent runtime.…, Run an agent session or turn within the target workspace., Any, Auditable execution telemetry across an evaluation unit., RunTelemetry (+50 more)
+### Community 0 - "AblationRunner"
+Cohesion: 0.16
+Nodes (17): AblationRunner, InsufficientResourcesError, Raised when the host cannot safely run even a single concurrent evaluation., Executes benchmark tasks across evaluation arms with resource and lease…, _fake_sandbox_factory(), Tests for Ablation Runner and Reporter., Build a run_sandbox stand-in that writes a passing verifier artifact., A cohort of 8 GB tasks must not be dispatched at the 4 GB default width. (+9 more)
 
-### Community 1 - "SuperstateAdapter"
+### Community 1 - "DriverTelemetry"
 Cohesion: 0.10
-Nodes (42): AgentAdapter, DriverTelemetry, Base interfaces and data structures for execution adapters and agent drivers., Outcome and telemetry metrics from a single driver invocation turn., Outcome and telemetry metrics for a complete task execution run., Abstract evaluation adapter configuring workspace guidance and managing turns., Base template adapter managing bounded turn execution and mechanical approval., TaskRunResult (+34 more)
+Nodes (38): DriverTelemetry, Outcome and telemetry metrics from a single driver invocation turn., Outcome and telemetry metrics for a complete task execution run., TaskRunResult, Any, Path, Adapter configuring markdown rules and vendored superpowers skills., Install markdown guidance and copy superpowers skills into workspace. (+30 more)
 
 ### Community 2 - "AgyCliDriver"
 Cohesion: 0.11
@@ -96,8 +99,8 @@ Cohesion: 0.13
 Nodes (25): ContainerExec, _error(), handle(), log(), main(), Any, A minimal stdio MCP server exposing exactly one tool: exec in ONE container.…, Handle one JSON-RPC message. Returns a response, or None for notifications. (+17 more)
 
 ### Community 5 - "BudgetPolicy"
-Cohesion: 0.11
-Nodes (20): BudgetPolicy, Progress-earned budget policy and execution telemetry accounting. Allows…, Manages progress-earned execution timeouts., Record completed milestone and grant progress lease extension if within max…, ProgressTracker, Path, Universal progress tracker for granting runtime lease extensions across…, Monitors workspace state and awards progress-earned lease extensions to any arm. (+12 more)
+Cohesion: 0.06
+Nodes (38): BudgetPolicy, Any, Progress-earned budget policy and execution telemetry accounting. Allows…, Manages progress-earned execution timeouts., Record completed milestone and grant progress lease extension if within max…, Auditable execution telemetry across an evaluation unit., RunTelemetry, ProgressTracker (+30 more)
 
 ### Community 6 - "ConcurrencyGovernor"
 Cohesion: 0.12
@@ -107,41 +110,41 @@ Nodes (23): ConcurrencyGovernor, Path, Machine-aware dynamic concurrency governo
 Cohesion: 0.10
 Nodes (20): compose_turnkey_milestone_prompt(), _extract_plan_milestones(), find_superstate_binary(), Milestone, Any, BudgetHook, Path, Construct an O(1) bounded subagent turnkey prompt with negative constraints. (+12 more)
 
-### Community 8 - "task_loader.py"
-Cohesion: 0.11
-Nodes (22): _extract_collect_commands(), load_benchmark_tasks(), load_task_from_dir(), Any, Path, Benchmark task specification and loader module. Parses SWE-bench / Harbor style…, Scan directory tree for benchmark task directories containing task.toml., Ingest collector command sequences used to extract test or run artifacts. (+14 more)
+### Community 8 - "runner.py"
+Cohesion: 0.06
+Nodes (46): _extract_collect_commands(), load_benchmark_tasks(), load_task_from_dir(), Any, Path, Benchmark task specification and loader module. Parses SWE-bench / Harbor style…, Scan directory tree for benchmark task directories containing task.toml., Directory holding the held-out verifier (Dockerfile, test.sh, grader.py). (+38 more)
 
-### Community 9 - ".execute"
-Cohesion: 0.11
-Nodes (20): Any, BudgetHook, Path, Configure or sanitize workspace prior to agent invocation., Provide initial instruction prompt for the task., Report arm-specific facts about how this run was actually configured., Execute task across sequential turns with bounded caps and autonomous approval., Execute a task in the given workspace using the provided driver. (+12 more)
+### Community 9 - "TurnBasedAdapter"
+Cohesion: 0.20
+Nodes (10): Any, BudgetHook, Path, Configure or sanitize workspace prior to agent invocation., Provide initial instruction prompt for the task., Report arm-specific facts about how this run was actually configured., Execute task across sequential turns with bounded caps and autonomous approval., Execute a task in the given workspace using the provided driver. (+2 more)
 
 ### Community 10 - "extract_and_grade"
-Cohesion: 0.14
-Nodes (20): Directory holding the held-out verifier (Dockerfile, test.sh, grader.py)., EvaluationResult, extract_and_grade(), Any, Path, Blind patch extraction and held-out verifier scoring. Executes uniformly across…, Outcome of blind verification and patch extraction., Execute blind grading against the container and extract patches/telemetry. This… (+12 more)
+Cohesion: 0.12
+Nodes (29): compute_test_metrics(), extract_and_grade(), Any, Path, Blind patch extraction and held-out verifier scoring. Executes uniformly across…, Execute blind grading against the container and extract patches/telemetry. This…, Compute normalized test pass fractions and counts from verifier statistics.…, Result of running the held-out verifier. (+21 more)
 
 ### Community 11 - "RunRecorder"
 Cohesion: 0.13
 Nodes (15): _clip(), MilestoneRecord, Any, Path, Run trace capture: the diagnostic record an evaluation leaves behind. Pass/fail…, Capture one driver turn, including the prompt that produced it., Capture a milestone attempt and its gate verdict., Persist the full held-out verifier output, untruncated. (+7 more)
 
-### Community 12 - "test_docker_integration.py"
-Cohesion: 0.17
-Nodes (19): Raised when the task repository cannot be materialized onto the host., WorkspaceSeedError, requires_docker, fixture, Path, Integration tests exercising a real Docker daemon. The unit suite mocks…, End-to-end: build the verifier image and have it write reward.json. Mirrors the…, reward.txt == -1 is an infrastructure failure, not a legitimate 0. (+11 more)
+### Community 12 - "DockerManager"
+Cohesion: 0.05
+Nodes (55): Container, DockerClient, HeldOutVerifier, Any, Path, Held-out verification in a separate container. The benchmark's own contract…, Build the verifier image for `task` and return its tag., Run the held-out verifier against the collected patch. `logs_dir` must already… (+47 more)
 
-### Community 13 - "HeldOutVerifier"
-Cohesion: 0.15
-Nodes (14): HeldOutVerifier, Any, Path, Held-out verification in a separate container. The benchmark's own contract…, Build the verifier image for `task` and return its tag., Run the held-out verifier against the collected patch. `logs_dir` must already…, Result of running the held-out verifier., Strict gate: the verifier must have produced a reward of 1.0. (+6 more)
+### Community 13 - "base_cli.py"
+Cohesion: 0.14
+Nodes (16): BaseCliDriver, CliDriverError, estimate_cost_usd(), first(), Any, Path, RuntimeError, Shared plumbing for agent drivers that shell out to a CLI. Subclasses supply… (+8 more)
 
-### Community 14 - "DockerManager"
-Cohesion: 0.19
-Nodes (12): DockerClient, DockerManager, Prune dangling images, stopped containers, and unreferenced volumes., Manages Docker containers and host disk resource reclamation., Tests for Docker Lifecycle and Disk Space Watchdog., test_check_disk_space_healthy(), test_check_disk_space_raises_on_emergency_limit(), test_check_disk_space_triggers_prune_when_below_min() (+4 more)
+### Community 14 - "TaskSpec"
+Cohesion: 0.20
+Nodes (9): Specification of an evaluation benchmark task., TaskSpec, MockContainer, PilotMockDriver, Any, Path, Execute task across arms and return structured benchmark outcomes. With…, Predictable mock driver simulating agent behavior for pilot verification. (+1 more)
 
 ### Community 15 - "test_differential.py"
 Cohesion: 0.21
 Nodes (13): check_binaries(), fixture, Path, Differential parity testing between superstate (Rust) and agent-rules (Python).…, Dynamically resolve binary executable from env, PATH, or fallback locations., Both engines must parse a DAG plan and traverse every task identically., Recording an epistemic note must produce identical state on both engines., _resolve_binary() (+5 more)
 
-### Community 16 - ".build_image"
-Cohesion: 0.17
-Nodes (7): Container, Path, Copy the task repository out of `image` into the host directory `dest`. A bind…, Build an image from `context_dir` and return its tag. Used for the held-out…, Stop docker-py invoking every configured credential helper on build. docker-py…, Check available disk space. Prune docker if below min_free_gb; raise if below…, Run a container with guaranteed teardown upon context exit. Guarantees that the…
+### Community 16 - "test_runner.py"
+Cohesion: 0.27
+Nodes (12): EvaluationResult, Outcome of blind verification and patch extraction., Path, Tests for AblationRunner telemetry and metrics integration. Validates that…, Verify fallback to 1.0 pass fraction when verifier stats are None and task…, Verify fallback to 0.0 pass fraction when verifier stats are None and task…, Instantiate an AblationRunner configured with mocked docker and governor.…, Verify that granular verifier statistics populate test metrics in telemetry… (+4 more)
 
 ### Community 17 - "Architecture Specification: Antigravity CLI Driver (`AgyCliDriver`) & Container Execution Bridge"
 Cohesion: 0.17
@@ -155,21 +158,21 @@ Nodes (8): 1. Executive Summary & Goals, 2. Dynamic Concurrency Governor, 3. Str
 Cohesion: 0.25
 Nodes (7): Concurrent Evaluation Isolation & Universal Progress Budgeting Implementation Plan, Proposed File Changes, Task 1: Dynamic Machine-Aware Concurrency Governor, Task 2: Container Resource Constraints & Volume Isolation, Task 3: Universal Progress-Earned Budget Tracker, Task 4: Blind Extraction & Verification Pipeline, Task 5: End-to-End Concurrent Runner & Integration
 
-### Community 20 - "docker_manager.py"
-Cohesion: 0.33
-Nodes (6): DiskSpaceError, ImageBuildError, RuntimeError, Docker lifecycle and host disk space management. Ensures deterministic…, Raised when host disk space falls below the critical emergency threshold., Raised when an image (typically the held-out verifier) cannot be built.
+### Community 20 - "2. Architectural Design"
+Cohesion: 0.22
+Nodes (8): 1. Context & Motivation, 2.1 EvaluationResult Dataclass Extension, 2.2 Metric Extraction Helper, 2.3 AblationRunner Telemetry Integration, 2.4 CLI Output Formatting, 2. Architectural Design, 3. Testing & Verification, Design Specification: Test Pass Fraction & Test Statistics Propagation
 
 ### Community 21 - "Global Constraints"
 Cohesion: 0.33
 Nodes (5): Antigravity CLI Driver (`AgyCliDriver`) Implementation Plan, Global Constraints, Task 1: Implement `AgyCliDriver` Core and Container Execution Bridge, Task 2: Verify Baseline and System Integration, Task 3: Execute Live Single-Task Smoke Run
 
-### Community 22 - ".prepare_workspace"
-Cohesion: 0.50
-Nodes (3): Path, Install markdown guidance and copy superpowers skills into workspace., Configure workspace with Superpowers guidance before execution begins.
+### Community 22 - "AgentDriver"
+Cohesion: 0.33
+Nodes (4): AgentDriver, Abstract driver interface communicating with an underlying agent runtime.…, Run an agent session or turn within the target workspace., Path
 
-### Community 23 - ".clean_workspace"
-Cohesion: 0.50
-Nodes (3): Path, Sanitize workspace by removing all guidance, rule files, and skills., Ensure pristine unguided workspace before execution.
+### Community 23 - "Global Constraints"
+Cohesion: 0.40
+Nodes (4): Global Constraints, Task 1: Extend EvaluationResult and Implement compute_test_metrics, Task 2: Integrate Test Metrics into Runner Telemetry and CLI Output, Test Pass Fraction & Test Statistics Implementation Plan
 
 ### Community 24 - "Feature Implementation Plan"
 Cohesion: 0.40
@@ -183,25 +186,37 @@ Nodes (3): superstate-eval Local Assessment Repository Implementation Plan, Task
 Cohesion: 0.50
 Nodes (3): Purpose, Quick Start, superstate-eval
 
+### Community 34 - ".run_cohort"
+Cohesion: 0.50
+Nodes (3): Any, Resolve a cohort entry into (task_id, image, base_budget_sec, task_spec)., Execute a matrix of tasks x arms concurrently using the dynamic governor.
+
+### Community 35 - ".run_task"
+Cohesion: 0.50
+Nodes (4): NoDriverConfiguredError, RuntimeError, Execute a single task under the specified arm and budget policy. Guarantees: 1.…, Raised when a live evaluation is requested without an agent driver.
+
+### Community 36 - "StubDriver"
+Cohesion: 0.40
+Nodes (4): Any, Stub driver providing dummy execution telemetry for runner tests., Simulate agent execution by writing a stub solution file. Parameters: task:…, StubDriver
+
 ## Knowledge Gaps
-- **31 isolated node(s):** `superstate-eval`, `Purpose`, `Quick Start`, `Task 1: Implement `AgyCliDriver` Core and Container Execution Bridge`, `Task 2: Verify Baseline and System Integration` (+26 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 248 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **39 isolated node(s):** `superstate-eval`, `Purpose`, `Quick Start`, `Task 1: Implement `AgyCliDriver` Core and Container Execution Bridge`, `Task 2: Verify Baseline and System Integration` (+34 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 275 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `TaskSpec` connect `TaskSpec` to `SuperstateAdapter`, `AgyCliDriver`, `ClaudeCliDriver`, `.execute`, `task_loader.py`, `.execute`, `extract_and_grade`?**
-  _High betweenness centrality (0.178) - this node is a cross-community bridge._
-- **Why does `DockerManager` connect `DockerManager` to `TaskSpec`, `SuperstateAdapter`, `task_loader.py`, `test_docker_integration.py`, `HeldOutVerifier`, `.build_image`, `docker_manager.py`?**
-  _High betweenness centrality (0.111) - this node is a cross-community bridge._
-- **Why does `AblationRunner` connect `TaskSpec` to `SuperstateAdapter`, `BudgetPolicy`, `ConcurrencyGovernor`, `task_loader.py`, `RunRecorder`, `HeldOutVerifier`, `DockerManager`?**
+- **Why does `TaskSpec` connect `TaskSpec` to `AblationRunner`, `DriverTelemetry`, `AgyCliDriver`, `ClaudeCliDriver`, `.run_cohort`, `.run_task`, `StubDriver`, `.execute`, `runner.py`, `TurnBasedAdapter`, `extract_and_grade`, `base_cli.py`, `test_runner.py`, `AgentDriver`?**
+  _High betweenness centrality (0.183) - this node is a cross-community bridge._
+- **Why does `DockerManager` connect `DockerManager` to `runner.py`, `AblationRunner`, `AgentDriver`?**
   _High betweenness centrality (0.101) - this node is a cross-community bridge._
-- **Are the 11 inferred relationships involving `TaskSpec` (e.g. with `AgentAdapter` and `AgentDriver`) actually correct?**
-  _`TaskSpec` has 11 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `AblationRunner` connect `AblationRunner` to `DriverTelemetry`, `.run_cohort`, `.run_task`, `BudgetPolicy`, `ConcurrencyGovernor`, `runner.py`, `RunRecorder`, `DockerManager`, `TaskSpec`, `test_runner.py`, `AgentDriver`?**
+  _High betweenness centrality (0.097) - this node is a cross-community bridge._
+- **Are the 13 inferred relationships involving `TaskSpec` (e.g. with `AgentAdapter` and `AgentDriver`) actually correct?**
+  _`TaskSpec` has 13 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 6 inferred relationships involving `DriverTelemetry` (e.g. with `AgyCliDriver` and `BaseCliDriver`) actually correct?**
+  _`DriverTelemetry` has 6 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 9 inferred relationships involving `DockerManager` (e.g. with `PilotShowdownRunner` and `AblationRunner`) actually correct?**
   _`DockerManager` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 6 inferred relationships involving `SuperstateAdapter` (e.g. with `TaskSpec` and `AgentDriver`) actually correct?**
   _`SuperstateAdapter` has 6 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 13 inferred relationships involving `AblationRunner` (e.g. with `TaskSpec` and `AgentAdapter`) actually correct?**
-  _`AblationRunner` has 13 INFERRED edges - model-reasoned connections that need verification._
