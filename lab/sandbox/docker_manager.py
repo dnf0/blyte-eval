@@ -181,6 +181,25 @@ class DockerManager:
         logger.info("Built image %s from %s", tag, context)
         return tag
 
+    def build_image_from_dockerfile(
+        self, dockerfile: str, tag: str, timeout: int = 1800
+    ) -> str:
+        """Build an image from an inline Dockerfile with no build context."""
+        with self._suppressed_registry_auth():
+            try:
+                _image, _logs = self.client.images.build(
+                    fileobj=io.BytesIO(dockerfile.encode("utf-8")),
+                    tag=tag,
+                    rm=True,
+                    forcerm=True,
+                    timeout=timeout,
+                    pull=False,
+                )
+            except Exception as err:
+                raise ImageBuildError(f"Failed to build image '{tag}': {err}") from err
+        logger.info("Built image %s", tag)
+        return tag
+
     @contextmanager
     def _suppressed_registry_auth(self) -> Generator[None, None, None]:
         """Stop docker-py invoking every configured credential helper on build.
