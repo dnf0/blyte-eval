@@ -11,9 +11,11 @@ Skipped automatically when Docker is unavailable.
 from __future__ import annotations
 
 from collections.abc import Iterator
+import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -199,3 +201,80 @@ def test_verifier_crash_sentinel_is_not_treated_as_a_score(tmp_path: Path) -> No
     assert crashed is True
     assert reward is None, "a crashed verifier must not be scored"
     assert source == "reward.txt"
+
+
+@requires_docker
+def test_container_exec_mcp_runs_in_the_container_not_the_host(
+    task_image: str, tmp_path: Path
+) -> None:
+    """End-to-end proof the exec lands inside the sandbox.
+
+    The probe image carries a tool the host does not have, so a command that
+    succeeds could only have run in the container.
+    """
+    import json as _json
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    subprocess.run(
+        [
+            "docker", "build", "-q", "-t", "superstate-eval-mcp-itest", "-",
+        ],
+        input=(
+            f"FROM {task_image}\n"
+            "RUN printf '#!/bin/sh\\necho TASK-ONLY-TOOL\\n' > /usr/local/bin/taskonly "
+            "&& chmod +x /usr/local/bin/taskonly\n"
+        ),
+        text=True,
+        check=True,
+        capture_output=True,
+    )
+
+    manager = DockerManager()
+    try:
+        with manager.run_sandbox(
+            image="superstate-eval-mcp-itest",
+            volumes={str(workspace.resolve()): {"bind": "/app", "mode": "rw"}},
+            working_dir="/app",
+            network_mode="none",
+            logs_dir=tmp_path / "logs",
+        ) as container:
+            requests = [
+                {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "run_in_container",
+                        "arguments": {"command": "taskonly; pwd"},
+                    },
+                },
+            ]
+            proc = subprocess.run(
+                [sys.executable, "-m", "lab.engine.drivers.container_exec_mcp"],
+                input="\n".join(_json.dumps(r) for r in requests) + "\n",
+                capture_output=True,
+                text=True,
+                cwd=str(Path(__file__).parent.parent),
+                env={
+                    **os.environ,
+                    "SUPERSTATE_EVAL_CONTAINER": str(container.id),
+                    "PYTHONPATH": str(Path(__file__).parent.parent),
+                },
+                timeout=120,
+            )
+
+        responses = [_json.loads(ln) for ln in proc.stdout.splitlines() if ln.strip()]
+        call = next(r for r in responses if r.get("id") == 2)
+        text = call["result"]["content"][0]["text"]
+
+        assert "TASK-ONLY-TOOL" in text, f"command did not run in the container: {text}"
+        assert "/app" in text
+        assert call["result"]["isError"] is False
+        assert shutil.which("taskonly") is None, "host must not have the tool"
+    finally:
+        subprocess.run(
+            ["docker", "rmi", "-f", "superstate-eval-mcp-itest"], capture_output=True
+        )

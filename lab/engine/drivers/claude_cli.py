@@ -5,10 +5,14 @@ sandbox is deliberately network-isolated) with its working directory set to the
 run's workspace, which the runner bind-mounts into the container at /app. Edits
 the agent makes are therefore visible to the grader, and vice versa.
 
-The tradeoff this makes explicit: the CLI's own shell commands execute on the
-host, not inside the task container. For tasks whose toolchain only exists in the
-image, pass `exec_in_container=True` so the driver appends a container-exec
-instruction to the prompt, or supply a driver that proxies tool calls.
+Command execution is redirected into the container rather than left on the host.
+A host shell would be both wrong (no task toolchain) and unsafe: it can reach the
+Docker daemon, and from there read the held-out tests baked into the verifier
+image or mount the host filesystem. So when a container is supplied the driver
+disallows the CLI's Bash tool and supplies `run_in_container` over MCP instead
+(see container_exec_mcp), which can only exec in this run's container.
+`--strict-mcp-config` also keeps the operator's own MCP servers out of the run,
+which would otherwise vary between arms.
 """
 
 from __future__ import annotations
@@ -19,6 +23,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 from typing import Any, Optional
 
@@ -38,6 +43,18 @@ MODEL_PRICING: dict[str, tuple[float, float]] = {
 }
 
 DEFAULT_MODEL = "claude-opus-5"
+
+# MCP server name; the model sees the tool as mcp__task__run_in_container.
+MCP_SERVER_NAME = "task"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+CONTAINER_EXEC_SYSTEM_PROMPT = (
+    "Command execution: this workspace is mounted into a Docker container that holds "
+    "the project's toolchain and dependencies. The host has neither, and you have no "
+    "shell on it. Run every build, test and inspection command with the "
+    f"`mcp__{MCP_SERVER_NAME}__run_in_container` tool. Read and edit files normally — "
+    "the workspace directory and the container's /app are the same files."
+)
 
 
 class ClaudeCliDriverError(RuntimeError):
@@ -71,7 +88,8 @@ class ClaudeCliDriver(AgentDriver):
         permission_mode: str = "bypassPermissions",
         extra_args: Optional[list[str]] = None,
         env: Optional[dict[str, str]] = None,
-        exec_in_container: bool = False,
+        container_exec: bool = True,
+        mcp_python: Optional[str] = None,
     ) -> None:
         if cli_path:
             # An explicit path must actually be runnable; failing here beats
@@ -93,11 +111,46 @@ class ClaudeCliDriver(AgentDriver):
         self.permission_mode = permission_mode
         self.extra_args = list(extra_args or [])
         self.env = env
-        self.exec_in_container = exec_in_container
+        self.container_exec = container_exec
+        self.mcp_python = mcp_python or sys.executable
+
+    def _mcp_config(self, container_id: str) -> str:
+        """Inline MCP config launching the container-exec server for THIS container."""
+        return json.dumps(
+            {
+                "mcpServers": {
+                    MCP_SERVER_NAME: {
+                        "command": self.mcp_python,
+                        "args": ["-m", "lab.engine.drivers.container_exec_mcp"],
+                        "cwd": str(REPO_ROOT),
+                        "env": {
+                            "SUPERSTATE_EVAL_CONTAINER": container_id,
+                            "PYTHONPATH": str(REPO_ROOT),
+                        },
+                    }
+                }
+            }
+        )
+
+    @staticmethod
+    def _container_id(container: Any) -> Optional[str]:
+        if container is None:
+            return None
+        ident = getattr(container, "id", None) or getattr(container, "name", None)
+        return str(ident) if ident else None
 
     def _build_command(
-        self, prompt: str, workspace_path: Path, conversation_id: Optional[str]
+        self,
+        workspace_path: Path,
+        conversation_id: Optional[str],
+        container: Any = None,
     ) -> list[str]:
+        """Build the argv. The prompt is NOT included: it goes on stdin.
+
+        Several of these flags are variadic (--add-dir, --disallowedTools,
+        --mcp-config), so a trailing positional prompt gets swallowed as another
+        value for whichever one came last. Piping the prompt avoids that entirely.
+        """
         cmd = [
             self.cli_path,
             "--print",
@@ -107,29 +160,28 @@ class ClaudeCliDriver(AgentDriver):
             self.model,
             "--permission-mode",
             self.permission_mode,
-            "--add-dir",
-            str(workspace_path),
         ]
-        if conversation_id:
-            cmd.extend(["--resume", conversation_id])
-        cmd.extend(self.extra_args)
-        cmd.append(prompt)
-        return cmd
 
-    def _augment_prompt(self, prompt: str, container: Any) -> str:
-        """Tell the agent to run commands in the task container when asked to."""
-        if not self.exec_in_container or container is None:
-            return prompt
-        container_id = getattr(container, "id", None) or getattr(container, "name", None)
-        if not container_id:
-            return prompt
-        return (
-            f"{prompt}\n\n"
-            "## Execution environment\n"
-            f"The task's toolchain lives in Docker container `{container_id}`, where this "
-            "workspace is mounted at /app. Run build and test commands with "
-            f"`docker exec {container_id} <cmd>` rather than directly on this host."
-        )
+        container_id = self._container_id(container) if self.container_exec else None
+        if container_id:
+            cmd += [
+                # No host shell: it lacks the toolchain and can reach the Docker daemon.
+                "--disallowedTools",
+                "Bash",
+                "--mcp-config",
+                self._mcp_config(container_id),
+                "--strict-mcp-config",
+                "--append-system-prompt",
+                CONTAINER_EXEC_SYSTEM_PROMPT,
+            ]
+
+        if conversation_id:
+            cmd += ["--resume", conversation_id]
+        cmd += self.extra_args
+        # Keep --add-dir last among our flags; it is variadic, but nothing
+        # positional follows it because the prompt is piped.
+        cmd += ["--add-dir", str(workspace_path)]
+        return cmd
 
     def run(
         self,
@@ -140,8 +192,8 @@ class ClaudeCliDriver(AgentDriver):
         timeout_sec: float = 3600.0,
         container: Any = None,
     ) -> DriverTelemetry:
-        prompt = self._augment_prompt(prompt_override or task.instruction, container)
-        cmd = self._build_command(prompt, workspace_path, conversation_id)
+        prompt = prompt_override or task.instruction
+        cmd = self._build_command(workspace_path, conversation_id, container)
 
         run_env = dict(os.environ)
         run_env.update(task.env or {})
@@ -153,6 +205,7 @@ class ClaudeCliDriver(AgentDriver):
             proc = subprocess.run(
                 cmd,
                 cwd=str(workspace_path),
+                input=prompt,
                 capture_output=True,
                 text=True,
                 timeout=max(1.0, timeout_sec),
