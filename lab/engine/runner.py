@@ -280,6 +280,10 @@ class AblationRunner:
                         failure_reason = grade_res.failure_reason or run_result.error_message
                         extra = {
                             "run_id": run_id,
+                            # The two factors of the design: which execution plane
+                            # (harness) and which layer (arm) produced this result.
+                            "harness": getattr(active_driver, "harness_name", "unknown"),
+                            "model": getattr(active_driver, "harness_model", None),
                             "network_mode": network_mode,
                             "nano_cpus": nano_cpus,
                             "mem_limit": mem_limit,

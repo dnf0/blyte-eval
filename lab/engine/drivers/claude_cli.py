@@ -79,6 +79,7 @@ def _first(payload: dict[str, Any], *keys: str, default: Any = None) -> Any:
 
 
 class ClaudeCliDriver(AgentDriver):
+    harness_name: str = "claude-code"
     """Drives the Claude Code CLI in non-interactive mode."""
 
 

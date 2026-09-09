@@ -53,6 +53,7 @@ def _first(payload: dict[str, Any], *keys: str, default: Any = None) -> Any:
 
 
 class InContainerClaudeDriver(AgentDriver):
+    harness_name: str = "claude-code"
     """Runs Claude Code inside the task container via the Docker exec API."""
 
     provides_isolated_execution: bool = True

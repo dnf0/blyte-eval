@@ -87,6 +87,7 @@ def _resolve_cli_path(candidate: Optional[str] = None) -> str:
 
 
 class AgyCliDriver(AgentDriver):
+    harness_name: str = "agy"
     #: agy has no --disallowedTools and no per-invocation --mcp-config, so its
     #: shell tool cannot be removed. The agent keeps a host shell and can read
     #: the task's tests/ directory directly. See docs for the mitigations.

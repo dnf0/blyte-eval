@@ -349,3 +349,53 @@ def test_run_cohort_sizes_concurrency_on_declared_task_memory() -> None:
 
     kwargs = governor.calculate_max_concurrency.call_args.kwargs
     assert kwargs["ram_gb_per_worker"] == 8.0
+
+
+def _paired(task: str, arm: str, passed: bool, cost: float, harness: str = "agy") -> RunTelemetry:
+    return RunTelemetry(
+        task_id=task, arm=arm, passed=passed, wall_clock_sec=1.0, cost_usd=cost,
+        input_tokens=0, output_tokens=0, extra={"harness": harness},
+    )
+
+
+def test_lift_is_measured_per_harness_and_task_pair() -> None:
+    from lab.engine.reporter import compute_control_plane_lift
+
+    runs = [
+        _paired("t1", "vanilla", False, 0.1), _paired("t1", "superstate", True, 0.2),
+        _paired("t2", "vanilla", True, 0.1), _paired("t2", "superstate", True, 0.2),
+        _paired("t3", "vanilla", True, 0.1), _paired("t3", "superstate", False, 0.2),
+    ]
+    lift = compute_control_plane_lift(runs)["agy+superstate"]
+
+    assert lift["paired_tasks"] == 3
+    assert lift["gained"] == ["t1"]
+    assert lift["lost"] == ["t3"]
+    assert lift["lift_pct_points"] == 0.0  # 2/3 both ways: no net lift
+    assert lift["cost_ratio"] == 2.0
+
+
+def test_lift_never_compares_across_different_harnesses() -> None:
+    # A claude baseline must not be used as the baseline for an agy arm.
+    from lab.engine.reporter import compute_control_plane_lift
+
+    runs = [
+        _paired("t1", "vanilla", False, 0.1, harness="claude-code"),
+        _paired("t1", "superstate", True, 0.2, harness="agy"),
+    ]
+    assert compute_control_plane_lift(runs) == {}
+
+
+def test_runs_without_a_baseline_partner_are_excluded() -> None:
+    from lab.engine.reporter import compute_control_plane_lift
+
+    runs = [_paired("t1", "superstate", True, 0.2)]  # no vanilla partner
+    assert compute_control_plane_lift(runs) == {}
+
+
+def test_small_sample_warning_is_shown() -> None:
+    from lab.engine.reporter import render_lift_report
+
+    runs = [_paired("t1", "vanilla", False, 0.1), _paired("t1", "superstate", True, 0.2)]
+    report = render_lift_report(runs)
+    assert "one task is worth 100.0pp" in report

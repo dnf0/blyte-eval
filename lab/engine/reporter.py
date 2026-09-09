@@ -117,3 +117,108 @@ def render_failure_report(runs: List[RunTelemetry]) -> str:
             lines.append(f"- {entry['count']}x  {entry['signature']}")
         lines.append("")
     return "\n".join(lines).rstrip()
+
+
+# The arm representing the harness with no layer applied: the paired baseline.
+BASELINE_ARM = "vanilla"
+
+
+def _harness_of(run: RunTelemetry) -> str:
+    return str((run.extra or {}).get("harness") or "unknown")
+
+
+def compute_control_plane_lift(
+    runs: List[RunTelemetry], baseline_arm: str = BASELINE_ARM
+) -> Dict[str, Any]:
+    """Measure what each layer adds to a given harness, task by task.
+
+    This evaluation is a paired comparison -- the same harness, model and task run
+    with and without a layer on top -- so the headline number is the delta, not the
+    absolute pass rate. Pairing is done per (harness, task) and runs without a
+    baseline partner are excluded rather than silently compared against nothing.
+    """
+    # (harness, task) -> {arm: run}
+    cells: Dict[tuple[str, str], Dict[str, RunTelemetry]] = {}
+    for run in runs:
+        cells.setdefault((_harness_of(run), run.task_id), {})[run.arm] = run
+
+    results: Dict[str, Any] = {}
+    for (harness, task_id), by_arm in cells.items():
+        baseline = by_arm.get(baseline_arm)
+        if baseline is None:
+            continue
+        for arm, run in by_arm.items():
+            if arm == baseline_arm:
+                continue
+            entry = results.setdefault(
+                f"{harness}+{arm}",
+                {
+                    "harness": harness,
+                    "arm": arm,
+                    "paired_tasks": 0,
+                    "baseline_passes": 0,
+                    "arm_passes": 0,
+                    "gained": [],
+                    "lost": [],
+                    "baseline_cost_usd": 0.0,
+                    "arm_cost_usd": 0.0,
+                },
+            )
+            entry["paired_tasks"] += 1
+            entry["baseline_passes"] += int(baseline.passed)
+            entry["arm_passes"] += int(run.passed)
+            entry["baseline_cost_usd"] += baseline.cost_usd
+            entry["arm_cost_usd"] += run.cost_usd
+            if run.passed and not baseline.passed:
+                entry["gained"].append(task_id)
+            elif baseline.passed and not run.passed:
+                entry["lost"].append(task_id)
+
+    for entry in results.values():
+        n = entry["paired_tasks"]
+        entry["baseline_pass_rate_pct"] = round(entry["baseline_passes"] / n * 100, 1) if n else 0.0
+        entry["arm_pass_rate_pct"] = round(entry["arm_passes"] / n * 100, 1) if n else 0.0
+        entry["lift_pct_points"] = round(
+            entry["arm_pass_rate_pct"] - entry["baseline_pass_rate_pct"], 1
+        )
+        entry["baseline_cost_usd"] = round(entry["baseline_cost_usd"], 2)
+        entry["arm_cost_usd"] = round(entry["arm_cost_usd"], 2)
+        entry["cost_ratio"] = (
+            round(entry["arm_cost_usd"] / entry["baseline_cost_usd"], 2)
+            if entry["baseline_cost_usd"]
+            else None
+        )
+    return results
+
+
+def render_lift_report(runs: List[RunTelemetry], baseline_arm: str = BASELINE_ARM) -> str:
+    """Render control-plane lift, with the caveat that small n cannot support it."""
+    lift = compute_control_plane_lift(runs, baseline_arm=baseline_arm)
+    if not lift:
+        return f"No paired results: no runs found for the '{baseline_arm}' baseline arm."
+
+    lines = [
+        f"## Control-plane lift over `{baseline_arm}` (paired by harness and task)",
+        "",
+        "| Configuration | Paired tasks | Baseline | With layer | Lift | Gained | Lost | Cost x |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for name in sorted(lift):
+        e = lift[name]
+        ratio = f"{e['cost_ratio']}x" if e["cost_ratio"] is not None else "n/a"
+        lines.append(
+            f"| {name} | {e['paired_tasks']} | {e['baseline_pass_rate_pct']}% | "
+            f"{e['arm_pass_rate_pct']}% | {e['lift_pct_points']:+.1f}pp | "
+            f"{len(e['gained'])} | {len(e['lost'])} | {ratio} |"
+        )
+
+    smallest = min(e["paired_tasks"] for e in lift.values())
+    if smallest < 20:
+        step = round(100.0 / smallest, 1)
+        lines += [
+            "",
+            f"> Smallest cell is {smallest} paired tasks, so one task is worth {step}pp. "
+            "Treat any lift smaller than a few tasks as noise; the gained/lost columns "
+            "are more informative than the percentage at this n.",
+        ]
+    return "\n".join(lines)

@@ -6,12 +6,46 @@ import abc
 from dataclasses import dataclass, field
 import logging
 from pathlib import Path
+import shutil
 from typing import Any, Callable, Dict, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.approval import resolve_next_turn_prompt
 
 logger = logging.getLogger("superstate_eval.adapters")
+
+# Guidance a repository may already carry. Every arm strips these before applying
+# its own layer, so the three arms start from an identical workspace and the only
+# difference between them is the treatment under test.
+PREEXISTING_GUIDANCE = (
+    "AGENTS.md",
+    "GEMINI.md",
+    "CLAUDE.md",
+    ".cursorrules",
+    ".windsurfrules",
+)
+
+
+def strip_preexisting_guidance(workspace_path: Path) -> list[str]:
+    """Remove guidance files the task repo ships. Returns what was removed."""
+    removed: list[str] = []
+    for filename in PREEXISTING_GUIDANCE:
+        target = workspace_path / filename
+        if target.is_file():
+            try:
+                target.unlink()
+                removed.append(filename)
+            except OSError as err:
+                logger.warning("Failed to remove %s: %s", target, err)
+
+    skills_dir = workspace_path / ".agents" / "skills"
+    if skills_dir.is_dir():
+        try:
+            shutil.rmtree(skills_dir)
+            removed.append(".agents/skills")
+        except OSError as err:
+            logger.warning("Failed to remove %s: %s", skills_dir, err)
+    return removed
 
 # Returns the currently granted budget in seconds, after polling for progress.
 BudgetHook = Callable[[], float]
@@ -57,6 +91,16 @@ class AgentDriver(abc.ABC):
     on the host operate on `workspace_path`, which the runner bind-mounts into
     the container so both views refer to the same files.
     """
+
+    #: Name of the execution plane this driver drives (the baseline harness).
+    #: The evaluation is a paired comparison of harness vs harness+layer, so a
+    #: result is meaningless without knowing which harness produced it.
+    harness_name: str = "unknown"
+
+    @property
+    def harness_model(self) -> Optional[str]:
+        """Model the harness was configured with, when the driver knows it."""
+        return getattr(self, "model", None)
 
     #: Whether this driver can confine the agent's command execution to the
     #: sandbox. False means the agent keeps a host shell and can therefore reach
