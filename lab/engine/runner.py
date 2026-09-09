@@ -277,6 +277,14 @@ class AblationRunner:
                             else None,
                             "logs_dir": str(logs_dir),
                             "held_out_verifier": active_task.tests_dir is not None,
+                            # Whether the agent's command execution was actually
+                            # confined to the sandbox. A False here means the agent
+                            # had a host shell and could read the held-out tests, so
+                            # the result carries a weaker guarantee than an isolated
+                            # run and must not be compared with one unqualified.
+                            "isolated_execution": bool(
+                                getattr(active_driver, "provides_isolated_execution", False)
+                            ),
                             **run_result.provenance,
                         }
         except Exception as e:

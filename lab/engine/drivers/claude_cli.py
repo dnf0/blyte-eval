@@ -81,6 +81,7 @@ def _first(payload: dict[str, Any], *keys: str, default: Any = None) -> Any:
 class ClaudeCliDriver(AgentDriver):
     """Drives the Claude Code CLI in non-interactive mode."""
 
+
     def __init__(
         self,
         model: str = DEFAULT_MODEL,
@@ -113,6 +114,11 @@ class ClaudeCliDriver(AgentDriver):
         self.env = env
         self.container_exec = container_exec
         self.mcp_python = mcp_python or sys.executable
+
+    @property
+    def provides_isolated_execution(self) -> bool:
+        """Isolated only with container_exec on: that is what removes host Bash."""
+        return self.container_exec
 
     def _mcp_config(self, container_id: str) -> str:
         """Inline MCP config launching the container-exec server for THIS container."""

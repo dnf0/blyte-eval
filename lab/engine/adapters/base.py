@@ -58,6 +58,13 @@ class AgentDriver(abc.ABC):
     the container so both views refer to the same files.
     """
 
+    #: Whether this driver can confine the agent's command execution to the
+    #: sandbox. False means the agent keeps a host shell and can therefore reach
+    #: the Docker daemon and the task directory -- including the held-out tests.
+    #: Runs from such a driver are recorded as not isolated rather than being
+    #: quietly presented alongside isolated ones.
+    provides_isolated_execution: bool = False
+
     @abc.abstractmethod
     def run(
         self,

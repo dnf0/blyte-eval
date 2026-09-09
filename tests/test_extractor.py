@@ -327,3 +327,28 @@ def test_compute_test_metrics_generic_total_passed() -> None:
     assert metrics["p2p_fraction"] is None
 
 
+
+
+def test_bridge_script_is_excluded_from_the_graded_patch(tmp_path: Path) -> None:
+    """The agy driver writes ./run-in-container into the workspace.
+
+    It is bind-mounted to /app, so `git add -A` would commit it into model.patch.
+    The task verifiers record an out-of-scope signal for files outside the
+    expected fix scope, so harness scaffolding must never reach the patch.
+    """
+    from unittest.mock import MagicMock
+
+    container = MagicMock()
+    container.exec_run.return_value = (0, b"ok")
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir()
+
+    extract_and_grade(
+        container=container,
+        task=MockTask(task_id="t", verification_cmd="pytest"),
+        arm="vanilla",
+        logs_dir=logs_dir,
+    )
+
+    exclude_cmd = container.exec_run.call_args_list[0].args[0]
+    assert "run-in-container" in exclude_cmd

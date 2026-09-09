@@ -194,3 +194,51 @@ def test_pass_fraction_fallback_when_stats_are_none_failed(tmp_path: Path) -> No
     assert telemetry.extra["p2p_fraction"] is None
     assert telemetry.extra["tests_passed"] is None
     assert telemetry.extra["tests_total"] is None
+
+
+def test_run_telemetry_records_whether_execution_was_isolated(tmp_path) -> None:
+    """A result from a driver with a host shell carries a weaker guarantee.
+
+    It must not sit in a report next to an isolated run without saying so.
+    """
+    from contextlib import contextmanager
+    from unittest.mock import MagicMock
+
+    from lab.benchmarks.task_loader import TaskSpec
+    from lab.engine.adapters.base import AgentDriver, DriverTelemetry
+    from lab.engine.runner import AblationRunner
+
+    class HostShellDriver(AgentDriver):
+        provides_isolated_execution = False
+
+        def run(self, task, workspace_path, prompt_override=None, conversation_id=None,
+                timeout_sec=3600.0, container=None) -> DriverTelemetry:
+            return DriverTelemetry(success=True, raw_response="done", duration_seconds=1.0)
+
+    mock_docker = MagicMock()
+    mock_container = MagicMock()
+
+    @contextmanager
+    def fake_sandbox(image, logs_dir, container_name, **kwargs):
+        vdir = logs_dir / "verifier"
+        vdir.mkdir(parents=True, exist_ok=True)
+        (vdir / "reward.json").write_text('{"reward": 1.0}')
+        mock_container.exec_run.return_value = (0, b"ok")
+        yield mock_container
+
+    mock_docker.run_sandbox.side_effect = fake_sandbox
+
+    runner = AblationRunner(
+        docker_manager=mock_docker,
+        workspace_root=tmp_path / "ws",
+        default_driver=HostShellDriver(),
+    )
+    telemetry = runner.run_task(
+        task_id="org/t",
+        arm="vanilla",
+        image="img:latest",
+        base_budget_sec=600.0,
+        task_spec=TaskSpec(id="org/t", name="t", instruction="go", docker_image="img:latest"),
+    )
+
+    assert telemetry.extra["isolated_execution"] is False

@@ -92,9 +92,13 @@ class HeldOutVerifier:
         self,
         docker_manager: DockerManager | None = None,
         build_timeout_sec: int = 1800,
+        keep_image: bool = False,
     ) -> None:
         self.docker_manager = docker_manager or DockerManager()
         self.build_timeout_sec = build_timeout_sec
+        # Only for debugging a verifier: leaving the image on disk leaves the
+        # hidden tests readable by any later agent that has a host shell.
+        self.keep_image = keep_image
 
     def build(self, task: Any) -> str:
         """Build the verifier image for `task` and return its tag."""
@@ -103,7 +107,11 @@ class HeldOutVerifier:
             raise ImageBuildError(
                 f"Task '{getattr(task, 'id', '?')}' has no tests/Dockerfile to build a verifier from"
             )
-        tag = f"superstate-eval-verifier/{_sanitize_tag(str(task.id))}:latest"
+        # A per-run tag, not a stable one. A cached verifier image is the held-out
+        # answer key sitting on the host: any later agent with a shell can run
+        # `docker run <image> cat /tests/test.patch`. Unique tag + removal after
+        # grading means it exists only while grading is actually happening.
+        tag = f"superstate-eval-verifier/{_sanitize_tag(str(task.id))}:{uuid.uuid4().hex[:12]}"
         return self.docker_manager.build_image(
             context_dir=tests_dir, tag=tag, timeout=self.build_timeout_sec
         )
@@ -115,7 +123,29 @@ class HeldOutVerifier:
         verifier/reward.json back into it.
         """
         image_tag = self.build(task)
+        try:
+            return self._run_with_image(task, logs_dir, network_mode, image_tag)
+        finally:
+            if not self.keep_image:
+                self.remove_image(image_tag)
 
+    def remove_image(self, image_tag: str) -> None:
+        """Delete the verifier image so the hidden tests do not linger on the host."""
+        try:
+            self.docker_manager.client.images.remove(image=image_tag, force=True)
+            logger.info("Removed verifier image %s", image_tag)
+        except Exception as err:
+            logger.warning(
+                "Could not remove verifier image %s: %s. The held-out tests remain "
+                "readable on this host until it is deleted.",
+                image_tag,
+                err,
+            )
+
+    def _run_with_image(
+        self, task: Any, logs_dir: Path, network_mode: str | None, image_tag: str
+    ) -> VerifierOutcome:
+        """Run the built verifier image against the collected patch."""
         run_id = f"verify-{_sanitize_tag(str(task.id))}-{uuid.uuid4().hex[:8]}"
         nano_cpus = int(task.cpus * 1e9) if getattr(task, "cpus", None) else None
         mem_limit = f"{task.memory_mb}m" if getattr(task, "memory_mb", None) else "4g"

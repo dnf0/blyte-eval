@@ -29,6 +29,10 @@ HARNESS_ARTIFACTS = (
     ".agents/",
     "plan.md",
     ".agent-state/",
+    # Bridge script the agy driver writes so the agent can reach the container.
+    # It is harness scaffolding, and the task verifiers record an out-of-scope
+    # signal for files outside the expected fix scope.
+    "run-in-container",
 )
 
 

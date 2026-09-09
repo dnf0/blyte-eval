@@ -87,6 +87,11 @@ def _resolve_cli_path(candidate: Optional[str] = None) -> str:
 
 
 class AgyCliDriver(AgentDriver):
+    #: agy has no --disallowedTools and no per-invocation --mcp-config, so its
+    #: shell tool cannot be removed. The agent keeps a host shell and can read
+    #: the task's tests/ directory directly. See docs for the mitigations.
+    provides_isolated_execution: bool = False
+
     """Driver executing agent sessions via the Antigravity CLI (agy)."""
 
     def __init__(
