@@ -81,6 +81,12 @@ def main() -> None:
 
     logger.info("=" * 80)
     logger.info(f"PILOT SHOWDOWN COMPLETE FOR TASK: {summary['task_id']}")
+    if summary.get("mock_mode"):
+        logger.warning(
+            "SIMULATED RUN (mock_mode=True): the sandbox verifier always reports success. "
+            "These rows exercise the pipeline and are NOT evaluation results. "
+            "Use --live-docker for a real run."
+        )
     logger.info("=" * 80)
 
     headers = f"{'ARM':<15} | {'SUCCESS':<8} | {'TURNS':<6} | {'DURATION':<10} | {'REWARD':<8} | {'PATCH PATH'}"
