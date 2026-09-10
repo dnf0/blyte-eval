@@ -40,6 +40,7 @@ The project dependencies, compilers, and test runners reside inside the Docker c
 To run commands, tests, or builds in the project environment, use:
   `./run-in-container <command>`
 Example: `./run-in-container pytest tests/`
+CRITICAL: Confine all inspections, searches, and commands strictly to this workspace directory and the container. Do NOT inspect host processes, parent directories, or external repositories outside this workspace.
 """
 
 

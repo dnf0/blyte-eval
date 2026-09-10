@@ -56,7 +56,8 @@ TARGETED_EXECUTION_CONTRACT = (
     "5. **ATOMIC COMMITS:** Make atomic git commits with conventional commit messages once tests pass.\n"
     "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
     "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
-    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, commit your changes and finish your turn."
+    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, commit your changes and finish your turn.\n"
+    "9. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the active worktree directory and the provided container environment. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
 
@@ -778,7 +779,8 @@ class SuperstateAdapter(AgentAdapter):
             if current_prompt is None:
                 error_msg = f"State engine produced no prompt for '{active}'"
                 break
-            current_prompt = f"{current_prompt}\n\n{TARGETED_EXECUTION_CONTRACT}"
+            if "TARGETED EXECUTION CONTRACT" not in current_prompt:
+                current_prompt = f"{current_prompt}\n\n{TARGETED_EXECUTION_CONTRACT}"
 
             wt = self.active_worktree(workspace_path)
             turn_workspace = wt if (wt and wt.is_dir()) else workspace_path
