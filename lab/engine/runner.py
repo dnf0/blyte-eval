@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
+import threading
 from pathlib import Path
 import time
 from typing import Any, Callable, Dict, List, Optional, Sequence
@@ -84,6 +85,11 @@ class AblationRunner:
         self.mem_limit = mem_limit
         self.verifier = verifier or HeldOutVerifier(docker_manager=self.docker_manager)
         self.answer_key_guard = AnswerKeyGuard()
+        # Docker maintenance is shared state. Pruning while sibling runs hold
+        # containers can tear down resources they are still using, so it is
+        # deferred until no run is in flight.
+        self._active_runs = 0
+        self._active_lock = threading.Lock()
 
     def _get_adapter(self, arm: str) -> AgentAdapter:
         if arm == "vanilla":
@@ -118,8 +124,14 @@ class AblationRunner:
         runner): there is deliberately no mock fallback, so a misconfigured run
         fails loudly instead of reporting fabricated telemetry.
         """
-        # 1. Pre-flight disk space safety check
-        self.docker_manager.check_disk_space_or_prune(min_free_gb=self.min_free_disk_gb)
+        # 1. Pre-flight disk space safety check. Only the first run in flight may
+        #    prune: the disk check removes stopped containers and unused volumes,
+        #    which is unsafe to do underneath a sibling run.
+        with self._active_lock:
+            first_in_flight = self._active_runs == 0
+            self._active_runs += 1
+        if first_in_flight:
+            self.docker_manager.check_disk_space_or_prune(min_free_gb=self.min_free_disk_gb)
 
         # 2. Configure budget policy: universal progress extensions enabled for all arms
         budget_policy = BudgetPolicy(
@@ -324,8 +336,14 @@ class AblationRunner:
             passed = False
         finally:
             wall_clock_sec = round(time.time() - start_time, 2)
-            # 3. Post-task ephemeral Docker resource pruning
-            self.docker_manager.prune_ephemeral_resources()
+            # 3. Prune only once the last concurrent run has finished. Pruning
+            #    after every run reclaimed disk underneath siblings that were
+            #    still using it.
+            with self._active_lock:
+                self._active_runs -= 1
+                last_out = self._active_runs == 0
+            if last_out:
+                self.docker_manager.prune_ephemeral_resources()
 
         telemetry = RunTelemetry(
             task_id=task_id,
