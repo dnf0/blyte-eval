@@ -120,8 +120,10 @@ class PilotShowdownRunner:
             return VanillaAdapter()
         elif arm == "superpowers":
             return SuperpowersAdapter()
-        elif arm == "superstate":
-            return SuperstateAdapter()
+        elif arm in ("superstate", "superstate_python", "superstate-python"):
+            return SuperstateAdapter(engine="agent-rules-python")
+        elif arm in ("superstate_rust", "superstate-rust", "rust"):
+            return SuperstateAdapter(engine="superstate-rust")
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     @contextmanager
