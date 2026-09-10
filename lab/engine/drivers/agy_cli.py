@@ -285,7 +285,6 @@ class AgyCliDriver(AgentDriver):
             )
 
         conv_id = data.get("conversation_id") or conversation_id
-        status = data.get("status", "SUCCESS")
         response = data.get("response", "")
         reported_duration = float(data.get("duration_seconds", elapsed))
 
@@ -294,8 +293,10 @@ class AgyCliDriver(AgentDriver):
         output_tokens = int(usage.get("output_tokens", 0))
 
         cost_usd = estimate_cost_usd(self.model, input_tokens, output_tokens)
-        success = (status == "SUCCESS")
-        error_message = None if success else response
+        status_str = str(data.get("status", "SUCCESS")).upper()
+        success = (status_str == "SUCCESS")
+        raw_error = data.get("error_message") or data.get("error")
+        error_message = None if success else (str(raw_error) if raw_error else (response if response else f"agy exited with status {status_str}"))
 
         return DriverTelemetry(
             success=success,

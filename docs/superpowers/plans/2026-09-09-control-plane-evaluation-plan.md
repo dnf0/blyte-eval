@@ -1,7 +1,7 @@
 # Control-Plane Evaluation — Plan
 
 **Date:** 2026-09-09
-**Status:** Stream 1 in progress
+**Status:** Stream 2 complete. Stream 1 blocked only on the planning prompt port.
 
 ## Why this exists
 
@@ -29,23 +29,22 @@ is a confound.
 
 ## The decision that separates the streams
 
-`agent-rules` (Python) implements all 18 state commands and runs the reference
-loop today. `superstate` (Rust) implements 5 and cannot run the reference loop at
-all — no `ready`, `checkpoint`, `rollback`, `prompt --with-graph`, or `sync`.
+When written, `agent-rules` (Python) implemented all 18 state commands while
+`superstate` (Rust) implemented 5 and could not run the reference loop at all.
+The decision was to evaluate Python first and build Rust separately, so neither
+stream blocked the other.
 
-**Decision: evaluate the Python engine now; build Rust parity separately.**
-Neither stream blocks the other.
-
-> **Open question for the owner:** if the intended subject is specifically the Rust
-> engine, Stream 1 cannot produce a meaningful number until Stream 2 completes.
-> This plan assumes the subject is the control-plane *architecture*, for which the
-> Python engine is a faithful implementation.
+**Superseded 2026-09-09:** Stream 2 is complete. Both engines now run the loop and
+are verified equivalent by the differential suite, and the eval can select either
+via `SuperstateAdapter(engine=...)`, recording which one ran in provenance. The
+programme is therefore as originally intended: assess State Engine 3.0, then
+replicate the result with the Rust engine — and both are now runnable.
 
 ---
 
 ## Stream 1 — Produce a credible measurement
 
-### Task 1: Pin the engine explicitly and record it
+### Task 1: Pin the engine explicitly and record it — DONE
 - **Files:** `lab/engine/adapters/superstate.py`
 - `find_superstate_binary()` uses `shutil.which("superstate")`, and that name on
   PATH is a shim into the agent-rules Python package. Runs labelled Rust have been
@@ -54,7 +53,7 @@ Neither stream blocks the other.
   PATH lookup. Record the resolved path and implementation in provenance so every
   `run.json` states which engine produced it.
 
-### Task 2: Drive the real state-engine loop
+### Task 2: Drive the real state-engine loop — DONE
 - **Files:** `lab/engine/adapters/superstate.py`
 - The adapter uses 2 of 9 commands (`init`, `next`) and **hand-rolls the turnkey
   prompt in Python**. Generating that prompt is a core function of the control
@@ -70,8 +69,10 @@ Neither stream blocks the other.
   6. `state next --verify-cmd <cmd> --verify-git-clean`
 - Keep `checkpoint`/`rollback` optional for now; add if runs prove flaky.
 
-### Task 3: Decide where the plan comes from
-- **Decision required from the owner. Blocks a fair comparison.**
+### Task 3: Port the reference planning prompt — NOT A DECISION AFTER ALL
+- The reference already settles this: the state-engine arm *does* have a Phase 1
+  planning turn (`generate_pre_assessment_prompt`), so option (c) below is what
+  the reference does. What our adapter is missing is the content of that prompt.
 - The reference takes a **pre-authored** plan; the state engine executes it. Our
   adapter invented a planning turn, which is why the agent was seen implementing
   during planning — the prompt conflated two phases the reference separates.
@@ -94,25 +95,30 @@ Neither stream blocks the other.
 
 ---
 
-## Stream 2 — Rust parity (independent, not blocking)
+## Stream 2 — Rust parity — COMPLETE (2026-09-09)
 
-Gated by the differential suite, which is now honest and failing (it previously
-compared the Python implementation with itself and passed vacuously).
+All 16 state commands implemented; the differential suite passes against the
+real Rust engine for the first time (it previously compared the Python
+implementation with itself and passed vacuously).
 
-1. **Schema divergence first** — Rust emits a `notes` key on `init` that Python
-   does not, and the flags differ (`--state` vs `--out`/`--from-plan`). Every
-   other command reads this state.
-2. `ready` — DAG-unblocked computation
-3. `checkpoint` / `rollback`
-4. `prompt --with-graph`
-5. `sync`
-6. **Roborev gate** — roborev is an out-of-band reviewer on a `post-commit` hook
-   that consumes zero chat tokens, with a hard gate: no advancement until the
-   commit is reviewed and findings fixed. Architecturally this is a **third gate
-   on `next`**, alongside tests and git-clean: a way to query review state for the
-   current task's commit, plus `--verify-review-clean`.
+Delivered: `ready`, `checkpoint`, `rollback`, `sync`, `exec`, `doctor`,
+`validate`, `apply`, `resume`, `metrics`, `decompose`, plus `prompt --task`
+/`--with-graph`, `status --json`, and `--from-plan`/`--out` aliases.
 
-Each command is done when its parity test passes against the Python engine.
+**Resolved by evidence, not decision:** the schema divergence stays. Rust stores a
+structured `TaskSpec` and timestamped `LedgerEntry`; Python stores flat strings.
+Rust's form carries `depends_on` in the state itself, so `state ready` works from
+the state alone, while Python's must re-parse the plan every time. Rust's is
+strictly more capable, so the parity suite compares *semantics* — which tasks, in
+what order, with which notes — rather than representation.
+
+**Still outstanding in Stream 2:** the roborev review gate. Roborev is an
+out-of-band reviewer on a `post-commit` hook consuming zero chat tokens, with a
+hard gate: no advancement until the commit is reviewed and findings fixed.
+Architecturally a **third gate on `next`** alongside tests and git-clean — a way
+to query review state for the current task's commit, plus
+`--verify-review-clean`. The `superstate-review` crate already has `schema.rs`,
+`prompt.rs` and `diff.rs` scaffolding.
 
 ---
 
@@ -140,7 +146,43 @@ None were catchable by the test suite; each was found by executing a real task.
 | 2 | Hardcoded 600s planning cap killed runs with good plans | misleading message |
 | 3 | Grading symptom reported before agent-side cause | plausible wrong diagnosis |
 | 4 | Agent wrote `plan.md` outside the workspace; harness silently ran undecomposed | **plausible wrong result, no error** |
+| 5 | Git-clean gate failed on the engine's own `.agent-state/`, so no milestone could ever pass | gate failure at milestone 1 |
+| 6 | Stale release binary shadowed the fresh build, in two separate places | ran old code, reported the new engine |
+| 7 | Relative state paths broke gate execution (three inline copies of one helper) | bare "No such file or directory" |
 
 Defect 4 is the pattern to guard against: the arm degraded to baseline behaviour
 while still being labelled superstate. `require_decomposition` now fails such runs
 rather than recording them.
+
+
+---
+
+## Tomorrow — in order
+
+1. **Port the reference planning prompt** (Stream 1, Task 3, now answered by the
+   reference rather than open). `agent_rules.eval.adapters.state_engine.
+   generate_pre_assessment_prompt` is the source: `<state-evaluation>` framing,
+   `writing-plans` skill, 6-10 cohesive milestones, native test runner detection,
+   the full plan format (Depends on / Files / Interfaces / Verification Command /
+   Goal), and critically the directive *"This is a planning-only turn. Do NOT
+   execute shell commands, do NOT run git, and do NOT explore files."* Ours omits
+   that, which is why the agent was observed implementing during planning.
+   Also port `decompose_instruction_to_fallback_plan` — a deterministic fallback
+   beats the degenerate single milestone.
+
+2. **Full dry run** — 9 tasks x 3 arms with a scripted driver. No model spend,
+   but it pulls every image, builds every verifier and grades every task. This is
+   the last place per-task surprises can hide.
+
+3. **Concurrency check** — the runner's thread pool has never run two arms at
+   once.
+
+4. Then the real paired run, starting with
+   `fastapi-deprecation-response-headers` (the whitepaper's own task).
+
+## Standing lesson from today
+
+Seven harness defects, every one found by running rather than by reading, none
+catchable by the unit suite. Two were the *same mistake in a second place*
+(relative path handling, stale binary resolution). When fixing something here,
+check whether the pattern exists elsewhere before moving on.

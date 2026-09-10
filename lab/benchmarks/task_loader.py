@@ -47,7 +47,11 @@ class TaskSpec:
         if self.task_dir is None:
             return None
         candidate = self.task_dir / "tests"
-        return candidate if (candidate / "Dockerfile").is_file() else None
+        try:
+            return candidate if (candidate / "Dockerfile").is_file() else None
+        except OSError:
+            # If sealed (mode 000) during a concurrent run, candidate is still the tests directory
+            return candidate if candidate.is_dir() or candidate.exists() else None
 
 
 def _extract_collect_commands(verifier_meta: dict[str, Any]) -> list[str]:
