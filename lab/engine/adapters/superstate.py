@@ -427,6 +427,31 @@ class SuperstateAdapter(AgentAdapter):
                 exit_code = getattr(exec_res, "exit_code", 1)
                 raw = getattr(exec_res, "output", b"")
             output = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)
+
+            # If the gate failed and an active worktree is provisioned, the gate command
+            # may contain absolute paths referencing /app/<path> which reside in the worktree
+            # checkout (/app/.wt/<slug>/<path>) prior to state next's merge.
+            if exit_code != 0 and wt and wt.is_dir() and "/app" in verify_cmd:
+                try:
+                    rel = wt.resolve().relative_to(workspace_path.resolve())
+                    wt_container_dir = f"/app/{rel}"
+                    alt_cmd = re.sub(r"(?<![\w\-\.\/])/app(?=/|$)", wt_container_dir, verify_cmd)
+                    if alt_cmd != verify_cmd:
+                        alt_shell_cmd = ["/bin/sh", "-c", alt_cmd]
+                        alt_res = container.exec_run(alt_shell_cmd, workdir=wt_container_dir)
+                        alt_code = alt_res[0] if isinstance(alt_res, tuple) else getattr(alt_res, "exit_code", 1)
+                        if alt_code == 0:
+                            alt_raw = alt_res[1] if isinstance(alt_res, tuple) else getattr(alt_res, "output", b"")
+                            output = alt_raw.decode("utf-8", errors="replace") if isinstance(alt_raw, bytes) else str(alt_raw)
+                            logger.info(
+                                "Verification gate passed via worktree path substitution (%s -> %s)",
+                                verify_cmd,
+                                alt_cmd,
+                            )
+                            return True, 0, output
+                except Exception as exc:
+                    logger.debug("Worktree container path alternate gate check failed: %s", exc)
+
             return exit_code == 0, exit_code, output
         try:
             res = subprocess.run(
@@ -437,7 +462,30 @@ class SuperstateAdapter(AgentAdapter):
                 text=True,
                 timeout=300.0,
             )
-            return res.returncode == 0, res.returncode, (res.stdout or "") + (res.stderr or "")
+            passed = res.returncode == 0
+            output = (res.stdout or "") + (res.stderr or "")
+            if not passed and wt and wt.is_dir() and str(workspace_path) in verify_cmd:
+                alt_cmd = verify_cmd.replace(str(workspace_path), str(wt))
+                if alt_cmd != verify_cmd:
+                    try:
+                        alt_res = subprocess.run(
+                            alt_cmd,
+                            shell=True,
+                            cwd=str(target_dir),
+                            capture_output=True,
+                            text=True,
+                            timeout=300.0,
+                        )
+                        if alt_res.returncode == 0:
+                            logger.info(
+                                "Host verification gate passed via worktree path substitution (%s -> %s)",
+                                verify_cmd,
+                                alt_cmd,
+                            )
+                            return True, 0, (alt_res.stdout or "") + (alt_res.stderr or "")
+                    except Exception as exc:
+                        logger.debug("Host worktree path alternate gate check failed: %s", exc)
+            return passed, res.returncode, output
         except Exception as e:
             logger.warning("Verification command failed to run: %s", e)
             return False, None, f"gate command could not be executed: {e}"
