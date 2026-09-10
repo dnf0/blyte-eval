@@ -53,7 +53,7 @@ TARGETED_EXECUTION_CONTRACT = (
     "2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
     "3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
     "4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "5. **ATOMIC COMMITS:** Make atomic git commits with conventional commit messages once tests pass.\n"
+    "5. **ATOMIC COMMITS:** Make atomic git commits with conventional commit messages inside the worktree once tests pass. Do NOT attempt to merge or delete the worktree; the orchestrator handles verification, merging, and cleanup automatically.\n"
     "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
     "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
     "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, commit your changes and finish your turn.\n"
