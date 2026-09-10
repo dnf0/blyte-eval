@@ -155,11 +155,14 @@ class DockerManager:
                 logger.warning("Failed to remove seed container: %s", err)
 
         if extracted == 0:
-            raise WorkspaceSeedError(
-                f"Image '{image}' produced an empty workspace from '{source_path}'"
+            logger.info(
+                "Image '%s' has an empty '%s' directory; workspace initialized empty at %s",
+                image,
+                source_path,
+                dest_path,
             )
-
-        logger.info("Seeded workspace %s from %s:%s (%d entries)", dest_path, image, source_path, extracted)
+        else:
+            logger.info("Seeded workspace %s from %s:%s (%d entries)", dest_path, image, source_path, extracted)
         return extracted
 
     def build_image(self, context_dir: Path | str, tag: str, timeout: int = 1800) -> str:
