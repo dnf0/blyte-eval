@@ -163,9 +163,11 @@ class SuperstateAdapter(AgentAdapter):
         self,
         superstate_bin: Optional[Path] = None,
         engine: str = DEFAULT_ENGINE,
+        max_turns_per_milestone: int = 3,
     ) -> None:
         self.engine = engine
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
+        self.max_turns_per_milestone = max_turns_per_milestone
         self.engine_used: Optional[str] = None
         self.plan_source: Optional[str] = None
         self.milestones_planned: int = 0
@@ -456,7 +458,9 @@ class SuperstateAdapter(AgentAdapter):
                 except Exception as exc:
                     logger.debug("Failed auto-committing milestone changes: %s", exc)
 
-            cmd = [str(self.superstate_bin), "state", "next", "--verify-git-clean"]
+            cmd = [str(self.superstate_bin), "state", "next"]
+            if (workspace_path / ".git").is_dir():
+                cmd.append("--verify-git-clean")
             if self.engine != ENGINE_RUST:
                 cmd.extend(["--ignore-untracked-glob", "run-in-container,plan.md,plan.normalized.md"])
             if gate_cmd:
@@ -473,9 +477,13 @@ class SuperstateAdapter(AgentAdapter):
                     self._record_engine(ENGINE_BINARY)
                     return True
                 logger.warning("superstate state next gate failed: %s", res.stderr)
+                if gate_detail is not None:
+                    gate_detail["engine_error"] = res.stderr
                 return False
             except Exception as e:
                 logger.warning("Failed to invoke superstate state next: %s", e)
+                if gate_detail is not None:
+                    gate_detail["engine_error"] = str(e)
                 return False
 
         # Fallback state advancement
@@ -525,7 +533,15 @@ class SuperstateAdapter(AgentAdapter):
                 verify_cmd=milestone.verify_cmd,
                 turns_used=turns_used,
                 advanced=advanced,
-                **gate_detail,
+                gate_ran=gate_detail.get("gate_ran", False),
+                gate_passed=gate_detail.get("gate_passed", False),
+                gate_exit_code=gate_detail.get("gate_exit_code"),
+                gate_output=gate_detail.get("gate_output", ""),
+                extra={
+                    k: v
+                    for k, v in gate_detail.items()
+                    if k not in {"gate_ran", "gate_passed", "gate_exit_code", "gate_output"}
+                },
             )
         )
 
@@ -782,6 +798,40 @@ class SuperstateAdapter(AgentAdapter):
                 if not telemetry.success:
                     milestone_failed = telemetry.error_message or f"Milestone '{active}' failed"
                     break
+
+                # Verification gate failed. If turns remain, feed diagnostic feedback back to the agent.
+                if milestone_turns < self.max_turns_per_milestone and duration < budget:
+                    gate_output = (
+                        gate_detail.get("gate_output")
+                        or gate_detail.get("engine_error")
+                        or "Verification gate failed"
+                    )
+                    gate_exit_code = gate_detail.get("gate_exit_code", 1)
+
+                    if last_response:
+                        self.record_note(
+                            workspace_path, f"[{active} - Turn {milestone_turns}] {last_response[:500]}"
+                        )
+                    self.record_note(
+                        workspace_path,
+                        f"[Gate Failed - Turn {milestone_turns}] cmd='{milestone.verify_cmd}' exit={gate_exit_code}: {gate_output[:1000]}",
+                    )
+
+                    retry_prompt = (
+                        f"## VERIFICATION GATE FAILED (Attempt {milestone_turns} of {self.max_turns_per_milestone})\n\n"
+                        f"The verification command `{milestone.verify_cmd}` failed with exit code {gate_exit_code}.\n\n"
+                        f"### Gate Output:\n"
+                        f"```\n{gate_output.strip()}\n```\n\n"
+                        f"Please diagnose this failure, apply the necessary code or environment changes, and ensure the verification passes."
+                    )
+                    logger.info(
+                        "Milestone '%s' gate failed on turn %d/%d; retrying with diagnostic feedback",
+                        active,
+                        milestone_turns,
+                        self.max_turns_per_milestone,
+                    )
+                    current_prompt = retry_prompt
+                    continue
 
                 # Agent concluded without asking for user approval, but verification gate failed
                 milestone_failed = f"Verification gate failed for milestone '{active}'"

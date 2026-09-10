@@ -207,8 +207,8 @@ def test_superstate_milestone_verification_gate_blocks_advancement(tmp_path: Pat
 
     assert result.success is False
     assert "Verification gate failed" in str(result.error_message)
-    # Execution stopped at the failed gate rather than running Task 2.
-    assert result.turns == 1
+    # Execution stopped at the failed gate after exhausting retries rather than running Task 2.
+    assert result.turns == adapter.max_turns_per_milestone
 
 
 def test_superstate_extracts_per_milestone_verification_commands() -> None:
