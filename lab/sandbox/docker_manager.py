@@ -144,6 +144,8 @@ class DockerManager:
                     member.name = member.name[len(prefix) :]
                     if not member.name:
                         continue
+                    if (member.islnk() or member.issym()) and member.linkname.startswith(prefix):
+                        member.linkname = member.linkname[len(prefix) :]
                     tar.extract(member, path=dest_path, filter="tar")
                     extracted += 1
         finally:
