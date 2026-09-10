@@ -53,10 +53,10 @@ TARGETED_EXECUTION_CONTRACT = (
     "2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
     "3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
     "4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "5. **ATOMIC COMMITS:** Make atomic git commits with conventional commit messages inside the worktree once tests pass. Do NOT attempt to merge or delete the worktree; the orchestrator handles verification, merging, and cleanup automatically.\n"
+    "5. **AUTOMATIC SNAPSHOTS:** The orchestrator automatically snapshots and commits your changes upon milestone completion. Do not attempt to merge or delete the worktree.\n"
     "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
     "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
-    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, commit your changes and finish your turn.\n"
+    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
     "9. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the active worktree directory and the provided container environment. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
@@ -66,7 +66,7 @@ TARGETED_EXECUTION_CONTRACT_INPLACE = (
     "2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
     "3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
     "4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "5. **ATOMIC COMMITS:** If the project uses git, make atomic git commits with conventional commit messages once tests pass. If it does not, proceed directly to finish.\n"
+    "5. **NO UNNECESSARY COMMITS:** Do not create manual git commits unless the task explicitly requires modifying git history. Focus solely on making tests pass.\n"
     "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
     "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
     "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
