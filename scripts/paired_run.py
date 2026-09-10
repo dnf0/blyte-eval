@@ -22,6 +22,7 @@ from lab.engine.drivers.agy_cli import AgyCliDriver
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table
 from lab.engine.runner import AblationRunner
+from lab.sandbox.answer_key import AnswerKeyGuard
 
 logging.basicConfig(
     level=logging.INFO,
@@ -63,6 +64,9 @@ def main() -> int:
         "meriyah-explicit-resource-declarations",
         "katex-multicolumn-array-spans",
     }
+
+    # Ensure any held-out tests left sealed by previously aborted or killed runs are restored.
+    AnswerKeyGuard().restore_all()
 
     if args.task:
         tasks = [load_task_from_dir(args.task)]
