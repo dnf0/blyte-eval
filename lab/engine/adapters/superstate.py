@@ -13,6 +13,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 from typing import Any, Dict, Optional
@@ -166,7 +167,8 @@ class SuperstateAdapter(AgentAdapter):
         max_turns_per_milestone: int = 3,
     ) -> None:
         if superstate_bin is not None and engine == DEFAULT_ENGINE:
-            if "superstate/target" in str(superstate_bin) or superstate_bin in ENGINE_PATHS.get(ENGINE_RUST, ()):
+            bin_path = Path(superstate_bin)
+            if "superstate/target" in str(bin_path) or bin_path in ENGINE_PATHS.get(ENGINE_RUST, ()):
                 engine = ENGINE_RUST
         self.engine = engine
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
@@ -400,14 +402,19 @@ class SuperstateAdapter(AgentAdapter):
             container_workdir = "/app"
             if wt and wt.is_dir():
                 try:
-                    rel = wt.relative_to(workspace_path)
+                    rel = wt.resolve().relative_to(workspace_path.resolve())
                     container_workdir = f"/app/{rel}"
                 except ValueError:
-                    pass
+                    logger.warning(
+                        "Worktree %s could not be resolved relative to workspace %s; defaulting to /app",
+                        wt,
+                        workspace_path,
+                    )
             try:
                 exec_res = container.exec_run(verify_cmd, workdir=container_workdir)
             except TypeError:
-                exec_res = container.exec_run(f"cd {container_workdir} && {verify_cmd}")
+                shell_cmd = ["/bin/sh", "-c", f"cd {shlex.quote(str(container_workdir))} && {verify_cmd}"]
+                exec_res = container.exec_run(shell_cmd)
             except Exception as e:
                 logger.warning("Container exec_run failed: %s", e)
                 return False, None, f"gate command could not be executed in container: {e}"
@@ -500,7 +507,7 @@ class SuperstateAdapter(AgentAdapter):
                     logger.debug("Failed auto-committing milestone changes: %s", exc)
 
             cmd = [str(self.superstate_bin), "state", "next"]
-            if (workspace_path / ".git").is_dir():
+            if (workspace_path / ".git").exists():
                 cmd.append("--verify-git-clean")
             if self.engine != ENGINE_RUST:
                 cmd.extend(["--ignore-untracked-glob", "run-in-container,plan.md,plan.normalized.md"])

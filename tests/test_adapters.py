@@ -550,7 +550,9 @@ def test_superstate_active_worktree_helper(tmp_path: Path) -> None:
 
 
 def test_superstate_adapter_executes_in_worktree(tmp_path: Path) -> None:
-    bin_path = Path("/Users/danielfisher/repos/superstate/target/release/superstate")
+    from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
+
+    bin_path = find_superstate_binary(ENGINE_RUST) or (Path.home() / "repos/superstate/target/release/superstate")
     if not bin_path.exists():
         pytest.skip("superstate release binary not found")
 
@@ -581,4 +583,43 @@ def test_superstate_adapter_executes_in_worktree(tmp_path: Path) -> None:
         assert isinstance(workspace, Path)
         assert workspace != tmp_path
         assert ".wt" in str(workspace)
+
+
+def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
+    import json
+    from unittest.mock import MagicMock
+
+    wt_dir = tmp_path / ".wt" / "task-1"
+    wt_dir.mkdir(parents=True)
+    state_file = tmp_path / ".agent-state" / "state.json"
+    state_file.parent.mkdir(parents=True)
+    state_file.write_text(json.dumps({"active_worktree": str(wt_dir)}), encoding="utf-8")
+
+    adapter = SuperstateAdapter()
+
+    # 1. Container supporting workdir parameter
+    container_normal = MagicMock()
+    container_normal.exec_run.return_value = (0, b"all tests pass")
+    passed, code, out = adapter._run_gate_command(tmp_path, "pytest", container=container_normal)
+    assert passed is True
+    assert code == 0
+    assert out == "all tests pass"
+    container_normal.exec_run.assert_called_once_with("pytest", workdir="/app/.wt/task-1")
+
+    # 2. Container raising TypeError when kwargs passed (e.g. mock or legacy client)
+    container_legacy = MagicMock()
+    def mock_exec_run(cmd: object, **kwargs: object) -> tuple[int, bytes]:
+        if kwargs:
+            raise TypeError("unexpected keyword argument 'workdir'")
+        return 0, b"fallback ok"
+    container_legacy.exec_run.side_effect = mock_exec_run
+    passed, code, out = adapter._run_gate_command(tmp_path, "pytest", container=container_legacy)
+    assert passed is True
+    assert code == 0
+    assert out == "fallback ok"
+    assert container_legacy.exec_run.call_count == 2
+    fallback_call = container_legacy.exec_run.call_args_list[1][0][0]
+    import shlex
+    assert fallback_call == ["/bin/sh", "-c", f"cd {shlex.quote('/app/.wt/task-1')} && pytest"]
+
 
