@@ -604,7 +604,7 @@ def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
     assert passed is True
     assert code == 0
     assert out == "all tests pass"
-    container_normal.exec_run.assert_called_once_with("pytest", workdir="/app/.wt/task-1")
+    container_normal.exec_run.assert_called_once_with(["/bin/sh", "-c", "pytest"], workdir="/app/.wt/task-1")
 
     # 2. Container raising TypeError when kwargs passed (e.g. mock or legacy client)
     container_legacy = MagicMock()

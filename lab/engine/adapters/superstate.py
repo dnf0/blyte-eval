@@ -410,11 +410,12 @@ class SuperstateAdapter(AgentAdapter):
                         wt,
                         workspace_path,
                     )
+            shell_cmd = ["/bin/sh", "-c", verify_cmd]
             try:
-                exec_res = container.exec_run(verify_cmd, workdir=container_workdir)
+                exec_res = container.exec_run(shell_cmd, workdir=container_workdir)
             except TypeError:
-                shell_cmd = ["/bin/sh", "-c", f"cd {shlex.quote(str(container_workdir))} && {verify_cmd}"]
-                exec_res = container.exec_run(shell_cmd)
+                fallback_cmd = ["/bin/sh", "-c", f"cd {shlex.quote(str(container_workdir))} && {verify_cmd}"]
+                exec_res = container.exec_run(fallback_cmd)
             except Exception as e:
                 logger.warning("Container exec_run failed: %s", e)
                 return False, None, f"gate command could not be executed in container: {e}"
