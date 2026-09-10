@@ -60,6 +60,19 @@ TARGETED_EXECUTION_CONTRACT = (
     "9. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the active worktree directory and the provided container environment. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
+TARGETED_EXECUTION_CONTRACT_INPLACE = (
+    "## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)\n"
+    "1. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
+    "2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
+    "3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
+    "4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
+    "5. **ATOMIC COMMITS:** If the project uses git, make atomic git commits with conventional commit messages once tests pass. If it does not, proceed directly to finish.\n"
+    "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
+    "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
+    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
+    "9. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the project container environment and workspace directory. Never inspect parent directories, host processes, or external repositories outside this workspace."
+)
+
 
 @dataclass(frozen=True)
 class Milestone:
@@ -166,6 +179,7 @@ class SuperstateAdapter(AgentAdapter):
         superstate_bin: Optional[Path] = None,
         engine: str = DEFAULT_ENGINE,
         max_turns_per_milestone: int = 3,
+        no_worktree: bool = False,
     ) -> None:
         if superstate_bin is not None and engine == DEFAULT_ENGINE:
             bin_path = Path(superstate_bin)
@@ -174,6 +188,7 @@ class SuperstateAdapter(AgentAdapter):
         self.engine = engine
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
         self.max_turns_per_milestone = max_turns_per_milestone
+        self.no_worktree = no_worktree
         self.engine_used: Optional[str] = None
         self.plan_source: Optional[str] = None
         self.milestones_planned: int = 0
@@ -186,6 +201,8 @@ class SuperstateAdapter(AgentAdapter):
 
     def active_worktree(self, workspace_path: Path) -> Optional[Path]:
         """Resolve active worktree path from state.json if provisioned."""
+        if self.no_worktree:
+            return None
         state_file = workspace_path / ".agent-state" / "state.json"
         if not state_file.is_file():
             return None
@@ -214,6 +231,7 @@ class SuperstateAdapter(AgentAdapter):
             # is not interpretable without both.
             "engine": self.engine,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
+            "no_worktree": self.no_worktree,
             # Whether this run was actually a control-plane run.
             "plan_source": self.plan_source,
             "milestones_planned": self.milestones_planned,
@@ -314,6 +332,8 @@ class SuperstateAdapter(AgentAdapter):
         local template would measure the template, not the engine.
         """
         args = ["prompt", "--with-graph"]
+        if self.no_worktree and self.engine == ENGINE_RUST:
+            args.append("--no-worktree")
         if task:
             args += ["--task", task]
         code, out = self._run_engine(workspace_path, args)
@@ -337,12 +357,15 @@ class SuperstateAdapter(AgentAdapter):
                 out_flag = "--state" if self.engine == ENGINE_RUST else "--out"
                 state_path = workspace_path / ".agent-state" / "state.json"
                 state_path.parent.mkdir(parents=True, exist_ok=True)
+                cmd = [
+                    str(self.superstate_bin), "state", "init",
+                    "--plan", str(plan_path),
+                    out_flag, str(state_path),
+                ]
+                if self.no_worktree and self.engine == ENGINE_RUST:
+                    cmd.append("--no-worktree")
                 res = subprocess.run(
-                    [
-                        str(self.superstate_bin), "state", "init",
-                        "--plan", str(plan_path),
-                        out_flag, str(state_path),
-                    ],
+                    cmd,
                     cwd=str(workspace_path),
                     capture_output=True,
                     text=True,
@@ -828,10 +851,11 @@ class SuperstateAdapter(AgentAdapter):
                 error_msg = f"State engine produced no prompt for '{active}'"
                 break
             if "TARGETED EXECUTION CONTRACT" not in current_prompt:
-                current_prompt = f"{current_prompt}\n\n{TARGETED_EXECUTION_CONTRACT}"
+                contract = TARGETED_EXECUTION_CONTRACT_INPLACE if (self.no_worktree or self.engine == ENGINE_PYTHON) else TARGETED_EXECUTION_CONTRACT
+                current_prompt = f"{current_prompt}\n\n{contract}"
 
             wt = self.active_worktree(workspace_path)
-            turn_workspace = wt if (wt and wt.is_dir()) else workspace_path
+            turn_workspace = wt if (wt and wt.is_dir() and not self.no_worktree) else workspace_path
 
             conversation_id: Optional[str] = None
             milestone_failed: Optional[str] = None

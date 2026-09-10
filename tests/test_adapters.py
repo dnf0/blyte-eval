@@ -623,3 +623,51 @@ def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
     assert fallback_call == ["/bin/sh", "-c", f"cd {shlex.quote('/app/.wt/task-1')} && pytest"]
 
 
+def test_superstate_adapter_executes_in_place(tmp_path: Path) -> None:
+    from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
+
+    bin_path = find_superstate_binary(ENGINE_RUST) or (Path.home() / "repos/superstate/target/release/superstate")
+    if not bin_path.exists():
+        pytest.skip("superstate release binary not found")
+
+    import subprocess
+
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text(
+        "### Task 1: Module A\n- Verification Command: true\n\n"
+        "### Task 2: Module B\n- Verification Command: true\n",
+        encoding="utf-8",
+    )
+
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(superstate_bin=bin_path, no_worktree=True)
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is True
+    assert len(driver.calls) == 2
+    for call in driver.calls:
+        workspace = call["workspace"]
+        assert isinstance(workspace, Path)
+        assert workspace == tmp_path
+        assert ".wt" not in str(workspace)
+
+    assert not (tmp_path / ".wt").exists()
+
+
+def test_runner_resolves_inplace_arm() -> None:
+    from lab.engine.runner import AblationRunner
+    runner = AblationRunner(workspace_root=Path("/tmp"))
+    adapter = runner._get_adapter("superstate_rust_inplace")
+    assert isinstance(adapter, SuperstateAdapter)
+    assert adapter.engine == "superstate-rust"
+    assert adapter.no_worktree is True
+
+
+
