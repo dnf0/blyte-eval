@@ -525,3 +525,60 @@ def test_agents_plan_is_never_overwritten(tmp_path: Path) -> None:
 
     assert (tmp_path / "plan.md").read_text() == original
     assert (tmp_path / "plan.normalized.md").is_file()
+
+
+def test_superstate_active_worktree_helper(tmp_path: Path) -> None:
+    adapter = SuperstateAdapter()
+    assert adapter.active_worktree(tmp_path) is None
+
+    state_dir = tmp_path / ".agent-state"
+    state_dir.mkdir(parents=True)
+    state_file = state_dir / "state.json"
+
+    # Non-existent worktree path
+    state_file.write_text('{"active_worktree": ".wt/task-1"}', encoding="utf-8")
+    assert adapter.active_worktree(tmp_path) is None
+
+    # Existent relative worktree path
+    wt_dir = tmp_path / ".wt" / "task-1"
+    wt_dir.mkdir(parents=True)
+    assert adapter.active_worktree(tmp_path) == wt_dir
+
+    # Existent absolute worktree path
+    state_file.write_text(f'{{"active_worktree": "{wt_dir.resolve()}"}}', encoding="utf-8")
+    assert adapter.active_worktree(tmp_path) == wt_dir
+
+
+def test_superstate_adapter_executes_in_worktree(tmp_path: Path) -> None:
+    bin_path = Path("/Users/danielfisher/repos/superstate/target/release/superstate")
+    if not bin_path.exists():
+        pytest.skip("superstate release binary not found")
+
+    import subprocess
+
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text(
+        "### Task 1: Module A\n- Verification Command: true\n\n"
+        "### Task 2: Module B\n- Verification Command: true\n",
+        encoding="utf-8",
+    )
+
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(superstate_bin=bin_path)
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is True
+    assert len(driver.calls) == 2
+    for call in driver.calls:
+        workspace = call["workspace"]
+        assert isinstance(workspace, Path)
+        assert workspace != tmp_path
+        assert ".wt" in str(workspace)
+

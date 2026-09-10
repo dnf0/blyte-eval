@@ -165,6 +165,9 @@ class SuperstateAdapter(AgentAdapter):
         engine: str = DEFAULT_ENGINE,
         max_turns_per_milestone: int = 3,
     ) -> None:
+        if superstate_bin is not None and engine == DEFAULT_ENGINE:
+            if "superstate/target" in str(superstate_bin) or superstate_bin in ENGINE_PATHS.get(ENGINE_RUST, ()):
+                engine = ENGINE_RUST
         self.engine = engine
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
         self.max_turns_per_milestone = max_turns_per_milestone
@@ -177,6 +180,24 @@ class SuperstateAdapter(AgentAdapter):
                 "SuperstateAdapter: superstate binary not found. Arm C will fall back to the "
                 "in-process Python state machine, which is NOT the system under test."
             )
+
+    def active_worktree(self, workspace_path: Path) -> Optional[Path]:
+        """Resolve active worktree path from state.json if provisioned."""
+        state_file = workspace_path / ".agent-state" / "state.json"
+        if not state_file.is_file():
+            return None
+        try:
+            data = json.loads(state_file.read_text(encoding="utf-8"))
+            raw = data.get("active_worktree")
+            if not raw:
+                return None
+            path = Path(raw)
+            if not path.is_absolute():
+                path = workspace_path / path
+            return path if path.exists() else None
+        except Exception as e:
+            logger.debug("Failed reading active_worktree from %s: %s", state_file, e)
+            return None
 
     @property
     def name(self) -> str:
@@ -372,8 +393,25 @@ class SuperstateAdapter(AgentAdapter):
         breach the isolation the evaluation depends on.
         """
         verify_cmd = self.normalize_gate_command(verify_cmd, in_container=container is not None)
+        wt = self.active_worktree(workspace_path)
+        target_dir = wt if (wt and wt.is_dir()) else workspace_path
+
         if container is not None:
-            exec_res = container.exec_run(verify_cmd)
+            container_workdir = "/app"
+            if wt and wt.is_dir():
+                try:
+                    rel = wt.relative_to(workspace_path)
+                    container_workdir = f"/app/{rel}"
+                except ValueError:
+                    pass
+            try:
+                exec_res = container.exec_run(verify_cmd, workdir=container_workdir)
+            except TypeError:
+                exec_res = container.exec_run(f"cd {container_workdir} && {verify_cmd}")
+            except Exception as e:
+                logger.warning("Container exec_run failed: %s", e)
+                return False, None, f"gate command could not be executed in container: {e}"
+
             if isinstance(exec_res, tuple):
                 exit_code, raw = exec_res[0], exec_res[1]
             else:
@@ -385,7 +423,7 @@ class SuperstateAdapter(AgentAdapter):
             res = subprocess.run(
                 verify_cmd,
                 shell=True,
-                cwd=str(workspace_path),
+                cwd=str(target_dir),
                 capture_output=True,
                 text=True,
                 timeout=300.0,
@@ -424,20 +462,23 @@ class SuperstateAdapter(AgentAdapter):
             gate_cmd = "exit 0" if passed else "exit 1"
 
         if self.superstate_bin:
+            wt = self.active_worktree(workspace_path)
+            target_dir = wt if (wt and wt.is_dir()) else workspace_path
+
             # When the gate passes, auto-commit any uncommitted changes so git HEAD
             # advances and --verify-git-clean passes deterministically.
             if gate_cmd != "exit 1" and (workspace_path / ".git").exists():
                 try:
                     status = subprocess.run(
                         ["git", "status", "--porcelain"],
-                        cwd=str(workspace_path),
+                        cwd=str(target_dir),
                         capture_output=True,
                         text=True,
                         check=False,
                     )
                     if status.stdout and status.stdout.strip():
                         subprocess.run(
-                            ["git", "add", "-A"], cwd=str(workspace_path), capture_output=True, check=False
+                            ["git", "add", "-A"], cwd=str(target_dir), capture_output=True, check=False
                         )
                         subprocess.run(
                             [
@@ -451,7 +492,7 @@ class SuperstateAdapter(AgentAdapter):
                                 "-m",
                                 f"chore: checkpoint completed milestone {milestone}",
                             ],
-                            cwd=str(workspace_path),
+                            cwd=str(target_dir),
                             capture_output=True,
                             check=False,
                         )
@@ -731,6 +772,9 @@ class SuperstateAdapter(AgentAdapter):
                 break
             current_prompt = f"{current_prompt}\n\n{TARGETED_EXECUTION_CONTRACT}"
 
+            wt = self.active_worktree(workspace_path)
+            turn_workspace = wt if (wt and wt.is_dir()) else workspace_path
+
             conversation_id: Optional[str] = None
             milestone_failed: Optional[str] = None
             milestone_turns = 0
@@ -752,7 +796,7 @@ class SuperstateAdapter(AgentAdapter):
 
                 telemetry = driver.run(
                     task=task,
-                    workspace_path=workspace_path,
+                    workspace_path=turn_workspace,
                     prompt_override=current_prompt,
                     conversation_id=conversation_id,
                     timeout_sec=turn_timeout,
