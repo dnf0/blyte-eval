@@ -47,13 +47,37 @@ def main() -> int:
     ap.add_argument("--concurrency", type=int, default=3, help="Max concurrent workers (default: 3)")
     ap.add_argument("--workspace-root", type=Path,
                     default=Path("/tmp/superstate_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
+    ap.add_argument("--tasks", nargs="+", help="Specific task names or directories")
+    ap.add_argument("--tier1", action="store_true", help="Run the 9 Tier-1 Frontier software engineering tasks")
     ap.add_argument("--out", type=Path, help="Write results JSON here")
     args = ap.parse_args()
 
+    tier1_names = {
+        "anko-typed-variable-bindings",
+        "fastapi-deprecation-response-headers",
+        "httpx-multipart-response-parsing",
+        "python-statemachine-state-data-scoping",
+        "expr-try-catch-errors",
+        "scc-bounded-memory-spilling",
+        "arktype-json-schema-refs-dependencies",
+        "meriyah-explicit-resource-declarations",
+        "katex-multicolumn-array-spans",
+    }
+
     if args.task:
         tasks = [load_task_from_dir(args.task)]
+    elif args.tasks:
+        tasks = []
+        for item in args.tasks:
+            p = Path(item)
+            if not p.is_dir() and (args.tasks_root / item).is_dir():
+                p = args.tasks_root / item
+            tasks.append(load_task_from_dir(p))
     else:
         tasks = load_benchmark_tasks(args.tasks_root)
+
+    if args.tier1:
+        tasks = [t for t in tasks if t.name in tier1_names or t.id.split("/")[-1] in tier1_names]
     if args.only_with_verifier:
         tasks = [t for t in tasks if t.tests_dir]
     if not tasks:

@@ -73,7 +73,29 @@ FIXTURES_DIR = Path(__file__).parent.parent / "lab" / "parity" / "fixtures"
 
 
 
-def normalize_state(state: dict) -> dict:
+def read_notes(state: dict, state_path: Path | None = None) -> list[str]:
+    """Collect ledger entries from wherever the engine keeps them.
+
+    The Rust engine appends to `ledger.jsonl` beside the state; the Python engine
+    holds notes inline. Both are the same record, so parity is judged on the
+    entries themselves rather than on which file they live in.
+    """
+    notes = [n.get("note", "") if isinstance(n, dict) else str(n) for n in state.get("notes", [])]
+    if state_path is not None:
+        ledger = state_path.parent / "ledger.jsonl"
+        if ledger.is_file():
+            for line in ledger.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    notes.append(json.loads(line).get("note", ""))
+                except json.JSONDecodeError:
+                    continue  # a torn final line costs that entry only
+    return notes
+
+
+def normalize_state(state: dict, state_path: Path | None = None) -> dict:
     """Reduce a state document to what the two engines are meant to agree on.
 
     The engines represent tasks and notes differently -- the Rust engine stores a
@@ -96,9 +118,6 @@ def normalize_state(state: dict) -> dict:
             return f"{ident}: {title}" if ident and title else str(ident or title)
         return str(task)
 
-    def note_text(note: object) -> str:
-        return note.get("note", "") if isinstance(note, dict) else str(note)
-
     active = state.get("active_task")
     return {
         "status": str(state.get("status", "")).lower().replace("inprogress", "in_progress"),
@@ -106,7 +125,7 @@ def normalize_state(state: dict) -> dict:
         "active_task": task_label(active) if active is not None else None,
         "pending_tasks": [task_label(t) for t in state.get("pending_tasks", [])],
         "completed_tasks": [task_label(t) for t in state.get("completed_tasks", [])],
-        "notes": [note_text(n) for n in state.get("notes", [])],
+        "notes": read_notes(state, state_path),
         # Compare that a failure was recorded, not how it was worded: the exact
         # phrasing of a gate rejection is an implementation detail, and asserting
         # on it would make the suite fail on a message improvement.
@@ -165,7 +184,7 @@ def test_init_state_creates_valid_state_files(check_binaries: tuple[Path, Path])
         py_data = json.loads(state_py.read_text(encoding="utf-8"))
 
         # DeepDiff structural parity assertion across all fields except engine_metadata and local plan_path
-        diff = DeepDiff(normalize_state(rs_data), normalize_state(py_data))
+        diff = DeepDiff(normalize_state(rs_data, state_rs), normalize_state(py_data, state_py))
         assert diff == {}, f"State parity mismatch on init: {diff}"
 
 
@@ -239,7 +258,7 @@ def test_verification_gate_failure_parity(check_binaries: tuple[Path, Path]) -> 
         # States must remain unadvanced and identical
         rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
         py_data = json.loads(state_py.read_text(encoding="utf-8"))
-        diff = DeepDiff(normalize_state(rs_data), normalize_state(py_data))
+        diff = DeepDiff(normalize_state(rs_data, state_rs), normalize_state(py_data, state_py))
         assert diff == {}, f"State parity mismatch after failed verification gate: {diff}"
 
 
@@ -313,7 +332,7 @@ def test_verification_gate_success_parity(check_binaries: tuple[Path, Path]) -> 
         py_data = json.loads(state_py.read_text(encoding="utf-8"))
 
         # Both must advance step and record 1 completed task with exact deep parity
-        diff = DeepDiff(normalize_state(rs_data), normalize_state(py_data))
+        diff = DeepDiff(normalize_state(rs_data, state_rs), normalize_state(py_data, state_py))
         assert diff == {}, f"State parity mismatch after successful verification gate: {diff}"
 
 
@@ -335,7 +354,7 @@ def test_dag_plan_full_traversal_parity(check_binaries: tuple[Path, Path]) -> No
 
         rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
         py_data = json.loads(state_py.read_text(encoding="utf-8"))
-        diff = DeepDiff(normalize_state(rs_data), normalize_state(py_data))
+        diff = DeepDiff(normalize_state(rs_data, state_rs), normalize_state(py_data, state_py))
         assert diff == {}, f"DAG plan parity mismatch on init: {diff}"
 
         # Traverse every task in the DAG through a passing verification gate.
@@ -361,7 +380,7 @@ def test_dag_plan_full_traversal_parity(check_binaries: tuple[Path, Path]) -> No
 
             rs_step = json.loads(state_rs.read_text(encoding="utf-8"))
             py_step = json.loads(state_py.read_text(encoding="utf-8"))
-            diff = DeepDiff(normalize_state(rs_step), normalize_state(py_step))
+            diff = DeepDiff(normalize_state(rs_step, state_rs), normalize_state(py_step, state_py))
             assert diff == {}, f"DAG traversal parity mismatch after step {step + 1}: {diff}"
 
         assert len(json.loads(state_rs.read_text(encoding="utf-8"))["completed_tasks"]) == task_count
@@ -390,6 +409,6 @@ def test_note_ledger_parity(check_binaries: tuple[Path, Path]) -> None:
 
         rs_data = json.loads(state_rs.read_text(encoding="utf-8"))
         py_data = json.loads(state_py.read_text(encoding="utf-8"))
-        diff = DeepDiff(normalize_state(rs_data), normalize_state(py_data))
+        diff = DeepDiff(normalize_state(rs_data, state_rs), normalize_state(py_data, state_py))
         assert diff == {}, f"Note ledger parity mismatch: {diff}"
-        assert normalize_state(rs_data)["notes"] == ["Chose adjacency list over matrix"]
+        assert normalize_state(rs_data, state_rs)["notes"] == ["Chose adjacency list over matrix"]

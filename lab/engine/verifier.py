@@ -20,6 +20,7 @@ import re
 from typing import Any, Optional
 import uuid
 
+from lab.sandbox.answer_key import AnswerKeyGuard
 from lab.sandbox.docker_manager import DockerManager, ImageBuildError
 
 logger = logging.getLogger("superstate_eval.verifier")
@@ -112,9 +113,11 @@ class HeldOutVerifier:
         # `docker run <image> cat /tests/test.patch`. Unique tag + removal after
         # grading means it exists only while grading is actually happening.
         tag = f"superstate-eval-verifier/{_sanitize_tag(str(task.id))}:{uuid.uuid4().hex[:12]}"
-        return self.docker_manager.build_image(
-            context_dir=tests_dir, tag=tag, timeout=self.build_timeout_sec
-        )
+        guard = AnswerKeyGuard()
+        with guard.temporarily_readable(tests_dir):
+            return self.docker_manager.build_image(
+                context_dir=tests_dir, tag=tag, timeout=self.build_timeout_sec
+            )
 
     def run(self, task: Any, logs_dir: Path, network_mode: str | None = "none") -> VerifierOutcome:
         """Run the held-out verifier against the collected patch.

@@ -16,7 +16,7 @@ import uuid
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentAdapter, AgentDriver
 from lab.engine.adapters.superpowers import SuperpowersAdapter
-from lab.engine.adapters.superstate import SuperstateAdapter
+from lab.engine.adapters.superstate import SuperstateAdapter, ENGINE_PYTHON, ENGINE_RUST
 from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
 from lab.engine.extractor import compute_test_metrics, extract_and_grade
@@ -90,8 +90,10 @@ class AblationRunner:
             return VanillaAdapter()
         elif arm == "superpowers":
             return SuperpowersAdapter()
-        elif arm == "superstate":
-            return SuperstateAdapter()
+        elif arm in ("superstate", "superstate_python", "superstate-python"):
+            return SuperstateAdapter(engine=ENGINE_PYTHON)
+        elif arm in ("superstate_rust", "superstate-rust", "rust", "arm_d", "arm-d"):
+            return SuperstateAdapter(engine=ENGINE_RUST)
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(
