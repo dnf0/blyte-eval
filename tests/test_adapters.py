@@ -697,3 +697,18 @@ def test_execution_contract_demands_minimal_direct_fix() -> None:
     assert "MINIMAL DIRECT FIX" in TARGETED_EXECUTION_CONTRACT_INPLACE
     assert "speculative CLI flags" in TARGETED_EXECUTION_CONTRACT_INPLACE
 
+
+def test_zero_turn_planning_synthesizes_plan_directly(tmp_path: Path) -> None:
+    task = _make_dummy_task(tmp_path)
+    task.verification_cmd = "python3 -c 'assert True'"
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(zero_turn_planning=True)
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.provenance["zero_turn_planning"] is True
+    assert result.provenance["plan_source"] == "zero_turn_synthesized"
+    assert (tmp_path / "plan.md").is_file()
+    assert "Verification Command: python3 -c 'assert True'" in (tmp_path / "plan.md").read_text()
+    assert len(driver.calls) > 0
+    assert "writing-plans" not in (str(driver.calls[0]["prompt"]))
+

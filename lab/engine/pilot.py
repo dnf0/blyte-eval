@@ -126,6 +126,8 @@ class PilotShowdownRunner:
             return SuperstateAdapter(engine="superstate-rust")
         elif arm in ("superstate_rust_inplace", "superstate-rust-inplace", "rust_inplace"):
             return SuperstateAdapter(engine="superstate-rust", no_worktree=True)
+        elif arm in ("superstate_rust_fast", "superstate-rust-fast", "rust_fast", "superstate_fast", "superstate_rust_direct"):
+            return SuperstateAdapter(engine="superstate-rust", no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     @contextmanager

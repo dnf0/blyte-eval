@@ -182,6 +182,7 @@ class SuperstateAdapter(AgentAdapter):
         engine: str = DEFAULT_ENGINE,
         max_turns_per_milestone: int = 3,
         no_worktree: bool = False,
+        zero_turn_planning: bool = False,
     ) -> None:
         if superstate_bin is not None and engine == DEFAULT_ENGINE:
             bin_path = Path(superstate_bin)
@@ -191,6 +192,7 @@ class SuperstateAdapter(AgentAdapter):
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
         self.max_turns_per_milestone = max_turns_per_milestone
         self.no_worktree = no_worktree
+        self.zero_turn_planning = zero_turn_planning
         self.engine_used: Optional[str] = None
         self.plan_source: Optional[str] = None
         self.milestones_planned: int = 0
@@ -234,6 +236,7 @@ class SuperstateAdapter(AgentAdapter):
             "engine": self.engine,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
             "no_worktree": self.no_worktree,
+            "zero_turn_planning": self.zero_turn_planning,
             # Whether this run was actually a control-plane run.
             "plan_source": self.plan_source,
             "milestones_planned": self.milestones_planned,
@@ -728,6 +731,25 @@ class SuperstateAdapter(AgentAdapter):
 
         plan_file = workspace_path / "plan.md"
         plan_text = plan_file.read_text(encoding="utf-8") if plan_file.is_file() else ""
+
+        if not plan_text and self.zero_turn_planning:
+            vcmd = getattr(task, "verification_cmd", None)
+            if vcmd:
+                first_line = task.instruction.strip().splitlines()[0]
+                plan_text = (
+                    f"### Task 1: {first_line[:80]}\n"
+                    "- **Depends on:** none\n"
+                    "**Files:**\n"
+                    f"- Verification Command: {vcmd}\n"
+                    f"**Goal:** {first_line}\n"
+                )
+                plan_file.write_text(plan_text, encoding="utf-8")
+                self.plan_source = "zero_turn_synthesized"
+                self.decomposed = True
+                logger.info(
+                    "Zero-turn planning active: synthesized direct plan with gate '%s' (0ms latency)",
+                    vcmd,
+                )
 
         if not plan_text:
             # Phase 1: Planning turn if no plan exists
