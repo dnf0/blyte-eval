@@ -49,29 +49,29 @@ FALLBACK_MILESTONE_TITLE = "Task 1: Complete Feature Implementation"
 
 TARGETED_EXECUTION_CONTRACT = (
     "## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)\n"
-    "1. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
-    "2. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
-    "3. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
-    "4. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
-    "5. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "6. **AUTOMATIC SNAPSHOTS:** The orchestrator automatically snapshots and commits your changes upon milestone completion. Do not attempt to merge or delete the worktree.\n"
-    "7. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
-    "8. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
-    "9. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
+    "1. **HARD STOP UPON PASSING (MANDATORY):** The moment the verification command passes with exit code 0, YOUR WORK ON THIS MILESTONE IS COMPLETE. You MUST stop immediately and return your summary. Do NOT second-guess the verification command. Do NOT run extra tests or alternative scripts. Do NOT inspect external directories. Output your summary and conclude your turn.\n"
+    "2. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
+    "3. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
+    "4. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
+    "5. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
+    "6. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
+    "7. **AUTOMATIC SNAPSHOTS:** The orchestrator automatically snapshots and commits your changes upon milestone completion. Do not attempt to merge or delete the worktree.\n"
+    "8. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
+    "9. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
     "10. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the active worktree directory and the provided container environment. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
 TARGETED_EXECUTION_CONTRACT_INPLACE = (
     "## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)\n"
-    "1. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
-    "2. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
-    "3. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
-    "4. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
-    "5. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "6. **NO UNNECESSARY COMMITS:** Do not create manual git commits unless the task explicitly requires modifying git history. Focus solely on making tests pass.\n"
-    "7. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
-    "8. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
-    "9. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
+    "1. **HARD STOP UPON PASSING (MANDATORY):** The moment the verification command passes with exit code 0, YOUR WORK ON THIS MILESTONE IS COMPLETE. You MUST stop immediately and return your summary. Do NOT second-guess the verification command. Do NOT run extra tests or alternative scripts. Do NOT inspect external directories. Output your summary and conclude your turn.\n"
+    "2. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
+    "3. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
+    "4. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
+    "5. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
+    "6. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
+    "7. **NO UNNECESSARY COMMITS:** Do not create manual git commits unless the task explicitly requires modifying git history. Focus solely on making tests pass.\n"
+    "8. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
+    "9. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
     "10. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the project container environment and workspace directory. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
@@ -761,7 +761,8 @@ class SuperstateAdapter(AgentAdapter):
                 "project environment, where such a wrapper does not exist.\n\n"
                 "## ⛔ CRITICAL DIRECTIVE (MANDATORY)\n"
                 "- This is a planning-only turn. Do NOT execute shell commands, do NOT run git, and do NOT explore files.\n"
-                "- Based on the specification above, synthesize the plan and call `write_to_file` to write `plan.md` immediately in the workspace."
+                "- Based on the specification above, synthesize the plan and call `write_to_file` to write `plan.md` immediately in the workspace.\n"
+                "- Output ONLY `plan.md` via `write_to_file`. Do NOT output conversational preambles or lengthy analysis text."
             )
             remaining = budget - duration
             planning_timeout = (
