@@ -53,7 +53,7 @@ class FlakyGateDriver(AgentDriver):
             )
         elif turn == 2:
             # Turn 2: Verify diagnostic prompt received, create marker
-            (self.workspace / "marker.txt").write_text("fixed\n", encoding="utf-8")
+            (workspace_path / "marker.txt").write_text("fixed\n", encoding="utf-8")
             return DriverTelemetry(
                 success=True,
                 raw_response="Fixed the issue by creating marker.txt.",
