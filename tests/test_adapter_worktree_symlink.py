@@ -15,7 +15,7 @@ def test_switch_container_workspace_with_active_worktree(tmp_path: Path) -> None
     adapter._switch_container_workspace(mock_container, workspace, wt_dir)
 
     expected_cmd = ["sh", "-c", "ln -sfn /workspace_root/.wt/task-1 /app"]
-    mock_container.exec_run.assert_called_once_with(expected_cmd)
+    mock_container.exec_run.assert_called_once_with(expected_cmd, workdir="/")
 
 
 def test_switch_container_workspace_resets_to_root(tmp_path: Path) -> None:
@@ -28,7 +28,7 @@ def test_switch_container_workspace_resets_to_root(tmp_path: Path) -> None:
     adapter._switch_container_workspace(mock_container, workspace, None)
 
     expected_cmd = ["sh", "-c", "ln -sfn /workspace_root /app"]
-    mock_container.exec_run.assert_called_once_with(expected_cmd)
+    mock_container.exec_run.assert_called_once_with(expected_cmd, workdir="/")
 
 
 def test_switch_container_workspace_no_worktree_mode(tmp_path: Path) -> None:
@@ -43,4 +43,4 @@ def test_switch_container_workspace_no_worktree_mode(tmp_path: Path) -> None:
     adapter._switch_container_workspace(mock_container, workspace, wt_dir)
 
     expected_cmd = ["sh", "-c", "ln -sfn /workspace_root /app"]
-    mock_container.exec_run.assert_called_once_with(expected_cmd)
+    mock_container.exec_run.assert_called_once_with(expected_cmd, workdir="/")

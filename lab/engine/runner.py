@@ -237,7 +237,7 @@ class AblationRunner:
                                 "mode": "rw",
                             }
                         },
-                        working_dir=CONTAINER_WORKSPACE,
+                        working_dir=CONTAINER_MOUNT_ROOT,
                         network_mode=network_mode,
                         environment=active_task.env,
                         nano_cpus=nano_cpus,
@@ -249,7 +249,8 @@ class AblationRunner:
                                 "sh",
                                 "-c",
                                 f"rm -rf {CONTAINER_WORKSPACE} && ln -s {CONTAINER_MOUNT_ROOT} {CONTAINER_WORKSPACE}",
-                            ]
+                            ],
+                            workdir="/",
                         )
                         recorder = RunRecorder(
                             logs_dir=logs_dir, task_id=task_id, arm=arm

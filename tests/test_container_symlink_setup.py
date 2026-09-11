@@ -51,17 +51,18 @@ def test_runner_mounts_workspace_root_and_inits_symlink(tmp_path: Path) -> None:
         base_budget_sec=60.0,
     )
 
-    # 1. Mount must be to CONTAINER_MOUNT_ROOT (/workspace_root)
+    # 1. Mount must be to CONTAINER_MOUNT_ROOT (/workspace_root) and working_dir must be /workspace_root
     assert CONTAINER_MOUNT_ROOT == "/workspace_root"
     assert CONTAINER_WORKSPACE == "/app"
     call_kwargs = mock_docker_mgr.run_sandbox.call_args[1]
     volumes = call_kwargs["volumes"]
     host_path, bind_spec = next(iter(volumes.items()))
     assert bind_spec == {"bind": CONTAINER_MOUNT_ROOT, "mode": "rw"}
+    assert call_kwargs["working_dir"] == CONTAINER_MOUNT_ROOT
 
-    # 2. Container must execute symlink initialization command
+    # 2. Container must execute symlink initialization command with workdir="/"
     expected_cmd = ["sh", "-c", f"rm -rf {CONTAINER_WORKSPACE} && ln -s {CONTAINER_MOUNT_ROOT} {CONTAINER_WORKSPACE}"]
-    mock_container.exec_run.assert_any_call(expected_cmd)
+    mock_container.exec_run.assert_any_call(expected_cmd, workdir="/")
 
 
 def test_agy_cli_driver_run_in_container_sets_workdir(tmp_path: Path) -> None:

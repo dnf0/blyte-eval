@@ -557,9 +557,9 @@ class SuperstateAdapter(AgentAdapter):
         try:
             if active_wt and active_wt.is_dir() and not self.no_worktree:
                 rel = active_wt.resolve().relative_to(workspace_path.resolve())
-                container.exec_run(["sh", "-c", f"ln -sfn /workspace_root/{rel} /app"])
+                container.exec_run(["sh", "-c", f"ln -sfn /workspace_root/{rel} /app"], workdir="/")
             else:
-                container.exec_run(["sh", "-c", "ln -sfn /workspace_root /app"])
+                container.exec_run(["sh", "-c", "ln -sfn /workspace_root /app"], workdir="/")
         except Exception as exc:
             logger.warning("Failed to switch container workspace symlink: %s", exc)
 
@@ -646,6 +646,7 @@ class SuperstateAdapter(AgentAdapter):
                 )
                 if res.returncode == 0:
                     self._record_engine(ENGINE_BINARY)
+                    self._switch_container_workspace(container, workspace_path, None)
                     return True
                 logger.warning("superstate state next gate failed: %s", res.stderr)
                 if gate_detail is not None:
