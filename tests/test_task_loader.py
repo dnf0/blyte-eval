@@ -78,3 +78,45 @@ def test_load_task_terminal_bench_tests_dir(tmp_path: Path) -> None:
     assert task.tests_dir == tests_dir
     assert task.has_verifier_dockerfile is False
     assert task.verification_cmd == "bash /tests/test.sh"
+
+
+def test_has_verifier_dockerfile_when_tests_dir_is_sealed(tmp_path: Path) -> None:
+    task_dir = tmp_path / "deepswe-task"
+    task_dir.mkdir()
+    (task_dir / "task.toml").write_text(
+        '[task]\nname = "deepswe-task"\n[environment]\ndocker_image = "img:ds"\n',
+        encoding="utf-8",
+    )
+    tests_dir = task_dir / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "Dockerfile").write_text("FROM alpine\n", encoding="utf-8")
+    (tests_dir / "test.sh").write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+
+    task = load_task_from_dir(task_dir)
+    assert task.has_verifier_dockerfile is True
+
+    # Seal the tests directory (chmod 000) as AnswerKeyGuard does during execution
+    tests_dir.chmod(0o000)
+    try:
+        # Accessing has_verifier_dockerfile while sealed must still return True
+        assert task.has_verifier_dockerfile is True
+
+        # Even a newly created TaskSpec pointing to the sealed dir with staged copy must return True
+        staged_dir = tmp_path / "staged" / "deepswe-task" / "tests"
+        staged_dir.mkdir(parents=True)
+        (staged_dir / "Dockerfile").write_text("FROM alpine\n", encoding="utf-8")
+        from lab.sandbox.answer_key import AnswerKeyGuard
+        guard = AnswerKeyGuard(state_file=tmp_path / "guard_state.json")
+        guard._staged[str(tests_dir.resolve())] = staged_dir.resolve()
+
+        task2 = TaskSpec(
+            id="deepswe-task-2",
+            name="deepswe-task-2",
+            instruction="",
+            docker_image="img:ds",
+            task_dir=task_dir,
+        )
+        assert task2.has_verifier_dockerfile is True
+    finally:
+        tests_dir.chmod(0o755)
+

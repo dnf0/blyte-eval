@@ -5,7 +5,7 @@
 #   - 22 tasks (all tasks with verified held-out test suites)
 #   - 3 arms: vanilla, superpowers, superstate_rust
 #   - 2 repeats per task/arm
-#   - Concurrency: 2 workers
+#   - Concurrency: 4 workers
 #   - Incremental results output: results/weekend_run_20260912.json
 #   - OS notify-on-exit wrapper upon completion
 # -----------------------------------------------------------------------------
@@ -26,7 +26,7 @@ echo "Starting Superstate Over-Weekend Benchmark"
 echo "Start Time: $(date)"
 echo "Tasks: 22 tasks with held-out verifiers"
 echo "Arms: vanilla superpowers superstate_rust (2 repeats each)"
-echo "Concurrency: 2 workers"
+echo "Concurrency: 4 workers"
 echo "Results JSON: $RESULTS_JSON"
 echo "Log File: $LOG_FILE"
 echo "=================================================================="
@@ -54,5 +54,5 @@ uv run python scripts/paired_run.py \
     --only-with-verifier \
     --arms vanilla superpowers superstate_rust \
     --repeats 2 \
-    --concurrency 2 \
+    --concurrency 4 \
     --out "$RESULTS_JSON" 2>&1 | tee "$LOG_FILE"
