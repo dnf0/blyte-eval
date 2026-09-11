@@ -604,7 +604,7 @@ def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
     assert passed is True
     assert code == 0
     assert out == "all tests pass"
-    container_normal.exec_run.assert_called_once_with(["/bin/sh", "-c", "pytest"], workdir="/app/.wt/task-1")
+    container_normal.exec_run.assert_called_once_with(["/bin/sh", "-c", "pytest"], workdir="/app")
 
     # 2. Container raising TypeError when kwargs passed (e.g. mock or legacy client)
     container_legacy = MagicMock()
@@ -620,7 +620,7 @@ def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
     assert container_legacy.exec_run.call_count == 2
     fallback_call = container_legacy.exec_run.call_args_list[1][0][0]
     import shlex
-    assert fallback_call == ["/bin/sh", "-c", f"cd {shlex.quote('/app/.wt/task-1')} && pytest"]
+    assert fallback_call == ["/bin/sh", "-c", f"cd {shlex.quote('/app')} && pytest"]
 
 
 def test_superstate_adapter_executes_in_place(tmp_path: Path) -> None:
@@ -698,17 +698,120 @@ def test_execution_contract_demands_minimal_direct_fix() -> None:
     assert "speculative CLI flags" in TARGETED_EXECUTION_CONTRACT_INPLACE
 
 
-def test_zero_turn_planning_synthesizes_plan_directly(tmp_path: Path) -> None:
-    task = _make_dummy_task(tmp_path)
-    task.verification_cmd = "python3 -c 'assert True'"
-    driver = MockDriver([])
-    adapter = SuperstateAdapter(zero_turn_planning=True)
-    result = adapter.execute(tmp_path, task, driver)
 
-    assert result.provenance["zero_turn_planning"] is True
-    assert result.provenance["plan_source"] == "zero_turn_synthesized"
-    assert (tmp_path / "plan.md").is_file()
-    assert "Verification Command: python3 -c 'assert True'" in (tmp_path / "plan.md").read_text()
-    assert len(driver.calls) > 0
-    assert "writing-plans" not in (str(driver.calls[0]["prompt"]))
+
+def test_zero_turn_direct_state_init_produces_no_markdown_file(tmp_path: Path) -> None:
+    import subprocess
+    from unittest.mock import patch
+    from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
+
+    bin_path = find_superstate_binary(ENGINE_RUST) or (Path.home() / "repos/superstate/target/release/superstate")
+    if not bin_path.exists():
+        pytest.skip("superstate release binary not found")
+
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    task = _make_dummy_task(tmp_path)
+    task.instruction = "Fix bug in main.py"
+    task.verification_cmd = "true"
+
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(superstate_bin=bin_path, engine=ENGINE_RUST, zero_turn_planning=True, no_worktree=True)
+
+    with patch("subprocess.run", wraps=subprocess.run) as mock_subproc:
+        result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is True
+
+    # Asserts that superstate state init is called with --goal and --verify-cmd
+    init_calls = [
+        call for call in mock_subproc.call_args_list
+        if len(call[0]) > 0 and isinstance(call[0][0], list) and "state" in call[0][0] and "init" in call[0][0]
+    ]
+    assert len(init_calls) > 0, "superstate state init was not called"
+    init_cmd = init_calls[0][0][0]
+    assert "--goal" in init_cmd, "--goal flag missing from state init call"
+    assert "--verify-cmd" in init_cmd, "--verify-cmd flag missing from state init call"
+
+    # Asserts that NO plan.md or plan.normalized.md file exists in the workspace
+    assert not (tmp_path / "plan.md").exists(), "plan.md must not exist"
+    assert not (tmp_path / "plan.normalized.md").exists(), "plan.normalized.md must not exist"
+
+    # Asserts provenance contains "plan_source": "direct_state_handoff"
+    assert result.provenance["plan_source"] == "direct_state_handoff"
+
+
+@pytest.mark.parametrize("failure_mode", ["none_bin", "exception", "nonzero_exit"])
+def test_zero_turn_direct_state_init_fallback_when_binary_none_or_fails(
+    tmp_path: Path, failure_mode: str
+) -> None:
+    import json
+    import subprocess
+    from unittest.mock import patch
+    from lab.engine.adapters.superstate import ENGINE_PYTHON_FALLBACK
+
+    task = _make_dummy_task(tmp_path)
+    task.instruction = "Fix bug in main.py"
+    task.verification_cmd = "true"
+
+    driver = MockDriver([])
+
+    if failure_mode == "none_bin":
+        adapter = SuperstateAdapter(
+            zero_turn_planning=True,
+            no_worktree=True,
+        )
+        adapter.superstate_bin = None  # simulate binary not found
+        result = adapter.execute(tmp_path, task, driver)
+
+    elif failure_mode == "exception":
+        adapter = SuperstateAdapter(
+            superstate_bin=Path("/mock/superstate"),
+            zero_turn_planning=True,
+            no_worktree=True,
+        )
+        with patch("subprocess.run", side_effect=subprocess.SubprocessError("exec failure")):
+            result = adapter.execute(tmp_path, task, driver)
+    elif failure_mode == "nonzero_exit":
+        adapter = SuperstateAdapter(
+            superstate_bin=Path("/mock/superstate"),
+            zero_turn_planning=True,
+            no_worktree=True,
+        )
+        failed_res = subprocess.CompletedProcess(
+            args=["superstate", "state", "init"],
+            returncode=1,
+            stdout="",
+            stderr="binary init failed",
+        )
+        with patch("subprocess.run", return_value=failed_res):
+            result = adapter.execute(tmp_path, task, driver)
+    else:
+        raise ValueError(f"Unknown failure mode {failure_mode}")
+
+    assert result.success is True
+    assert result.provenance["plan_source"] == "direct_state_handoff"
+    assert result.provenance["state_engine"] == ENGINE_PYTHON_FALLBACK
+
+    # Asserts that NO plan.md or plan.normalized.md file exists in the workspace
+    assert not (tmp_path / "plan.md").exists(), "plan.md must not exist"
+    assert not (tmp_path / "plan.normalized.md").exists(), "plan.normalized.md must not exist"
+
+    # Asserts valid state JSON exists directly in Python fallback without markdown plan
+    state_file = tmp_path / ".agent-state" / "state.json"
+    assert state_file.is_file(), "state.json was not created"
+    state_data = json.loads(state_file.read_text(encoding="utf-8"))
+    assert state_data["status"] == "in_progress"
+    assert state_data["step"] == 1
+    assert state_data["active_task"]["id"] == "task-1"
+    assert state_data["active_task"]["title"] == "Fix bug in main.py"
+    assert state_data["active_task"]["verification_cmd"] == "true"
+    assert state_data["no_worktree"] is True
+
+
 

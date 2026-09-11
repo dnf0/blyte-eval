@@ -33,9 +33,11 @@ logger = logging.getLogger("superstate_eval.runner")
 # Spec: every evaluation container is capped at 2.5 CPUs and 4 GB of memory.
 DEFAULT_NANO_CPUS = int(2.5 * 1e9)
 DEFAULT_MEM_LIMIT = "4g"
-# Host workspace is bind-mounted here so the agent and the blind grader operate
-# on the same files.
+# Host workspace is bind-mounted at CONTAINER_MOUNT_ROOT. CONTAINER_WORKSPACE (/app)
+# is dynamically symlinked to the active workspace (or worktree) so that agent commands
+# and the blind grader seamlessly operate on the active files without mount impedance.
 CONTAINER_WORKSPACE = "/app"
+CONTAINER_MOUNT_ROOT = "/workspace_root"
 
 
 def resolve_network_mode(declared: str | None) -> str | None:
@@ -226,20 +228,30 @@ class AblationRunner:
                         image=run_image,
                         logs_dir=logs_dir,
                         container_name=run_id,
-                        # The agent's workspace and the blind grader's /app must be
-                        # the same filesystem, or the grader scores an empty repo.
+                        # The host workspace is mounted at CONTAINER_MOUNT_ROOT, and CONTAINER_WORKSPACE
+                        # (/app) is symlinked to it. This allows active worktrees (.wt/task-N)
+                        # to be dynamically symlinked to /app during isolation turns.
                         volumes={
                             str(workspace_dir.resolve()): {
-                                "bind": CONTAINER_WORKSPACE,
+                                "bind": CONTAINER_MOUNT_ROOT,
                                 "mode": "rw",
                             }
                         },
-                        working_dir=CONTAINER_WORKSPACE,
+                        working_dir=CONTAINER_MOUNT_ROOT,
                         network_mode=network_mode,
                         environment=active_task.env,
                         nano_cpus=nano_cpus,
                         mem_limit=mem_limit,
                     ) as container:
+                        # Initialize /app as a dynamic symlink to /workspace_root
+                        container.exec_run(
+                            [
+                                "sh",
+                                "-c",
+                                f"rm -rf {CONTAINER_WORKSPACE} && ln -s {CONTAINER_MOUNT_ROOT} {CONTAINER_WORKSPACE}",
+                            ],
+                            workdir="/",
+                        )
                         recorder = RunRecorder(
                             logs_dir=logs_dir, task_id=task_id, arm=arm
                         )

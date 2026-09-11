@@ -91,7 +91,7 @@ class MockContainer:
         self.logs_dir = logs_dir
         self.arm = arm
 
-    def exec_run(self, cmd: str) -> tuple[int, bytes]:
+    def exec_run(self, cmd: str, workdir: Optional[str] = None, **kwargs: Any) -> tuple[int, bytes]:
         if self.logs_dir is not None:
             # Simulate container-side verifier generating reward
             vdir = self.logs_dir / "verifier"

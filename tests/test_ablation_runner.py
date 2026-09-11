@@ -178,7 +178,7 @@ def test_ablation_runner_live_path_requires_explicit_driver(tmp_path) -> None:
 
 def test_ablation_runner_default_execution_mounts_workspace_into_container(tmp_path) -> None:
     from lab.engine.adapters.base import AgentDriver, DriverTelemetry
-    from lab.engine.runner import CONTAINER_WORKSPACE, AblationRunner
+    from lab.engine.runner import CONTAINER_MOUNT_ROOT, AblationRunner
 
     class StubDriver(AgentDriver):
         def run(
@@ -229,7 +229,7 @@ def test_ablation_runner_default_execution_mounts_workspace_into_container(tmp_p
     volumes = kwargs["volumes"]
     assert len(volumes) == 1
     host_path, bind_spec = next(iter(volumes.items()))
-    assert bind_spec == {"bind": CONTAINER_WORKSPACE, "mode": "rw"}
+    assert bind_spec == {"bind": CONTAINER_MOUNT_ROOT, "mode": "rw"}
     assert (Path(host_path) / "solution.py").is_file(), (
         "The mounted host directory must contain the agent's work"
     )
