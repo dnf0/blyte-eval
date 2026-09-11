@@ -262,10 +262,12 @@ def extract_and_grade(
             )
 
         verification_cmd = getattr(task, "verification_cmd", None) or "pytest"
-        verifier_env = getattr(task, "verifier_env", None)
+        env_env = getattr(task, "env", None) or {}
+        verifier_env = getattr(task, "verifier_env", None) or {}
+        combined_env = {**env_env, **verifier_env}
         exec_kwargs: dict[str, Any] = {}
-        if verifier_env:
-            exec_kwargs["environment"] = verifier_env
+        if combined_env:
+            exec_kwargs["environment"] = combined_env
 
         exec_res = container.exec_run(verification_cmd, **exec_kwargs)
         if isinstance(exec_res, tuple):
