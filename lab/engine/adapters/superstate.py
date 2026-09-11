@@ -521,11 +521,23 @@ class SuperstateAdapter(AgentAdapter):
         if container is None:
             return
         try:
+            target = "/workspace_root"
             if active_wt and active_wt.is_dir() and not self.no_worktree:
-                rel = active_wt.resolve().relative_to(workspace_path.resolve())
-                container.exec_run(["sh", "-c", f"ln -sfn /workspace_root/{rel} /app"], workdir="/")
-            else:
-                container.exec_run(["sh", "-c", "ln -sfn /workspace_root /app"], workdir="/")
+                try:
+                    rel = active_wt.resolve().relative_to(workspace_path.resolve())
+                    target = f"/workspace_root/{rel}"
+                except ValueError as err:
+                    logger.warning(
+                        "Worktree %s not relative to %s: %s; falling back to root",
+                        active_wt,
+                        workspace_path,
+                        err,
+                    )
+            res = container.exec_run(["sh", "-c", f"ln -sfn {shlex.quote(target)} /app"], workdir="/")
+            code = res[0] if isinstance(res, tuple) else getattr(res, "exit_code", 0)
+            if code != 0:
+                out = res[1] if isinstance(res, tuple) else getattr(res, "output", b"")
+                logger.warning("ln -sfn to %s failed with exit code %s: %s", target, code, out)
         except Exception as exc:
             logger.warning("Failed to switch container workspace symlink: %s", exc)
 
@@ -927,155 +939,157 @@ class SuperstateAdapter(AgentAdapter):
             verify_by_title = {m.title: m.verify_cmd for m in milestones}
         executed: set[str] = set()
 
-        for _ in range(self.max_milestones):
-            if duration >= budget:
-                error_msg = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
-                break
-
-            ready = [t for t in self.ready_tasks(workspace_path) if t not in executed]
-            if not ready:
-                break
-            active = ready[0]
-            executed.add(active)
-            milestone_index = len(executed)
-
-            current_prompt = self.turnkey_prompt(workspace_path, active)
-            if current_prompt is None:
-                error_msg = f"State engine produced no prompt for '{active}'"
-                break
-            if "TARGETED EXECUTION CONTRACT" not in current_prompt:
-                contract = TARGETED_EXECUTION_CONTRACT_INPLACE if (self.no_worktree or self.engine == ENGINE_PYTHON) else TARGETED_EXECUTION_CONTRACT
-                current_prompt = f"{current_prompt}\n\n{contract}"
-
-            wt = self.active_worktree(workspace_path)
-            turn_workspace = wt if (wt and wt.is_dir() and not self.no_worktree) else workspace_path
-            self._switch_container_workspace(container, workspace_path, wt)
-
-            conversation_id: Optional[str] = None
-            milestone_failed: Optional[str] = None
-            milestone_turns = 0
-            last_response = ""
-            advanced = False
-            milestone = Milestone(
-                title=active,
-                verify_cmd=verify_by_title.get(active)
-                or (getattr(task, "verification_cmd", None) if self.plan_source == "direct_state_handoff" else None),
-            )
-            gate_detail: Dict[str, Any] = {
-                "gate_ran": False,
-                "gate_passed": None,
-                "gate_exit_code": None,
-                "gate_output": None,
-            }
-
-            for _turn in range(self.max_turns_per_milestone):
-                turn_timeout = budget - duration
-                if turn_timeout <= 0:
-                    milestone_failed = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
+        try:
+            for _ in range(self.max_milestones):
+                if duration >= budget:
+                    error_msg = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
                     break
-
-                telemetry = driver.run(
-                    task=task,
-                    workspace_path=turn_workspace,
-                    prompt_override=current_prompt,
-                    conversation_id=conversation_id,
-                    timeout_sec=turn_timeout,
-                    container=container,
+    
+                ready = [t for t in self.ready_tasks(workspace_path) if t not in executed]
+                if not ready:
+                    break
+                active = ready[0]
+                executed.add(active)
+                milestone_index = len(executed)
+    
+                current_prompt = self.turnkey_prompt(workspace_path, active)
+                if current_prompt is None:
+                    error_msg = f"State engine produced no prompt for '{active}'"
+                    break
+                if "TARGETED EXECUTION CONTRACT" not in current_prompt:
+                    contract = TARGETED_EXECUTION_CONTRACT_INPLACE if (self.no_worktree or self.engine == ENGINE_PYTHON) else TARGETED_EXECUTION_CONTRACT
+                    current_prompt = f"{current_prompt}\n\n{contract}"
+    
+                wt = self.active_worktree(workspace_path)
+                turn_workspace = wt if (wt and wt.is_dir() and not self.no_worktree) else workspace_path
+                self._switch_container_workspace(container, workspace_path, wt)
+    
+                conversation_id: Optional[str] = None
+                milestone_failed: Optional[str] = None
+                milestone_turns = 0
+                last_response = ""
+                advanced = False
+                milestone = Milestone(
+                    title=active,
+                    verify_cmd=verify_by_title.get(active)
+                    or (getattr(task, "verification_cmd", None) if self.plan_source == "direct_state_handoff" else None),
                 )
-
-                if recorder is not None:
-                    recorder.record_turn(
-                        phase="milestone",
-                        prompt=current_prompt,
-                        telemetry=telemetry,
-                        milestone=active,
+                gate_detail: Dict[str, Any] = {
+                    "gate_ran": False,
+                    "gate_passed": None,
+                    "gate_exit_code": None,
+                    "gate_output": None,
+                }
+    
+                for _turn in range(self.max_turns_per_milestone):
+                    turn_timeout = budget - duration
+                    if turn_timeout <= 0:
+                        milestone_failed = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
+                        break
+    
+                    telemetry = driver.run(
+                        task=task,
+                        workspace_path=turn_workspace,
+                        prompt_override=current_prompt,
+                        conversation_id=conversation_id,
+                        timeout_sec=turn_timeout,
+                        container=container,
                     )
-
-                duration += telemetry.duration_seconds
-                input_tokens += telemetry.input_tokens
-                output_tokens += telemetry.output_tokens
-                cost_usd += telemetry.cost_usd
-                turns += 1
-                milestone_turns += 1
-                conversation_id = telemetry.conversation_id or conversation_id
-                last_response = telemetry.raw_response or ""
-
-                if budget_hook is not None:
-                    budget = max(budget, budget_hook())
-
-                # If the agent is asking for approval / input, provide mechanical approval
-                next_prompt = resolve_next_turn_prompt(last_response)
-                if next_prompt is not None:
-                    current_prompt = next_prompt
-                    continue
-
-                # The agent concluded its work for this milestone.
-                # Evaluate targeted verification gate & rescue: if the targeted verification passes on disk,
-                # the milestone succeeded and state advances regardless of driver status quirks.
-                advanced = self._advance_state(
-                    workspace_path, active, milestone.verify_cmd, container, gate_detail
-                )
-                if advanced:
-                    milestone_failed = None
-                    break
-
-                if not telemetry.success:
-                    milestone_failed = telemetry.error_message or f"Milestone '{active}' failed"
-                    break
-
-                # Verification gate failed. If turns remain, feed diagnostic feedback back to the agent.
-                if milestone_turns < self.max_turns_per_milestone and duration < budget:
-                    gate_output = (
-                        gate_detail.get("gate_output")
-                        or gate_detail.get("engine_error")
-                        or "Verification gate failed"
-                    )
-                    gate_exit_code = gate_detail.get("gate_exit_code", 1)
-
-                    if last_response:
-                        self.record_note(
-                            workspace_path, f"[{active} - Turn {milestone_turns}] {last_response[:500]}"
+    
+                    if recorder is not None:
+                        recorder.record_turn(
+                            phase="milestone",
+                            prompt=current_prompt,
+                            telemetry=telemetry,
+                            milestone=active,
                         )
-                    self.record_note(
-                        workspace_path,
-                        f"[Gate Failed - Turn {milestone_turns}] cmd='{milestone.verify_cmd}' exit={gate_exit_code}: {gate_output[:1000]}",
+    
+                    duration += telemetry.duration_seconds
+                    input_tokens += telemetry.input_tokens
+                    output_tokens += telemetry.output_tokens
+                    cost_usd += telemetry.cost_usd
+                    turns += 1
+                    milestone_turns += 1
+                    conversation_id = telemetry.conversation_id or conversation_id
+                    last_response = telemetry.raw_response or ""
+    
+                    if budget_hook is not None:
+                        budget = max(budget, budget_hook())
+    
+                    # If the agent is asking for approval / input, provide mechanical approval
+                    next_prompt = resolve_next_turn_prompt(last_response)
+                    if next_prompt is not None:
+                        current_prompt = next_prompt
+                        continue
+    
+                    # The agent concluded its work for this milestone.
+                    # Evaluate targeted verification gate & rescue: if the targeted verification passes on disk,
+                    # the milestone succeeded and state advances regardless of driver status quirks.
+                    advanced = self._advance_state(
+                        workspace_path, active, milestone.verify_cmd, container, gate_detail
                     )
-
-                    retry_prompt = (
-                        f"## VERIFICATION GATE FAILED (Attempt {milestone_turns} of {self.max_turns_per_milestone})\n\n"
-                        f"The verification command `{milestone.verify_cmd}` failed with exit code {gate_exit_code}.\n\n"
-                        f"### Gate Output:\n"
-                        f"```\n{gate_output.strip()}\n```\n\n"
-                        f"Please diagnose this failure, apply the necessary code or environment changes, and ensure the verification passes."
-                    )
-                    logger.info(
-                        "Milestone '%s' gate failed on turn %d/%d; retrying with diagnostic feedback",
-                        active,
-                        milestone_turns,
-                        self.max_turns_per_milestone,
-                    )
-                    current_prompt = retry_prompt
-                    continue
-
-                # Agent concluded without asking for user approval, but verification gate failed
-                milestone_failed = f"Verification gate failed for milestone '{active}'"
-                break
-
-            # Carry what this turn learned into the ledger, so later milestones
-            # inherit it rather than starting blind.
-            if last_response:
-                distilled = self._distill_finding(last_response)
-                if distilled:
-                    self.record_note(workspace_path, f"[{active}] {distilled}")
-
-            self._record_milestone(
-                recorder, milestone_index, milestone, milestone_turns, gate_detail, advanced
-            )
-            if not advanced:
-                error_msg = milestone_failed or f"Verification gate failed for milestone '{active}'"
-                break
-
-        # Ensure container /app points back to /workspace_root for held-out grading
-        self._switch_container_workspace(container, workspace_path, None)
+                    if advanced:
+                        milestone_failed = None
+                        break
+    
+                    if not telemetry.success:
+                        milestone_failed = telemetry.error_message or f"Milestone '{active}' failed"
+                        break
+    
+                    # Verification gate failed. If turns remain, feed diagnostic feedback back to the agent.
+                    if milestone_turns < self.max_turns_per_milestone and duration < budget:
+                        gate_output = (
+                            gate_detail.get("gate_output")
+                            or gate_detail.get("engine_error")
+                            or "Verification gate failed"
+                        )
+                        gate_exit_code = gate_detail.get("gate_exit_code", 1)
+    
+                        if last_response:
+                            self.record_note(
+                                workspace_path, f"[{active} - Turn {milestone_turns}] {last_response[:500]}"
+                            )
+                        self.record_note(
+                            workspace_path,
+                            f"[Gate Failed - Turn {milestone_turns}] cmd='{milestone.verify_cmd}' exit={gate_exit_code}: {gate_output[:1000]}",
+                        )
+    
+                        retry_prompt = (
+                            f"## VERIFICATION GATE FAILED (Attempt {milestone_turns} of {self.max_turns_per_milestone})\n\n"
+                            f"The verification command `{milestone.verify_cmd}` failed with exit code {gate_exit_code}.\n\n"
+                            f"### Gate Output:\n"
+                            f"```\n{gate_output.strip()}\n```\n\n"
+                            f"Please diagnose this failure, apply the necessary code or environment changes, and ensure the verification passes."
+                        )
+                        logger.info(
+                            "Milestone '%s' gate failed on turn %d/%d; retrying with diagnostic feedback",
+                            active,
+                            milestone_turns,
+                            self.max_turns_per_milestone,
+                        )
+                        current_prompt = retry_prompt
+                        continue
+    
+                    # Agent concluded without asking for user approval, but verification gate failed
+                    milestone_failed = f"Verification gate failed for milestone '{active}'"
+                    break
+    
+                # Carry what this turn learned into the ledger, so later milestones
+                # inherit it rather than starting blind.
+                if last_response:
+                    distilled = self._distill_finding(last_response)
+                    if distilled:
+                        self.record_note(workspace_path, f"[{active}] {distilled}")
+    
+                self._record_milestone(
+                    recorder, milestone_index, milestone, milestone_turns, gate_detail, advanced
+                )
+                if not advanced:
+                    error_msg = milestone_failed or f"Verification gate failed for milestone '{active}'"
+                    break
+    
+        finally:
+            # Ensure container /app points back to /workspace_root for held-out grading
+            self._switch_container_workspace(container, workspace_path, None)
 
         return result(error_msg is None, error_msg)

@@ -44,3 +44,34 @@ def test_switch_container_workspace_no_worktree_mode(tmp_path: Path) -> None:
 
     expected_cmd = ["sh", "-c", "ln -sfn /workspace_root /app"]
     mock_container.exec_run.assert_called_once_with(expected_cmd, workdir="/")
+
+
+def test_switch_container_workspace_handles_none_container(tmp_path: Path) -> None:
+    adapter = SuperstateAdapter(engine="rust", no_worktree=False)
+    # Should safely return without exception
+    adapter._switch_container_workspace(None, tmp_path, None)
+
+
+def test_switch_container_workspace_unresolvable_worktree_fallback(tmp_path: Path) -> None:
+    adapter = SuperstateAdapter(engine="rust", no_worktree=False)
+    mock_container = MagicMock()
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir(parents=True)
+    external_dir = tmp_path / "external" / "dir"
+    external_dir.mkdir(parents=True)
+
+    adapter._switch_container_workspace(mock_container, workspace, external_dir)
+
+    expected_cmd = ["sh", "-c", "ln -sfn /workspace_root /app"]
+    mock_container.exec_run.assert_called_once_with(expected_cmd, workdir="/")
+
+
+def test_switch_container_workspace_handles_exec_nonzero_exit(tmp_path: Path) -> None:
+    adapter = SuperstateAdapter(engine="rust", no_worktree=False)
+    mock_container = MagicMock()
+    mock_container.exec_run.return_value = (1, b"ln: permission denied")
+
+    # Should not raise exception
+    adapter._switch_container_workspace(mock_container, tmp_path, None)
+    assert mock_container.exec_run.call_count == 1
