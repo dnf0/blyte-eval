@@ -698,17 +698,51 @@ def test_execution_contract_demands_minimal_direct_fix() -> None:
     assert "speculative CLI flags" in TARGETED_EXECUTION_CONTRACT_INPLACE
 
 
-def test_zero_turn_planning_synthesizes_plan_directly(tmp_path: Path) -> None:
-    task = _make_dummy_task(tmp_path)
-    task.verification_cmd = "python3 -c 'assert True'"
-    driver = MockDriver([])
-    adapter = SuperstateAdapter(zero_turn_planning=True)
-    result = adapter.execute(tmp_path, task, driver)
 
-    assert result.provenance["zero_turn_planning"] is True
-    assert result.provenance["plan_source"] == "zero_turn_synthesized"
-    assert (tmp_path / "plan.md").is_file()
-    assert "Verification Command: python3 -c 'assert True'" in (tmp_path / "plan.md").read_text()
-    assert len(driver.calls) > 0
-    assert "writing-plans" not in (str(driver.calls[0]["prompt"]))
+
+def test_zero_turn_direct_state_init_produces_no_markdown_file(tmp_path: Path) -> None:
+    import subprocess
+    from unittest.mock import patch
+    from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
+
+    bin_path = find_superstate_binary(ENGINE_RUST) or (Path.home() / "repos/superstate/target/release/superstate")
+    if not bin_path.exists():
+        pytest.skip("superstate release binary not found")
+
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    task = _make_dummy_task(tmp_path)
+    task.instruction = "Fix bug in main.py"
+    task.verification_cmd = "true"
+
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(superstate_bin=bin_path, engine=ENGINE_RUST, zero_turn_planning=True, no_worktree=True)
+
+    with patch("subprocess.run", wraps=subprocess.run) as mock_subproc:
+        result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is True
+
+    # Asserts that superstate state init is called with --goal and --verify-cmd
+    init_calls = [
+        call for call in mock_subproc.call_args_list
+        if len(call[0]) > 0 and isinstance(call[0][0], list) and "state" in call[0][0] and "init" in call[0][0]
+    ]
+    assert len(init_calls) > 0, "superstate state init was not called"
+    init_cmd = init_calls[0][0][0]
+    assert "--goal" in init_cmd, "--goal flag missing from state init call"
+    assert "--verify-cmd" in init_cmd, "--verify-cmd flag missing from state init call"
+
+    # Asserts that NO plan.md or plan.normalized.md file exists in the workspace
+    assert not (tmp_path / "plan.md").exists(), "plan.md must not exist"
+    assert not (tmp_path / "plan.normalized.md").exists(), "plan.normalized.md must not exist"
+
+    # Asserts provenance contains "plan_source": "direct_state_handoff"
+    assert result.provenance["plan_source"] == "direct_state_handoff"
+
 

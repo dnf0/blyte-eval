@@ -188,6 +188,10 @@ class SuperstateAdapter(AgentAdapter):
             bin_path = Path(superstate_bin)
             if "superstate/target" in str(bin_path) or bin_path in ENGINE_PATHS.get(ENGINE_RUST, ()):
                 engine = ENGINE_RUST
+        if zero_turn_planning and engine == DEFAULT_ENGINE:
+            rust_bin = find_superstate_binary(ENGINE_RUST)
+            if rust_bin:
+                engine = ENGINE_RUST
         self.engine = engine
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
         self.max_turns_per_milestone = max_turns_per_milestone
@@ -202,6 +206,10 @@ class SuperstateAdapter(AgentAdapter):
                 "SuperstateAdapter: superstate binary not found. Arm C will fall back to the "
                 "in-process Python state machine, which is NOT the system under test."
             )
+
+    @property
+    def _engine_bin(self) -> Optional[Path]:
+        return self.superstate_bin
 
     def active_worktree(self, workspace_path: Path) -> Optional[Path]:
         """Resolve active worktree path from state.json if provisioned."""
@@ -732,26 +740,94 @@ class SuperstateAdapter(AgentAdapter):
         plan_file = workspace_path / "plan.md"
         plan_text = plan_file.read_text(encoding="utf-8") if plan_file.is_file() else ""
 
-        if not plan_text and self.zero_turn_planning:
-            vcmd = getattr(task, "verification_cmd", None)
-            if vcmd:
-                first_line = task.instruction.strip().splitlines()[0]
-                plan_text = (
-                    f"### Task 1: {first_line[:80]}\n"
-                    "- **Depends on:** none\n"
-                    "**Files:**\n"
-                    f"- Verification Command: {vcmd}\n"
-                    f"**Goal:** {first_line}\n"
-                )
-                plan_file.write_text(plan_text, encoding="utf-8")
-                self.plan_source = "zero_turn_synthesized"
-                self.decomposed = True
-                logger.info(
-                    "Zero-turn planning active: synthesized direct plan with gate '%s' (0ms latency)",
-                    vcmd,
-                )
+        vcmd = getattr(task, "verification_cmd", None)
+        if not plan_text and self.zero_turn_planning and vcmd:
+            state_path = workspace_path / ".agent-state" / "state.json"
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            cmd = [
+                str(self._engine_bin),
+                "state",
+                "init",
+                "--goal",
+                task.instruction,
+                "--verify-cmd",
+                vcmd,
+                "--state",
+                str(state_path),
+            ]
+            if self.no_worktree:
+                cmd.append("--no-worktree")
 
-        if not plan_text:
+            container_work_dir = workspace_path
+            if self._engine_bin:
+                res = subprocess.run(
+                    cmd,
+                    cwd=str(container_work_dir),
+                    capture_output=True,
+                    text=True,
+                    timeout=30.0,
+                )
+                if res.returncode == 0:
+                    self._record_engine(ENGINE_BINARY)
+                else:
+                    logger.warning("Direct state init failed: %s", res.stderr)
+                    self._record_engine(ENGINE_PYTHON_FALLBACK)
+                    state_data = {
+                        "status": "in_progress",
+                        "step": 1,
+                        "active_task": {
+                            "id": "task-1",
+                            "title": task.instruction,
+                            "depends_on": [],
+                            "files_modify": [],
+                            "interfaces_produces": [],
+                            "verification_cmd": vcmd,
+                        },
+                        "pending_tasks": [],
+                        "completed_tasks": [],
+                        "modified_files": [],
+                        "errors": [],
+                        "plan_path": None,
+                        "notes": [],
+                        "active_worktree": None,
+                        "active_branch": None,
+                        "no_worktree": self.no_worktree,
+                    }
+                    state_path.write_text(json.dumps(state_data, indent=2), encoding="utf-8")
+            else:
+                self._record_engine(ENGINE_PYTHON_FALLBACK)
+                state_data = {
+                    "status": "in_progress",
+                    "step": 1,
+                    "active_task": {
+                        "id": "task-1",
+                        "title": task.instruction,
+                        "depends_on": [],
+                        "files_modify": [],
+                        "interfaces_produces": [],
+                        "verification_cmd": vcmd,
+                    },
+                    "pending_tasks": [],
+                    "completed_tasks": [],
+                    "modified_files": [],
+                    "errors": [],
+                    "plan_path": None,
+                    "notes": [],
+                    "active_worktree": None,
+                    "active_branch": None,
+                    "no_worktree": self.no_worktree,
+                }
+                state_path.write_text(json.dumps(state_data, indent=2), encoding="utf-8")
+
+            self.plan_source = "direct_state_handoff"
+            self.decomposed = True
+            self.milestones_planned = 1
+            logger.info(
+                "Direct state handoff active: initialized state directly with gate '%s' without plan.md",
+                vcmd,
+            )
+
+        if not plan_text and self.plan_source != "direct_state_handoff":
             # Phase 1: Planning turn if no plan exists
             planning_prompt = (
                 "<state-evaluation>\n"
@@ -837,50 +913,52 @@ class SuperstateAdapter(AgentAdapter):
                 plan_text = telemetry.raw_response
                 self.plan_source = "response"
 
-        milestones = _extract_plan_milestones(plan_text)
-        self.milestones_planned = len(milestones)
-        self.decomposed = not (
-            len(milestones) == 1 and milestones[0].title == FALLBACK_MILESTONE_TITLE
-        )
-        if not self.decomposed and self.require_decomposition:
-            return result(
-                False,
-                "Planning produced no parseable milestones (no '### Task N:' heading "
-                f"found in {self.plan_source}), so this run would have executed as a "
-                "single ungated milestone -- the baseline's behaviour under this arm's "
-                "label. Failing instead of recording a mislabelled result.",
+        if self.plan_source == "direct_state_handoff":
+            milestones = [Milestone(title=f"task-1: {task.instruction}", verify_cmd=vcmd)]
+            verify_by_title = {
+                f"task-1: {task.instruction}": vcmd,
+                task.instruction: vcmd,
+            }
+        else:
+            milestones = _extract_plan_milestones(plan_text)
+            self.milestones_planned = len(milestones)
+            self.decomposed = not (
+                len(milestones) == 1 and milestones[0].title == FALLBACK_MILESTONE_TITLE
             )
-        if len(milestones) > self.max_milestones:
-            return result(
-                False,
-                f"Plan declares {len(milestones)} milestones, exceeding the "
-                f"max_milestones loop-breaker ({self.max_milestones})",
-            )
+            if not self.decomposed and self.require_decomposition:
+                return result(
+                    False,
+                    "Planning produced no parseable milestones (no '### Task N:' heading "
+                    f"found in {self.plan_source}), so this run would have executed as a "
+                    "single ungated milestone -- the baseline's behaviour under this arm's "
+                    "label. Failing instead of recording a mislabelled result.",
+                )
+            if len(milestones) > self.max_milestones:
+                return result(
+                    False,
+                    f"Plan declares {len(milestones)} milestones, exceeding the "
+                    f"max_milestones loop-breaker ({self.max_milestones})",
+                )
 
-        # Always persist what the agent actually produced: it is the evidence for
-        # why a run decomposed the way it did.
-        if self.plan_source == "response":
-            plan_file.write_text(plan_text, encoding="utf-8")
+            # Always persist what the agent actually produced: it is the evidence for
+            # why a run decomposed the way it did.
+            if self.plan_source == "response":
+                plan_file.write_text(plan_text, encoding="utf-8")
 
-        # The state engine needs `### Task N:` headings. Where the agent's text does
-        # not have them, the normalised copy goes to its own file rather than
-        # overwriting the agent's plan.
-        if not any(TASK_HEADING_RE.match(line.strip()) for line in plan_text.splitlines()):
-            plan_file = workspace_path / "plan.normalized.md"
-            plan_file.write_text(
-                "\n\n".join(f"### {m.title}\n- Implement {m.title}" for m in milestones),
-                encoding="utf-8",
-            )
+            # The state engine needs `### Task N:` headings. Where the agent's text does
+            # not have them, the normalised copy goes to its own file rather than
+            # overwriting the agent's plan.
+            if not any(TASK_HEADING_RE.match(line.strip()) for line in plan_text.splitlines()):
+                plan_file = workspace_path / "plan.normalized.md"
+                plan_file.write_text(
+                    "\n\n".join(f"### {m.title}\n- Implement {m.title}" for m in milestones),
+                    encoding="utf-8",
+                )
 
-        # Initialize deterministic state
-        self._init_state(workspace_path, plan_file)
+            # Initialize deterministic state
+            self._init_state(workspace_path, plan_file)
 
-        # Phase 2: engine-driven execution. The engine chooses what is eligible
-        # (`state ready`), writes the turnkey prompt (`state prompt`), and decides
-        # whether work may advance (`state next`). The harness only carries turns
-        # between those calls -- substituting our own logic for any of them would
-        # measure the substitute rather than the control plane.
-        verify_by_title = {m.title: m.verify_cmd for m in milestones}
+            verify_by_title = {m.title: m.verify_cmd for m in milestones}
         executed: set[str] = set()
 
         for _ in range(self.max_milestones):
@@ -911,7 +989,11 @@ class SuperstateAdapter(AgentAdapter):
             milestone_turns = 0
             last_response = ""
             advanced = False
-            milestone = Milestone(title=active, verify_cmd=verify_by_title.get(active))
+            milestone = Milestone(
+                title=active,
+                verify_cmd=verify_by_title.get(active)
+                or (getattr(task, "verification_cmd", None) if self.plan_source == "direct_state_handoff" else None),
+            )
             gate_detail: Dict[str, Any] = {
                 "gate_ran": False,
                 "gate_passed": None,
