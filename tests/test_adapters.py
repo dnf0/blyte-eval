@@ -746,3 +746,72 @@ def test_zero_turn_direct_state_init_produces_no_markdown_file(tmp_path: Path) -
     assert result.provenance["plan_source"] == "direct_state_handoff"
 
 
+@pytest.mark.parametrize("failure_mode", ["none_bin", "exception", "nonzero_exit"])
+def test_zero_turn_direct_state_init_fallback_when_binary_none_or_fails(
+    tmp_path: Path, failure_mode: str
+) -> None:
+    import json
+    import subprocess
+    from unittest.mock import patch
+    from lab.engine.adapters.superstate import ENGINE_PYTHON_FALLBACK
+
+    task = _make_dummy_task(tmp_path)
+    task.instruction = "Fix bug in main.py"
+    task.verification_cmd = "true"
+
+    driver = MockDriver([])
+
+    if failure_mode == "none_bin":
+        adapter = SuperstateAdapter(
+            zero_turn_planning=True,
+            no_worktree=True,
+        )
+        adapter.superstate_bin = None  # simulate binary not found
+        result = adapter.execute(tmp_path, task, driver)
+
+    elif failure_mode == "exception":
+        adapter = SuperstateAdapter(
+            superstate_bin=Path("/mock/superstate"),
+            zero_turn_planning=True,
+            no_worktree=True,
+        )
+        with patch("subprocess.run", side_effect=subprocess.SubprocessError("exec failure")):
+            result = adapter.execute(tmp_path, task, driver)
+    elif failure_mode == "nonzero_exit":
+        adapter = SuperstateAdapter(
+            superstate_bin=Path("/mock/superstate"),
+            zero_turn_planning=True,
+            no_worktree=True,
+        )
+        failed_res = subprocess.CompletedProcess(
+            args=["superstate", "state", "init"],
+            returncode=1,
+            stdout="",
+            stderr="binary init failed",
+        )
+        with patch("subprocess.run", return_value=failed_res):
+            result = adapter.execute(tmp_path, task, driver)
+    else:
+        raise ValueError(f"Unknown failure mode {failure_mode}")
+
+    assert result.success is True
+    assert result.provenance["plan_source"] == "direct_state_handoff"
+    assert result.provenance["state_engine"] == ENGINE_PYTHON_FALLBACK
+
+    # Asserts that NO plan.md or plan.normalized.md file exists in the workspace
+    assert not (tmp_path / "plan.md").exists(), "plan.md must not exist"
+    assert not (tmp_path / "plan.normalized.md").exists(), "plan.normalized.md must not exist"
+
+    # Asserts valid state JSON exists directly in Python fallback without markdown plan
+    state_file = tmp_path / ".agent-state" / "state.json"
+    assert state_file.is_file(), "state.json was not created"
+    state_data = json.loads(state_file.read_text(encoding="utf-8"))
+    assert state_data["status"] == "in_progress"
+    assert state_data["step"] == 1
+    assert state_data["active_task"]["id"] == "task-1"
+    assert state_data["active_task"]["title"] == "Fix bug in main.py"
+    assert state_data["active_task"]["verification_cmd"] == "true"
+    assert state_data["no_worktree"] is True
+
+
+

@@ -207,10 +207,6 @@ class SuperstateAdapter(AgentAdapter):
                 "in-process Python state machine, which is NOT the system under test."
             )
 
-    @property
-    def _engine_bin(self) -> Optional[Path]:
-        return self.superstate_bin
-
     def active_worktree(self, workspace_path: Path) -> Optional[Path]:
         """Resolve active worktree path from state.json if provisioned."""
         if self.no_worktree:
@@ -744,57 +740,42 @@ class SuperstateAdapter(AgentAdapter):
         if not plan_text and self.zero_turn_planning and vcmd:
             state_path = workspace_path / ".agent-state" / "state.json"
             state_path.parent.mkdir(parents=True, exist_ok=True)
-            cmd = [
-                str(self._engine_bin),
-                "state",
-                "init",
-                "--goal",
-                task.instruction,
-                "--verify-cmd",
-                vcmd,
-                "--state",
-                str(state_path),
-            ]
-            if self.no_worktree:
-                cmd.append("--no-worktree")
+            init_ok = False
 
-            container_work_dir = workspace_path
-            if self._engine_bin:
-                res = subprocess.run(
-                    cmd,
-                    cwd=str(container_work_dir),
-                    capture_output=True,
-                    text=True,
-                    timeout=30.0,
-                )
-                if res.returncode == 0:
-                    self._record_engine(ENGINE_BINARY)
-                else:
-                    logger.warning("Direct state init failed: %s", res.stderr)
-                    self._record_engine(ENGINE_PYTHON_FALLBACK)
-                    state_data = {
-                        "status": "in_progress",
-                        "step": 1,
-                        "active_task": {
-                            "id": "task-1",
-                            "title": task.instruction,
-                            "depends_on": [],
-                            "files_modify": [],
-                            "interfaces_produces": [],
-                            "verification_cmd": vcmd,
-                        },
-                        "pending_tasks": [],
-                        "completed_tasks": [],
-                        "modified_files": [],
-                        "errors": [],
-                        "plan_path": None,
-                        "notes": [],
-                        "active_worktree": None,
-                        "active_branch": None,
-                        "no_worktree": self.no_worktree,
-                    }
-                    state_path.write_text(json.dumps(state_data, indent=2), encoding="utf-8")
-            else:
+            # Direct state initialization via the superstate binary
+            if self.superstate_bin:
+                cmd = [
+                    str(self.superstate_bin),
+                    "state",
+                    "init",
+                    "--goal",
+                    task.instruction,
+                    "--verify-cmd",
+                    vcmd,
+                    "--state",
+                    str(state_path),
+                ]
+                if self.no_worktree:
+                    cmd.append("--no-worktree")
+
+                try:
+                    res = subprocess.run(
+                        cmd,
+                        cwd=str(workspace_path),
+                        capture_output=True,
+                        text=True,
+                        timeout=30.0,
+                    )
+                    if res.returncode == 0:
+                        self._record_engine(ENGINE_BINARY)
+                        init_ok = True
+                    else:
+                        logger.warning("Direct state init failed: %s", res.stderr)
+                except Exception as err:
+                    logger.warning("Direct state init failed with exception: %s", err)
+
+            # Fallback state creation if binary is missing or failed
+            if not init_ok:
                 self._record_engine(ENGINE_PYTHON_FALLBACK)
                 state_data = {
                     "status": "in_progress",
