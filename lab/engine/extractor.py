@@ -8,10 +8,12 @@ using the held-out verification command and verifier/reward.json.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import io
 import json
 import logging
 from pathlib import Path
 import shutil
+import tarfile
 from typing import Any
 
 logger = logging.getLogger("superstate_eval.extractor")
@@ -134,25 +136,16 @@ def compute_test_metrics(stats: dict[str, Any] | None, passed: bool) -> dict[str
     }
 
 
-def extract_and_grade(
+def _extract_blind_patch(
     container: Any,
     task: Any,
-    arm: str,
     logs_dir: Path,
     workspace_path: Path | None = None,
-    recorder: Any = None,
-    verifier: Any = None,
-) -> EvaluationResult:
-    """Execute blind grading against the container and extract patches/telemetry.
-
-    This function operates identically across Vanilla, Superpowers, and Superstate.
-    It executes patch creation, runs the held-out verification command, and parses reward.json.
-    """
+) -> Path | None:
+    """Extract patch by committing workspace changes and running task collection commands."""
     artifacts_dir = logs_dir / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     patch_file = artifacts_dir / "model.patch"
-
-    task_id = getattr(task, "id", None) or getattr(task, "task_id", "unknown_task")
 
     # 1. Keep harness scaffolding out of the graded artifact, then commit the
     #    agent's work in /app and extract the diff against the task base commit.
@@ -181,10 +174,46 @@ def extract_and_grade(
     elif base_commit:
         diff_cmd = f"git -C /app diff --binary {base_commit} HEAD > /logs/artifacts/model.patch || true"
         container.exec_run(f'bash -c "mkdir -p /logs/artifacts && {diff_cmd}"')
+
+    return patch_file if patch_file.is_file() else None
+
+
+def _inject_tests_to_container(container: Any, tests_dir: Path) -> None:
+    """Inject tests directory into container at /tests using AnswerKeyGuard."""
+    from lab.sandbox.answer_key import AnswerKeyGuard
+
+    guard = AnswerKeyGuard()
+    with guard.temporarily_readable(tests_dir) as readable_tests:
+        bio = io.BytesIO()
+        with tarfile.open(fileobj=bio, mode="w") as tar:
+            tar.add(str(readable_tests), arcname="tests")
+        bio.seek(0)
+        container.put_archive("/", bio.read())
+
+
+def extract_and_grade(
+    container: Any,
+    task: Any,
+    arm: str,
+    logs_dir: Path,
+    workspace_path: Path | None = None,
+    recorder: Any | None = None,
+    verifier: Any | None = None,
+) -> EvaluationResult:
+    """Extract patch, run verification, and record structured evaluation artifacts."""
+    task_id = getattr(task, "id", None) or getattr(task, "task_id", "unknown_task")
+
+    # 1. Blind patch extraction: identical mechanics across all arms.
+    patch_path: Path | None = None
+    base_commit = getattr(task, "base_commit", None)
+    if base_commit:
+        patch_path = _extract_blind_patch(
+            container=container,
+            task=task,
+            logs_dir=logs_dir,
+            workspace_path=workspace_path,
+        )
     else:
-        # Without a base commit there is no honest diff range: diffing from the
-        # root commit yields the whole repository, and HEAD~1 yields only the
-        # agent's final commit. Emit no patch rather than a misleading one.
         logger.warning(
             "Task %s has no base_commit; skipping patch extraction for arm %s "
             "(set metadata.base_commit_hash in task.toml to capture patches).",
@@ -199,7 +228,13 @@ def extract_and_grade(
     verifier_stats: dict[str, Any] | None = None
     verifier_ran_held_out = False
 
-    if verifier is not None and getattr(task, "tests_dir", None) is not None:
+    tests_dir = getattr(task, "tests_dir", None)
+    is_in_container = getattr(task, "has_verifier_dockerfile", None) is False
+
+    # DeepSWE tasks ship tests/Dockerfile and are graded in a held-out verifier container.
+    # Terminal-bench tasks have has_verifier_dockerfile=False and are graded in-container
+    # by injecting the held-out tests/ directory into /tests at evaluation time.
+    if verifier is not None and tests_dir is not None and not is_in_container:
         try:
             outcome = verifier.run(task=task, logs_dir=logs_dir)
             exit_code = outcome.exit_code
@@ -214,15 +249,27 @@ def extract_and_grade(
             exit_code = 1
             output_str = f"Held-out verifier could not run: {err}"
     else:
-        if getattr(task, "tests_dir", None) is None:
+        if tests_dir is not None and getattr(tests_dir, "is_dir", lambda: False)() and hasattr(container, "put_archive"):
+            try:
+                _inject_tests_to_container(container, tests_dir)
+            except Exception as err:
+                logger.warning("Failed to inject tests into container for %s: %s", task_id, err)
+        elif tests_dir is None:
             logger.warning(
-                "Task %s ships no tests/Dockerfile; falling back to running the "
-                "verification command inside the agent's own container. Grading is "
-                "NOT held out and the agent could have influenced it.",
+                "Task %s ships no tests directory; falling back to running the "
+                "verification command inside the agent's own container without injected tests.",
                 task_id,
             )
+
         verification_cmd = getattr(task, "verification_cmd", None) or "pytest"
-        exec_res = container.exec_run(verification_cmd)
+        env_env = getattr(task, "env", None) or {}
+        verifier_env = getattr(task, "verifier_env", None) or {}
+        combined_env = {**env_env, **verifier_env}
+        exec_kwargs: dict[str, Any] = {}
+        if combined_env:
+            exec_kwargs["environment"] = combined_env
+
+        exec_res = container.exec_run(verification_cmd, **exec_kwargs)
         if isinstance(exec_res, tuple):
             exit_code, output = exec_res
         else:
@@ -236,12 +283,16 @@ def extract_and_grade(
     if recorder is not None:
         recorder.record_verifier_output(output_str)
 
-    # 3. Reward and stats: from the held-out verifier when it ran, else from reward.json.
+    # 3. Reward and stats: from the held-out verifier when it ran, else from reward.json or reward.txt.
     # Preserve full verifier metadata to enable granular test fraction computations.
     reward: float | None = verifier_reward
     stats: dict[str, Any] | None = verifier_stats
     if not verifier_ran_held_out:
-        reward_json_path = logs_dir / "verifier" / "reward.json"
+        verifier_dir = logs_dir / "verifier"
+        reward_json_path = verifier_dir / "reward.json"
+        reward_txt_path = verifier_dir / "reward.txt"
+        ctrf_json_path = verifier_dir / "ctrf.json"
+
         if reward_json_path.is_file():
             try:
                 data = json.loads(reward_json_path.read_text(encoding="utf-8"))
@@ -250,6 +301,28 @@ def extract_and_grade(
                     reward = float(data["reward"])
             except Exception as err:
                 logger.warning("Failed to parse %s: %s", reward_json_path, err)
+        elif reward_txt_path.is_file():
+            try:
+                val = float(reward_txt_path.read_text(encoding="utf-8").strip())
+                reward = None if val < 0 else val
+            except Exception as err:
+                logger.warning("Failed to parse %s: %s", reward_txt_path, err)
+
+        # Ingest CTRF summary metrics if stats dictionary is still missing or lacking test counts
+        if ctrf_json_path.is_file() and (stats is None or "tests_total" not in stats):
+            try:
+                ctrf_data = json.loads(ctrf_json_path.read_text(encoding="utf-8"))
+                summary = ctrf_data.get("results", {}).get("summary", {})
+                t_total = summary.get("tests")
+                t_passed = summary.get("passed")
+                if t_total is not None and isinstance(t_total, int):
+                    stats = {
+                        **(stats or {}),
+                        "tests_total": t_total,
+                        "tests_passed": int(t_passed or 0),
+                    }
+            except Exception as err:
+                logger.warning("Failed to parse %s: %s", ctrf_json_path, err)
 
     # 4. Strict evaluation gate:
     # PASS requires exit_code == 0 AND reward is defined AND reward >= 1.0.
@@ -263,7 +336,7 @@ def extract_and_grade(
         if exit_code != 0:
             reasons.append(f"Verification exit code {exit_code}")
         if reward is None:
-            reasons.append("Missing or invalid verifier/reward.json")
+            reasons.append("Missing or invalid verifier/reward.json or reward.txt")
         elif reward < 1.0:
             reasons.append(f"Reward was {reward} < 1.0")
         failure_reason = f"Verification failed: {', '.join(reasons)}\nOutput: {output_str[-500:]}"
@@ -276,7 +349,7 @@ def extract_and_grade(
             state_json_path = logs_dir / "state.json"
             shutil.copy2(source_state, state_json_path)
 
-    actual_patch_path = patch_file if patch_file.is_file() else None
+    actual_patch_path = patch_path if (patch_path and patch_path.is_file()) else None
 
     logger.info(
         "Evaluation finished for task=%s arm=%s: passed=%s, reward=%s, exit_code=%s",

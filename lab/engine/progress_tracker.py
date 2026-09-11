@@ -64,7 +64,7 @@ class ProgressTracker:
     def poll_for_progress(self) -> tuple[bool, str]:
         """Check for forward progress signals and trigger lease extension on advancement."""
         # 1. Superstate explicit milestone progression check
-        if self.arm == "superstate":
+        if "superstate" in self.arm:
             count = self._get_superstate_completed_count()
             if count > self.completed_tasks_count:
                 delta = count - self.completed_tasks_count

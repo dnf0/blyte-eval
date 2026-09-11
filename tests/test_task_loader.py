@@ -61,3 +61,20 @@ def test_load_benchmark_tasks_scans_multiple_directories(tmp_path: Path) -> None
     task_ids = {t.id for t in tasks}
     assert "test/task-1" in task_ids
     assert "test/task-2" in task_ids
+
+
+def test_load_task_terminal_bench_tests_dir(tmp_path: Path) -> None:
+    task_dir = tmp_path / "tb-task"
+    task_dir.mkdir()
+    (task_dir / "task.toml").write_text(
+        '[task]\nname = "tb-task"\n[environment]\ndocker_image = "img:tb"\n',
+        encoding="utf-8",
+    )
+    tests_dir = task_dir / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test.sh").write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+
+    task = load_task_from_dir(task_dir)
+    assert task.tests_dir == tests_dir
+    assert task.has_verifier_dockerfile is False
+    assert task.verification_cmd == "bash /tests/test.sh"

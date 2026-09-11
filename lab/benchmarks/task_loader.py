@@ -48,10 +48,21 @@ class TaskSpec:
             return None
         candidate = self.task_dir / "tests"
         try:
-            return candidate if (candidate / "Dockerfile").is_file() else None
+            return candidate if candidate.is_dir() else None
         except OSError:
             # If sealed (mode 000) during a concurrent run, candidate is still the tests directory
             return candidate if candidate.is_dir() or candidate.exists() else None
+
+    @property
+    def has_verifier_dockerfile(self) -> bool:
+        """Whether the task has a Dockerfile in its tests/ directory."""
+        td = self.tests_dir
+        if td is None:
+            return False
+        try:
+            return (td / "Dockerfile").is_file()
+        except OSError:
+            return False
 
 
 def _extract_collect_commands(verifier_meta: dict[str, Any]) -> list[str]:

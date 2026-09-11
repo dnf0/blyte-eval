@@ -114,9 +114,9 @@ class HeldOutVerifier:
         # grading means it exists only while grading is actually happening.
         tag = f"superstate-eval-verifier/{_sanitize_tag(str(task.id))}:{uuid.uuid4().hex[:12]}"
         guard = AnswerKeyGuard()
-        with guard.temporarily_readable(tests_dir):
+        with guard.temporarily_readable(tests_dir) as readable_tests:
             return self.docker_manager.build_image(
-                context_dir=tests_dir, tag=tag, timeout=self.build_timeout_sec
+                context_dir=readable_tests, tag=tag, timeout=self.build_timeout_sec
             )
 
     def run(self, task: Any, logs_dir: Path, network_mode: str | None = "none") -> VerifierOutcome:

@@ -207,8 +207,8 @@ def test_superstate_milestone_verification_gate_blocks_advancement(tmp_path: Pat
 
     assert result.success is False
     assert "Verification gate failed" in str(result.error_message)
-    # Execution stopped at the failed gate rather than running Task 2.
-    assert result.turns == 1
+    # Execution stopped at the failed gate after exhausting retries rather than running Task 2.
+    assert result.turns == adapter.max_turns_per_milestone
 
 
 def test_superstate_extracts_per_milestone_verification_commands() -> None:
@@ -525,3 +525,190 @@ def test_agents_plan_is_never_overwritten(tmp_path: Path) -> None:
 
     assert (tmp_path / "plan.md").read_text() == original
     assert (tmp_path / "plan.normalized.md").is_file()
+
+
+def test_superstate_active_worktree_helper(tmp_path: Path) -> None:
+    adapter = SuperstateAdapter()
+    assert adapter.active_worktree(tmp_path) is None
+
+    state_dir = tmp_path / ".agent-state"
+    state_dir.mkdir(parents=True)
+    state_file = state_dir / "state.json"
+
+    # Non-existent worktree path
+    state_file.write_text('{"active_worktree": ".wt/task-1"}', encoding="utf-8")
+    assert adapter.active_worktree(tmp_path) is None
+
+    # Existent relative worktree path
+    wt_dir = tmp_path / ".wt" / "task-1"
+    wt_dir.mkdir(parents=True)
+    assert adapter.active_worktree(tmp_path) == wt_dir
+
+    # Existent absolute worktree path
+    state_file.write_text(f'{{"active_worktree": "{wt_dir.resolve()}"}}', encoding="utf-8")
+    assert adapter.active_worktree(tmp_path) == wt_dir
+
+
+def test_superstate_adapter_executes_in_worktree(tmp_path: Path) -> None:
+    from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
+
+    bin_path = find_superstate_binary(ENGINE_RUST) or (Path.home() / "repos/superstate/target/release/superstate")
+    if not bin_path.exists():
+        pytest.skip("superstate release binary not found")
+
+    import subprocess
+
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text(
+        "### Task 1: Module A\n- Verification Command: true\n\n"
+        "### Task 2: Module B\n- Verification Command: true\n",
+        encoding="utf-8",
+    )
+
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(superstate_bin=bin_path)
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is True
+    assert len(driver.calls) == 2
+    for call in driver.calls:
+        workspace = call["workspace"]
+        assert isinstance(workspace, Path)
+        assert workspace != tmp_path
+        assert ".wt" in str(workspace)
+
+
+def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
+    import json
+    from unittest.mock import MagicMock
+
+    wt_dir = tmp_path / ".wt" / "task-1"
+    wt_dir.mkdir(parents=True)
+    state_file = tmp_path / ".agent-state" / "state.json"
+    state_file.parent.mkdir(parents=True)
+    state_file.write_text(json.dumps({"active_worktree": str(wt_dir)}), encoding="utf-8")
+
+    adapter = SuperstateAdapter()
+
+    # 1. Container supporting workdir parameter
+    container_normal = MagicMock()
+    container_normal.exec_run.return_value = (0, b"all tests pass")
+    passed, code, out = adapter._run_gate_command(tmp_path, "pytest", container=container_normal)
+    assert passed is True
+    assert code == 0
+    assert out == "all tests pass"
+    container_normal.exec_run.assert_called_once_with(["/bin/sh", "-c", "pytest"], workdir="/app/.wt/task-1")
+
+    # 2. Container raising TypeError when kwargs passed (e.g. mock or legacy client)
+    container_legacy = MagicMock()
+    def mock_exec_run(cmd: object, **kwargs: object) -> tuple[int, bytes]:
+        if kwargs:
+            raise TypeError("unexpected keyword argument 'workdir'")
+        return 0, b"fallback ok"
+    container_legacy.exec_run.side_effect = mock_exec_run
+    passed, code, out = adapter._run_gate_command(tmp_path, "pytest", container=container_legacy)
+    assert passed is True
+    assert code == 0
+    assert out == "fallback ok"
+    assert container_legacy.exec_run.call_count == 2
+    fallback_call = container_legacy.exec_run.call_args_list[1][0][0]
+    import shlex
+    assert fallback_call == ["/bin/sh", "-c", f"cd {shlex.quote('/app/.wt/task-1')} && pytest"]
+
+
+def test_superstate_adapter_executes_in_place(tmp_path: Path) -> None:
+    from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
+
+    bin_path = find_superstate_binary(ENGINE_RUST) or (Path.home() / "repos/superstate/target/release/superstate")
+    if not bin_path.exists():
+        pytest.skip("superstate release binary not found")
+
+    import subprocess
+
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text(
+        "### Task 1: Module A\n- Verification Command: true\n\n"
+        "### Task 2: Module B\n- Verification Command: true\n",
+        encoding="utf-8",
+    )
+
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(superstate_bin=bin_path, no_worktree=True)
+    result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
+
+    assert result.success is True
+    assert len(driver.calls) == 2
+    for call in driver.calls:
+        workspace = call["workspace"]
+        assert isinstance(workspace, Path)
+        assert workspace == tmp_path
+        assert ".wt" not in str(workspace)
+
+    assert not (tmp_path / ".wt").exists()
+
+
+def test_runner_resolves_inplace_arm() -> None:
+    from lab.engine.runner import AblationRunner
+    runner = AblationRunner(workspace_root=Path("/tmp"))
+    adapter = runner._get_adapter("superstate_rust_inplace")
+    assert isinstance(adapter, SuperstateAdapter)
+    assert adapter.engine == "superstate-rust"
+    assert adapter.no_worktree is True
+
+
+def test_distill_finding_compacts_summary_and_limits_length() -> None:
+    raw_markdown = (
+        "### Task 1: Analyze WAL and Database Corruption - Summary\n\n"
+        "#### Changes Implemented\n"
+        "1. Discovered that the WAL file is obfuscated with a repeating XOR byte 0x42.\n"
+        "2. Verified that 11 records exist once decrypted.\n\n"
+        "#### Verification\n"
+        "Ran 10 tests in 0.046s OK\n"
+    )
+    distilled = SuperstateAdapter._distill_finding(raw_markdown)
+    assert "XOR byte 0x42" in distilled
+    assert "11 records exist" in distilled
+    assert len(distilled) <= 250
+    assert "\n" not in distilled
+
+
+def test_execution_contract_demands_minimal_direct_fix() -> None:
+    from lab.engine.adapters.superstate import (
+        TARGETED_EXECUTION_CONTRACT,
+        TARGETED_EXECUTION_CONTRACT_INPLACE,
+    )
+    assert "HARD STOP UPON PASSING" in TARGETED_EXECUTION_CONTRACT
+    assert "HARD STOP UPON PASSING" in TARGETED_EXECUTION_CONTRACT_INPLACE
+    assert "MINIMAL DIRECT FIX" in TARGETED_EXECUTION_CONTRACT
+    assert "MINIMAL DIRECT FIX" in TARGETED_EXECUTION_CONTRACT_INPLACE
+    assert "speculative CLI flags" in TARGETED_EXECUTION_CONTRACT_INPLACE
+
+
+def test_zero_turn_planning_synthesizes_plan_directly(tmp_path: Path) -> None:
+    task = _make_dummy_task(tmp_path)
+    task.verification_cmd = "python3 -c 'assert True'"
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(zero_turn_planning=True)
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.provenance["zero_turn_planning"] is True
+    assert result.provenance["plan_source"] == "zero_turn_synthesized"
+    assert (tmp_path / "plan.md").is_file()
+    assert "Verification Command: python3 -c 'assert True'" in (tmp_path / "plan.md").read_text()
+    assert len(driver.calls) > 0
+    assert "writing-plans" not in (str(driver.calls[0]["prompt"]))
+

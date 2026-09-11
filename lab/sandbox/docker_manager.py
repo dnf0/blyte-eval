@@ -144,6 +144,8 @@ class DockerManager:
                     member.name = member.name[len(prefix) :]
                     if not member.name:
                         continue
+                    if (member.islnk() or member.issym()) and member.linkname.startswith(prefix):
+                        member.linkname = member.linkname[len(prefix) :]
                     tar.extract(member, path=dest_path, filter="tar")
                     extracted += 1
         finally:
@@ -153,11 +155,14 @@ class DockerManager:
                 logger.warning("Failed to remove seed container: %s", err)
 
         if extracted == 0:
-            raise WorkspaceSeedError(
-                f"Image '{image}' produced an empty workspace from '{source_path}'"
+            logger.info(
+                "Image '%s' has an empty '%s' directory; workspace initialized empty at %s",
+                image,
+                source_path,
+                dest_path,
             )
-
-        logger.info("Seeded workspace %s from %s:%s (%d entries)", dest_path, image, source_path, extracted)
+        else:
+            logger.info("Seeded workspace %s from %s:%s (%d entries)", dest_path, image, source_path, extracted)
         return extracted
 
     def build_image(self, context_dir: Path | str, tag: str, timeout: int = 1800) -> str:

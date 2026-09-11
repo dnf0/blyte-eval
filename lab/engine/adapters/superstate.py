@@ -13,6 +13,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 from typing import Any, Dict, Optional
@@ -48,14 +49,30 @@ FALLBACK_MILESTONE_TITLE = "Task 1: Complete Feature Implementation"
 
 TARGETED_EXECUTION_CONTRACT = (
     "## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)\n"
-    "1. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
-    "2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
-    "3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
-    "4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "5. **ATOMIC COMMITS:** Make atomic git commits with conventional commit messages once tests pass.\n"
-    "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
-    "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
-    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, commit your changes and finish your turn."
+    "1. **HARD STOP UPON PASSING (MANDATORY):** The moment the verification command passes with exit code 0, YOUR WORK ON THIS MILESTONE IS COMPLETE. You MUST stop immediately and return your summary. Do NOT second-guess the verification command. Do NOT run extra tests or alternative scripts. Do NOT inspect external directories. Output your summary and conclude your turn.\n"
+    "2. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
+    "3. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
+    "4. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
+    "5. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
+    "6. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
+    "7. **AUTOMATIC SNAPSHOTS:** The orchestrator automatically snapshots and commits your changes upon milestone completion. Do not attempt to merge or delete the worktree.\n"
+    "8. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
+    "9. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
+    "10. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the active worktree directory and the provided container environment. Never inspect parent directories, host processes, or external repositories outside this workspace."
+)
+
+TARGETED_EXECUTION_CONTRACT_INPLACE = (
+    "## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)\n"
+    "1. **HARD STOP UPON PASSING (MANDATORY):** The moment the verification command passes with exit code 0, YOUR WORK ON THIS MILESTONE IS COMPLETE. You MUST stop immediately and return your summary. Do NOT second-guess the verification command. Do NOT run extra tests or alternative scripts. Do NOT inspect external directories. Output your summary and conclude your turn.\n"
+    "2. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
+    "3. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
+    "4. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
+    "5. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
+    "6. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
+    "7. **NO UNNECESSARY COMMITS:** Do not create manual git commits unless the task explicitly requires modifying git history. Focus solely on making tests pass.\n"
+    "8. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
+    "9. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
+    "10. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the project container environment and workspace directory. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
 
@@ -163,9 +180,19 @@ class SuperstateAdapter(AgentAdapter):
         self,
         superstate_bin: Optional[Path] = None,
         engine: str = DEFAULT_ENGINE,
+        max_turns_per_milestone: int = 3,
+        no_worktree: bool = False,
+        zero_turn_planning: bool = False,
     ) -> None:
+        if superstate_bin is not None and engine == DEFAULT_ENGINE:
+            bin_path = Path(superstate_bin)
+            if "superstate/target" in str(bin_path) or bin_path in ENGINE_PATHS.get(ENGINE_RUST, ()):
+                engine = ENGINE_RUST
         self.engine = engine
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
+        self.max_turns_per_milestone = max_turns_per_milestone
+        self.no_worktree = no_worktree
+        self.zero_turn_planning = zero_turn_planning
         self.engine_used: Optional[str] = None
         self.plan_source: Optional[str] = None
         self.milestones_planned: int = 0
@@ -175,6 +202,26 @@ class SuperstateAdapter(AgentAdapter):
                 "SuperstateAdapter: superstate binary not found. Arm C will fall back to the "
                 "in-process Python state machine, which is NOT the system under test."
             )
+
+    def active_worktree(self, workspace_path: Path) -> Optional[Path]:
+        """Resolve active worktree path from state.json if provisioned."""
+        if self.no_worktree:
+            return None
+        state_file = workspace_path / ".agent-state" / "state.json"
+        if not state_file.is_file():
+            return None
+        try:
+            data = json.loads(state_file.read_text(encoding="utf-8"))
+            raw = data.get("active_worktree")
+            if not raw:
+                return None
+            path = Path(raw)
+            if not path.is_absolute():
+                path = workspace_path / path
+            return path if path.exists() else None
+        except Exception as e:
+            logger.debug("Failed reading active_worktree from %s: %s", state_file, e)
+            return None
 
     @property
     def name(self) -> str:
@@ -188,6 +235,8 @@ class SuperstateAdapter(AgentAdapter):
             # is not interpretable without both.
             "engine": self.engine,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
+            "no_worktree": self.no_worktree,
+            "zero_turn_planning": self.zero_turn_planning,
             # Whether this run was actually a control-plane run.
             "plan_source": self.plan_source,
             "milestones_planned": self.milestones_planned,
@@ -201,6 +250,29 @@ class SuperstateAdapter(AgentAdapter):
 
     #: Harness bookkeeping that must not count as uncommitted agent work.
     HARNESS_UNTRACKED = (".agent-state/", "plan.md", "plan.normalized.md", "run-in-container")
+
+    @staticmethod
+    def _distill_finding(response: str) -> str:
+        """Extract a clean, concise finding from the turn's response to keep prompts bounded."""
+        if not response:
+            return ""
+        summary_match = re.search(
+            r"^#+\s*.*summary[^\n]*\n(.*)",
+            response,
+            re.MULTILINE | re.IGNORECASE | re.DOTALL,
+        )
+        candidate = summary_match.group(1).strip() if summary_match else response.strip()
+        lines = [
+            line.strip()
+            for line in candidate.splitlines()
+            if line.strip()
+            and not line.strip().startswith("#")
+            and not line.strip().startswith("```")
+        ]
+        compact = " ".join(lines)
+        if len(compact) > 250:
+            return compact[:247].rstrip() + "..."
+        return compact
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
         """Keep harness files from dirtying the tree the git-clean gate inspects.
@@ -288,6 +360,8 @@ class SuperstateAdapter(AgentAdapter):
         local template would measure the template, not the engine.
         """
         args = ["prompt", "--with-graph"]
+        if self.no_worktree and self.engine == ENGINE_RUST:
+            args.append("--no-worktree")
         if task:
             args += ["--task", task]
         code, out = self._run_engine(workspace_path, args)
@@ -311,12 +385,15 @@ class SuperstateAdapter(AgentAdapter):
                 out_flag = "--state" if self.engine == ENGINE_RUST else "--out"
                 state_path = workspace_path / ".agent-state" / "state.json"
                 state_path.parent.mkdir(parents=True, exist_ok=True)
+                cmd = [
+                    str(self.superstate_bin), "state", "init",
+                    "--plan", str(plan_path),
+                    out_flag, str(state_path),
+                ]
+                if self.no_worktree and self.engine == ENGINE_RUST:
+                    cmd.append("--no-worktree")
                 res = subprocess.run(
-                    [
-                        str(self.superstate_bin), "state", "init",
-                        "--plan", str(plan_path),
-                        out_flag, str(state_path),
-                    ],
+                    cmd,
                     cwd=str(workspace_path),
                     capture_output=True,
                     text=True,
@@ -370,25 +447,96 @@ class SuperstateAdapter(AgentAdapter):
         breach the isolation the evaluation depends on.
         """
         verify_cmd = self.normalize_gate_command(verify_cmd, in_container=container is not None)
+        wt = self.active_worktree(workspace_path)
+        target_dir = wt if (wt and wt.is_dir()) else workspace_path
+
         if container is not None:
-            exec_res = container.exec_run(verify_cmd)
+            container_workdir = "/app"
+            if wt and wt.is_dir():
+                try:
+                    rel = wt.resolve().relative_to(workspace_path.resolve())
+                    container_workdir = f"/app/{rel}"
+                except ValueError:
+                    logger.warning(
+                        "Worktree %s could not be resolved relative to workspace %s; defaulting to /app",
+                        wt,
+                        workspace_path,
+                    )
+            shell_cmd = ["/bin/sh", "-c", verify_cmd]
+            try:
+                exec_res = container.exec_run(shell_cmd, workdir=container_workdir)
+            except TypeError:
+                fallback_cmd = ["/bin/sh", "-c", f"cd {shlex.quote(str(container_workdir))} && {verify_cmd}"]
+                exec_res = container.exec_run(fallback_cmd)
+            except Exception as e:
+                logger.warning("Container exec_run failed: %s", e)
+                return False, None, f"gate command could not be executed in container: {e}"
+
             if isinstance(exec_res, tuple):
                 exit_code, raw = exec_res[0], exec_res[1]
             else:
                 exit_code = getattr(exec_res, "exit_code", 1)
                 raw = getattr(exec_res, "output", b"")
             output = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)
+
+            # If the gate failed and an active worktree is provisioned, the gate command
+            # may contain absolute paths referencing /app/<path> which reside in the worktree
+            # checkout (/app/.wt/<slug>/<path>) prior to state next's merge.
+            if exit_code != 0 and wt and wt.is_dir() and "/app" in verify_cmd:
+                try:
+                    rel = wt.resolve().relative_to(workspace_path.resolve())
+                    wt_container_dir = f"/app/{rel}"
+                    alt_cmd = re.sub(r"(?<![\w\-\.\/])/app(?=/|$)", wt_container_dir, verify_cmd)
+                    if alt_cmd != verify_cmd:
+                        alt_shell_cmd = ["/bin/sh", "-c", alt_cmd]
+                        alt_res = container.exec_run(alt_shell_cmd, workdir=wt_container_dir)
+                        alt_code = alt_res[0] if isinstance(alt_res, tuple) else getattr(alt_res, "exit_code", 1)
+                        if alt_code == 0:
+                            alt_raw = alt_res[1] if isinstance(alt_res, tuple) else getattr(alt_res, "output", b"")
+                            output = alt_raw.decode("utf-8", errors="replace") if isinstance(alt_raw, bytes) else str(alt_raw)
+                            logger.info(
+                                "Verification gate passed via worktree path substitution (%s -> %s)",
+                                verify_cmd,
+                                alt_cmd,
+                            )
+                            return True, 0, output
+                except Exception as exc:
+                    logger.debug("Worktree container path alternate gate check failed: %s", exc)
+
             return exit_code == 0, exit_code, output
         try:
             res = subprocess.run(
                 verify_cmd,
                 shell=True,
-                cwd=str(workspace_path),
+                cwd=str(target_dir),
                 capture_output=True,
                 text=True,
                 timeout=300.0,
             )
-            return res.returncode == 0, res.returncode, (res.stdout or "") + (res.stderr or "")
+            passed = res.returncode == 0
+            output = (res.stdout or "") + (res.stderr or "")
+            if not passed and wt and wt.is_dir() and str(workspace_path) in verify_cmd:
+                alt_cmd = verify_cmd.replace(str(workspace_path), str(wt))
+                if alt_cmd != verify_cmd:
+                    try:
+                        alt_res = subprocess.run(
+                            alt_cmd,
+                            shell=True,
+                            cwd=str(target_dir),
+                            capture_output=True,
+                            text=True,
+                            timeout=300.0,
+                        )
+                        if alt_res.returncode == 0:
+                            logger.info(
+                                "Host verification gate passed via worktree path substitution (%s -> %s)",
+                                verify_cmd,
+                                alt_cmd,
+                            )
+                            return True, 0, (alt_res.stdout or "") + (alt_res.stderr or "")
+                    except Exception as exc:
+                        logger.debug("Host worktree path alternate gate check failed: %s", exc)
+            return passed, res.returncode, output
         except Exception as e:
             logger.warning("Verification command failed to run: %s", e)
             return False, None, f"gate command could not be executed: {e}"
@@ -422,20 +570,23 @@ class SuperstateAdapter(AgentAdapter):
             gate_cmd = "exit 0" if passed else "exit 1"
 
         if self.superstate_bin:
+            wt = self.active_worktree(workspace_path)
+            target_dir = wt if (wt and wt.is_dir()) else workspace_path
+
             # When the gate passes, auto-commit any uncommitted changes so git HEAD
             # advances and --verify-git-clean passes deterministically.
             if gate_cmd != "exit 1" and (workspace_path / ".git").exists():
                 try:
                     status = subprocess.run(
                         ["git", "status", "--porcelain"],
-                        cwd=str(workspace_path),
+                        cwd=str(target_dir),
                         capture_output=True,
                         text=True,
                         check=False,
                     )
                     if status.stdout and status.stdout.strip():
                         subprocess.run(
-                            ["git", "add", "-A"], cwd=str(workspace_path), capture_output=True, check=False
+                            ["git", "add", "-A"], cwd=str(target_dir), capture_output=True, check=False
                         )
                         subprocess.run(
                             [
@@ -449,14 +600,16 @@ class SuperstateAdapter(AgentAdapter):
                                 "-m",
                                 f"chore: checkpoint completed milestone {milestone}",
                             ],
-                            cwd=str(workspace_path),
+                            cwd=str(target_dir),
                             capture_output=True,
                             check=False,
                         )
                 except Exception as exc:
                     logger.debug("Failed auto-committing milestone changes: %s", exc)
 
-            cmd = [str(self.superstate_bin), "state", "next", "--verify-git-clean"]
+            cmd = [str(self.superstate_bin), "state", "next"]
+            if (workspace_path / ".git").exists():
+                cmd.append("--verify-git-clean")
             if self.engine != ENGINE_RUST:
                 cmd.extend(["--ignore-untracked-glob", "run-in-container,plan.md,plan.normalized.md"])
             if gate_cmd:
@@ -473,9 +626,13 @@ class SuperstateAdapter(AgentAdapter):
                     self._record_engine(ENGINE_BINARY)
                     return True
                 logger.warning("superstate state next gate failed: %s", res.stderr)
+                if gate_detail is not None:
+                    gate_detail["engine_error"] = res.stderr
                 return False
             except Exception as e:
                 logger.warning("Failed to invoke superstate state next: %s", e)
+                if gate_detail is not None:
+                    gate_detail["engine_error"] = str(e)
                 return False
 
         # Fallback state advancement
@@ -525,7 +682,15 @@ class SuperstateAdapter(AgentAdapter):
                 verify_cmd=milestone.verify_cmd,
                 turns_used=turns_used,
                 advanced=advanced,
-                **gate_detail,
+                gate_ran=gate_detail.get("gate_ran", False),
+                gate_passed=gate_detail.get("gate_passed", False),
+                gate_exit_code=gate_detail.get("gate_exit_code"),
+                gate_output=gate_detail.get("gate_output", ""),
+                extra={
+                    k: v
+                    for k, v in gate_detail.items()
+                    if k not in {"gate_ran", "gate_passed", "gate_exit_code", "gate_output"}
+                },
             )
         )
 
@@ -567,6 +732,25 @@ class SuperstateAdapter(AgentAdapter):
         plan_file = workspace_path / "plan.md"
         plan_text = plan_file.read_text(encoding="utf-8") if plan_file.is_file() else ""
 
+        if not plan_text and self.zero_turn_planning:
+            vcmd = getattr(task, "verification_cmd", None)
+            if vcmd:
+                first_line = task.instruction.strip().splitlines()[0]
+                plan_text = (
+                    f"### Task 1: {first_line[:80]}\n"
+                    "- **Depends on:** none\n"
+                    "**Files:**\n"
+                    f"- Verification Command: {vcmd}\n"
+                    f"**Goal:** {first_line}\n"
+                )
+                plan_file.write_text(plan_text, encoding="utf-8")
+                self.plan_source = "zero_turn_synthesized"
+                self.decomposed = True
+                logger.info(
+                    "Zero-turn planning active: synthesized direct plan with gate '%s' (0ms latency)",
+                    vcmd,
+                )
+
         if not plan_text:
             # Phase 1: Planning turn if no plan exists
             planning_prompt = (
@@ -576,20 +760,21 @@ class SuperstateAdapter(AgentAdapter):
                 "Status: Specification and requirements are complete. Generate plan.md directly.\n"
                 "</state-evaluation>\n\n"
                 f"{task.instruction}\n\n"
-                "## 🔬 PRE-ASSESSMENT & COHESIVE MODULE DECOMPOSITION PROTOCOL\n"
+                "## 🔬 PRE-ASSESSMENT & ADAPTIVE DECOMPOSITION PROTOCOL\n"
                 "Before writing `plan.md`, dynamically evaluate the architectural surface area and requirement invariants:\n"
-                "1. **Cohesive Architectural Modules:**\n"
-                "   Decompose the feature into cohesive, independently verifiable architectural modules:\n"
-                "   - **Module Boundary:** Each milestone implements a complete cohesive capability within 1-2 tightly related files.\n"
-                "   - **Targeted Verification:** Each milestone specifies a targeted verification command using the repository's native test runner (e.g. `go test ./parser/...`, `pytest tests/test_foo.py`).\n"
-                "   - **Full TDD Envelope:** The worker executes a red-green-refactor cycle: test -> implementation -> verification -> atomic commit.\n\n"
+                "1. **Adaptive Granularity:**\n"
+                "   - For atomic, single-objective tasks (bug fixes, data recovery, scripts, configuration), create at most 1 to 2 milestones.\n"
+                "   - Do NOT artificially over-decompose a focused task into 4+ milestones.\n"
+                "   - Only multi-module features touching distinct subsystems should have 3+ milestones.\n"
+                "2. **Direct Invariant Verification:**\n"
+                "   - Each milestone specifies a targeted verification command using the repository's native test runner (e.g. `go test ./parser/...`, `pytest tests/test_foo.py`) or a direct plain command verifying the goal invariant (e.g. `python3 -c \"...\"` or verifying the output file exists and is valid).\n"
+                "   - Do NOT demand that the worker write synthetic test suites from scratch if an inline command or existing runner can verify the fix.\n\n"
                 "## 📝 PLAN FORMAT REQUIREMENTS\n"
                 "Write `plan.md` using `write_to_file`. Format each task as:\n"
                 "### Task <number>: <Title>\n"
                 "- **Depends on:** <Prerequisite Tasks or none>\n"
                 "**Files:**\n"
                 "- Modify: `<target_file_path>`\n"
-                "- Test: `<test_file_path>`\n"
                 "- Verification Command: `<plain command running directly in project environment>`\n"
                 "**Goal:** <One-sentence description of the capability delivered>\n\n"
                 "Write each verification command as a PLAIN command that runs in the "
@@ -598,7 +783,8 @@ class SuperstateAdapter(AgentAdapter):
                 "project environment, where such a wrapper does not exist.\n\n"
                 "## ⛔ CRITICAL DIRECTIVE (MANDATORY)\n"
                 "- This is a planning-only turn. Do NOT execute shell commands, do NOT run git, and do NOT explore files.\n"
-                "- Based on the specification above, synthesize the plan and call `write_to_file` to write `plan.md` immediately in the workspace."
+                "- Based on the specification above, synthesize the plan and call `write_to_file` to write `plan.md` immediately in the workspace.\n"
+                "- Output ONLY `plan.md` via `write_to_file`. Do NOT output conversational preambles or lengthy analysis text."
             )
             remaining = budget - duration
             planning_timeout = (
@@ -713,7 +899,12 @@ class SuperstateAdapter(AgentAdapter):
             if current_prompt is None:
                 error_msg = f"State engine produced no prompt for '{active}'"
                 break
-            current_prompt = f"{current_prompt}\n\n{TARGETED_EXECUTION_CONTRACT}"
+            if "TARGETED EXECUTION CONTRACT" not in current_prompt:
+                contract = TARGETED_EXECUTION_CONTRACT_INPLACE if (self.no_worktree or self.engine == ENGINE_PYTHON) else TARGETED_EXECUTION_CONTRACT
+                current_prompt = f"{current_prompt}\n\n{contract}"
+
+            wt = self.active_worktree(workspace_path)
+            turn_workspace = wt if (wt and wt.is_dir() and not self.no_worktree) else workspace_path
 
             conversation_id: Optional[str] = None
             milestone_failed: Optional[str] = None
@@ -736,7 +927,7 @@ class SuperstateAdapter(AgentAdapter):
 
                 telemetry = driver.run(
                     task=task,
-                    workspace_path=workspace_path,
+                    workspace_path=turn_workspace,
                     prompt_override=current_prompt,
                     conversation_id=conversation_id,
                     timeout_sec=turn_timeout,
@@ -783,6 +974,40 @@ class SuperstateAdapter(AgentAdapter):
                     milestone_failed = telemetry.error_message or f"Milestone '{active}' failed"
                     break
 
+                # Verification gate failed. If turns remain, feed diagnostic feedback back to the agent.
+                if milestone_turns < self.max_turns_per_milestone and duration < budget:
+                    gate_output = (
+                        gate_detail.get("gate_output")
+                        or gate_detail.get("engine_error")
+                        or "Verification gate failed"
+                    )
+                    gate_exit_code = gate_detail.get("gate_exit_code", 1)
+
+                    if last_response:
+                        self.record_note(
+                            workspace_path, f"[{active} - Turn {milestone_turns}] {last_response[:500]}"
+                        )
+                    self.record_note(
+                        workspace_path,
+                        f"[Gate Failed - Turn {milestone_turns}] cmd='{milestone.verify_cmd}' exit={gate_exit_code}: {gate_output[:1000]}",
+                    )
+
+                    retry_prompt = (
+                        f"## VERIFICATION GATE FAILED (Attempt {milestone_turns} of {self.max_turns_per_milestone})\n\n"
+                        f"The verification command `{milestone.verify_cmd}` failed with exit code {gate_exit_code}.\n\n"
+                        f"### Gate Output:\n"
+                        f"```\n{gate_output.strip()}\n```\n\n"
+                        f"Please diagnose this failure, apply the necessary code or environment changes, and ensure the verification passes."
+                    )
+                    logger.info(
+                        "Milestone '%s' gate failed on turn %d/%d; retrying with diagnostic feedback",
+                        active,
+                        milestone_turns,
+                        self.max_turns_per_milestone,
+                    )
+                    current_prompt = retry_prompt
+                    continue
+
                 # Agent concluded without asking for user approval, but verification gate failed
                 milestone_failed = f"Verification gate failed for milestone '{active}'"
                 break
@@ -790,7 +1015,9 @@ class SuperstateAdapter(AgentAdapter):
             # Carry what this turn learned into the ledger, so later milestones
             # inherit it rather than starting blind.
             if last_response:
-                self.record_note(workspace_path, f"[{active}] {last_response[:1500]}")
+                distilled = self._distill_finding(last_response)
+                if distilled:
+                    self.record_note(workspace_path, f"[{active}] {distilled}")
 
             self._record_milestone(
                 recorder, milestone_index, milestone, milestone_turns, gate_detail, advanced

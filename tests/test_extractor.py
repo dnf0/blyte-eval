@@ -352,3 +352,48 @@ def test_bridge_script_is_excluded_from_the_graded_patch(tmp_path: Path) -> None
 
     exclude_cmd = container.exec_run.call_args_list[0].args[0]
     assert "run-in-container" in exclude_cmd
+
+
+def test_extract_and_grade_in_container_tests_injection(tmp_path: Path) -> None:
+    """When a task has a tests directory without a Dockerfile, tests are injected into container."""
+    from unittest.mock import MagicMock
+
+    logs_dir = tmp_path / "logs"
+    verifier_dir = logs_dir / "verifier"
+    verifier_dir.mkdir(parents=True)
+    (verifier_dir / "reward.txt").write_text("1.0\n", encoding="utf-8")
+    ctrf_data = {"results": {"summary": {"tests": 11, "passed": 11, "failed": 0}}}
+    (verifier_dir / "ctrf.json").write_text(json.dumps(ctrf_data), encoding="utf-8")
+
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test.sh").write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+
+    container = MagicMock()
+    container.exec_run.return_value = (0, b"All tests passed")
+
+    class InContainerTask:
+        id = "tb/db-wal-recovery"
+        task_id = "tb/db-wal-recovery"
+        base_commit = None
+        collect_commands = []
+        verification_cmd = "bash /tests/test.sh"
+        has_verifier_dockerfile = False
+        verifier_env = {"FOO": "BAR"}
+
+        def __init__(self, td: Path) -> None:
+            self.tests_dir = td
+
+    result = extract_and_grade(
+        container=container,
+        task=InContainerTask(tests_dir),
+        arm="superstate",
+        logs_dir=logs_dir,
+    )
+
+    assert result.passed is True
+    assert result.reward == 1.0
+    assert result.stats is not None
+    assert result.stats.get("tests_total") == 11
+    assert result.stats.get("tests_passed") == 11
+    container.put_archive.assert_called_once()

@@ -22,6 +22,7 @@ from lab.engine.drivers.agy_cli import AgyCliDriver
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table
 from lab.engine.runner import AblationRunner
+from lab.sandbox.answer_key import AnswerKeyGuard
 
 logging.basicConfig(
     level=logging.INFO,
@@ -64,6 +65,9 @@ def main() -> int:
         "katex-multicolumn-array-spans",
     }
 
+    # Ensure any held-out tests left sealed by previously aborted or killed runs are restored.
+    AnswerKeyGuard().restore_all()
+
     if args.task:
         tasks = [load_task_from_dir(args.task)]
     elif args.tasks:
@@ -96,25 +100,34 @@ def main() -> int:
         governor=governor,
     )
 
-    total_runs = len(tasks) * len(args.arms) * args.repeats
+    parsed_arms: list[tuple[str, int]] = []
+    for arm_spec in args.arms:
+        if ":" in arm_spec:
+            arm_name, _, reps_str = arm_spec.partition(":")
+            parsed_arms.append((arm_name.strip(), int(reps_str)))
+        else:
+            parsed_arms.append((arm_spec.strip(), args.repeats))
+
+    total_runs = len(tasks) * sum(reps for _, reps in parsed_arms)
+    arms_label = ", ".join(f"{a}:{r}" if r > 1 else a for a, r in parsed_arms)
     budget_label = f"{args.budget_sec:.0f}s" if args.budget_sec else "task-default"
     logger.info("=" * 78)
-    logger.info("Harness=%s  model=%s  tasks=%d  arms=%s  repeats=%d  concurrency=%d",
-                driver.harness_name, args.model, len(tasks), ", ".join(args.arms), args.repeats, args.concurrency)
+    logger.info("Harness=%s  model=%s  tasks=%d  arms=%s  concurrency=%d",
+                driver.harness_name, args.model, len(tasks), arms_label, args.concurrency)
     logger.info("Runs=%d  budget=%s/arm  workspaces=%s",
                 total_runs, budget_label, args.workspace_root)
     logger.info("=" * 78)
 
     jobs = []
     for task in tasks:
-        for arm in args.arms:
-            for rep in range(1, args.repeats + 1):
-                jobs.append((task, arm, rep))
+        for arm, reps in parsed_arms:
+            for rep in range(1, reps + 1):
+                jobs.append((task, arm, rep, reps))
 
     results = []
 
-    def execute_job(t: Any, a: str, r: int) -> Any:
-        rep_tag = f" [run {r}/{args.repeats}]" if args.repeats > 1 else ""
+    def execute_job(t: Any, a: str, r: int, total_reps: int) -> Any:
+        rep_tag = f" [run {r}/{total_reps}]" if total_reps > 1 else ""
         task_budget = args.budget_sec or t.agent_timeout_sec or 3600.0
         logger.info("-> %s [%s]%s (budget: %.0fs)", t.name, a, rep_tag, task_budget)
         started = time.monotonic()
@@ -131,12 +144,12 @@ def main() -> int:
 
     if args.concurrency > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-            futures = [pool.submit(execute_job, t, a, r) for t, a, r in jobs]
+            futures = [pool.submit(execute_job, t, a, r, reps) for t, a, r, reps in jobs]
             for fut in concurrent.futures.as_completed(futures):
                 results.append(fut.result())
     else:
-        for t, a, r in jobs:
-            results.append(execute_job(t, a, r))
+        for t, a, r, reps in jobs:
+            results.append(execute_job(t, a, r, reps))
 
     print()
     print(render_summary_table(generate_comparison_summary(results)))

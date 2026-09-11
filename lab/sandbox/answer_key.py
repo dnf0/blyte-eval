@@ -23,6 +23,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import shutil
 import stat
 import threading
 from typing import Generator, Iterable
@@ -37,6 +38,31 @@ class AnswerKeyGuard:
 
     _lock: threading.RLock = threading.RLock()
     _active_counts: dict[str, int] = {}
+    # A readable copy taken before sealing: the verifier is built from these
+    # tests, so sealing the only copy would make grading impossible.
+    _staged: dict[str, Path] = {}
+
+    @classmethod
+    def staged_copy(cls, path: Path) -> Path | None:
+        """A readable copy of a sealed directory, for grading.
+
+        The verifier is built from the task's tests, so it reads this rather than
+        the sealed original.
+        """
+        with cls._lock:
+            return cls._staged.get(str(Path(path).resolve()))
+
+    @contextmanager
+    def temporarily_readable(self, path: Path) -> Generator[Path, None, None]:
+        """Yield a readable view of `path`, for grading.
+
+        Deliberately does not unseal the original. Runs overlap, so unsealing for
+        one run's grading would expose the answers to another run's agent, which
+        is the case the seal exists for. The staged copy taken before sealing is
+        handed over instead, and callers must build from the yielded path.
+        """
+        staged = self.staged_copy(path)
+        yield staged if staged is not None else Path(path)
 
     def __init__(self, state_file: Path | str = DEFAULT_STATE_FILE) -> None:
         self.state_file = Path(state_file)
@@ -80,79 +106,81 @@ class AnswerKeyGuard:
 
     @contextmanager
     def sealed(self, paths: Iterable[Path]) -> Generator[list[Path], None, None]:
-        """Make `paths` unreadable for the duration of the block, with thread-safe refcounting."""
+        """Make `paths` unreadable for the duration of the block.
+
+        Nests safely: concurrent callers share one seal, and the directories are
+        restored when the last of them exits.
+        """
         targets = [Path(p).resolve() for p in paths if p is not None and Path(p).is_dir()]
-        actually_sealed: list[Path] = []
+        acquired: list[Path] = []
 
-        with self._lock:
-            if not self._active_counts:
-                self.restore_all()
-
-            state = self._load()
-            for path in targets:
-                p_str = str(path)
-                count = self._active_counts.get(p_str, 0)
-                if count == 0 and path.is_dir():
-                    try:
-                        original = stat.S_IMODE(path.stat().st_mode)
-                        state[p_str] = original
-                        self._save(state)
-                        path.chmod(0o000)
-                        logger.info("Sealed held-out tests at %s for the agent phase", path)
-                    except OSError as err:
-                        logger.error("Could not seal %s: %s", path, err)
-                        state.pop(p_str, None)
-                        self._save(state)
-                actually_sealed.append(path)
-                self._active_counts[p_str] = count + 1
-
-        try:
-            yield actually_sealed
-        finally:
+        for path in targets:
+            key = str(path)
             with self._lock:
-                state = self._load()
-                for path in actually_sealed:
-                    p_str = str(path)
-                    count = self._active_counts.get(p_str, 1) - 1
-                    if count <= 0:
-                        self._active_counts.pop(p_str, None)
-                        mode = state.get(p_str, 0o755)
-                        try:
-                            path.chmod(mode)
-                            logger.info("Restored held-out tests at %s", path)
-                        except OSError as err:
-                            logger.error("Failed to restore %s: %s", path, err)
-                        state.pop(p_str, None)
-                    else:
-                        self._active_counts[p_str] = count
-                self._save(state)
-
-    @contextmanager
-    def temporarily_readable(self, path: Path) -> Generator[None, None, None]:
-        """Temporarily restore readability to a sealed path (e.g. for verifier image build)."""
-        p = Path(path).resolve()
-        p_str = str(p)
-        was_sealed = False
-        with self._lock:
-            state = self._load()
-            if self._active_counts.get(p_str, 0) > 0 and p.is_dir():
-                mode = state.get(p_str, 0o755)
+                if self._active_counts.get(key, 0) > 0:
+                    # Already sealed by another run: join it rather than resealing.
+                    self._active_counts[key] += 1
+                    acquired.append(path)
+                    continue
                 try:
-                    p.chmod(mode)
-                    was_sealed = True
+                    self._stage(path)
+                    state = self._load()
+                    state[key] = stat.S_IMODE(path.stat().st_mode)
+                    self._save(state)  # persist BEFORE chmod, so a crash is recoverable
+                    path.chmod(0o000)
+                    self._active_counts[key] = 1
+                    acquired.append(path)
+                    logger.info("Sealed held-out tests at %s for the agent phase", path)
                 except OSError as err:
-                    logger.error("Failed to temporarily unseal %s: %s", p, err)
+                    logger.error(
+                        "Could not seal %s: %s. The agent may be able to read the "
+                        "held-out tests during this run.",
+                        path,
+                        err,
+                    )
+                    state = self._load()
+                    state.pop(key, None)
+                    self._save(state)
 
         try:
-            yield
+            yield acquired
         finally:
-            if was_sealed:
+            for path in acquired:
+                key = str(path)
                 with self._lock:
-                    if self._active_counts.get(p_str, 0) > 0 and p.is_dir():
-                        try:
-                            p.chmod(0o000)
-                        except OSError as err:
-                            logger.error("Failed to re-seal %s: %s", p, err)
+                    remaining = self._active_counts.get(key, 1) - 1
+                    self._active_counts[key] = max(0, remaining)
+                    if remaining > 0:
+                        continue  # another run is still working
+                    state = self._load()
+                    mode = state.get(key)
+                    try:
+                        path.chmod(mode if mode is not None else 0o755)
+                    except OSError as err:
+                        logger.error("Failed to restore %s: %s", path, err)
+                    state.pop(key, None)
+                    self._save(state)
+                    self._active_counts.pop(key, None)
+
+    def _stage(self, path: Path) -> None:
+        """Copy a directory somewhere readable before it is sealed.
+
+        The verifier is built from these tests, so sealing the only copy would
+        make grading impossible. Staging happens before the chmod, so the copy is
+        taken while the directory is still readable.
+        """
+        key = str(path)
+        if key in self._staged:
+            return
+        staging = self.state_file.parent / "staged" / path.parent.name / path.name
+        try:
+            if staging.exists():
+                shutil.rmtree(staging, ignore_errors=True)
+            staging.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(path, staging)
+            self._staged[key] = staging
+        except OSError as err:
+            logger.warning("Could not stage %s for grading: %s", path, err)
 
 
 def is_readable(path: Path) -> bool:
