@@ -545,6 +545,24 @@ class SuperstateAdapter(AgentAdapter):
             logger.warning("Verification command failed to run: %s", e)
             return False, None, f"gate command could not be executed: {e}"
 
+    def _switch_container_workspace(
+        self,
+        container: Any,
+        workspace_path: Path,
+        active_wt: Optional[Path],
+    ) -> None:
+        """Dynamically repoint /app inside container to the active worktree or /workspace_root."""
+        if container is None:
+            return
+        try:
+            if active_wt and active_wt.is_dir() and not self.no_worktree:
+                rel = active_wt.resolve().relative_to(workspace_path.resolve())
+                container.exec_run(["sh", "-c", f"ln -sfn /workspace_root/{rel} /app"])
+            else:
+                container.exec_run(["sh", "-c", "ln -sfn /workspace_root /app"])
+        except Exception as exc:
+            logger.warning("Failed to switch container workspace symlink: %s", exc)
+
     def _advance_state(
         self,
         workspace_path: Path,
@@ -964,6 +982,7 @@ class SuperstateAdapter(AgentAdapter):
 
             wt = self.active_worktree(workspace_path)
             turn_workspace = wt if (wt and wt.is_dir() and not self.no_worktree) else workspace_path
+            self._switch_container_workspace(container, workspace_path, wt)
 
             conversation_id: Optional[str] = None
             milestone_failed: Optional[str] = None
@@ -1088,5 +1107,8 @@ class SuperstateAdapter(AgentAdapter):
             if not advanced:
                 error_msg = milestone_failed or f"Verification gate failed for milestone '{active}'"
                 break
+
+        # Ensure container /app points back to /workspace_root for held-out grading
+        self._switch_container_workspace(container, workspace_path, None)
 
         return result(error_msg is None, error_msg)

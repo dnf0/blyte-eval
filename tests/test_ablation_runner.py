@@ -178,7 +178,7 @@ def test_ablation_runner_live_path_requires_explicit_driver(tmp_path) -> None:
 
 def test_ablation_runner_default_execution_mounts_workspace_into_container(tmp_path) -> None:
     from lab.engine.adapters.base import AgentDriver, DriverTelemetry
-    from lab.engine.runner import CONTAINER_MOUNT_ROOT, CONTAINER_WORKSPACE, AblationRunner
+    from lab.engine.runner import CONTAINER_MOUNT_ROOT, AblationRunner
 
     class StubDriver(AgentDriver):
         def run(

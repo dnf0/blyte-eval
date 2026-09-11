@@ -1,6 +1,5 @@
 from pathlib import Path
 from unittest.mock import MagicMock
-import pytest
 
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry
 from lab.engine.runner import CONTAINER_MOUNT_ROOT, CONTAINER_WORKSPACE, AblationRunner
