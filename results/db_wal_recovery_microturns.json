@@ -1,0 +1,49 @@
+[
+  {
+    "task_id": "terminal-bench/db-wal-recovery",
+    "arm": "superstate_rust_inplace",
+    "passed": true,
+    "wall_clock_sec": 1660.56,
+    "cost_usd": 0.0621753,
+    "input_tokens": 285642,
+    "output_tokens": 32215,
+    "milestones_completed": 2,
+    "lease_extensions_earned_sec": 2400.0,
+    "total_granted_budget_sec": 3300.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_rust_inplace-0990ca53",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 3,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 7,
+        "tests_passed": 7
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 7,
+      "tests_total": 7,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260911-072754/eval-terminal-bench_db-wal-recovery-superstate_rust_inplace-0990ca53/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests"
+      ],
+      "state_engine": "superstate_binary",
+      "engine": "superstate-rust",
+      "superstate_bin": "/Users/danielfisher/repos/superstate/target/release/superstate",
+      "no_worktree": true,
+      "plan_source": "plan.md",
+      "milestones_planned": 2,
+      "decomposed": true
+    }
+  }
+]
