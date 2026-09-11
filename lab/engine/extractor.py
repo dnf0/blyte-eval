@@ -269,7 +269,10 @@ def extract_and_grade(
         if combined_env:
             exec_kwargs["environment"] = combined_env
 
-        exec_res = container.exec_run(verification_cmd, workdir="/app", **exec_kwargs)
+        try:
+            exec_res = container.exec_run(verification_cmd, workdir="/app", **exec_kwargs)
+        except TypeError:
+            exec_res = container.exec_run(verification_cmd, **exec_kwargs)
         if isinstance(exec_res, tuple):
             exit_code, output = exec_res
         else:
