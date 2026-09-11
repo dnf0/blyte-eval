@@ -456,16 +456,6 @@ class SuperstateAdapter(AgentAdapter):
 
         if container is not None:
             container_workdir = "/app"
-            if wt and wt.is_dir():
-                try:
-                    rel = wt.resolve().relative_to(workspace_path.resolve())
-                    container_workdir = f"/app/{rel}"
-                except ValueError:
-                    logger.warning(
-                        "Worktree %s could not be resolved relative to workspace %s; defaulting to /app",
-                        wt,
-                        workspace_path,
-                    )
             shell_cmd = ["/bin/sh", "-c", verify_cmd]
             try:
                 exec_res = container.exec_run(shell_cmd, workdir=container_workdir)
@@ -482,30 +472,6 @@ class SuperstateAdapter(AgentAdapter):
                 exit_code = getattr(exec_res, "exit_code", 1)
                 raw = getattr(exec_res, "output", b"")
             output = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)
-
-            # If the gate failed and an active worktree is provisioned, the gate command
-            # may contain absolute paths referencing /app/<path> which reside in the worktree
-            # checkout (/app/.wt/<slug>/<path>) prior to state next's merge.
-            if exit_code != 0 and wt and wt.is_dir() and "/app" in verify_cmd:
-                try:
-                    rel = wt.resolve().relative_to(workspace_path.resolve())
-                    wt_container_dir = f"/app/{rel}"
-                    alt_cmd = re.sub(r"(?<![\w\-\.\/])/app(?=/|$)", wt_container_dir, verify_cmd)
-                    if alt_cmd != verify_cmd:
-                        alt_shell_cmd = ["/bin/sh", "-c", alt_cmd]
-                        alt_res = container.exec_run(alt_shell_cmd, workdir=wt_container_dir)
-                        alt_code = alt_res[0] if isinstance(alt_res, tuple) else getattr(alt_res, "exit_code", 1)
-                        if alt_code == 0:
-                            alt_raw = alt_res[1] if isinstance(alt_res, tuple) else getattr(alt_res, "output", b"")
-                            output = alt_raw.decode("utf-8", errors="replace") if isinstance(alt_raw, bytes) else str(alt_raw)
-                            logger.info(
-                                "Verification gate passed via worktree path substitution (%s -> %s)",
-                                verify_cmd,
-                                alt_cmd,
-                            )
-                            return True, 0, output
-                except Exception as exc:
-                    logger.debug("Worktree container path alternate gate check failed: %s", exc)
 
             return exit_code == 0, exit_code, output
         try:

@@ -604,7 +604,7 @@ def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
     assert passed is True
     assert code == 0
     assert out == "all tests pass"
-    container_normal.exec_run.assert_called_once_with(["/bin/sh", "-c", "pytest"], workdir="/app/.wt/task-1")
+    container_normal.exec_run.assert_called_once_with(["/bin/sh", "-c", "pytest"], workdir="/app")
 
     # 2. Container raising TypeError when kwargs passed (e.g. mock or legacy client)
     container_legacy = MagicMock()
@@ -620,7 +620,7 @@ def test_superstate_run_gate_command_container_worktree(tmp_path: Path) -> None:
     assert container_legacy.exec_run.call_count == 2
     fallback_call = container_legacy.exec_run.call_args_list[1][0][0]
     import shlex
-    assert fallback_call == ["/bin/sh", "-c", f"cd {shlex.quote('/app/.wt/task-1')} && pytest"]
+    assert fallback_call == ["/bin/sh", "-c", f"cd {shlex.quote('/app')} && pytest"]
 
 
 def test_superstate_adapter_executes_in_place(tmp_path: Path) -> None:
