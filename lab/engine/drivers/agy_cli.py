@@ -146,7 +146,7 @@ class AgyCliDriver(AgentDriver):
         script_path = workspace_path / "run-in-container"
         script_content = (
             "#!/usr/bin/env bash\n"
-            f'exec docker exec -i {container_id} "$@"\n'
+            f'exec docker exec -i -w /app {container_id} "$@"\n'
         )
         script_path.write_text(script_content, encoding="utf-8")
         # Ensure executable permissions: rwxr-xr-x (0o755)
