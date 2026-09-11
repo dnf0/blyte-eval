@@ -142,14 +142,24 @@ def main() -> int:
         )
         return tel
 
+    def _save_incremental(current_results: list[Any]) -> None:
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(
+                json.dumps([r.to_dict() for r in current_results], indent=2, default=str),
+                encoding="utf-8",
+            )
+
     if args.concurrency > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
             futures = [pool.submit(execute_job, t, a, r, reps) for t, a, r, reps in jobs]
             for fut in concurrent.futures.as_completed(futures):
                 results.append(fut.result())
+                _save_incremental(results)
     else:
         for t, a, r, reps in jobs:
             results.append(execute_job(t, a, r, reps))
+            _save_incremental(results)
 
     print()
     print(render_summary_table(generate_comparison_summary(results)))
