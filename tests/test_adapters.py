@@ -670,4 +670,27 @@ def test_runner_resolves_inplace_arm() -> None:
     assert adapter.no_worktree is True
 
 
+def test_distill_finding_compacts_summary_and_limits_length() -> None:
+    raw_markdown = (
+        "### Task 1: Analyze WAL and Database Corruption - Summary\n\n"
+        "#### Changes Implemented\n"
+        "1. Discovered that the WAL file is obfuscated with a repeating XOR byte 0x42.\n"
+        "2. Verified that 11 records exist once decrypted.\n\n"
+        "#### Verification\n"
+        "Ran 10 tests in 0.046s OK\n"
+    )
+    distilled = SuperstateAdapter._distill_finding(raw_markdown)
+    assert "XOR byte 0x42" in distilled
+    assert "11 records exist" in distilled
+    assert len(distilled) <= 250
+    assert "\n" not in distilled
 
+
+def test_execution_contract_demands_minimal_direct_fix() -> None:
+    from lab.engine.adapters.superstate import (
+        TARGETED_EXECUTION_CONTRACT,
+        TARGETED_EXECUTION_CONTRACT_INPLACE,
+    )
+    assert "MINIMAL DIRECT FIX" in TARGETED_EXECUTION_CONTRACT
+    assert "MINIMAL DIRECT FIX" in TARGETED_EXECUTION_CONTRACT_INPLACE
+    assert "speculative CLI flags" in TARGETED_EXECUTION_CONTRACT_INPLACE

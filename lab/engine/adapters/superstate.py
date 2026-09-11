@@ -49,28 +49,30 @@ FALLBACK_MILESTONE_TITLE = "Task 1: Complete Feature Implementation"
 
 TARGETED_EXECUTION_CONTRACT = (
     "## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)\n"
-    "1. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
-    "2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
-    "3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
-    "4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "5. **AUTOMATIC SNAPSHOTS:** The orchestrator automatically snapshots and commits your changes upon milestone completion. Do not attempt to merge or delete the worktree.\n"
-    "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
-    "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
-    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
-    "9. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the active worktree directory and the provided container environment. Never inspect parent directories, host processes, or external repositories outside this workspace."
+    "1. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
+    "2. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
+    "3. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
+    "4. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
+    "5. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
+    "6. **AUTOMATIC SNAPSHOTS:** The orchestrator automatically snapshots and commits your changes upon milestone completion. Do not attempt to merge or delete the worktree.\n"
+    "7. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
+    "8. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
+    "9. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
+    "10. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the active worktree directory and the provided container environment. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
 TARGETED_EXECUTION_CONTRACT_INPLACE = (
     "## TARGETED EXECUTION CONTRACT (STRICT ENFORCEMENT)\n"
-    "1. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
-    "2. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
-    "3. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
-    "4. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
-    "5. **NO UNNECESSARY COMMITS:** Do not create manual git commits unless the task explicitly requires modifying git history. Focus solely on making tests pass.\n"
-    "6. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
-    "7. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
-    "8. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
-    "9. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the project container environment and workspace directory. Never inspect parent directories, host processes, or external repositories outside this workspace."
+    "1. **MINIMAL DIRECT FIX:** Write ONLY the minimal direct code required to pass the verification command. Do NOT build speculative CLI flags, general-purpose frameworks, or unnecessary abstraction layers. Do NOT author synthetic test suite files if the verification command can verify the deliverable directly.\n"
+    "2. **SCOPE BOUNDARY:** Modify ONLY files directly related to this task. Do not touch unrelated files.\n"
+    "3. **TARGETED VERIFICATION ONLY:** Run only the targeted test command. Do not execute full global test suites.\n"
+    "4. **ZERO GLOBAL EXPLORATION:** Do not run recursive grep/find across the whole codebase or dump whole directories.\n"
+    "5. **ZERO-READ AST EXECUTION:** Use targeted symbol lookup or line-bounded reads. Never cat entire files into context.\n"
+    "6. **NO UNNECESSARY COMMITS:** Do not create manual git commits unless the task explicitly requires modifying git history. Focus solely on making tests pass.\n"
+    "7. **NO EXTERNAL LINTER PROBING:** Do not run external linters or formatters. Focus solely on making tests pass.\n"
+    "8. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules.\n"
+    "9. **STOP IMMEDIATELY UPON PASSING:** When the verification command passes, finish your turn immediately.\n"
+    "10. **CONTAINMENT INVARIANT:** Confine ALL file inspections, code searches, and commands strictly to the project container environment and workspace directory. Never inspect parent directories, host processes, or external repositories outside this workspace."
 )
 
 
@@ -245,6 +247,29 @@ class SuperstateAdapter(AgentAdapter):
 
     #: Harness bookkeeping that must not count as uncommitted agent work.
     HARNESS_UNTRACKED = (".agent-state/", "plan.md", "plan.normalized.md", "run-in-container")
+
+    @staticmethod
+    def _distill_finding(response: str) -> str:
+        """Extract a clean, concise finding from the turn's response to keep prompts bounded."""
+        if not response:
+            return ""
+        summary_match = re.search(
+            r"^#+\s*.*summary[^\n]*\n(.*)",
+            response,
+            re.MULTILINE | re.IGNORECASE | re.DOTALL,
+        )
+        candidate = summary_match.group(1).strip() if summary_match else response.strip()
+        lines = [
+            line.strip()
+            for line in candidate.splitlines()
+            if line.strip()
+            and not line.strip().startswith("#")
+            and not line.strip().startswith("```")
+        ]
+        compact = " ".join(lines)
+        if len(compact) > 250:
+            return compact[:247].rstrip() + "..."
+        return compact
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
         """Keep harness files from dirtying the tree the git-clean gate inspects.
@@ -713,20 +738,21 @@ class SuperstateAdapter(AgentAdapter):
                 "Status: Specification and requirements are complete. Generate plan.md directly.\n"
                 "</state-evaluation>\n\n"
                 f"{task.instruction}\n\n"
-                "## 🔬 PRE-ASSESSMENT & COHESIVE MODULE DECOMPOSITION PROTOCOL\n"
+                "## 🔬 PRE-ASSESSMENT & ADAPTIVE DECOMPOSITION PROTOCOL\n"
                 "Before writing `plan.md`, dynamically evaluate the architectural surface area and requirement invariants:\n"
-                "1. **Cohesive Architectural Modules:**\n"
-                "   Decompose the feature into cohesive, independently verifiable architectural modules:\n"
-                "   - **Module Boundary:** Each milestone implements a complete cohesive capability within 1-2 tightly related files.\n"
-                "   - **Targeted Verification:** Each milestone specifies a targeted verification command using the repository's native test runner (e.g. `go test ./parser/...`, `pytest tests/test_foo.py`).\n"
-                "   - **Full TDD Envelope:** The worker executes a red-green-refactor cycle: test -> implementation -> verification -> atomic commit.\n\n"
+                "1. **Adaptive Granularity:**\n"
+                "   - For atomic, single-objective tasks (bug fixes, data recovery, scripts, configuration), create at most 1 to 2 milestones.\n"
+                "   - Do NOT artificially over-decompose a focused task into 4+ milestones.\n"
+                "   - Only multi-module features touching distinct subsystems should have 3+ milestones.\n"
+                "2. **Direct Invariant Verification:**\n"
+                "   - Each milestone specifies a targeted verification command using the repository's native test runner (e.g. `go test ./parser/...`, `pytest tests/test_foo.py`) or a direct plain command verifying the goal invariant (e.g. `python3 -c \"...\"` or verifying the output file exists and is valid).\n"
+                "   - Do NOT demand that the worker write synthetic test suites from scratch if an inline command or existing runner can verify the fix.\n\n"
                 "## 📝 PLAN FORMAT REQUIREMENTS\n"
                 "Write `plan.md` using `write_to_file`. Format each task as:\n"
                 "### Task <number>: <Title>\n"
                 "- **Depends on:** <Prerequisite Tasks or none>\n"
                 "**Files:**\n"
                 "- Modify: `<target_file_path>`\n"
-                "- Test: `<test_file_path>`\n"
                 "- Verification Command: `<plain command running directly in project environment>`\n"
                 "**Goal:** <One-sentence description of the capability delivered>\n\n"
                 "Write each verification command as a PLAIN command that runs in the "
@@ -966,7 +992,9 @@ class SuperstateAdapter(AgentAdapter):
             # Carry what this turn learned into the ledger, so later milestones
             # inherit it rather than starting blind.
             if last_response:
-                self.record_note(workspace_path, f"[{active}] {last_response[:1500]}")
+                distilled = self._distill_finding(last_response)
+                if distilled:
+                    self.record_note(workspace_path, f"[{active}] {distilled}")
 
             self._record_milestone(
                 recorder, milestone_index, milestone, milestone_turns, gate_detail, advanced
