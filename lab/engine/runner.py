@@ -15,10 +15,16 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 import uuid
 
 from lab.benchmarks.task_loader import TaskSpec
-from lab.engine.adapters.base import AgentAdapter, AgentDriver
-from lab.engine.adapters.superpowers import SuperpowersAdapter
-from lab.engine.adapters.superstate import SuperstateAdapter, ENGINE_PYTHON, ENGINE_RUST
-from lab.engine.adapters.vanilla import VanillaAdapter
+from lab.engine.adapters import (
+    AgentAdapter,
+    AgentDriver,
+    SuperpowersAdapter,
+    SuperstateAdapter,
+    SuperstateAgentMcpAdapter,
+    SuperstateMcpAdapter,
+    VanillaAdapter,
+)
+from lab.engine.adapters.superstate import ENGINE_PYTHON, ENGINE_RUST
 from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
 from lab.engine.extractor import compute_test_metrics, extract_and_grade
 from lab.engine.governor import ConcurrencyGovernor
@@ -108,6 +114,14 @@ class AblationRunner:
             return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         elif arm in ("superstate_rust_fast", "superstate-rust-fast", "rust_fast", "superstate_fast", "superstate_rust_direct"):
             return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
+        elif arm in ("superstate_mcp", "superstate-mcp", "superstate_rust_mcp", "superstate-rust-mcp", "mcp"):
+            return SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=True)
+        elif arm in ("superstate_mcp_worktree", "superstate-mcp-worktree", "mcp_worktree"):
+            return SuperstateMcpAdapter(no_worktree=False, worktree=True, zero_turn_planning=True)
+        elif arm in ("superstate_mcp_planned", "superstate-mcp-planned"):
+            return SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=False)
+        elif arm in ("superstate_agent_mcp", "superstate-agent-mcp", "agent_mcp", "agent-mcp"):
+            return SuperstateAgentMcpAdapter()
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(

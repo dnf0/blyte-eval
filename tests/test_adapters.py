@@ -848,3 +848,57 @@ def test_superstate_zero_turn_init_without_verification_cmd(tmp_path: Path) -> N
     assert state_data["goal"] == task.instruction
     assert state_data["completed_tasks"][0]["id"] == "task-1"
     assert state_data["completed_tasks"][0]["verification_cmd"] == "true"
+
+
+def test_mcp_adapters_exported_and_provenance_properties() -> None:
+    """Verify Superstate MCP adapters export from lab.engine.adapters and provenance structure."""
+    from lab.engine.adapters import SuperstateAgentMcpAdapter, SuperstateMcpAdapter
+
+    # Test SuperstateMcpAdapter provenance
+    mcp_adapter = SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=True)
+    assert mcp_adapter.name == "superstate_mcp"
+    prov_mcp = mcp_adapter.get_provenance()
+    assert prov_mcp["engine"] == "superstate_rust_mcp"
+    assert prov_mcp["transport"] == "mcp_stdio"
+    assert prov_mcp["no_worktree"] is True
+    assert prov_mcp["worktree"] is False
+    assert prov_mcp["zero_turn_planning"] is True
+    assert "mcp_tools_discovered" in prov_mcp
+
+    # Test worktree and planned configurations
+    mcp_wt = SuperstateMcpAdapter(no_worktree=False, worktree=True, zero_turn_planning=True)
+    prov_wt = mcp_wt.get_provenance()
+    assert prov_wt["no_worktree"] is False
+    assert prov_wt["worktree"] is True
+
+    mcp_planned = SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=False)
+    prov_planned = mcp_planned.get_provenance()
+    assert prov_planned["zero_turn_planning"] is False
+
+    # Test SuperstateAgentMcpAdapter provenance
+    agent_mcp_adapter = SuperstateAgentMcpAdapter()
+    assert agent_mcp_adapter.name == "superstate_agent_mcp"
+    prov_agent = agent_mcp_adapter.get_provenance()
+    assert prov_agent["engine"] == "superstate_agent_mcp"
+    assert prov_agent["transport"] == "mcp_agent_tooling"
+    assert prov_agent["autonomous"] is True
+    assert "mcp_tools_discovered" in prov_agent
+
+
+def test_runner_resolves_mcp_adapters() -> None:
+    """Verify AblationRunner resolves superstate_mcp and superstate_agent_mcp adapters."""
+    from lab.engine.adapters import SuperstateAgentMcpAdapter, SuperstateMcpAdapter
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner(workspace_root=Path("/tmp"))
+
+    # Test resolution of superstate_mcp
+    adapter_mcp = runner._get_adapter("superstate_mcp")
+    assert isinstance(adapter_mcp, SuperstateMcpAdapter)
+    assert adapter_mcp.no_worktree is True
+    assert adapter_mcp.worktree is False
+    assert adapter_mcp.zero_turn_planning is True
+
+    # Test resolution of superstate_agent_mcp
+    adapter_agent = runner._get_adapter("superstate_agent_mcp")
+    assert isinstance(adapter_agent, SuperstateAgentMcpAdapter)
