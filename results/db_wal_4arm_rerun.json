@@ -1,0 +1,179 @@
+[
+  {
+    "task_id": "terminal-bench/db-wal-recovery",
+    "arm": "superstate_python",
+    "passed": true,
+    "wall_clock_sec": 250.16,
+    "cost_usd": 0.05365125,
+    "input_tokens": 261071,
+    "output_tokens": 24151,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 2100.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_python-41c7f59e",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 3,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 7,
+        "tests_passed": 7
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 7,
+      "tests_total": 7,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260911-163139/eval-terminal-bench_db-wal-recovery-superstate_python-41c7f59e/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests"
+      ],
+      "state_engine": "superstate_binary",
+      "engine": "agent-rules-python",
+      "superstate_bin": "/Users/danielfisher/.local/bin/superstate",
+      "no_worktree": false,
+      "zero_turn_planning": false,
+      "plan_source": "plan.md",
+      "milestones_planned": 2,
+      "decomposed": true
+    }
+  },
+  {
+    "task_id": "terminal-bench/db-wal-recovery",
+    "arm": "vanilla",
+    "passed": true,
+    "wall_clock_sec": 328.66,
+    "cost_usd": 0.048598199999999994,
+    "input_tokens": 202436,
+    "output_tokens": 30388,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_db-wal-recovery-vanilla-d17b7657",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 7,
+        "tests_passed": 7
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 7,
+      "tests_total": 7,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260911-163139/eval-terminal-bench_db-wal-recovery-vanilla-d17b7657/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests"
+      ]
+    }
+  },
+  {
+    "task_id": "terminal-bench/db-wal-recovery",
+    "arm": "superpowers",
+    "passed": true,
+    "wall_clock_sec": 411.26,
+    "cost_usd": 0.0991125,
+    "input_tokens": 513802,
+    "output_tokens": 36737,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 2100.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superpowers-03dc8489",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 7,
+        "tests_passed": 7
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 7,
+      "tests_total": 7,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260911-163139/eval-terminal-bench_db-wal-recovery-superpowers-03dc8489/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests"
+      ],
+      "skills_installed": true
+    }
+  },
+  {
+    "task_id": "terminal-bench/db-wal-recovery",
+    "arm": "superstate_rust",
+    "passed": true,
+    "wall_clock_sec": 529.92,
+    "cost_usd": 0.0954807,
+    "input_tokens": 434798,
+    "output_tokens": 50435,
+    "milestones_completed": 2,
+    "lease_extensions_earned_sec": 2400.0,
+    "total_granted_budget_sec": 3300.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_rust-38be0675",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 3,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 7,
+        "tests_passed": 7
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 7,
+      "tests_total": 7,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260911-163139/eval-terminal-bench_db-wal-recovery-superstate_rust-38be0675/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests"
+      ],
+      "state_engine": "superstate_binary",
+      "engine": "superstate-rust",
+      "superstate_bin": "/Users/danielfisher/repos/superstate/target/release/superstate",
+      "no_worktree": false,
+      "zero_turn_planning": false,
+      "plan_source": "plan.md",
+      "milestones_planned": 2,
+      "decomposed": true
+    }
+  }
+]

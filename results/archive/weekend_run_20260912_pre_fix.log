@@ -1,0 +1,165 @@
+19:21:05 [INFO] superstate_eval.paired: ==============================================================================
+19:21:05 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=22  arms=vanilla:2, superpowers:2, superstate_rust:2  concurrency=2
+19:21:05 [INFO] superstate_eval.paired: Runs=132  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260911-192105
+19:21:05 [INFO] superstate_eval.paired: ==============================================================================
+19:21:05 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [vanilla] [run 1/2] (budget: 5400s)
+19:21:05 [INFO] superstate_eval.docker_manager: Host disk check: 108.44 GB free on /
+19:21:05 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla] (Base budget: 5400.0s)
+19:21:05 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [vanilla] [run 2/2] (budget: 5400s)
+19:21:05 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla] (Base budget: 5400.0s)
+19:21:05 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.9 GB reported available], Disk limit=8, User override=None)
+19:21:05 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.9 GB reported available], Disk limit=8, User override=None)
+19:21:05 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_anko-typed-variable-bindings-vanilla-a87d5211/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+19:21:05 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_anko-typed-variable-bindings-vanilla-98623d63/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+19:21:05 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d8131b563a72 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+19:21:05 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 07c572092c08 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+19:21:05 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/anko-typed-variable-bindings/tests for the agent phase
+19:21:05 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+19:21:05 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+19:43:02 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 22176477': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+19:43:02 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: 22176477 (prev=3f269a72). Lease extended.
+19:44:10 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=vanilla: passed=False, reward=0.0, exit_code=0
+19:44:10 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d8131b563a72
+19:44:10 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla]: Passed=False, WallClock=1385.54s, Cost=$0.27, TotalGrantedBudget=6600.0s
+19:44:10 [INFO] superstate_eval.paired:    vanilla [run 1/2]: passed=False cost=$0.2698 turns=1 1386s  Verification failed: Reward was 0.0 < 1.0
+Output: cted: <nil>
+        main_test.go:216: Run output - received: "hello" - expected: <nil> - script: var a, b: int64 = 1, "hello"
+        main_test.go:217: received type: string - expected: <nil>
+    --- FAIL: TestTypedBindingsDeclarations (0.02s)
+P2P 94/94 pass 0 fail; F2P 7/9 pass 2 fail; PARTIAL 0.9805825242718447; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 9, "f2p_passed": 7, "p2p_total": 94, "p2p_passed": 94, "f2p": 0.7777777777777778, "p2p": 1.0, "partial": 0.9805825242718447}
+
+19:44:10 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [superpowers] [run 1/2] (budget: 5400s)
+19:44:10 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: superpowers] (Base budget: 5400.0s)
+19:44:10 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.1 GB reported available], Disk limit=8, User override=None)
+19:44:11 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_anko-typed-variable-bindings-superpowers-4f6839f4/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+19:44:11 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f352446a979d (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+19:44:11 [INFO] superstate_eval.adapters.superpowers: Installed superpowers skills from /Users/danielfisher/.config/agent-rules-home/.agents/skills
+19:44:11 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+19:47:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b8435f7d': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+19:47:18 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: b8435f7d (prev=3f269a72). Lease extended.
+19:48:26 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=vanilla: passed=False, reward=0.0, exit_code=0
+19:48:26 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 07c572092c08
+19:48:27 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla]: Passed=False, WallClock=1641.66s, Cost=$0.32, TotalGrantedBudget=6600.0s
+19:48:27 [INFO] superstate_eval.paired:    vanilla [run 2/2]: passed=False cost=$0.3209 turns=1 1642s  Verification failed: Reward was 0.0 < 1.0
+Output: y {
+            				throw "e"
+            			} catch e {
+            				x = "invalid"
+            			}
+            		
+        main_test.go:217: received type: string - expected: <nil>
+    --- FAIL: TestTypedBindingsScopeAndControlFlow (0.03s)
+P2P 94/94 pass 0 fail; F2P 5/9 pass 4 fail; PARTIAL 0.9611650485436893; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 9, "f2p_passed": 5, "p2p_total": 94, "p2p_passed": 94, "f2p": 0.5555555555555556, "p2p": 1.0, "partial": 0.9611650485436893}
+
+19:48:27 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [superpowers] [run 2/2] (budget: 5400s)
+19:48:27 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: superpowers] (Base budget: 5400.0s)
+19:48:27 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.0 GB reported available], Disk limit=8, User override=None)
+19:48:27 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_anko-typed-variable-bindings-superpowers-abddbe09/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+19:48:27 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d3e8ddd89e64 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+19:48:27 [INFO] superstate_eval.adapters.superpowers: Installed superpowers skills from /Users/danielfisher/.config/agent-rules-home/.agents/skills
+19:48:27 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+19:54:50 [INFO] superstate_eval.approval: Agent waiting for user input. Dispatched Mechanical Approval prompt.
+19:54:50 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5018.1s, conversation_id=cadd8e3a-75f0-4fe5-b5fb-8dc679aa3760)
+20:05:55 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: e803da16': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+20:05:55 [INFO] superstate_eval.progress_tracker: [SUPERPOWERS] New git commit detected: e803da16 (prev=3f269a72). Lease extended.
+20:05:57 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=superpowers: passed=False, reward=None, exit_code=1
+20:05:57 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d3e8ddd89e64
+20:05:57 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: superpowers]: Passed=False, WallClock=1050.22s, Cost=$0.28, TotalGrantedBudget=6600.0s
+20:05:57 [INFO] superstate_eval.paired:    superpowers [run 2/2]: passed=False cost=$0.2778 turns=2 1050s  Verification failed: Verification exit code 1, Missing or invalid verifier/reward.json or reward.txt
+Output: [verifier] model.patch applied (131843 bytes)
+[verifier] Resetting files touched by test.patch
+[verifier] Applying test.patch
+error: vm/typed_bindings_test.go: already exists in working directory
+[verifier] ERROR: test.patch failed to apply
+
+20:05:57 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [superstate_rust] [run 1/2] (budget: 5400s)
+20:05:57 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: superstate_rust] (Base budget: 5400.0s)
+20:05:57 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=8, User override=None)
+20:05:57 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_anko-typed-variable-bindings-superstate_rust-ea683d02/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+20:05:57 [INFO] superstate_eval.docker_manager: Spawned sandbox container: c946ac784abd (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+20:05:57 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=2700.0s, conversation_id=None)
+20:06:30 [INFO] superstate_eval.adapters.superstate: Initialized superstate via binary at /Users/danielfisher/repos/superstate/target/release/superstate
+20:06:31 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5368.6s, conversation_id=None)
+20:15:09 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=4852.4s, conversation_id=None)
+20:30:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+20:30:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_RUST] Superstate milestone completed (count=1). Lease extended.
+20:30:27 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5137.2s, conversation_id=None)
+20:38:12 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #2': granted +1200.0s lease extension (Total budget: 7800.0s, completed milestones: 2)
+20:38:12 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_RUST] Superstate milestone completed (count=2). Lease extended.
+20:38:16 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=superstate_rust: passed=False, reward=None, exit_code=1
+20:38:16 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: c946ac784abd
+20:38:16 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: superstate_rust]: Passed=False, WallClock=1938.84s, Cost=$0.39, TotalGrantedBudget=7800.0s
+20:38:16 [INFO] superstate_eval.paired:    superstate_rust [run 1/2]: passed=False cost=$0.3919 turns=4 1939s  Verification failed: Verification exit code 1, Missing or invalid verifier/reward.json or reward.txt
+Output: [verifier] model.patch applied (132567 bytes)
+[verifier] Resetting files touched by test.patch
+[verifier] Applying test.patch
+[verifier] ERROR: test.patch failed to apply
+error: vm/typed_bindings_test.go: already exists in working directory
+
+20:38:16 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [superstate_rust] [run 2/2] (budget: 5400s)
+20:38:16 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: superstate_rust] (Base budget: 5400.0s)
+20:38:16 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.3 GB reported available], Disk limit=8, User override=None)
+20:38:16 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_anko-typed-variable-bindings-superstate_rust-4cb2a664/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+20:38:16 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f1e5decf4321 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+20:38:16 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=2700.0s, conversation_id=None)
+20:38:53 [INFO] superstate_eval.adapters.superstate: Initialized superstate via binary at /Users/danielfisher/repos/superstate/target/release/superstate
+20:38:53 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5364.9s, conversation_id=None)
+20:45:33 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 6bd2889c': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+20:45:33 [INFO] superstate_eval.progress_tracker: [SUPERPOWERS] New git commit detected: 6bd2889c (prev=3f269a72). Lease extended.
+20:46:40 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=superpowers: passed=True, reward=1.0, exit_code=0
+20:46:40 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f352446a979d
+20:46:41 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: superpowers]: Passed=True, WallClock=3750.07s, Cost=$0.24, TotalGrantedBudget=6600.0s
+20:46:41 [INFO] superstate_eval.paired:    superpowers [run 1/2]: passed=True cost=$0.2369 turns=1 3750s  
+20:46:41 [INFO] superstate_eval.paired: -> arktype-json-schema-refs-dependencies [vanilla] [run 1/2] (budget: 5400s)
+20:46:41 [INFO] superstate_eval.runner: Starting task 'datacurve/arktype-json-schema-refs-dependencies' [Arm: vanilla] (Base budget: 5400.0s)
+20:46:41 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.0 GB reported available], Disk limit=8, User override=None)
+20:47:33 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_arktype-json-schema-refs-dependencies-vanilla-796a306d/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1:/app (83800 entries)
+20:47:33 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7bb35869d38c (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1)
+20:47:38 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/arktype-json-schema-refs-dependencies/tests for the agent phase
+20:47:38 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+20:50:00 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=4700.3s, conversation_id=None)
+21:04:05 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+21:04:05 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_RUST] Superstate milestone completed (count=1). Lease extended.
+21:04:06 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5058.2s, conversation_id=None)
+21:17:49 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #2': granted +1200.0s lease extension (Total budget: 7800.0s, completed milestones: 2)
+21:17:49 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_RUST] Superstate milestone completed (count=2). Lease extended.
+21:17:51 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5437.2s, conversation_id=None)
+21:22:58 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #3': granted +1200.0s lease extension (Total budget: 9000.0s, completed milestones: 3)
+21:22:58 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_RUST] Superstate milestone completed (count=3). Lease extended.
+21:23:19 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:69aa5577c5bd from /Users/danielfisher/.cache/superstate-eval/staged/anko-typed-variable-bindings/tests
+21:23:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: aeb36b668cf0 (superstate-eval-verifier/datacurve-anko-typed-variable-bindings:69aa5577c5bd)
+21:24:24 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: aeb36b668cf0
+21:24:24 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:69aa5577c5bd
+21:24:24 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=superstate_rust: passed=False, reward=0.0, exit_code=0
+21:24:24 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f1e5decf4321
+21:24:24 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: superstate_rust]: Passed=False, WallClock=2768.25s, Cost=$0.55, TotalGrantedBudget=9000.0s
+21:24:24 [INFO] superstate_eval.paired:    superstate_rust [run 2/2]: passed=False cost=$0.5486 turns=5 2768s  Verification failed: Reward was 0.0 < 1.0
+Output: BindingsScopeAndControlFlow
+    === CONT  TestTypedBindingsScopeAndControlFlow
+        main_test.go:204: error "type string cannot be assigned to type int64" did not contain "type error"
+    --- FAIL: TestTypedBindingsScopeAndControlFlow (0.05s)
+P2P 94/94 pass 0 fail; F2P 3/9 pass 6 fail; PARTIAL 0.941747572815534; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 9, "f2p_passed": 3, "p2p_total": 94, "p2p_passed": 94, "f2p": 0.3333333333333333, "p2p": 1.0, "partial": 0.941747572815534}
+
+21:24:24 [INFO] superstate_eval.paired: -> arktype-json-schema-refs-dependencies [vanilla] [run 2/2] (budget: 5400s)
+21:24:24 [INFO] superstate_eval.runner: Starting task 'datacurve/arktype-json-schema-refs-dependencies' [Arm: vanilla] (Base budget: 5400.0s)
+21:24:24 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.3 GB reported available], Disk limit=8, User override=None)
+21:25:17 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_arktype-json-schema-refs-dependencies-vanilla-25e3eb26/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1:/app (83800 entries)
+21:25:17 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 574dc28a3551 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1)
+21:25:22 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+21:44:57 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: dfc097d9': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+21:44:57 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: dfc097d9 (prev=04355e8b). Lease extended.
+21:46:05 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/arktype-json-schema-refs-dependencies arm=vanilla: passed=True, reward=1.0, exit_code=0
+21:46:05 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7bb35869d38c
+21:46:05 [INFO] superstate_eval.runner: Finished task 'datacurve/arktype-json-schema-refs-dependencies' [Arm: vanilla]: Passed=True, WallClock=3564.90s, Cost=$0.66, TotalGrantedBudget=6600.0s
+21:46:05 [INFO] superstate_eval.paired:    vanilla [run 1/2]: passed=True cost=$0.6589 turns=1 3565s  
+21:46:05 [INFO] superstate_eval.paired: -> arktype-json-schema-refs-dependencies [superpowers] [run 1/2] (budget: 5400s)
+21:46:05 [INFO] superstate_eval.runner: Starting task 'datacurve/arktype-json-schema-refs-dependencies' [Arm: superpowers] (Base budget: 5400.0s)
+21:46:05 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.2 GB reported available], Disk limit=7, User override=None)
+21:47:13 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260911-192105/eval-datacurve_arktype-json-schema-refs-dependencies-superpowers-fa8e79e7/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1:/app (83800 entries)
+21:47:13 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 18e0a740fd1a (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1)
+21:47:19 [INFO] superstate_eval.adapters.superpowers: Installed superpowers skills from /Users/danielfisher/.config/agent-rules-home/.agents/skills
+21:47:19 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+21:54:35 [WARNING] superstate_eval.drivers.agy_cli: agy process exited with code -9: root agent idle; waiting for 1 background task(s) (bounded by --print-timeout)

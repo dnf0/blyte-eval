@@ -1,0 +1,50 @@
+[
+  {
+    "task_id": "terminal-bench/git-leak-recovery",
+    "arm": "superstate_rust_fast",
+    "passed": true,
+    "wall_clock_sec": 661.11,
+    "cost_usd": 0.1592505,
+    "input_tokens": 874658,
+    "output_tokens": 46753,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 2100.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_git-leak-recovery-superstate_rust_fast-f4a44617",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 2,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 5,
+        "tests_passed": 5
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 5,
+      "tests_total": 5,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260911-114237/eval-terminal-bench_git-leak-recovery-superstate_rust_fast-f4a44617/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/git-leak-recovery/tests"
+      ],
+      "state_engine": "superstate_binary",
+      "engine": "superstate-rust",
+      "superstate_bin": "/Users/danielfisher/repos/superstate/target/release/superstate",
+      "no_worktree": true,
+      "zero_turn_planning": true,
+      "plan_source": "direct_state_handoff",
+      "milestones_planned": 1,
+      "decomposed": true
+    }
+  }
+]
