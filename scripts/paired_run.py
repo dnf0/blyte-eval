@@ -74,8 +74,14 @@ def main() -> int:
         tasks = []
         for item in args.tasks:
             p = Path(item)
-            if not p.is_dir() and (args.tasks_root / item).is_dir():
-                p = args.tasks_root / item
+            if not p.is_dir():
+                candidate = args.tasks_root / item
+                if candidate.is_dir():
+                    p = candidate
+                else:
+                    basename = item.split("/")[-1]
+                    if (args.tasks_root / basename).is_dir():
+                        p = args.tasks_root / basename
             tasks.append(load_task_from_dir(p))
     else:
         tasks = load_benchmark_tasks(args.tasks_root)
