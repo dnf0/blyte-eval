@@ -331,10 +331,11 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
                 vcmd = getattr(task, "verification_cmd", None)
                 if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
                     vcmd = None
+                effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
                 client.state_init(
                     repo=workspace_path,
                     goal=task.instruction,
-                    verify_cmd=vcmd,
+                    verify_cmd=effective_vcmd,
                     no_worktree=True,
                 )
 
