@@ -8,6 +8,7 @@ the superstate binary.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import threading
@@ -434,3 +435,88 @@ def test_real_superstate_mcp_integration(tmp_path: Path) -> None:
 
     # Context exit cleanly terminated the process
     assert client.is_running is False
+
+
+def test_read_response_timeout() -> None:
+    """Verify McpTimeoutError is raised when no response arrives within timeout."""
+    r_fd, w_fd = os.pipe()
+    proc = FakeMcpServerProcess()
+    proc.stdout = open(r_fd, "r")  # type: ignore[assignment]
+    try:
+        client = SuperstateMcpClient(superstate_bin="/mock/superstate", timeout=0.1)
+        client._process = proc  # type: ignore[assignment]
+        client._initialized = True
+
+        with pytest.raises(McpTimeoutError):
+            client._read_response(req_id=1)
+    finally:
+        try:
+            os.close(w_fd)
+        except OSError:
+            pass
+        try:
+            proc.stdout.close()
+        except Exception:
+            pass
+
+
+def test_non_json_interleaved_stdout() -> None:
+    """Verify non-JSON lines preceding a valid JSON-RPC response do not hang."""
+    r_fd, w_fd = os.pipe()
+    proc = FakeMcpServerProcess()
+    proc.stdout = open(r_fd, "r")  # type: ignore[assignment]
+    try:
+        client = SuperstateMcpClient(superstate_bin="/mock/superstate", timeout=0.2)
+        client._process = proc  # type: ignore[assignment]
+        client._initialized = True
+
+        # Write non-JSON lines followed by a valid JSON-RPC response in a single burst
+        burst = (
+            "Git progress: counting objects 100%\n"
+            "warning: some non-json log message\n"
+            + json.dumps({"jsonrpc": "2.0", "id": 42, "result": {"status": "ok"}})
+            + "\n"
+        )
+        os.write(w_fd, burst.encode("utf-8"))
+
+        resp = client._read_response(req_id=42)
+        assert resp == {"jsonrpc": "2.0", "id": 42, "result": {"status": "ok"}}
+    finally:
+        try:
+            os.close(w_fd)
+        except OSError:
+            pass
+        try:
+            proc.stdout.close()
+        except Exception:
+            pass
+
+
+def test_process_crash_raises_process_error() -> None:
+    """Verify McpProcessError is raised when the child process dies unexpectedly."""
+    r_fd, w_fd = os.pipe()
+    proc = FakeMcpServerProcess()
+    proc.stdout = open(r_fd, "r")  # type: ignore[assignment]
+    proc.returncode = 137
+    try:
+        client = SuperstateMcpClient(superstate_bin="/mock/superstate", timeout=0.5)
+        client._process = proc  # type: ignore[assignment]
+        client._initialized = True
+
+        # Close the write pipe to simulate child process death closing stdout
+        os.close(w_fd)
+        w_fd = -1
+
+        with pytest.raises(McpProcessError, match="exited unexpectedly with code 137"):
+            client._read_response(req_id=1)
+    finally:
+        if w_fd != -1:
+            try:
+                os.close(w_fd)
+            except OSError:
+                pass
+        try:
+            proc.stdout.close()
+        except Exception:
+            pass
+

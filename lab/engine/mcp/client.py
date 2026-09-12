@@ -30,8 +30,6 @@ CLIENT_VERSION = "0.1.0"
 
 # Standard candidate paths for the compiled superstate binary
 CANDIDATE_PATHS: tuple[Path, ...] = (
-    Path("/Users/danielfisher/.cargo/bin/superstate"),
-    Path("/Users/danielfisher/.local/bin/superstate"),
     Path.home() / ".cargo" / "bin" / "superstate",
     Path.home() / ".local" / "bin" / "superstate",
 )
@@ -131,6 +129,7 @@ class SuperstateMcpClient:
         self._tools: dict[str, dict[str, Any]] = {}
         self._server_info: dict[str, Any] = {}
         self._initialized = False
+        self._read_buffer = ""
 
     @property
     def is_running(self) -> bool:
@@ -179,6 +178,7 @@ class SuperstateMcpClient:
         if self.is_running:
             return
 
+        self._read_buffer = ""
         cmd = [str(self.superstate_bin), "mcp"]
         logger.debug("Spawning superstate MCP process: %s (cwd=%s)", cmd, self.cwd)
 
@@ -262,6 +262,7 @@ class SuperstateMcpClient:
         proc = self._process
         self._process = None
         self._initialized = False
+        self._read_buffer = ""
 
         # Attempt graceful stdin closure first
         try:
@@ -326,16 +327,108 @@ class SuperstateMcpClient:
             raise McpProcessError("MCP server process is not available for writing")
 
         data = json.dumps(payload) + "\n"
+        # Hold lock across both stdin write and response reading to prevent concurrent interleaving
         with self._lock:
             self._process.stdin.write(data)
             self._process.stdin.flush()
+            return self._read_response(req_id)
 
-        return self._read_response(req_id)
+    def _readline_with_timeout(self, deadline: float) -> str:
+        """Read a single line from stdout with a timeout deadline.
+
+        Parameters:
+            deadline: Absolute UNIX timestamp deadline for receiving data.
+
+        Returns:
+            The next line including newline delimiter, or empty string on EOF.
+
+        Raises:
+            McpTimeoutError: If no data arrives before deadline.
+            McpProcessError: If child process terminates or pipe fails.
+        """
+        if self._process is None or self._process.stdout is None:
+            raise McpProcessError("MCP server process stdout is not available")
+
+        # Read into internal buffer until a complete line is available
+        while "\n" not in self._read_buffer:
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                raise McpTimeoutError(
+                    f"Timed out waiting for response from MCP server after {self.timeout}s"
+                )
+
+            # Determine whether stdout has an underlying OS file descriptor
+            fileno: Optional[int] = None
+            if hasattr(self._process.stdout, "fileno"):
+                try:
+                    fileno = self._process.stdout.fileno()
+                except (AttributeError, io.UnsupportedOperation, ValueError):
+                    fileno = None
+
+            if fileno is not None:
+                # Use OS select directly on file descriptor to avoid TextIOWrapper pre-buffering
+                readable, _, _ = select.select([fileno], [], [], remaining)
+                if not readable:
+                    # If process terminated during select wait, report process error rather than timeout
+                    if self._process.poll() is not None:
+                        poll = self._process.poll()
+                        stderr_msg = ""
+                        if self._process.stderr:
+                            try:
+                                stderr_msg = self._process.stderr.read() or ""
+                            except Exception:
+                                pass
+                        raise McpProcessError(
+                            f"Superstate MCP server exited unexpectedly with code {poll}: {stderr_msg.strip()}"
+                        )
+                    raise McpTimeoutError(
+                        f"Timed out waiting for response from MCP server after {self.timeout}s"
+                    )
+
+                try:
+                    # Read raw chunk from OS pipe and append decoded text to internal buffer
+                    chunk = os.read(fileno, 4096)
+                except OSError as exc:
+                    raise McpProcessError(f"Error reading from MCP server stdout: {exc}") from exc
+
+                if not chunk:
+                    # Pipe closed (EOF)
+                    break
+                self._read_buffer += chunk.decode("utf-8", errors="replace")
+            else:
+                # Fallback for file-like mocks without a fileno
+                line = self._process.stdout.readline()
+                if not line:
+                    break
+                self._read_buffer += line
+
+        # If a complete line is buffered, extract and return it
+        if "\n" in self._read_buffer:
+            line, self._read_buffer = self._read_buffer.split("\n", 1)
+            return line + "\n"
+
+        # If EOF was reached with unbuffered remainder, flush it
+        if self._read_buffer:
+            line = self._read_buffer
+            self._read_buffer = ""
+            return line
+
+        return ""
 
     def _read_response(self, req_id: int) -> dict[str, Any]:
         """Read lines from stdout until receiving the matching JSON-RPC response.
 
         Filters out non-JSON log lines that may be emitted by subprocesses (e.g. git).
+
+        Parameters:
+            req_id: The request ID to match.
+
+        Returns:
+            The parsed JSON-RPC response dictionary.
+
+        Raises:
+            McpProcessError: If child process terminates unexpectedly.
+            McpTimeoutError: If response is not received within timeout.
         """
         if self._process is None or self._process.stdout is None:
             raise McpProcessError("MCP server process stdout is not available")
@@ -343,26 +436,10 @@ class SuperstateMcpClient:
         deadline = time.time() + self.timeout
 
         while True:
-            remaining = deadline - time.time()
-            if remaining <= 0:
-                raise McpTimeoutError(
-                    f"Timed out waiting for response to request {req_id} after {self.timeout}s"
-                )
-
-            # Check if stdout can be polled via select when supported
-            if hasattr(self._process.stdout, "fileno"):
-                try:
-                    readable, _, _ = select.select([self._process.stdout], [], [], remaining)
-                    if not readable:
-                        raise McpTimeoutError(
-                            f"Timed out waiting for response to request {req_id} after {self.timeout}s"
-                        )
-                except (ValueError, io.UnsupportedOperation):
-                    pass
-
-            line = self._process.stdout.readline()
+            # Read next line using timeout-bounded non-prebuffering read
+            line = self._readline_with_timeout(deadline)
             if not line:
-                # Handle process exit or pipe closure
+                # Handle process exit or unexpected pipe closure
                 poll = self._process.poll()
                 if poll is not None:
                     stderr_msg = ""
