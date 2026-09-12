@@ -36,6 +36,16 @@ class TaskSpec:
     verifier_network_mode: str | None = None
     cpus: float | None = None
     memory_mb: int | None = None
+    _cached_has_verifier_dockerfile: bool | None = field(default=None, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.task_dir is not None:
+            try:
+                candidate = self.task_dir / "tests" / "Dockerfile"
+                if candidate.is_file():
+                    self._cached_has_verifier_dockerfile = True
+            except OSError:
+                pass
 
     @property
     def task_id(self) -> str:
@@ -56,13 +66,47 @@ class TaskSpec:
     @property
     def has_verifier_dockerfile(self) -> bool:
         """Whether the task has a Dockerfile in its tests/ directory."""
+        if self._cached_has_verifier_dockerfile is not None:
+            return self._cached_has_verifier_dockerfile
+
         td = self.tests_dir
         if td is None:
+            self._cached_has_verifier_dockerfile = False
             return False
         try:
-            return (td / "Dockerfile").is_file()
+            if (td / "Dockerfile").is_file():
+                self._cached_has_verifier_dockerfile = True
+                return True
         except OSError:
-            return False
+            pass
+
+        # If tests/ is sealed (mode 000) by a concurrent worker, check the staged copy
+        from lab.sandbox.answer_key import DEFAULT_STATE_FILE, AnswerKeyGuard
+
+        staged = AnswerKeyGuard.staged_copy(td)
+        if staged is not None:
+            try:
+                if (staged / "Dockerfile").is_file():
+                    self._cached_has_verifier_dockerfile = True
+                    return True
+            except OSError:
+                pass
+
+        try:
+            default_staging = (
+                DEFAULT_STATE_FILE.parent
+                / "staged"
+                / td.parent.name
+                / td.name
+                / "Dockerfile"
+            )
+            if default_staging.is_file():
+                self._cached_has_verifier_dockerfile = True
+                return True
+        except OSError:
+            pass
+
+        return False
 
 
 def _extract_collect_commands(verifier_meta: dict[str, Any]) -> list[str]:

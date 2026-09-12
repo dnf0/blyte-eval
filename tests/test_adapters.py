@@ -573,7 +573,7 @@ def test_superstate_adapter_executes_in_worktree(tmp_path: Path) -> None:
     )
 
     driver = MockDriver([])
-    adapter = SuperstateAdapter(superstate_bin=bin_path)
+    adapter = SuperstateAdapter(superstate_bin=bin_path, worktree=True)
     result = adapter.execute(tmp_path, _make_dummy_task(tmp_path), driver)
 
     assert result.success is True
@@ -814,4 +814,37 @@ def test_zero_turn_direct_state_init_fallback_when_binary_none_or_fails(
     assert state_data["no_worktree"] is True
 
 
+def test_superstate_zero_turn_init_without_verification_cmd(tmp_path: Path) -> None:
+    import json
 
+    task = _make_dummy_task(tmp_path)
+    task.instruction = "Fix bug without pre-declared verification command"
+    task.verification_cmd = None  # Sealed tests
+
+    driver = MockDriver([])
+    adapter = SuperstateAdapter(
+        zero_turn_planning=True,
+        no_worktree=True,
+    )
+
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is True
+    assert result.provenance["plan_source"] == "direct_state_handoff"
+
+    # Verify no plan.md was generated
+    assert not (tmp_path / "plan.md").exists()
+
+    # Verify driver was only called once for execution (no Phase 1 planning turn)
+    assert len(driver.calls) == 1
+    call_prompt = str(driver.calls[0]["prompt"])
+    assert "PRE-ASSESSMENT & ADAPTIVE DECOMPOSITION PROTOCOL" not in call_prompt
+
+    # Verify state.json was created with fallback verify_cmd="true" and goal set
+    state_file = tmp_path / ".agent-state" / "state.json"
+    assert state_file.is_file()
+    state_data = json.loads(state_file.read_text(encoding="utf-8"))
+    assert state_data["status"] == "completed"
+    assert state_data["goal"] == task.instruction
+    assert state_data["completed_tasks"][0]["id"] == "task-1"
+    assert state_data["completed_tasks"][0]["verification_cmd"] == "true"
