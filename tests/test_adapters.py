@@ -914,6 +914,8 @@ def test_is_transient_stream_interruption_detection() -> None:
     assert is_transient_stream_interruption("HTTP 503 Service Unavailable from upstream API")
     assert is_transient_stream_interruption("Transport error: socket closed unexpectedly")
     assert not is_transient_stream_interruption("Fatal syntax error in main.py: line 42")
+    assert not is_transient_stream_interruption("AssertionError at test_runner.py:503: test failed")
+    assert not is_transient_stream_interruption("Process exited with code 503")
     assert not is_transient_stream_interruption("Timed out after 3600.0s")
     assert not is_transient_stream_interruption(None)
     assert not is_transient_stream_interruption("")
@@ -961,6 +963,83 @@ def test_turn_based_adapter_recovers_from_transient_stream_interruption(tmp_path
     assert driver.calls[0]["conversation_id"] is None
     assert driver.calls[1]["conversation_id"] == "conv-transient-1"
     assert "stream was interrupted" in str(driver.calls[1]["prompt"]).lower()
+
+
+def test_turn_based_adapter_recovers_without_conversation_id(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter retries with initial prompt when conversation_id is None."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=5)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="Connection reset by peer",
+                duration_seconds=10.0,
+                input_tokens=0,
+                output_tokens=0,
+                cost_usd=0.0,
+                conversation_id=None,
+            ),
+            DriverTelemetry(
+                success=True,
+                raw_response="Fixed the bug in main.py.",
+                duration_seconds=15.0,
+                input_tokens=300,
+                output_tokens=50,
+                cost_usd=0.005,
+                conversation_id="conv-recovered-2",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert len(driver.calls) == 2
+    # When conversation_id was None, it must re-send the task instruction, NOT a resume string
+    assert driver.calls[1]["conversation_id"] is None
+    assert driver.calls[1]["prompt"] == "Fix the bug in main.py."
+
+
+def test_turn_based_adapter_aborts_when_stream_retries_exhausted(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter halts after exhausting max_stream_retries."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=10, max_stream_retries=2)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="stream was interrupted",
+                duration_seconds=10.0,
+                conversation_id="conv-drop",
+            ),
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="stream was interrupted",
+                duration_seconds=10.0,
+                conversation_id="conv-drop",
+            ),
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="stream was interrupted",
+                duration_seconds=10.0,
+                conversation_id="conv-drop",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is False
+    assert result.turns == 3  # 1 initial + 2 retries
+    assert "stream was interrupted" in str(result.error_message)
 
 
 def test_turn_based_adapter_does_not_retry_non_transient_failure(tmp_path: Path) -> None:

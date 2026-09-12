@@ -160,7 +160,9 @@ def is_transient_stream_interruption(error_msg: Optional[str]) -> bool:
             "broken pipe",
             "transport error",
             "service unavailable",
-            "503",
+            "http 503",
+            "status 503",
+            "503 service unavailable",
         )
     )
 
@@ -256,18 +258,26 @@ class TurnBasedAdapter(AgentAdapter):
                     and duration < budget
                 ):
                     stream_retries += 1
+                    target_desc = (
+                        f"conversation {conversation_id}"
+                        if conversation_id is not None
+                        else "turn with initial task prompt"
+                    )
                     logger.warning(
                         "Turn encountered transient stream interruption (retry %d/%d): %s. "
-                        "Resuming conversation %s (budget remaining: %.1fs)",
+                        "Resuming %s (budget remaining: %.1fs)",
                         stream_retries,
                         self.max_stream_retries,
                         telemetry.error_message,
-                        conversation_id,
+                        target_desc,
                         budget - duration,
                     )
-                    current_prompt = (
-                        "The stream was interrupted. Please continue the task where you left off."
-                    )
+                    if conversation_id is not None:
+                        current_prompt = (
+                            "The stream was interrupted. Please continue the task where you left off."
+                        )
+                    else:
+                        current_prompt = current_prompt or self.get_initial_prompt(task)
                     continue
 
                 error_msg = telemetry.error_message or "Agent turn failed"
