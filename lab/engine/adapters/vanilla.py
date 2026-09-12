@@ -18,6 +18,9 @@ logger = logging.getLogger("superstate_eval.adapters.vanilla")
 class VanillaAdapter(TurnBasedAdapter):
     """Unguided baseline adapter enforcing complete isolation from rules or skills."""
 
+    def __init__(self, max_turns: int = 50, max_stream_retries: int = 5) -> None:
+        super().__init__(max_turns=max_turns, max_stream_retries=max_stream_retries)
+
     @property
     def name(self) -> str:
         return "vanilla"

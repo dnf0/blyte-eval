@@ -902,3 +902,91 @@ def test_runner_resolves_mcp_adapters() -> None:
     # Test resolution of superstate_agent_mcp
     adapter_agent = runner._get_adapter("superstate_agent_mcp")
     assert isinstance(adapter_agent, SuperstateAgentMcpAdapter)
+
+
+def test_is_transient_stream_interruption_detection() -> None:
+    """Verify is_transient_stream_interruption correctly classifies transport vs logical errors."""
+    from lab.engine.adapters.base import is_transient_stream_interruption
+
+    assert is_transient_stream_interruption("The stream was interrupted. Please continue the task you were working on.")
+    assert is_transient_stream_interruption("connection reset by peer")
+    assert is_transient_stream_interruption("gRPC deadline exceeded during token streaming")
+    assert is_transient_stream_interruption("HTTP 503 Service Unavailable from upstream API")
+    assert is_transient_stream_interruption("Transport error: socket closed unexpectedly")
+    assert not is_transient_stream_interruption("Fatal syntax error in main.py: line 42")
+    assert not is_transient_stream_interruption("Timed out after 3600.0s")
+    assert not is_transient_stream_interruption(None)
+    assert not is_transient_stream_interruption("")
+
+
+def test_turn_based_adapter_recovers_from_transient_stream_interruption(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter resumes conversation when a transient API stream drop occurs."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=5)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="The stream was interrupted. Please continue the task you were working on.",
+                duration_seconds=30.0,
+                input_tokens=500,
+                output_tokens=100,
+                cost_usd=0.01,
+                conversation_id="conv-transient-1",
+            ),
+            DriverTelemetry(
+                success=True,
+                raw_response="Task complete.",
+                duration_seconds=20.0,
+                input_tokens=300,
+                output_tokens=50,
+                cost_usd=0.005,
+                conversation_id="conv-transient-1",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert result.duration_seconds == 50.0
+    assert result.input_tokens == 800
+    assert result.output_tokens == 150
+    assert result.cost_usd == pytest.approx(0.015)
+    assert len(driver.calls) == 2
+    # Second turn must resume the interrupted conversation
+    assert driver.calls[0]["conversation_id"] is None
+    assert driver.calls[1]["conversation_id"] == "conv-transient-1"
+    assert "stream was interrupted" in str(driver.calls[1]["prompt"]).lower()
+
+
+def test_turn_based_adapter_does_not_retry_non_transient_failure(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter does not retry non-transient model/logic failures."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=5)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="Fatal error: compilation failed with exit code 2",
+                duration_seconds=15.0,
+                input_tokens=200,
+                output_tokens=50,
+                cost_usd=0.002,
+                conversation_id="conv-fail-1",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is False
+    assert result.turns == 1
+    assert "compilation failed" in str(result.error_message)
+    assert len(driver.calls) == 1
+

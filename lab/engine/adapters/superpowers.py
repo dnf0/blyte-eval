@@ -31,7 +31,8 @@ Follow the Superpowers loop:
 class SuperpowersAdapter(TurnBasedAdapter):
     """Adapter configuring markdown rules and vendored superpowers skills."""
 
-    def __init__(self) -> None:
+    def __init__(self, max_turns: int = 50, max_stream_retries: int = 5) -> None:
+        super().__init__(max_turns=max_turns, max_stream_retries=max_stream_retries)
         self.skills_installed: bool = False
 
     @property

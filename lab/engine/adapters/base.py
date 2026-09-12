@@ -144,6 +144,27 @@ class AgentAdapter(abc.ABC):
         """Execute a task in the given workspace using the provided driver."""
 
 
+def is_transient_stream_interruption(error_msg: Optional[str]) -> bool:
+    """Classify whether an error string represents a transient API transport interruption."""
+    if not error_msg:
+        return False
+    lower = error_msg.lower()
+    return any(
+        phrase in lower
+        for phrase in (
+            "stream was interrupted",
+            "stream interrupted",
+            "connection reset",
+            "deadline exceeded",
+            "socket closed",
+            "broken pipe",
+            "transport error",
+            "service unavailable",
+            "503",
+        )
+    )
+
+
 class TurnBasedAdapter(AgentAdapter):
     """Base template adapter managing bounded turn execution and mechanical approval."""
 
@@ -152,6 +173,11 @@ class TurnBasedAdapter(AgentAdapter):
     # stops a pathological agent from spinning forever. Set high enough that it
     # does not bind on real work, and raise it rather than letting it decide runs.
     max_turns: int = 50
+    max_stream_retries: int = 5
+
+    def __init__(self, max_turns: int = 50, max_stream_retries: int = 5) -> None:
+        self.max_turns = max_turns
+        self.max_stream_retries = max_stream_retries
 
     @abc.abstractmethod
     def prepare_workspace(self, workspace_path: Path) -> None:
@@ -190,6 +216,7 @@ class TurnBasedAdapter(AgentAdapter):
         last_response = ""
 
         completed_cleanly = False
+        stream_retries = 0
         for _ in range(self.max_turns):
             if duration >= budget:
                 error_msg = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
@@ -223,6 +250,26 @@ class TurnBasedAdapter(AgentAdapter):
                 budget = max(budget, budget_hook())
 
             if not telemetry.success:
+                if (
+                    is_transient_stream_interruption(telemetry.error_message)
+                    and stream_retries < self.max_stream_retries
+                    and duration < budget
+                ):
+                    stream_retries += 1
+                    logger.warning(
+                        "Turn encountered transient stream interruption (retry %d/%d): %s. "
+                        "Resuming conversation %s (budget remaining: %.1fs)",
+                        stream_retries,
+                        self.max_stream_retries,
+                        telemetry.error_message,
+                        conversation_id,
+                        budget - duration,
+                    )
+                    current_prompt = (
+                        "The stream was interrupted. Please continue the task where you left off."
+                    )
+                    continue
+
                 error_msg = telemetry.error_message or "Agent turn failed"
                 break
 
