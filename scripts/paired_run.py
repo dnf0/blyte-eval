@@ -19,6 +19,7 @@ from typing import Any
 
 from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
 from lab.engine.drivers.agy_cli import AgyCliDriver
+from lab.engine.drivers.claude_cli import ClaudeCliDriver
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table
 from lab.engine.runner import AblationRunner
@@ -41,6 +42,8 @@ def main() -> int:
     ap.add_argument("--only-with-verifier", action="store_true",
                     help="Skip tasks that ship no held-out verifier")
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
+    ap.add_argument("--driver", choices=["agy", "claude"], default="agy",
+                    help="Agent driver harness (default: agy)")
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
                     help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
@@ -94,7 +97,11 @@ def main() -> int:
         logger.error("No tasks selected")
         return 1
 
-    driver = AgyCliDriver(model=args.model)
+    if args.driver == "claude":
+        model = args.model if args.model != "gemini-3.8-flash-high" else "claude-3-7-sonnet-20250219"
+        driver = ClaudeCliDriver(model=model)
+    else:
+        driver = AgyCliDriver(model=args.model)
     governor = ConcurrencyGovernor(
         cpus_per_worker=2.0,
         ram_gb_per_worker=4.0,
