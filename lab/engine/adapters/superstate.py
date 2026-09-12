@@ -183,6 +183,7 @@ class SuperstateAdapter(AgentAdapter):
         max_turns_per_milestone: int = 3,
         no_worktree: bool = False,
         zero_turn_planning: bool = False,
+        worktree: bool = False,
     ) -> None:
         if superstate_bin is not None and engine == DEFAULT_ENGINE:
             bin_path = Path(superstate_bin)
@@ -196,6 +197,7 @@ class SuperstateAdapter(AgentAdapter):
         self.superstate_bin = superstate_bin or find_superstate_binary(engine)
         self.max_turns_per_milestone = max_turns_per_milestone
         self.no_worktree = no_worktree
+        self.worktree = worktree
         self.zero_turn_planning = zero_turn_planning
         self.engine_used: Optional[str] = None
         self.plan_source: Optional[str] = None
@@ -240,6 +242,7 @@ class SuperstateAdapter(AgentAdapter):
             "engine": self.engine,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
             "no_worktree": self.no_worktree,
+            "worktree": self.worktree,
             "zero_turn_planning": self.zero_turn_planning,
             # Whether this run was actually a control-plane run.
             "plan_source": self.plan_source,
@@ -394,7 +397,9 @@ class SuperstateAdapter(AgentAdapter):
                     "--plan", str(plan_path),
                     out_flag, str(state_path),
                 ]
-                if self.no_worktree and self.engine == ENGINE_RUST:
+                if self.worktree and not self.no_worktree and self.engine == ENGINE_RUST:
+                    cmd.append("--worktree")
+                elif self.no_worktree and self.engine == ENGINE_RUST:
                     cmd.append("--no-worktree")
                 res = subprocess.run(
                     cmd,
@@ -734,7 +739,8 @@ class SuperstateAdapter(AgentAdapter):
         plan_text = plan_file.read_text(encoding="utf-8") if plan_file.is_file() else ""
 
         vcmd = getattr(task, "verification_cmd", None)
-        if not plan_text and self.zero_turn_planning and vcmd:
+        effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
+        if not plan_text and self.zero_turn_planning:
             state_path = workspace_path / ".agent-state" / "state.json"
             state_path.parent.mkdir(parents=True, exist_ok=True)
             init_ok = False
@@ -748,11 +754,13 @@ class SuperstateAdapter(AgentAdapter):
                     "--goal",
                     task.instruction,
                     "--verify-cmd",
-                    vcmd,
+                    effective_vcmd,
                     "--state",
                     str(state_path),
                 ]
-                if self.no_worktree:
+                if self.worktree and not self.no_worktree:
+                    cmd.append("--worktree")
+                else:
                     cmd.append("--no-worktree")
 
                 try:
@@ -777,13 +785,14 @@ class SuperstateAdapter(AgentAdapter):
                 state_data = {
                     "status": "in_progress",
                     "step": 1,
+                    "goal": task.instruction,
                     "active_task": {
                         "id": "task-1",
                         "title": task.instruction,
                         "depends_on": [],
                         "files_modify": [],
                         "interfaces_produces": [],
-                        "verification_cmd": vcmd,
+                        "verification_cmd": effective_vcmd,
                     },
                     "pending_tasks": [],
                     "completed_tasks": [],
@@ -793,7 +802,7 @@ class SuperstateAdapter(AgentAdapter):
                     "notes": [],
                     "active_worktree": None,
                     "active_branch": None,
-                    "no_worktree": self.no_worktree,
+                    "no_worktree": self.no_worktree or not self.worktree,
                 }
                 state_path.write_text(json.dumps(state_data, indent=2), encoding="utf-8")
 
@@ -802,7 +811,7 @@ class SuperstateAdapter(AgentAdapter):
             self.milestones_planned = 1
             logger.info(
                 "Direct state handoff active: initialized state directly with gate '%s' without plan.md",
-                vcmd,
+                effective_vcmd,
             )
 
         if not plan_text and self.plan_source != "direct_state_handoff":
@@ -892,10 +901,10 @@ class SuperstateAdapter(AgentAdapter):
                 self.plan_source = "response"
 
         if self.plan_source == "direct_state_handoff":
-            milestones = [Milestone(title=f"task-1: {task.instruction}", verify_cmd=vcmd)]
+            milestones = [Milestone(title=f"task-1: {task.instruction}", verify_cmd=effective_vcmd)]
             verify_by_title = {
-                f"task-1: {task.instruction}": vcmd,
-                task.instruction: vcmd,
+                f"task-1: {task.instruction}": effective_vcmd,
+                task.instruction: effective_vcmd,
             }
         else:
             milestones = _extract_plan_milestones(plan_text)
