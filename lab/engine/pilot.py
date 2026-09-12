@@ -123,9 +123,11 @@ class PilotShowdownRunner:
         elif arm in ("superstate", "superstate_python", "superstate-python"):
             return SuperstateAdapter(engine="agent-rules-python")
         elif arm in ("superstate_rust", "superstate-rust", "rust"):
-            return SuperstateAdapter(engine="superstate-rust")
+            return SuperstateAdapter(engine="superstate-rust", zero_turn_planning=True)
+        elif arm in ("superstate_rust_planned", "superstate_rust_2phase"):
+            return SuperstateAdapter(engine="superstate-rust", zero_turn_planning=False)
         elif arm in ("superstate_rust_inplace", "superstate-rust-inplace", "rust_inplace"):
-            return SuperstateAdapter(engine="superstate-rust", no_worktree=True)
+            return SuperstateAdapter(engine="superstate-rust", no_worktree=True, zero_turn_planning=True)
         elif arm in ("superstate_rust_fast", "superstate-rust-fast", "rust_fast", "superstate_fast", "superstate_rust_direct"):
             return SuperstateAdapter(engine="superstate-rust", no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")

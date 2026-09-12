@@ -101,9 +101,11 @@ class AblationRunner:
         elif arm in ("superstate", "superstate_python", "superstate-python"):
             return SuperstateAdapter(engine=ENGINE_PYTHON)
         elif arm in ("superstate_rust", "superstate-rust", "rust", "arm_d", "arm-d"):
-            return SuperstateAdapter(engine=ENGINE_RUST)
+            return SuperstateAdapter(engine=ENGINE_RUST, zero_turn_planning=True)
+        elif arm in ("superstate_rust_planned", "superstate_rust_2phase"):
+            return SuperstateAdapter(engine=ENGINE_RUST, zero_turn_planning=False)
         elif arm in ("superstate_rust_inplace", "superstate-rust-inplace", "rust_inplace", "arm_d_inplace", "arm-d-inplace"):
-            return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True)
+            return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         elif arm in ("superstate_rust_fast", "superstate-rust-fast", "rust_fast", "superstate_fast", "superstate_rust_direct"):
             return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
