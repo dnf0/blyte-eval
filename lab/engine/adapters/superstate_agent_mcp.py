@@ -38,13 +38,18 @@ AUTONOMOUS_MCP_EXECUTION_CONTRACT = (
     "- `state_prompt`: Retrieve turnkey milestone instructions, dependencies, and targeted verification criteria.\n"
     "- `state_exec`: Execute commands with optional automatic state advancement and verification.\n"
     "- `state_next`: Advance to the next milestone once the active milestone's changes and verification gates are satisfied.\n"
-    "- `state_note`: Record architectural findings, hypotheses, and milestone progress notes.\n\n"
+    "- `state_note`: Record architectural findings, hypotheses, and milestone progress notes.\n"
+    "- `worktree_create`: Create an isolated git worktree branch (e.g. at `.wt/<branch-name>`) for feature work, refactoring, or compilation to isolate intermediate changes from the base branch.\n"
+    "- `worktree_merge`: Verify and cleanly merge a completed worktree branch back into base after checks pass.\n"
+    "- `worktree_list`: List active worktree workspaces.\n"
+    "- `worktree_clean`: Clean up merged or stale worktrees.\n\n"
     "### Operating Rules:\n"
     "1. **Check State First:** Call `state_status` or `state_prompt` to inspect your active task.\n"
-    "2. **Implement & Verify:** Make necessary file edits and run tests for the active task.\n"
-    "3. **Advance State:** Call `state_next` (or `state_exec` with advance=True) to commit and advance each completed task.\n"
-    "4. **Log Progress:** Use `state_note` to log significant decisions or findings.\n"
-    "5. **Conclude When Complete:** When all milestones are completed (`state_status` reports status 'completed' or no remaining active task), finish your turn with a concise summary."
+    "2. **Worktree Isolation:** For non-trivial modifications, refactoring, or compilation tasks, you may create an isolated worktree with `worktree_create`, implement and test your changes in the worktree, and merge back to `main` with `worktree_merge` upon verification.\n"
+    "3. **Implement & Verify:** Make necessary file edits and run tests for the active task.\n"
+    "4. **Advance State:** Call `state_next` (or `state_exec` with advance=True) to commit and advance each completed task.\n"
+    "5. **Log Progress:** Use `state_note` to log significant decisions, hypotheses, or findings.\n"
+    "6. **Conclude When Complete:** When all milestones are completed (`state_status` reports status 'completed' or no remaining active task), finish your turn with a concise summary."
 )
 
 
@@ -64,6 +69,8 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
         superstate_bin: Optional[Path | str] = None,
         name: str = "superstate_agent_mcp",
         max_turns: int = 20,
+        worktree: bool = False,
+        no_worktree: bool = False,
     ) -> None:
         """Initialize the autonomous Superstate MCP adapter configuration.
 
@@ -71,10 +78,14 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
             superstate_bin: Optional path to the superstate executable binary.
             name: Harness name identifying this evaluation arm.
             max_turns: Maximum allowable conversation turns for autonomous agent execution.
+            worktree: If True, initialize task with an active worktree workspace.
+            no_worktree: If True, explicitly lock repository to in-place workspace execution.
         """
         self.superstate_bin = Path(superstate_bin) if superstate_bin is not None else None
         self._name = name
         self.max_turns = max_turns
+        self.worktree = worktree
+        self.no_worktree = no_worktree
         self.mcp_tools_discovered: int = 0
 
     @property
@@ -325,7 +336,8 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
                 client.state_init(
                     repo=workspace_path,
                     plan=plan_file,
-                    no_worktree=True,
+                    no_worktree=self.no_worktree,
+                    worktree=self.worktree,
                 )
             else:
                 vcmd = getattr(task, "verification_cmd", None)
@@ -336,7 +348,8 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
                     repo=workspace_path,
                     goal=task.instruction,
                     verify_cmd=effective_vcmd,
-                    no_worktree=True,
+                    no_worktree=self.no_worktree,
+                    worktree=self.worktree,
                 )
 
             # Step 4: Configure driver to expose Superstate MCP tools

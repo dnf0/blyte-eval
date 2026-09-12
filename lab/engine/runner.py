@@ -122,6 +122,10 @@ class AblationRunner:
             return SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=False)
         elif arm in ("superstate_agent_mcp", "superstate-agent-mcp", "agent_mcp", "agent-mcp"):
             return SuperstateAgentMcpAdapter()
+        elif arm in ("superstate_agent_mcp_worktree", "superstate-agent-mcp-worktree", "agent_mcp_worktree"):
+            return SuperstateAgentMcpAdapter(worktree=True)
+        elif arm in ("superstate_agent_mcp_inplace", "superstate-agent-mcp-inplace", "agent_mcp_inplace"):
+            return SuperstateAgentMcpAdapter(no_worktree=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(
