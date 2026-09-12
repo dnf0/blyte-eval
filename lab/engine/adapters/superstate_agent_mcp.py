@@ -22,6 +22,7 @@ from lab.engine.adapters.base import (
     AgentDriver,
     BudgetHook,
     TaskRunResult,
+    is_transient_stream_interruption,
     strip_preexisting_guidance,
 )
 from lab.engine.approval import resolve_next_turn_prompt
@@ -69,6 +70,8 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
         superstate_bin: Optional[Path | str] = None,
         name: str = "superstate_agent_mcp",
         max_turns: int = 20,
+        max_stream_retries: int = 5,
+        max_incomplete_prompts: int = 3,
         worktree: bool = False,
         no_worktree: bool = False,
     ) -> None:
@@ -78,12 +81,16 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
             superstate_bin: Optional path to the superstate executable binary.
             name: Harness name identifying this evaluation arm.
             max_turns: Maximum allowable conversation turns for autonomous agent execution.
+            max_stream_retries: Maximum transient stream reconnection attempts per task.
+            max_incomplete_prompts: Maximum nudge prompts issued when state remains incomplete.
             worktree: If True, initialize task with an active worktree workspace.
             no_worktree: If True, explicitly lock repository to in-place workspace execution.
         """
         self.superstate_bin = Path(superstate_bin) if superstate_bin is not None else None
         self._name = name
         self.max_turns = max_turns
+        self.max_stream_retries = max_stream_retries
+        self.max_incomplete_prompts = max_incomplete_prompts
         self.worktree = worktree
         self.no_worktree = no_worktree
         self.mcp_tools_discovered: int = 0
@@ -371,6 +378,8 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
             current_prompt: Optional[str] = seed_prompt
             conversation_id: Optional[str] = None
             last_response = ""
+            stream_retries = 0
+            consecutive_incomplete = 0
 
             # Step 6: Multi-turn autonomous driver execution loop
             for _ in range(self.max_turns):
@@ -407,6 +416,34 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
                     budget = max(budget, budget_hook())
 
                 if not telemetry.success:
+                    if (
+                        is_transient_stream_interruption(telemetry.error_message)
+                        and stream_retries < self.max_stream_retries
+                        and duration < budget
+                    ):
+                        stream_retries += 1
+                        target_desc = (
+                            f"conversation {conversation_id}"
+                            if conversation_id is not None
+                            else "turn with initial task prompt"
+                        )
+                        logger.warning(
+                            "Turn encountered transient stream interruption (retry %d/%d): %s. "
+                            "Resuming %s (budget remaining: %.1fs)",
+                            stream_retries,
+                            self.max_stream_retries,
+                            telemetry.error_message,
+                            target_desc,
+                            budget - duration,
+                        )
+                        if conversation_id is not None:
+                            current_prompt = (
+                                "The stream was interrupted. Please continue the task where you left off."
+                            )
+                        else:
+                            current_prompt = current_prompt or seed_prompt
+                        continue
+
                     error_msg = telemetry.error_message or "Agent turn failed"
                     break
 
@@ -416,7 +453,47 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
                     current_prompt = next_prompt
                     continue
 
-                # Agent concluded turn without asking for approval
+                # Inspect state machine progress
+                state_data_turn: dict[str, Any] = {}
+                try:
+                    state_data_turn = client.state_status(workspace_path)
+                except Exception as exc:
+                    logger.debug("Failed querying state_status during turn loop: %s", exc)
+                    state_file = workspace_path / ".agent-state" / "state.json"
+                    if state_file.is_file():
+                        try:
+                            state_data_turn = json.loads(state_file.read_text(encoding="utf-8"))
+                        except Exception:
+                            pass
+
+                is_completed = (
+                    state_data_turn.get("status") == "completed"
+                    or (state_data_turn.get("active_task") is None and bool(state_data_turn.get("completed_tasks")))
+                )
+
+                if is_completed:
+                    break
+
+                if consecutive_incomplete < self.max_incomplete_prompts and duration < budget:
+                    consecutive_incomplete += 1
+                    active_task = state_data_turn.get("active_task") or "current milestone"
+                    if isinstance(active_task, dict):
+                        active_task_desc = active_task.get("title") or active_task.get("id") or "current milestone"
+                    else:
+                        active_task_desc = str(active_task)
+                    current_prompt = (
+                        f"The state machine indicates active milestone '{active_task_desc}' is not yet completed. "
+                        "Please continue implementing, verify with tests, and advance using state_next (or state_exec with advance=True)."
+                    )
+                    logger.info(
+                        "Autonomous MCP turn ended but active milestone '%s' is incomplete; prompting for continuation (nudge %d/%d)",
+                        active_task_desc,
+                        consecutive_incomplete,
+                        self.max_incomplete_prompts,
+                    )
+                    continue
+
+                # Conclude turn loop when nudges are exhausted or budget is reached
                 break
 
             # Step 7: Inspect resulting state machine status

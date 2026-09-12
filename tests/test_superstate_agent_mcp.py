@@ -299,3 +299,125 @@ def test_worktree_cleanup_on_completion(tmp_path: Path, monkeypatch: pytest.Monk
     result = adapter.execute(tmp_path, task, driver)
     assert result.success is True
     assert clean_called is True
+
+
+def test_superstate_agent_mcp_recovers_from_transient_stream_interruption(tmp_path: Path) -> None:
+    """Verify adapter catches transient stream drops and resumes with same conversation ID."""
+    _init_git_repo(tmp_path)
+    task = _make_dummy_task(tmp_path, instruction="Implement stream resilient task")
+
+    interrupted_telemetry = DriverTelemetry(
+        success=False,
+        raw_response="",
+        error_message="The stream was interrupted. Please continue the task you were working on.",
+        duration_seconds=5.0,
+        input_tokens=100,
+        output_tokens=10,
+        cost_usd=0.001,
+        conversation_id="conv-stream-1",
+    )
+
+    success_telemetry = DriverTelemetry(
+        success=True,
+        raw_response="Completed following resumption.",
+        duration_seconds=3.0,
+        input_tokens=80,
+        output_tokens=40,
+        cost_usd=0.002,
+        conversation_id="conv-stream-1",
+    )
+
+    driver = MockDriver(responses=[interrupted_telemetry, success_telemetry])
+    adapter = SuperstateAgentMcpAdapter()
+
+    # Pre-mark state as completed in side effect on turn 2
+    def side_effect(call: dict[str, Any]) -> None:
+        if len(driver.calls) == 2:
+            state_file = tmp_path / ".agent-state" / "state.json"
+            state_data = json.loads(state_file.read_text(encoding="utf-8"))
+            state_data["status"] = "completed"
+            state_data["active_task"] = None
+            state_data["completed_tasks"] = [{"id": "task-1", "title": "Done"}]
+            state_file.write_text(json.dumps(state_data), encoding="utf-8")
+
+    driver.side_effect = side_effect
+
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert result.duration_seconds == 8.0
+    assert result.cost_usd == 0.003
+    assert len(driver.calls) == 2
+    assert driver.calls[1]["conversation_id"] == "conv-stream-1"
+    assert "stream was interrupted" in str(driver.calls[1]["prompt"]).lower()
+
+
+def test_superstate_agent_mcp_prompts_continuation_when_state_incomplete(tmp_path: Path) -> None:
+    """When agent finishes turn without advancing incomplete state, adapter nudges agent."""
+    _init_git_repo(tmp_path)
+    task = _make_dummy_task(tmp_path, instruction="Implement multi-step feature")
+
+    turn1_telemetry = DriverTelemetry(
+        success=True,
+        raw_response="I inspected the codebase and edited a file.",
+        duration_seconds=10.0,
+        input_tokens=100,
+        output_tokens=50,
+        cost_usd=0.005,
+        conversation_id="conv-multi-1",
+    )
+
+    turn2_telemetry = DriverTelemetry(
+        success=True,
+        raw_response="I verified the changes and marked the task completed.",
+        duration_seconds=5.0,
+        input_tokens=120,
+        output_tokens=60,
+        cost_usd=0.005,
+        conversation_id="conv-multi-1",
+    )
+
+    driver = MockDriver(responses=[turn1_telemetry, turn2_telemetry])
+    adapter = SuperstateAgentMcpAdapter()
+
+    def side_effect(call: dict[str, Any]) -> None:
+        if len(driver.calls) == 2:
+            state_file = tmp_path / ".agent-state" / "state.json"
+            state_data = json.loads(state_file.read_text(encoding="utf-8"))
+            state_data["status"] = "completed"
+            state_data["active_task"] = None
+            state_data["completed_tasks"] = [{"id": "task-1", "title": "Done"}]
+            state_file.write_text(json.dumps(state_data), encoding="utf-8")
+
+    driver.side_effect = side_effect
+
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert len(driver.calls) == 2
+    assert driver.calls[1]["conversation_id"] == "conv-multi-1"
+    assert "active milestone" in str(driver.calls[1]["prompt"])
+    assert "state_next" in str(driver.calls[1]["prompt"])
+
+
+def test_superstate_agent_mcp_halts_after_max_incomplete_prompts(tmp_path: Path) -> None:
+    """Verify adapter bounds incomplete prompt nudges by max_incomplete_prompts."""
+    _init_git_repo(tmp_path)
+    task = _make_dummy_task(
+        tmp_path,
+        instruction="Never completing task",
+        verification_cmd="test -f never.txt",
+    )
+
+    driver = MockDriver()
+    adapter = SuperstateAgentMcpAdapter(max_incomplete_prompts=2)
+
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is False
+    # Turn 1 (initial) + 2 nudges = 3 turns total
+    assert result.turns == 3
+    assert len(driver.calls) == 3
+
