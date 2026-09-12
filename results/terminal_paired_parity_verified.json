@@ -1,0 +1,180 @@
+[
+  {
+    "task_id": "terminal-bench/openssl-selfsigned-cert",
+    "arm": "vanilla",
+    "passed": true,
+    "wall_clock_sec": 321.74,
+    "cost_usd": 0.053320799999999995,
+    "input_tokens": 241132,
+    "output_tokens": 28585,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_openssl-selfsigned-cert-vanilla-30f98198",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 6,
+        "tests_passed": 6
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 6,
+      "tests_total": 6,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260912-090317/eval-terminal-bench_openssl-selfsigned-cert-vanilla-30f98198/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/openssl-selfsigned-cert/tests"
+      ]
+    }
+  },
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "vanilla",
+    "passed": false,
+    "wall_clock_sec": 177.17,
+    "cost_usd": 0.040623,
+    "input_tokens": 227420,
+    "output_tokens": 10850,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": "Verification failed: Reward was 0.0 < 1.0\nOutput: - ModuleNo...\nFAILED ../tests/test_outputs.py::test_chelpers - ModuleNotFoundError: No modu...\nFAILED ../tests/test_outputs.py::test_ccomplexity - ModuleNotFoundError: No m...\nFAILED ../tests/test_outputs.py::test_cinvariants_python_vs_cython - ModuleNo...\nFAILED ../tests/test_outputs.py::test_example_usage - ModuleNotFoundError: No...\nFAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - AssertionEr...\n========================= 9 failed, 2 passed in 2.84s ==========================\n",
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-vanilla-792c2ecf",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 0.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 2
+      },
+      "test_pass_fraction": 0.18181818181818182,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 2,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260912-090317/eval-terminal-bench_build-cython-ext-vanilla-792c2ecf/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests"
+      ]
+    }
+  },
+  {
+    "task_id": "terminal-bench/openssl-selfsigned-cert",
+    "arm": "superstate_rust",
+    "passed": true,
+    "wall_clock_sec": 535.76,
+    "cost_usd": 0.0517437,
+    "input_tokens": 189746,
+    "output_tokens": 38803,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 2100.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_openssl-selfsigned-cert-superstate_rust-f764caad",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 6,
+        "tests_passed": 6
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 6,
+      "tests_total": 6,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260912-090317/eval-terminal-bench_openssl-selfsigned-cert-superstate_rust-f764caad/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/openssl-selfsigned-cert/tests"
+      ],
+      "state_engine": "superstate_binary",
+      "engine": "superstate-rust",
+      "superstate_bin": "/Users/danielfisher/repos/superstate/target/release/superstate",
+      "no_worktree": false,
+      "worktree": false,
+      "zero_turn_planning": true,
+      "plan_source": "direct_state_handoff",
+      "milestones_planned": 1,
+      "decomposed": true
+    }
+  },
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "superstate_rust",
+    "passed": true,
+    "wall_clock_sec": 817.64,
+    "cost_usd": 0.15768509999999997,
+    "input_tokens": 887002,
+    "output_tokens": 41058,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 2100.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_rust-d4c97f6c",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 11
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260912-090317/eval-terminal-bench_build-cython-ext-superstate_rust-d4c97f6c/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests"
+      ],
+      "state_engine": "superstate_binary",
+      "engine": "superstate-rust",
+      "superstate_bin": "/Users/danielfisher/repos/superstate/target/release/superstate",
+      "no_worktree": false,
+      "worktree": false,
+      "zero_turn_planning": true,
+      "plan_source": "direct_state_handoff",
+      "milestones_planned": 1,
+      "decomposed": true
+    }
+  }
+]
