@@ -28,23 +28,23 @@ To establish **Daniel Fisher** as the recognized pioneer and definitive authorit
 
 ## 2. Core Positioning & Intellectual Anchors
 
-Superstate is positioned not merely as an MCP tool or agent wrapper, but as **the Deterministic Systems Runtime for AI Software Engineering** — inverting the industry's flawed "Tool-Soup" model to replace the human-in-the-loop:
+Superstate is positioned as a **deterministic state machine and verification runtime for AI coding workflows**:
 
 ```
 +=============================================================+
-|                 SUPERSTATE SYSTEMS RUNTIME (RUST)           |
+|                 SUPERSTATE RUNTIME (RUST)                   |
 |       * Deterministic State Kernel   * Worktree Manager     |
 |       * Milestone DAG Scheduler      * Verification Gates   |
 |       * Non-Bypassable Exit Codes    * Epistemic Ledger     |
 +=============================================================+
                               |
-               Orchestrates & Dispatches Bounded
-                      Turnkey Prompts
+                     Dispatches Clean, Bounded
+                         Task Prompts
                               v
 +-------------------------------------------------------------+
-|                      LLM WORKER POOL                        |
+|                      LLM CODING AGENT                       |
 |        Claude Code  |  Cursor Engine  |  Gemini  |  GPT-4o  |
-|         (Transient, Stateless Code Synthesis Engines)       |
+|            (Focused Exclusively on Writing Code)            |
 +-------------------------------------------------------------+
                               |
                       Executes Code On
@@ -56,10 +56,10 @@ Superstate is positioned not merely as an MCP tool or agent wrapper, but as **th
 ```
 
 ### The 5 Signature Concepts to Popularize
-1. **The Inverted Control Pattern (Superstate Orchestrates the Model):** The industry tried to give LLMs 30 MCP tools to manage their own state. We empirically proved this "Tool-Soup" anti-pattern degrades pass rates by ~25% due to context dilution and attention fragmentation. Inverting the control plane—letting a deterministic Rust kernel orchestrate the LLM as a transient execution worker—eliminates the need for a human babysitter.
-2. **Deterministic State Gating:** Software tasks must be represented as a topological DAG where state transitions require non-bypassable host verification exit codes (exit code 0), completely decoupling task completion from model self-reporting.
-3. **Cognitive Anchoring vs. Objective Diagnostics:** Conversational memory causes confirmation bias. Bounded stateless retries with git diff diagnostics (`git diff --stat`) transform the agent from a defensive author into an objective code doctor.
-4. **The Epistemic Ledger:** Replacing lossy vector embeddings and noisy chat logs with structured, human-readable execution discoveries (`.agent-state/state.json` notes) that survive context compactions and reconstruct ground truth instantly.
+1. **Harness-Driven State vs. In-Context Tool Clutter:** Moving state tracking, git worktree isolation, and verification gates out of the LLM's prompt into a fast, compiled Rust process. This prevents prompt bloat and attention fragmentation, allowing the model to focus 100% of its reasoning budget on the code.
+2. **Deterministic State Gating:** Software tasks are modeled as a DAG where milestone advancement requires verified exit code 0 from the host test runner, eliminating model self-reporting hallucinations.
+3. **Cognitive Anchoring vs. Objective Diagnostics:** Conversational memory causes confirmation bias. Bounded stateless retries with git diff diagnostics (`git diff --stat`) keep retries objective and focused on the actual changes on disk.
+4. **The Epistemic Ledger:** Replacing lossy vector search with structured, human-readable execution discoveries (`.agent-state/state.json`) that survive context resets.
 5. **Sub-Cent Task Economics:** Scaling agent reliability without compute blowouts (sub-$0.05 per task with 100% regression safety).
 
 ---
