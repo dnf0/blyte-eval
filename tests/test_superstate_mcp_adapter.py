@@ -303,10 +303,12 @@ def test_gate_command_failure_handling_and_retry(tmp_path: Path) -> None:
             # Turn 1: fails to create the file
             pass
         elif turn_count == 2:
-            # Turn 2: checks that retry prompt contains error details, then creates file
+            # Turn 2: checks that retry prompt contains error details, stateless turn (conv=None), and git diff stat
             prompt = str(call.get("prompt", ""))
             assert "VERIFICATION GATE FAILED" in prompt
             assert f"test -f {target_file.name}" in prompt
+            assert "Modified Files on Disk" in prompt
+            assert call.get("conversation_id") is None  # Bounded stateless retry
             target_file.write_text("repaired content\n", encoding="utf-8")
 
     driver = MockDriver(side_effect=driver_action)

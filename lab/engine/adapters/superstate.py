@@ -709,6 +709,37 @@ class SuperstateAdapter(AgentAdapter):
             logger.warning("Fallback state advance failed: %s", e)
             return False
 
+    def _get_git_diff_stat(self, workspace_path: Path) -> str:
+        """Get git diff --stat plus untracked files for diagnostic feedback."""
+        wt = self.active_worktree(workspace_path)
+        target_dir = wt if (wt and wt.is_dir()) else workspace_path
+        if not (target_dir / ".git").exists() and not (workspace_path / ".git").exists():
+            return "No git repository found"
+        try:
+            diff = subprocess.run(
+                ["git", "diff", "--stat", "HEAD"],
+                cwd=str(target_dir),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            out = diff.stdout.strip()
+            untracked = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=str(target_dir),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            untracked_lines = [
+                line for line in untracked.stdout.splitlines() if line.startswith("??")
+            ]
+            if untracked_lines:
+                out = f"{out}\nUntracked files:\n" + "\n".join(untracked_lines)
+            return out.strip() or "No modified files detected on disk"
+        except Exception as e:
+            return f"Error reading git diff: {e}"
+
     @staticmethod
     def _record_milestone(
         recorder: Any,
@@ -1112,15 +1143,23 @@ class SuperstateAdapter(AgentAdapter):
                             f"[Gate Failed - Turn {milestone_turns}] cmd='{milestone.verify_cmd}' exit={gate_exit_code}: {gate_output[:1000]}",
                         )
     
+                        # Bounded stateless retry: clear conversation_id to avoid quadratic token bloat & anchoring bias
+                        conversation_id = None
+                        diff_stat = self._get_git_diff_stat(workspace_path)
+                        turnkey_prompt = self.turnkey_prompt(workspace_path, active) or getattr(task, "instruction", "")
+
                         retry_prompt = (
-                            f"## VERIFICATION GATE FAILED (Attempt {milestone_turns} of {self.max_turns_per_milestone})\n\n"
+                            f"{turnkey_prompt}\n\n"
+                            f"## 🚨 VERIFICATION GATE FAILED (Attempt {milestone_turns} of {self.max_turns_per_milestone})\n\n"
                             f"The verification command `{milestone.verify_cmd}` failed with exit code {gate_exit_code}.\n\n"
                             f"### Gate Output:\n"
                             f"```\n{gate_output.strip()}\n```\n\n"
-                            f"Please diagnose this failure, apply the necessary code or environment changes, and ensure the verification passes."
+                            f"## 📁 Modified Files on Disk (git diff --stat)\n"
+                            f"```\n{diff_stat}\n```\n\n"
+                            f"Please diagnose this failure against the current workspace state, apply the necessary code or environment changes, and ensure the verification passes."
                         )
                         logger.info(
-                            "Milestone '%s' gate failed on turn %d/%d; retrying with diagnostic feedback",
+                            "Milestone '%s' gate failed on turn %d/%d; retrying with bounded diagnostic feedback (stateless turn)",
                             active,
                             milestone_turns,
                             self.max_turns_per_milestone,

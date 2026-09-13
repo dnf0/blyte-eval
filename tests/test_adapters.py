@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from typing import Any, Callable
+
 import pytest
 
 from lab.benchmarks.task_loader import TaskSpec
@@ -16,9 +18,14 @@ from lab.engine.adapters.vanilla import VanillaAdapter
 class MockDriver(AgentDriver):
     """Predictable mock driver simulating agent behavior."""
 
-    def __init__(self, responses: list[DriverTelemetry]) -> None:
-        self.responses = list(responses)
-        self.calls: list[dict[str, object]] = []
+    def __init__(
+        self,
+        responses: list[DriverTelemetry] | None = None,
+        side_effect: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
+        self.responses = list(responses) if responses is not None else []
+        self.side_effect = side_effect
+        self.calls: list[dict[str, Any]] = []
 
     def run(
         self,
@@ -29,16 +36,17 @@ class MockDriver(AgentDriver):
         timeout_sec: float = 3600.0,
         container: object = None,
     ) -> DriverTelemetry:
-        self.calls.append(
-            {
-                "task_id": task.id,
-                "workspace": workspace_path,
-                "prompt": prompt_override,
-                "conversation_id": conversation_id,
-                "timeout_sec": timeout_sec,
-                "container": container,
-            }
-        )
+        call = {
+            "task_id": task.id,
+            "workspace": workspace_path,
+            "prompt": prompt_override,
+            "conversation_id": conversation_id,
+            "timeout_sec": timeout_sec,
+            "container": container,
+        }
+        self.calls.append(call)
+        if self.side_effect:
+            self.side_effect(call)
         if self.responses:
             return self.responses.pop(0)
         return DriverTelemetry(
@@ -1068,4 +1076,52 @@ def test_turn_based_adapter_does_not_retry_non_transient_failure(tmp_path: Path)
     assert result.turns == 1
     assert "compilation failed" in str(result.error_message)
     assert len(driver.calls) == 1
+
+
+def test_superstate_adapter_gate_failure_stateless_retry(tmp_path: Path) -> None:
+    """Test gate command failure, stateless turn (conv=None), diff stat, and recovery on retry."""
+    import subprocess
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    target_file = tmp_path / "repaired.txt"
+    (tmp_path / "plan.md").write_text(
+        f"### Task 1: Create repaired.txt\n- Verification Command: test -f {target_file.name}\n",
+        encoding="utf-8",
+    )
+    task = _make_dummy_task(tmp_path)
+    task.instruction = "Create repaired.txt"
+    task.verification_cmd = f"test -f {target_file.name}"
+
+    turn_count = 0
+
+    def driver_action(call: dict[str, Any]) -> None:
+        nonlocal turn_count
+        turn_count += 1
+        if turn_count == 1:
+            # Turn 1: creates an unrelated file to test diff stat, but not target_file
+            (tmp_path / "work_in_progress.py").write_text("# partial\n", encoding="utf-8")
+        elif turn_count == 2:
+            # Turn 2: checks retry prompt and stateless turn
+            prompt = str(call.get("prompt", ""))
+            assert "VERIFICATION GATE FAILED" in prompt
+            assert f"test -f {target_file.name}" in prompt
+            assert "Modified Files on Disk" in prompt
+            assert "work_in_progress.py" in prompt
+            assert call.get("conversation_id") is None
+            target_file.write_text("repaired content\n", encoding="utf-8")
+
+    driver = MockDriver(side_effect=driver_action)
+    adapter = SuperstateAdapter(max_turns_per_milestone=3)
+
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert target_file.is_file()
+
 
