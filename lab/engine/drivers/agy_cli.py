@@ -28,8 +28,9 @@ DEFAULT_MODEL = "gemini-3.8-flash-high"
 # Standard pricing table per 1M tokens ($/MTok)
 MODEL_PRICING: dict[str, tuple[float, float]] = {
     # model: (input_per_mtok, output_per_mtok)
-    "gemini-3.8-flash-high": (0.15, 0.60),
-    "gemini-3.8-flash": (0.15, 0.60),
+    # Gemini 3.8 Flash official introductory developer pricing ($0.75 in / $3.75 out per MTok)
+    "gemini-3.8-flash-high": (0.75, 3.75),
+    "gemini-3.8-flash": (0.75, 3.75),
     "gemini-2.5-flash": (0.15, 0.60),
     "gemini-2.5-pro": (1.25, 5.00),
 }
