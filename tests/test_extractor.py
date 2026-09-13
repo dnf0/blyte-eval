@@ -10,10 +10,17 @@ from lab.engine.extractor import compute_test_metrics, extract_and_grade
 
 
 class MockTask:
-    def __init__(self, task_id: str, verification_cmd: str, base_commit: str = "HEAD~1") -> None:
+    def __init__(
+        self,
+        task_id: str,
+        verification_cmd: str,
+        base_commit: str = "HEAD~1",
+        tests_dir: Path | None = None,
+    ) -> None:
         self.task_id = task_id
         self.verification_cmd = verification_cmd
         self.base_commit = base_commit
+        self.tests_dir = tests_dir
 
 
 def test_extract_and_grade_passing_reward_json(tmp_path: Path) -> None:
@@ -74,11 +81,13 @@ def test_extract_and_grade_failing_reward_json(tmp_path: Path) -> None:
 def test_extract_and_grade_missing_reward_json_fails(tmp_path: Path) -> None:
     logs_dir = tmp_path / "logs"
     logs_dir.mkdir(parents=True)
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir(parents=True)
 
     mock_container = MagicMock()
     mock_container.exec_run.return_value = (0, b"OK")
 
-    task = MockTask(task_id="task-1", verification_cmd="pytest tests/")
+    task = MockTask(task_id="task-1", verification_cmd="pytest tests/", tests_dir=tests_dir)
     result = extract_and_grade(
         container=mock_container,
         task=task,
@@ -86,11 +95,33 @@ def test_extract_and_grade_missing_reward_json_fails(tmp_path: Path) -> None:
         logs_dir=logs_dir,
     )
 
-    # Missing reward.json must fail per evaluation specification
+    # Missing reward.json must fail per evaluation specification when tests_dir exists
     assert result.passed is False
     assert result.reward is None
     assert result.exit_code == 0
     assert "Missing or invalid verifier/reward.json" in str(result.failure_reason)
+
+
+def test_extract_and_grade_in_container_no_tests_dir_success(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir(parents=True)
+
+    mock_container = MagicMock()
+    mock_container.exec_run.return_value = (0, b"6 passed in 0.92s")
+
+    task = MockTask(task_id="task-1", verification_cmd="pytest tests/", tests_dir=None)
+    result = extract_and_grade(
+        container=mock_container,
+        task=task,
+        arm="superstate",
+        logs_dir=logs_dir,
+    )
+
+    # When tests_dir is None and exit_code == 0, reward is 1.0 (PASS)
+    assert result.passed is True
+    assert result.reward == 1.0
+    assert result.exit_code == 0
+    assert result.failure_reason is None
 
 
 class _HeldOutTask:
