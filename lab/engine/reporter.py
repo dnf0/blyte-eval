@@ -9,7 +9,9 @@ from typing import Any, Dict, List
 from lab.engine.budget_policy import RunTelemetry
 
 
-def generate_comparison_summary(runs: List[RunTelemetry]) -> Dict[str, Dict[str, Any]]:
+def generate_comparison_summary(
+    runs: List[RunTelemetry], human_fail_cost_usd: float = 50.0
+) -> Dict[str, Dict[str, Any]]:
     """Group run telemetry by paradigm arm and calculate core efficiency metrics."""
     arms: Dict[str, List[RunTelemetry]] = {}
     for run in runs:
@@ -20,6 +22,7 @@ def generate_comparison_summary(runs: List[RunTelemetry]) -> Dict[str, Dict[str,
     for arm, arm_runs in arms.items():
         total_tasks = len(arm_runs)
         passes = sum(1 for r in arm_runs if r.passed)
+        failures = total_tasks - passes
         pass_rate = round((passes / total_tasks * 100.0) if total_tasks > 0 else 0.0, 1)
         total_cost = round(sum(r.cost_usd for r in arm_runs), 2)
         total_wall_clock_sec = round(sum(r.wall_clock_sec for r in arm_runs), 1)
@@ -30,9 +33,19 @@ def generate_comparison_summary(runs: List[RunTelemetry]) -> Dict[str, Dict[str,
         input_tokens_per_solve = round(total_input_tokens / passes) if passes > 0 else None
         output_tokens_per_solve = round(total_output_tokens / passes) if passes > 0 else None
 
+        # Value compute (succeeded) vs wasted compute (failed)
+        compute_value_usd = round(sum(r.cost_usd for r in arm_runs if r.passed), 2)
+        compute_wasted_usd = round(sum(r.cost_usd for r in arm_runs if not r.passed), 2)
+
+        # Total Cost of Ownership (TCO) with default $50/fail human fallback penalty
+        human_remediation_cost_usd = round(failures * human_fail_cost_usd, 2)
+        tco_usd = round(total_cost + human_remediation_cost_usd, 2)
+        effective_cost_per_solve_usd = round(tco_usd / passes, 2) if passes > 0 else None
+
         summary[arm] = {
             "total_tasks": total_tasks,
             "passes": passes,
+            "failures": failures,
             "pass_rate_pct": pass_rate,
             "total_cost_usd": total_cost,
             "cost_per_solve_usd": cost_per_solve,
@@ -42,6 +55,12 @@ def generate_comparison_summary(runs: List[RunTelemetry]) -> Dict[str, Dict[str,
             "total_output_tokens": total_output_tokens,
             "input_tokens_per_solve": input_tokens_per_solve,
             "output_tokens_per_solve": output_tokens_per_solve,
+            "compute_value_usd": compute_value_usd,
+            "compute_wasted_usd": compute_wasted_usd,
+            "human_fail_cost_usd": human_fail_cost_usd,
+            "human_remediation_cost_usd": human_remediation_cost_usd,
+            "tco_usd": tco_usd,
+            "effective_cost_per_solve_usd": effective_cost_per_solve_usd,
         }
 
     return summary
@@ -67,6 +86,33 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
             f"${stats['total_cost_usd']} | {cost_solve} | {wall_min}m | {ext_min}m | "
             f"{tok_in if tok_in is not None else 'N/A'} | "
             f"{tok_out if tok_out is not None else 'N/A'} |"
+        )
+    return "\n".join(lines)
+
+
+def render_economic_tco_table(summary: Dict[str, Dict[str, Any]], human_fail_cost_usd: float = 50.0) -> str:
+    """Render Total Cost of Ownership (TCO) incorporating human remediation penalties."""
+    lines = [
+        f"## Total Cost of Ownership (TCO) with Human Remediation Penalty (${human_fail_cost_usd:.0f}/fail)",
+        "",
+        "| Paradigm Arm | Passes | Failures | Compute Cost | Human Penalty | Total Economic TCO | Effective $/Solve | Value Compute | Wasted Compute |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for arm, stats in summary.items():
+        passes = stats.get("passes", 0)
+        failures = stats.get("failures", stats.get("total_tasks", 0) - passes)
+        comp_cost = stats.get("total_cost_usd", 0.0)
+        human_cost = stats.get("human_remediation_cost_usd", round(failures * human_fail_cost_usd, 2))
+        tco = stats.get("tco_usd", round(comp_cost + human_cost, 2))
+        eff_solve = stats.get("effective_cost_per_solve_usd")
+        eff_solve_str = f"${eff_solve:.2f}" if eff_solve is not None else "N/A"
+        val_comp = stats.get("compute_value_usd", "N/A")
+        val_comp_str = f"${val_comp:.2f}" if isinstance(val_comp, (int, float)) else "N/A"
+        waste_comp = stats.get("compute_wasted_usd", "N/A")
+        waste_comp_str = f"${waste_comp:.2f}" if isinstance(waste_comp, (int, float)) else "N/A"
+        lines.append(
+            f"| {arm} | {passes} | {failures} | ${comp_cost:.2f} | ${human_cost:.2f} | "
+            f"${tco:.2f} | {eff_solve_str} | {val_comp_str} | {waste_comp_str} |"
         )
     return "\n".join(lines)
 
@@ -188,6 +234,13 @@ def compute_control_plane_lift(
             if entry["baseline_cost_usd"]
             else None
         )
+        delta_passes = entry["arm_passes"] - entry["baseline_passes"]
+        delta_cost = round(entry["arm_cost_usd"] - entry["baseline_cost_usd"], 2)
+        entry["delta_passes"] = delta_passes
+        entry["delta_cost_usd"] = delta_cost
+        entry["marginal_cost_per_win_usd"] = (
+            round(delta_cost / delta_passes, 2) if delta_passes > 0 else None
+        )
     return results
 
 
@@ -200,16 +253,24 @@ def render_lift_report(runs: List[RunTelemetry], baseline_arm: str = BASELINE_AR
     lines = [
         f"## Control-plane lift over `{baseline_arm}` (paired by harness and task)",
         "",
-        "| Configuration | Paired tasks | Baseline | With layer | Lift | Gained | Lost | Cost x |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Configuration | Paired tasks | Baseline | With layer | Lift | Gained | Lost | Cost x | Δ Solves | Δ Cost | $/Marginal Win |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for name in sorted(lift):
         e = lift[name]
         ratio = f"{e['cost_ratio']}x" if e["cost_ratio"] is not None else "n/a"
+        d_solves = f"{e['delta_passes']:+d}"
+        d_cost = f"{e['delta_cost_usd']:+.2f}"
+        marg = (
+            f"${e['marginal_cost_per_win_usd']:.2f}"
+            if e.get("marginal_cost_per_win_usd") is not None
+            else ("$0.00" if e["delta_passes"] == 0 else "N/A")
+        )
         lines.append(
             f"| {name} | {e['paired_tasks']} | {e['baseline_pass_rate_pct']}% | "
             f"{e['arm_pass_rate_pct']}% | {e['lift_pct_points']:+.1f}pp | "
-            f"{len(e['gained'])} | {len(e['lost'])} | {ratio} |"
+            f"{len(e['gained'])} | {len(e['lost'])} | {ratio} | "
+            f"{d_solves} | ${d_cost} | {marg} |"
         )
 
     smallest = min(e["paired_tasks"] for e in lift.values())
