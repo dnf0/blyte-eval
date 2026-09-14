@@ -20,6 +20,7 @@ from typing import Any, Dict, Optional
 
 from lab.benchmarks.gate_fixtures import agent_gate_for
 from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.condition_b import conversation_id_for
 from lab.engine.prompt_contracts import apply_contract
 from lab.engine.adapters.base import AgentAdapter, AgentDriver, BudgetHook, TaskRunResult
 from lab.engine.approval import resolve_next_turn_prompt
@@ -1121,7 +1122,14 @@ class SuperstateAdapter(AgentAdapter):
                     cost_usd += telemetry.cost_usd
                     turns += 1
                     milestone_turns += 1
-                    conversation_id = telemetry.conversation_id or conversation_id
+                    # Condition B is defined by stateless turnkey turns: each turn is a
+                    # fresh invocation carrying only its rendered prompt. Threading the
+                    # conversation here makes this arm a hybrid of the state engine and
+                    # the conversational loop Condition B exists to replace, and forfeits
+                    # the output-token efficiency that result was built on.
+                    conversation_id = conversation_id_for(
+                        self.name, telemetry.conversation_id or conversation_id
+                    )
                     last_response = telemetry.raw_response or ""
     
                     if budget_hook is not None:

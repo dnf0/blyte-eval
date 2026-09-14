@@ -1,24 +1,24 @@
-20:14:44 [INFO] superstate_eval.paired: ==============================================================================
-20:14:44 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=5  arms=vanilla:3, superstate_solo:3, superstate_daemon:3  concurrency=3
-20:14:44 [INFO] superstate_eval.paired: Runs=45  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260914-201444
-20:14:44 [INFO] superstate_eval.paired: ==============================================================================
-20:14:44 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] [run 1/3] (budget: 5400s)
-20:14:44 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] [run 2/3] (budget: 5400s)
-20:14:44 [INFO] superstate_eval.docker_manager: Host disk check: 97.57 GB free on /
-20:14:44 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
-20:14:44 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] [run 3/3] (budget: 5400s)
-20:14:44 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
-20:14:44 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
-20:14:44 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.1 GB reported available], Disk limit=7, User override=None)
-20:14:44 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.1 GB reported available], Disk limit=7, User override=None)
-20:14:44 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.1 GB reported available], Disk limit=7, User override=None)
-20:14:47 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-201444/eval-datacurve_fastapi-deprecation-response-headers-vanilla-a08f32c3/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
-20:14:47 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-201444/eval-datacurve_fastapi-deprecation-response-headers-vanilla-566731bf/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
-20:14:47 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-201444/eval-datacurve_fastapi-deprecation-response-headers-vanilla-09855a50/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
-20:14:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 23c17398bb5f (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
-20:14:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 14d979ea322d (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
-20:14:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 92dcbdde6a4a (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
-20:14:48 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/fastapi-deprecation-response-headers/tests for the agent phase
-20:14:48 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
-20:14:48 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
-20:14:48 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+20:19:15 [INFO] superstate_eval.paired: ==============================================================================
+20:19:15 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=4  arms=vanilla:3, superstate_solo:3, superstate_daemon:3  concurrency=3
+20:19:15 [INFO] superstate_eval.paired: Runs=36  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260914-201915
+20:19:15 [INFO] superstate_eval.paired: ==============================================================================
+20:19:15 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] [run 1/3] (budget: 5400s)
+20:19:15 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] [run 2/3] (budget: 5400s)
+20:19:15 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] [run 3/3] (budget: 5400s)
+20:19:15 [INFO] superstate_eval.docker_manager: Host disk check: 97.31 GB free on /
+20:19:15 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
+20:19:15 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
+20:19:15 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
+20:19:15 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=7, User override=None)
+20:19:15 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=7, User override=None)
+20:19:15 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=7, User override=None)
+20:19:18 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-201915/eval-datacurve_fastapi-deprecation-response-headers-vanilla-617fa0b7/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+20:19:18 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-201915/eval-datacurve_fastapi-deprecation-response-headers-vanilla-2f4053fb/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+20:19:19 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-201915/eval-datacurve_fastapi-deprecation-response-headers-vanilla-f42ca901/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+20:19:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e3b49d080574 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+20:19:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d62365dfb057 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+20:19:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 77c02255d402 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+20:19:19 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/fastapi-deprecation-response-headers/tests for the agent phase
+20:19:19 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+20:19:19 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+20:19:19 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)

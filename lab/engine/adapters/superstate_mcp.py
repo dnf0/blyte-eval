@@ -16,6 +16,7 @@ import subprocess
 from typing import Any, Dict, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.condition_b import conversation_id_for
 from lab.engine.prompt_contracts import apply_contract
 from lab.engine.adapters.base import (
     AgentAdapter,
@@ -779,7 +780,11 @@ class SuperstateMcpAdapter(AgentAdapter):
                     cost_usd += telemetry.cost_usd
                     turns += 1
                     milestone_turns += 1
-                    conversation_id = telemetry.conversation_id or conversation_id
+                    # Condition B: stateless turnkey turns, no conversation carry-over.
+                    # See lab/engine/condition_b.py.
+                    conversation_id = conversation_id_for(
+                        self.name, telemetry.conversation_id or conversation_id
+                    )
                     last_response = telemetry.raw_response or ""
 
                     if budget_hook is not None:
