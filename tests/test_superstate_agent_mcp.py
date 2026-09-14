@@ -221,7 +221,7 @@ def test_single_milestone_completion_via_state_next(tmp_path: Path) -> None:
     assert result.provenance["engine"] == "superstate_agent_mcp"
     assert result.provenance["transport"] == "mcp_agent_tooling"
     assert result.provenance["autonomous"] is True
-    assert result.provenance["mcp_tools_discovered"] >= 20
+    assert result.provenance["mcp_tools_discovered"] >= 4
     assert output_file.is_file()
 
 

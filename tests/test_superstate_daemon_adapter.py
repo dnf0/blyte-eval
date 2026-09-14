@@ -1,24 +1,23 @@
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
 
 
-def test_daemon_adapter_initialization():
+def test_daemon_adapter_initialization() -> None:
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
     assert adapter.name == "superstate_daemon"
     assert adapter.driver_preset == "agy"
 
 
-def test_daemon_adapter_run_mocked(tmp_path: Path):
+def test_daemon_adapter_run_mocked(tmp_path: Path) -> None:
     adapter = SuperstateDaemonAdapter(driver_preset="agy", poll_interval_sec=0.01)
     task = TaskSpec(
         id="daemon-test",
         name="Daemon Test",
         instruction="Complete task autonomously",
         docker_image="test:latest",
-        verification_cmd="pytest /tests",
     )
 
     state_dir = tmp_path / ".agent-state"
@@ -31,74 +30,47 @@ def test_daemon_adapter_run_mocked(tmp_path: Path):
     state_file.write_text('{"status": "completed", "step": 1, "completed_tasks": [{"id": "task-1"}]}', encoding="utf-8")
 
     with patch("lab.engine.adapters.superstate_daemon.is_pid_alive", side_effect=[True, False]), \
-         patch("time.sleep"), \
          patch.object(adapter, "_init_daemon_state", return_value=True), \
          patch.object(adapter, "_spawn_daemon", return_value=True), \
          patch.object(adapter, "_run_gate_command", return_value=(True, 0, "pass")):
-        
-        # Test execute method
-        result = adapter.execute(
-            workspace_path=tmp_path,
+        result = adapter.run_task(
             task=task,
-            driver=MagicMock(),
-            timeout_sec=60.0,
+            workspace_path=tmp_path,
+            driver=None,
+            budget_sec=60.0,
         )
 
     assert result.success is True
     assert result.harness_name == "superstate_daemon"
     assert result.task_id == "daemon-test"
 
-    with patch("lab.engine.adapters.superstate_daemon.is_pid_alive", side_effect=[True, False]), \
-         patch("time.sleep"), \
-         patch.object(adapter, "_init_daemon_state", return_value=True), \
-         patch.object(adapter, "_spawn_daemon", return_value=True), \
-         patch.object(adapter, "_run_gate_command", return_value=(True, 0, "pass")):
-        
-        # Test run_task alias
-        result2 = adapter.run_task(
-            workspace_path=tmp_path,
-            task=task,
-            driver=MagicMock(),
-            timeout_sec=60.0,
-        )
-        
-    assert result2.success is True
 
-
-def test_init_daemon_state_filters_held_out_verifier(tmp_path: Path):
-    adapter = SuperstateDaemonAdapter(driver_preset="agy")
-    task_held_out = TaskSpec(
-        id="daemon-held-out",
-        name="Daemon Held Out",
+def _task_with_verifier(verification_cmd: str) -> TaskSpec:
+    return TaskSpec(
+        id="daemon-verifier",
+        name="Daemon Verifier",
         instruction="Do work",
         docker_image="test:latest",
-        verification_cmd="bash /tests/test.sh",
+        verification_cmd=verification_cmd,
     )
 
-    with patch("subprocess.run") as mock_run:
-        adapter._init_daemon_state(tmp_path, task_held_out)
-        args, kwargs = mock_run.call_args
-        cmd = args[0]
-        assert "--verify-cmd" in cmd
-        idx = cmd.index("--verify-cmd")
-        assert cmd[idx + 1] == "true"
+
+def test_execute_sanitizes_held_out_verifier(tmp_path: Path) -> None:
+    """A sealed held-out verifier must never become the daemon's gate.
+
+    Gating on `/tests/...` would let the daemon read the answer key it is being
+    scored against. execute() replaces it with `true`; the real verdict is taken
+    later by the harness against the sealed suite.
+    """
+    adapter = SuperstateDaemonAdapter(driver_preset="agy", poll_interval_sec=0.01)
+    with patch.object(adapter, "_init_daemon_state", return_value=False) as mock_init:
+        adapter.execute(tmp_path, _task_with_verifier("bash /tests/test.sh"))
+    assert mock_init.call_args[0][2] == "true"
 
 
-def test_init_daemon_state_preserves_local_verifier(tmp_path: Path):
-    adapter = SuperstateDaemonAdapter(driver_preset="agy")
-    task_local = TaskSpec(
-        id="daemon-local",
-        name="Daemon Local",
-        instruction="Do work",
-        docker_image="test:latest",
-        verification_cmd="pytest tests/local",
-    )
-
-    with patch("subprocess.run") as mock_run:
-        adapter._init_daemon_state(tmp_path, task_local)
-        args, kwargs = mock_run.call_args
-        cmd = args[0]
-        assert "--verify-cmd" in cmd
-        idx = cmd.index("--verify-cmd")
-        assert cmd[idx + 1] == "pytest tests/local"
-
+def test_execute_preserves_local_verifier(tmp_path: Path) -> None:
+    """A task-local verifier is a legitimate gate and must be passed through."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy", poll_interval_sec=0.01)
+    with patch.object(adapter, "_init_daemon_state", return_value=False) as mock_init:
+        adapter.execute(tmp_path, _task_with_verifier("pytest tests/local"))
+    assert mock_init.call_args[0][2] == "pytest tests/local"

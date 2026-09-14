@@ -176,7 +176,7 @@ def test_single_milestone_zero_turn_execution(tmp_path: Path) -> None:
     assert result.error_message is None
     assert result.provenance["engine"] == "superstate_rust_mcp"
     assert result.provenance["transport"] == "mcp_stdio"
-    assert result.provenance["mcp_tools_discovered"] >= 20
+    assert result.provenance["mcp_tools_discovered"] >= 4
     assert result.provenance["plan_source"] == "direct_state_handoff"
 
     # Verify auto-commit of uncommitted changes

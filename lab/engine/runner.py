@@ -112,9 +112,17 @@ class AblationRunner:
             return SuperstateAdapter(engine=ENGINE_RUST, zero_turn_planning=True)
         elif arm in ("superstate_rust_planned", "superstate_rust_2phase"):
             return SuperstateAdapter(engine=ENGINE_RUST, zero_turn_planning=False)
-        elif arm in ("superstate_rust_inplace", "superstate-rust-inplace", "rust_inplace", "arm_d_inplace", "arm-d-inplace"):
-            return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
-        elif arm in ("superstate_rust_fast", "superstate-rust-fast", "rust_fast", "superstate_fast", "superstate_rust_direct"):
+        # These names are ALIASES of one configuration, not distinct conditions. Benchmarking
+        # two of them against each other compares a config with itself. `superstate_solo` is
+        # included here: it is the interactive turn-based baseline (Python turn loop driving
+        # the superstate CLI directly -- no gateway, no daemon), which is exactly this config.
+        elif arm in (
+            "superstate_rust_inplace", "superstate-rust-inplace", "rust_inplace",
+            "arm_d_inplace", "arm-d-inplace",
+            "superstate_rust_fast", "superstate-rust-fast", "rust_fast",
+            "superstate_fast", "superstate_rust_direct",
+            "superstate_solo", "superstate-solo", "solo",
+        ):
             return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         elif arm in ("superstate_mcp", "superstate-mcp", "superstate_rust_mcp", "superstate-rust-mcp", "mcp"):
             return SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=True)
@@ -128,12 +136,12 @@ class AblationRunner:
             return SuperstateAgentMcpAdapter(worktree=True)
         elif arm in ("superstate_agent_mcp_inplace", "superstate-agent-mcp-inplace", "agent_mcp_inplace"):
             return SuperstateAgentMcpAdapter(no_worktree=True)
-        elif arm in ("superstate_relay", "relay"):
+        # Cross-agent relay: chat-driven handoff between agents, Python-supervised.
+        elif arm in ("superstate_relay", "superstate-relay", "relay"):
             return SuperstateRelayAdapter()
-        elif arm in ("superstate_daemon", "daemon"):
+        # Detached Autonomous Daemon: hands off task execution entirely to native Rust DaemonRunner
+        elif arm in ("superstate_daemon", "superstate-daemon", "daemon"):
             return SuperstateDaemonAdapter()
-        elif arm in ("superstate_solo", "solo"):
-            return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(

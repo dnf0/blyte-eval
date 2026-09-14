@@ -294,7 +294,15 @@ def test_domain_wrapper_methods(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 
     def mock_call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         calls.append((name, arguments))
-        if name == "state_init":
+        if name == "superstate_handoff":
+            return {"status": "ready", "task_id": "task-1", "turnkey_prompt": "Run it"}
+        elif name == "superstate_status":
+            return {"status": "in_progress", "parsed_json": {"status": "in_progress"}}
+        elif name == "superstate_cancel":
+            return {"status": "cancelled", "slug": "default"}
+        elif name == "superstate_doctor":
+            return {"is_healthy": True, "issues": []}
+        elif name == "state_init":
             return {"status": "success", "result": {"status": "success"}}
         elif name == "state_prompt":
             return {"prompt": "Turnkey prompt content", "text": "Turnkey prompt content"}
@@ -318,6 +326,25 @@ def test_domain_wrapper_methods(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 
     repo = tmp_path / "repo"
     plan = repo / "plan.md"
+
+    # Gateway tool wrappers
+    res_handoff = client.superstate_handoff(goal="Solve task", verify_cmd="pytest", detach=False)
+    assert res_handoff.get("status") == "ready"
+    assert calls[-1][0] == "superstate_handoff"
+    assert calls[-1][1]["goal"] == "Solve task"
+
+    res_status = client.superstate_status(repo=repo)
+    assert res_status.get("status") == "in_progress"
+    assert calls[-1][0] == "superstate_status"
+
+    res_cancel = client.superstate_cancel(slug="default")
+    assert res_cancel.get("status") == "cancelled"
+    assert calls[-1][0] == "superstate_cancel"
+
+    res_doc = client.superstate_doctor(driver="agy")
+    assert res_doc.get("is_healthy") is True
+    assert calls[-1][0] == "superstate_doctor"
+    assert calls[-1][1]["driver"] == "agy"
 
     # state_init
     assert client.state_init(plan=plan, repo=repo, no_worktree=True) is True
@@ -391,45 +418,49 @@ def test_real_superstate_mcp_integration(tmp_path: Path) -> None:
     )
 
     with client:
-        # Handshake verification
-        assert len(client.tools) == 25
-        assert "state_init" in client.tools
-        assert "worktree_clean" in client.tools
+        # Handshake verification: ADR 0002 Detached Gateway strictly exposes 4 tools
+        assert len(client.tools) == 4
+        assert "superstate_handoff" in client.tools
+        assert "superstate_status" in client.tools
+        assert "superstate_cancel" in client.tools
+        assert "superstate_doctor" in client.tools
 
-        # state_init
-        init_ok = client.state_init(plan=plan_file, repo=tmp_path, no_worktree=True)
-        assert init_ok is True
+        # Gateway tool execution: superstate_doctor
+        doc = client.superstate_doctor()
+        assert isinstance(doc, dict)
 
-        # state_status
-        status = client.state_status(repo=tmp_path)
+        # Gateway tool execution: superstate_handoff
+        handoff_res = client.superstate_handoff(
+            goal="Initialize baseline",
+            verify_cmd="echo baseline_ok",
+            no_worktree=True,
+            detach=False,
+            state=tmp_path,
+        )
+        assert handoff_res.get("status") == "ready"
+        assert "turnkey_prompt" in handoff_res
+
+        # Gateway tool execution: superstate_status
+        status = client.superstate_status(repo=tmp_path)
         assert status.get("status") == "in_progress"
 
-        # state_ready
-        ready = client.state_ready(repo=tmp_path)
-        assert len(ready) >= 1
-        assert "Task 1" in ready[0]
+        # Deprecation enforcement: calling legacy in-loop tool raises McpRpcError
+        with pytest.raises(McpRpcError, match="deprecated"):
+            client.call_tool("state_init", {"plan": str(plan_file)})
 
-        # state_prompt
+        # Backward compatibility wrappers: client methods transparently adapt
         prompt = client.state_prompt(repo=tmp_path, no_worktree=True)
-        assert "Task 1" in prompt
+        assert "baseline" in prompt.lower()
 
-        # state_note
         note_ok = client.state_note(repo=tmp_path, message="Integration note test")
         assert note_ok is True
 
-        # state_exec
         exec_res = client.state_exec(repo=tmp_path, cmd="echo baseline_ok", advance=False)
         assert exec_res.get("passed") is True
 
-        # state_doctor
-        doc = client.state_doctor(repo=tmp_path)
-        assert doc.get("is_healthy") is True
-
-        # state_next
         next_ok = client.state_next(repo=tmp_path, verify_cmd="echo baseline_ok")
         assert next_ok is True
 
-        # worktree_clean
         clean_res = client.worktree_clean(repo=tmp_path)
         assert "cleaned" in clean_res
 
