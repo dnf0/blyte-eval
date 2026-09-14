@@ -28,7 +28,16 @@ class SuperstateRelayAdapter(AgentAdapter):
         budget_hook: Optional[BudgetHook] = None,
         recorder: Any = None,
     ) -> TaskRunResult:
-        raise NotImplementedError("Use run_task for SuperstateRelayAdapter")
+        claude_driver = ClaudeCliDriver()
+        budget = timeout_sec or getattr(task, "agent_timeout_sec", None) or 3600.0
+        return self.run_task(
+            task=task,
+            workspace_path=workspace_path,
+            driver=driver,
+            budget_sec=budget,
+            claude_driver=claude_driver,
+            budget_hook=budget_hook,
+        )
 
     def _run_gate_command(self, cmd: list[str], cwd: Path) -> tuple[bool, int, str]:
         try:

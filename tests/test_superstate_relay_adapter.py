@@ -53,3 +53,20 @@ def test_relay_adapter_run_task_mocked(tmp_path: Path) -> None:
     assert result.input_tokens == 1300
     assert result.output_tokens == 250
     assert result.cost_usd == pytest.approx(0.015)
+
+
+def test_relay_adapter_execute_mocked(tmp_path: Path) -> None:
+    adapter = SuperstateRelayAdapter()
+    task = TaskSpec(
+        id="test-task",
+        name="Test Task",
+        instruction="Fix the bug",
+        docker_image="test:latest",
+        task_dir=tmp_path / "repo",
+    )
+    mock_agy = MagicMock()
+    with patch.object(adapter, "run_task") as mock_run_task, \
+         patch("lab.engine.adapters.superstate_relay.ClaudeCliDriver"):
+        adapter.execute(tmp_path, task, mock_agy)
+        mock_run_task.assert_called_once()
+
