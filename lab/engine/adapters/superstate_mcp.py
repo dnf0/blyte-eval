@@ -16,6 +16,7 @@ import subprocess
 from typing import Any, Dict, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.prompt_contracts import apply_contract
 from lab.engine.adapters.base import (
     AgentAdapter,
     AgentDriver,
@@ -715,7 +716,8 @@ class SuperstateMcpAdapter(AgentAdapter):
                         if (self.no_worktree or not self.worktree)
                         else TARGETED_EXECUTION_CONTRACT
                     )
-                    current_prompt = f"{current_prompt}\n\n{contract}"
+                    # Off by default; see lab/engine/prompt_contracts.py.
+                    current_prompt = apply_contract(current_prompt, contract, self.name)
 
                 wt = self.active_worktree(workspace_path)
                 turn_workspace = (

@@ -8,8 +8,10 @@ inspection, gate fallback, and process/worktree cleanup.
 
 from __future__ import annotations
 
+import os
 import json
 from pathlib import Path
+from unittest.mock import patch
 import subprocess
 from typing import Any, Callable
 
@@ -177,11 +179,23 @@ def test_driver_receives_autonomous_prompt_contract_and_enables_mcp(tmp_path: Pa
 
     prompt = str(driver.calls[0]["prompt"])
     assert "Solve math equation in calculator.py" in prompt
+    # The contract is arm-specific prompt engineering and is OFF by default, so the
+    # default measurement reflects state management alone. It is preserved behind
+    # SUPERSTATE_EVAL_PROMPT_CONTRACTS, asserted below.
+    assert "AUTONOMOUS SUPERSTATE MCP EXECUTION CONTRACT" not in prompt
+
+
+def test_autonomous_prompt_contract_is_injected_when_explicitly_enabled(tmp_path: Path) -> None:
+    """The contract is preserved, not deleted: historical runs remain reproducible."""
+    from lab.engine.prompt_contracts import ENV_FLAG, apply_contract
+    from lab.engine.adapters.superstate_agent_mcp import AUTONOMOUS_MCP_EXECUTION_CONTRACT
+
+    with patch.dict(os.environ, {ENV_FLAG: "1"}, clear=True):
+        prompt = apply_contract("TASK", AUTONOMOUS_MCP_EXECUTION_CONTRACT, "superstate_agent_mcp")
+
     assert "AUTONOMOUS SUPERSTATE MCP EXECUTION CONTRACT" in prompt
-    assert "state_prompt" in prompt
-    assert "state_exec" in prompt
-    assert "state_next" in prompt
-    assert "state_note" in prompt
+    for tool in ("state_prompt", "state_exec", "state_next", "state_note"):
+        assert tool in prompt
 
 
 def test_single_milestone_completion_via_state_next(tmp_path: Path) -> None:

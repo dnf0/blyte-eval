@@ -20,6 +20,7 @@ from typing import Any, Dict, Optional
 
 from lab.benchmarks.gate_fixtures import agent_gate_for
 from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.prompt_contracts import apply_contract
 from lab.engine.adapters.base import AgentAdapter, AgentDriver, BudgetHook, TaskRunResult
 from lab.engine.approval import resolve_next_turn_prompt
 
@@ -1063,7 +1064,10 @@ class SuperstateAdapter(AgentAdapter):
                     break
                 if "TARGETED EXECUTION CONTRACT" not in current_prompt:
                     contract = TARGETED_EXECUTION_CONTRACT_INPLACE if (self.no_worktree or self.engine == ENGINE_PYTHON) else TARGETED_EXECUTION_CONTRACT
-                    current_prompt = f"{current_prompt}\n\n{contract}"
+                    # Off by default: this contract lands only on superstate arms, so
+                    # injecting it makes the comparison measure prompt engineering
+                    # alongside state management. See lab/engine/prompt_contracts.py.
+                    current_prompt = apply_contract(current_prompt, contract, self.name)
     
                 wt = self.active_worktree(workspace_path)
                 turn_workspace = wt if (wt and wt.is_dir() and not self.no_worktree) else workspace_path

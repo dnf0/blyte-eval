@@ -17,6 +17,7 @@ import subprocess
 from typing import Any, Dict, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.prompt_contracts import apply_contract
 from lab.engine.adapters.base import (
     AgentAdapter,
     AgentDriver,
@@ -367,9 +368,11 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
                 setattr(driver, "superstate_bin", str(self.superstate_bin))
 
             # Step 5: Construct autonomous seed prompt with contract
-            seed_prompt = (
-                f"{task.instruction}\n\n"
-                f"{AUTONOMOUS_MCP_EXECUTION_CONTRACT}"
+            # Off by default: this tool tutorial lands only on this arm, so injecting it
+            # measures prompt engineering alongside state management. See
+            # lab/engine/prompt_contracts.py.
+            seed_prompt = apply_contract(
+                task.instruction, AUTONOMOUS_MCP_EXECUTION_CONTRACT, self.name
             )
 
             current_prompt: Optional[str] = seed_prompt
