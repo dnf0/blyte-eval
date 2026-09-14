@@ -124,6 +124,13 @@ class SuperstateDaemonAdapter(AgentAdapter):
     ) -> TaskRunResult:
         start_time = time.time()
         budget = timeout_sec or task.agent_timeout_sec or 3600.0
+
+        if driver is not None and hasattr(driver, "harness_name"):
+            hname = str(driver.harness_name).lower()
+            if "agy" in hname:
+                self.driver_preset = "agy"
+            elif "claude" in hname:
+                self.driver_preset = "claude"
         
         self._init_daemon_state(workspace_path, task)
         if not self._spawn_daemon(workspace_path):
