@@ -66,7 +66,7 @@ def test_relay_adapter_execute_mocked(tmp_path: Path) -> None:
     )
     mock_agy = MagicMock()
     with patch.object(adapter, "run_task") as mock_run_task, \
-         patch("lab.engine.adapters.superstate_relay.ClaudeCliDriver"):
+         patch("lab.engine.drivers.claude_cli.ClaudeCliDriver"):
         adapter.execute(tmp_path, task, mock_agy)
         mock_run_task.assert_called_once()
 

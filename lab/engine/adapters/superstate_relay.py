@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import subprocess
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentAdapter, TaskRunResult, BudgetHook, DriverTelemetry
-from lab.engine.drivers.claude_cli import ClaudeCliDriver
-from lab.engine.drivers.agy_cli import AgyCliDriver
+
+if TYPE_CHECKING:
+    from lab.engine.drivers.claude_cli import ClaudeCliDriver
+    from lab.engine.drivers.agy_cli import AgyCliDriver
 
 
 class SuperstateRelayAdapter(AgentAdapter):
@@ -28,6 +32,8 @@ class SuperstateRelayAdapter(AgentAdapter):
         budget_hook: Optional[BudgetHook] = None,
         recorder: Any = None,
     ) -> TaskRunResult:
+        from lab.engine.drivers.claude_cli import ClaudeCliDriver
+
         claude_driver = ClaudeCliDriver()
         budget = timeout_sec or getattr(task, "agent_timeout_sec", None) or 3600.0
         return self.run_task(
