@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from typing import Any, Callable
+
 import pytest
 
 from lab.benchmarks.task_loader import TaskSpec
@@ -16,9 +18,14 @@ from lab.engine.adapters.vanilla import VanillaAdapter
 class MockDriver(AgentDriver):
     """Predictable mock driver simulating agent behavior."""
 
-    def __init__(self, responses: list[DriverTelemetry]) -> None:
-        self.responses = list(responses)
-        self.calls: list[dict[str, object]] = []
+    def __init__(
+        self,
+        responses: list[DriverTelemetry] | None = None,
+        side_effect: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
+        self.responses = list(responses) if responses is not None else []
+        self.side_effect = side_effect
+        self.calls: list[dict[str, Any]] = []
 
     def run(
         self,
@@ -29,16 +36,17 @@ class MockDriver(AgentDriver):
         timeout_sec: float = 3600.0,
         container: object = None,
     ) -> DriverTelemetry:
-        self.calls.append(
-            {
-                "task_id": task.id,
-                "workspace": workspace_path,
-                "prompt": prompt_override,
-                "conversation_id": conversation_id,
-                "timeout_sec": timeout_sec,
-                "container": container,
-            }
-        )
+        call = {
+            "task_id": task.id,
+            "workspace": workspace_path,
+            "prompt": prompt_override,
+            "conversation_id": conversation_id,
+            "timeout_sec": timeout_sec,
+            "container": container,
+        }
+        self.calls.append(call)
+        if self.side_effect:
+            self.side_effect(call)
         if self.responses:
             return self.responses.pop(0)
         return DriverTelemetry(
@@ -848,3 +856,272 @@ def test_superstate_zero_turn_init_without_verification_cmd(tmp_path: Path) -> N
     assert state_data["goal"] == task.instruction
     assert state_data["completed_tasks"][0]["id"] == "task-1"
     assert state_data["completed_tasks"][0]["verification_cmd"] == "true"
+
+
+def test_mcp_adapters_exported_and_provenance_properties() -> None:
+    """Verify Superstate MCP adapters export from lab.engine.adapters and provenance structure."""
+    from lab.engine.adapters import SuperstateAgentMcpAdapter, SuperstateMcpAdapter
+
+    # Test SuperstateMcpAdapter provenance
+    mcp_adapter = SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=True)
+    assert mcp_adapter.name == "superstate_mcp"
+    prov_mcp = mcp_adapter.get_provenance()
+    assert prov_mcp["engine"] == "superstate_rust_mcp"
+    assert prov_mcp["transport"] == "mcp_stdio"
+    assert prov_mcp["no_worktree"] is True
+    assert prov_mcp["worktree"] is False
+    assert prov_mcp["zero_turn_planning"] is True
+    assert "mcp_tools_discovered" in prov_mcp
+
+    # Test worktree and planned configurations
+    mcp_wt = SuperstateMcpAdapter(no_worktree=False, worktree=True, zero_turn_planning=True)
+    prov_wt = mcp_wt.get_provenance()
+    assert prov_wt["no_worktree"] is False
+    assert prov_wt["worktree"] is True
+
+    mcp_planned = SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=False)
+    prov_planned = mcp_planned.get_provenance()
+    assert prov_planned["zero_turn_planning"] is False
+
+    # Test SuperstateAgentMcpAdapter provenance
+    agent_mcp_adapter = SuperstateAgentMcpAdapter()
+    assert agent_mcp_adapter.name == "superstate_agent_mcp"
+    prov_agent = agent_mcp_adapter.get_provenance()
+    assert prov_agent["engine"] == "superstate_agent_mcp"
+    assert prov_agent["transport"] == "mcp_agent_tooling"
+    assert prov_agent["autonomous"] is True
+    assert "mcp_tools_discovered" in prov_agent
+
+
+def test_runner_resolves_mcp_adapters() -> None:
+    """Verify AblationRunner resolves superstate_mcp and superstate_agent_mcp adapters."""
+    from lab.engine.adapters import SuperstateAgentMcpAdapter, SuperstateMcpAdapter
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner(workspace_root=Path("/tmp"))
+
+    # Test resolution of superstate_mcp
+    adapter_mcp = runner._get_adapter("superstate_mcp")
+    assert isinstance(adapter_mcp, SuperstateMcpAdapter)
+    assert adapter_mcp.no_worktree is True
+    assert adapter_mcp.worktree is False
+    assert adapter_mcp.zero_turn_planning is True
+
+    # Test resolution of superstate_agent_mcp
+    adapter_agent = runner._get_adapter("superstate_agent_mcp")
+    assert isinstance(adapter_agent, SuperstateAgentMcpAdapter)
+
+
+def test_is_transient_stream_interruption_detection() -> None:
+    """Verify is_transient_stream_interruption correctly classifies transport vs logical errors."""
+    from lab.engine.adapters.base import is_transient_stream_interruption
+
+    assert is_transient_stream_interruption("The stream was interrupted. Please continue the task you were working on.")
+    assert is_transient_stream_interruption("connection reset by peer")
+    assert is_transient_stream_interruption("gRPC deadline exceeded during token streaming")
+    assert is_transient_stream_interruption("HTTP 503 Service Unavailable from upstream API")
+    assert is_transient_stream_interruption("Transport error: socket closed unexpectedly")
+    assert not is_transient_stream_interruption("Fatal syntax error in main.py: line 42")
+    assert not is_transient_stream_interruption("AssertionError at test_runner.py:503: test failed")
+    assert not is_transient_stream_interruption("Process exited with code 503")
+    assert not is_transient_stream_interruption("Timed out after 3600.0s")
+    assert not is_transient_stream_interruption(None)
+    assert not is_transient_stream_interruption("")
+
+
+def test_turn_based_adapter_recovers_from_transient_stream_interruption(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter resumes conversation when a transient API stream drop occurs."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=5)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="The stream was interrupted. Please continue the task you were working on.",
+                duration_seconds=30.0,
+                input_tokens=500,
+                output_tokens=100,
+                cost_usd=0.01,
+                conversation_id="conv-transient-1",
+            ),
+            DriverTelemetry(
+                success=True,
+                raw_response="Task complete.",
+                duration_seconds=20.0,
+                input_tokens=300,
+                output_tokens=50,
+                cost_usd=0.005,
+                conversation_id="conv-transient-1",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert result.duration_seconds == 50.0
+    assert result.input_tokens == 800
+    assert result.output_tokens == 150
+    assert result.cost_usd == pytest.approx(0.015)
+    assert len(driver.calls) == 2
+    # Second turn must resume the interrupted conversation
+    assert driver.calls[0]["conversation_id"] is None
+    assert driver.calls[1]["conversation_id"] == "conv-transient-1"
+    assert "stream was interrupted" in str(driver.calls[1]["prompt"]).lower()
+
+
+def test_turn_based_adapter_recovers_without_conversation_id(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter retries with initial prompt when conversation_id is None."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=5)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="Connection reset by peer",
+                duration_seconds=10.0,
+                input_tokens=0,
+                output_tokens=0,
+                cost_usd=0.0,
+                conversation_id=None,
+            ),
+            DriverTelemetry(
+                success=True,
+                raw_response="Fixed the bug in main.py.",
+                duration_seconds=15.0,
+                input_tokens=300,
+                output_tokens=50,
+                cost_usd=0.005,
+                conversation_id="conv-recovered-2",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert len(driver.calls) == 2
+    # When conversation_id was None, it must re-send the task instruction, NOT a resume string
+    assert driver.calls[1]["conversation_id"] is None
+    assert driver.calls[1]["prompt"] == "Fix the bug in main.py."
+
+
+def test_turn_based_adapter_aborts_when_stream_retries_exhausted(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter halts after exhausting max_stream_retries."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=10, max_stream_retries=2)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="stream was interrupted",
+                duration_seconds=10.0,
+                conversation_id="conv-drop",
+            ),
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="stream was interrupted",
+                duration_seconds=10.0,
+                conversation_id="conv-drop",
+            ),
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="stream was interrupted",
+                duration_seconds=10.0,
+                conversation_id="conv-drop",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is False
+    assert result.turns == 3  # 1 initial + 2 retries
+    assert "stream was interrupted" in str(result.error_message)
+
+
+def test_turn_based_adapter_does_not_retry_non_transient_failure(tmp_path: Path) -> None:
+    """Verify TurnBasedAdapter does not retry non-transient model/logic failures."""
+    task = _make_dummy_task(tmp_path)
+    adapter = VanillaAdapter(max_turns=5)
+
+    driver = MockDriver(
+        [
+            DriverTelemetry(
+                success=False,
+                raw_response="",
+                error_message="Fatal error: compilation failed with exit code 2",
+                duration_seconds=15.0,
+                input_tokens=200,
+                output_tokens=50,
+                cost_usd=0.002,
+                conversation_id="conv-fail-1",
+            ),
+        ]
+    )
+
+    result = adapter.execute(tmp_path, task, driver, timeout_sec=300.0)
+
+    assert result.success is False
+    assert result.turns == 1
+    assert "compilation failed" in str(result.error_message)
+    assert len(driver.calls) == 1
+
+
+def test_superstate_adapter_gate_failure_stateless_retry(tmp_path: Path) -> None:
+    """Test gate command failure, stateless turn (conv=None), diff stat, and recovery on retry."""
+    import subprocess
+    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.local"], cwd=str(tmp_path), check=True, capture_output=True)
+    (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=str(tmp_path), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial commit"], cwd=str(tmp_path), check=True, capture_output=True)
+
+    target_file = tmp_path / "repaired.txt"
+    (tmp_path / "plan.md").write_text(
+        f"### Task 1: Create repaired.txt\n- Verification Command: test -f {target_file.name}\n",
+        encoding="utf-8",
+    )
+    task = _make_dummy_task(tmp_path)
+    task.instruction = "Create repaired.txt"
+    task.verification_cmd = f"test -f {target_file.name}"
+
+    turn_count = 0
+
+    def driver_action(call: dict[str, Any]) -> None:
+        nonlocal turn_count
+        turn_count += 1
+        if turn_count == 1:
+            # Turn 1: creates an unrelated file to test diff stat, but not target_file
+            (tmp_path / "work_in_progress.py").write_text("# partial\n", encoding="utf-8")
+        elif turn_count == 2:
+            # Turn 2: checks retry prompt and stateless turn
+            prompt = str(call.get("prompt", ""))
+            assert "VERIFICATION GATE FAILED" in prompt
+            assert f"test -f {target_file.name}" in prompt
+            assert "Modified Files on Disk" in prompt
+            assert "work_in_progress.py" in prompt
+            assert call.get("conversation_id") is None
+            target_file.write_text("repaired content\n", encoding="utf-8")
+
+    driver = MockDriver(side_effect=driver_action)
+    adapter = SuperstateAdapter(max_turns_per_milestone=3)
+
+    result = adapter.execute(tmp_path, task, driver)
+
+    assert result.success is True
+    assert result.turns == 2
+    assert target_file.is_file()
+
+

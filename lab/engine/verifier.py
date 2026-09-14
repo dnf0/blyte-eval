@@ -12,6 +12,7 @@ its own grade. Only `/logs` is shared, carrying the patch in and `reward.json` o
 
 from __future__ import annotations
 
+import concurrent.futures
 from dataclasses import dataclass
 import json
 import logging
@@ -153,6 +154,12 @@ class HeldOutVerifier:
         nano_cpus = int(task.cpus * 1e9) if getattr(task, "cpus", None) else None
         mem_limit = f"{task.memory_mb}m" if getattr(task, "memory_mb", None) else "4g"
 
+        timeout_sec = (
+            getattr(task, "verifier_timeout_sec", None)
+            or getattr(task, "timeout_sec", None)
+            or 1800.0
+        )
+
         with self.docker_manager.run_sandbox(
             image=image_tag,
             command="sleep infinity",
@@ -165,7 +172,22 @@ class HeldOutVerifier:
             nano_cpus=nano_cpus,
             mem_limit=mem_limit,
         ) as container:
-            exec_res = container.exec_run(VERIFIER_ENTRYPOINT)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(container.exec_run, VERIFIER_ENTRYPOINT)
+                try:
+                    exec_res = future.result(timeout=timeout_sec)
+                except (TimeoutError, concurrent.futures.TimeoutError):
+                    logger.error(
+                        "Held-out verifier timed out after %ss for task=%s; killing container",
+                        timeout_sec,
+                        task.id,
+                    )
+                    try:
+                        container.kill()
+                    except Exception:
+                        pass
+                    exec_res = (124, f"Verifier timed out after {timeout_sec}s".encode("utf-8"))
+
             if isinstance(exec_res, tuple):
                 exit_code, raw = exec_res[0], exec_res[1]
             else:

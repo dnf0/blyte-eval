@@ -81,8 +81,8 @@ def test_driver_parses_result_tokens_cost_and_session(tmp_path: Path) -> None:
     assert telemetry.output_tokens == 2000
     assert telemetry.conversation_id == "conv-1234"
     assert telemetry.duration_seconds == pytest.approx(4.2)
-    # Gemini 3.8 Flash pricing: $0.15/MTok in ($0.0015), $0.60/MTok out ($0.0012) -> $0.0027
-    assert telemetry.cost_usd == pytest.approx(0.0027)
+    # Gemini 3.8 Flash pricing: $0.75/MTok in ($0.0075), $3.75/MTok out ($0.0075) -> $0.015
+    assert telemetry.cost_usd == pytest.approx(0.015)
 
 
 def test_driver_reports_cli_failure_rather_than_claiming_success(tmp_path: Path) -> None:
@@ -197,8 +197,8 @@ def test_driver_rejects_invalid_cli_path(tmp_path: Path) -> None:
 
 
 def test_pricing_table_covers_gemini_models() -> None:
-    assert estimate_cost_usd("gemini-3.8-flash-high", 1_000_000, 1_000_000) == pytest.approx(0.75)
-    assert estimate_cost_usd("gemini-3.8-flash", 1_000_000, 1_000_000) == pytest.approx(0.75)
+    assert estimate_cost_usd("gemini-3.8-flash-high", 1_000_000, 1_000_000) == pytest.approx(4.50)
+    assert estimate_cost_usd("gemini-3.8-flash", 1_000_000, 1_000_000) == pytest.approx(4.50)
     assert estimate_cost_usd("unknown-model", 1_000_000, 1_000_000) == 0.0
 
 
@@ -213,7 +213,7 @@ def test_effort_variants_are_priced_as_their_base_model() -> None:
     # All variants cost the same per token as the base entry.
     low = estimate_cost_usd("gemini-3.8-flash-low", 1_000_000, 0)
     high = estimate_cost_usd("gemini-3.8-flash-high", 1_000_000, 0)
-    assert low == high == pytest.approx(0.15)
+    assert low == high == pytest.approx(0.75)
 
 
 def test_unpriced_model_reports_zero_rather_than_a_guess() -> None:

@@ -327,6 +327,13 @@ def extract_and_grade(
             except Exception as err:
                 logger.warning("Failed to parse %s: %s", ctrf_json_path, err)
 
+        # Fallback for tasks running in-container without a held-out tests directory:
+        # When tests_dir is None, no custom verifier script exists to emit reward.json.
+        # If the verification command completed cleanly (exit_code == 0),
+        # reward is 1.0 (PASS); otherwise 0.0 (FAIL).
+        if reward is None and tests_dir is None:
+            reward = 1.0 if exit_code == 0 else 0.0
+
     # 4. Strict evaluation gate:
     # PASS requires exit_code == 0 AND reward is defined AND reward >= 1.0.
     # Missing reward.json or exit_code != 0 counts as a failure.
