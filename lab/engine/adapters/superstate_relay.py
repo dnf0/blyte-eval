@@ -3,7 +3,9 @@ from pathlib import Path
 from typing import Any, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
-from lab.engine.adapters.base import AgentAdapter, TaskRunResult, BudgetHook
+from lab.engine.adapters.base import AgentAdapter, TaskRunResult, BudgetHook, DriverTelemetry
+from lab.engine.drivers.claude_cli import ClaudeCliDriver
+from lab.engine.drivers.agy_cli import AgyCliDriver
 
 
 class SuperstateRelayAdapter(AgentAdapter):
@@ -45,9 +47,9 @@ class SuperstateRelayAdapter(AgentAdapter):
         self,
         task: TaskSpec,
         workspace_path: Path,
-        driver: Any,
+        driver: Optional[AgyCliDriver | Any],
         budget_sec: float,
-        claude_driver: Any,
+        claude_driver: Optional[ClaudeCliDriver | Any],
         budget_hook: Optional[BudgetHook] = None,
     ) -> TaskRunResult:
         # Stage 1: Claude writes a reproduction test
@@ -56,12 +58,29 @@ class SuperstateRelayAdapter(AgentAdapter):
             "Please write a reproduction test for this issue and run `superstate state handoff --from claude --to agy`."
         )
         
-        claude_telemetry = claude_driver.run(
+        if claude_driver is None:
+            raise ValueError("claude_driver is required")
+        if driver is None:
+            raise ValueError("driver is required")
+
+        claude_telemetry: DriverTelemetry = claude_driver.run(
             task=task,
             workspace_path=workspace_path,
             prompt_override=prompt,
             timeout_sec=budget_sec,
         )
+
+        if not claude_telemetry.success:
+            return TaskRunResult(
+                task_id=task.id,
+                harness_name=self.name,
+                success=False,
+                duration_seconds=claude_telemetry.duration_seconds,
+                input_tokens=claude_telemetry.input_tokens,
+                output_tokens=claude_telemetry.output_tokens,
+                cost_usd=claude_telemetry.cost_usd,
+                error_message="Stage 1 failed: Claude returned failure or error"
+            )
 
         # Pre-check handoff
         state_dir = workspace_path / ".agent-state"
@@ -79,8 +98,11 @@ class SuperstateRelayAdapter(AgentAdapter):
                 error_message="Stage 1 failed: No handoff.md found"
             )
 
+        if budget_hook is not None:
+            budget_sec = max(budget_sec, budget_hook())
+
         # Stage 2: Agy implements the fix
-        agy_telemetry = driver.run(
+        agy_telemetry: DriverTelemetry = driver.run(
             task=task,
             workspace_path=workspace_path,
             prompt_override="Resume from handoff.md",

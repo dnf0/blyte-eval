@@ -7,13 +7,13 @@ from lab.engine.adapters.superstate_relay import SuperstateRelayAdapter
 from lab.engine.adapters.base import DriverTelemetry
 
 
-def test_relay_adapter_initialization():
+def test_relay_adapter_initialization() -> None:
     adapter = SuperstateRelayAdapter()
     assert adapter.name == "superstate_relay"
     assert adapter.max_retries == 2
 
 
-def test_relay_adapter_run_task_mocked(tmp_path: Path):
+def test_relay_adapter_run_task_mocked(tmp_path: Path) -> None:
     adapter = SuperstateRelayAdapter()
     task = TaskSpec(
         id="test-task",
