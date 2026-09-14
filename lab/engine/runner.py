@@ -127,8 +127,10 @@ class AblationRunner:
             return SuperstateAgentMcpAdapter(worktree=True)
         elif arm in ("superstate_agent_mcp_inplace", "superstate-agent-mcp-inplace", "agent_mcp_inplace"):
             return SuperstateAgentMcpAdapter(no_worktree=True)
+        # Detached Autonomous Daemon: hands off task execution entirely to native Rust DaemonRunner
         elif arm in ("superstate_daemon", "superstate-daemon", "daemon"):
             return SuperstateDaemonAdapter()
+        # Interactive Turn-Based Baseline: Python turn loop directly drives superstate CLI steps (no daemon/gateway)
         elif arm in ("superstate_solo", "superstate-solo", "solo"):
             return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
