@@ -1,5 +1,7 @@
+import json
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from lab.benchmarks.task_loader import TaskSpec
@@ -95,3 +97,85 @@ def test_daemon_resolves_rust_engine_not_python() -> None:
         timeout=30,
     ).stdout
     assert "daemon" in help_text, "resolved binary exposes no `state daemon` verb"
+
+
+class _StubDriver:
+    """Driver stub returning a canned gate proposal."""
+
+    cli_path = "/usr/bin/agy"
+    model = "gemini-3.8-flash-high"
+
+    def __init__(self, response: str) -> None:
+        self.response = response
+        self.calls = 0
+
+    def run(self, *_args: object, **_kwargs: object) -> SimpleNamespace:
+        self.calls += 1
+        return SimpleNamespace(raw_response=self.response, input_tokens=11, output_tokens=7)
+
+
+def test_gate_rejects_a_proposal_that_already_passes(tmp_path: Path) -> None:
+    """A gate that passes before any work cannot discriminate, so it must be refused.
+
+    This is the failure that made the daemon arm score 0-1/5: with a gate that always
+    passed, the daemon completed after one driver turn and never engaged retry.
+    """
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    driver = _StubDriver("echo already-done")
+    gate, telemetry = adapter._derive_gate(
+        tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+    )
+    assert gate == "true", "a gate that already passes must be rejected"
+    assert telemetry is not None and telemetry.input_tokens == 11
+
+
+def test_gate_accepts_a_proposal_that_currently_fails(tmp_path: Path) -> None:
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    proposed = "test -f ./artifact-the-task-must-produce"
+    driver = _StubDriver(proposed)
+    gate, _ = adapter._derive_gate(
+        tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+    )
+    assert gate == proposed
+
+
+def test_gate_refuses_to_read_the_sealed_grader(tmp_path: Path) -> None:
+    """The driver must never gate on /tests/ -- that is the answer key."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    driver = _StubDriver("bash /tests/test.sh")
+    gate, _ = adapter._derive_gate(
+        tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+    )
+    assert gate == "true"
+
+
+def test_driver_wrapper_pins_model_and_captures_usage(tmp_path: Path) -> None:
+    """The daemon expands the bare `agy` preset without --model or JSON output.
+
+    Without the wrapper the arm silently ran a different model than every other arm
+    and reported $0.00 / 0 tokens.
+    """
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    wrapper = adapter._write_driver_wrapper(tmp_path, _StubDriver(""))
+    assert wrapper is not None
+    script = wrapper.read_text()
+    assert "--model" in script and "gemini-3.8-flash-high" in script
+    assert "--output-format" in script and "json" in script
+
+    turns = tmp_path / ".agent-state" / "driver-turns"
+    (turns / "turn-1-1.json").write_text(
+        json.dumps({"usage": {"input_tokens": 100, "output_tokens": 20}})
+    )
+    (turns / "turn-2-2.json").write_text(
+        json.dumps({"usage": {"input_tokens": 5, "output_tokens": 3}})
+    )
+    assert adapter._collect_driver_telemetry(tmp_path) == (105, 23)
+
+
+def test_collect_driver_telemetry_tolerates_corrupt_turns(tmp_path: Path) -> None:
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    turns = tmp_path / ".agent-state" / "driver-turns"
+    turns.mkdir(parents=True)
+    (turns / "turn-1-1.json").write_text("not json{{")
+    (turns / "turn-2-2.json").write_text(json.dumps({"usage": {"input_tokens": 9}}))
+    assert adapter._collect_driver_telemetry(tmp_path) == (9, 0)

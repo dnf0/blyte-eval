@@ -24,6 +24,23 @@ from lab.engine.mcp.client import SuperstateMcpClient
 
 logger = logging.getLogger("superstate_eval.adapters.superstate_daemon")
 
+# A gate the driver proposes must actually discriminate. These always pass, so
+# accepting one reproduces exactly the no-op-gate failure this derivation exists to fix.
+NOOP_GATE_RE = re.compile(r"^\s*(true|:|exit\s+0)\s*;?\s*$", re.IGNORECASE)
+
+GATE_PROMPT = """Read the task below and output ONE shell command that verifies whether it is complete.
+
+Rules:
+- Output ONLY the command. No prose, no markdown fences, no explanation.
+- It must exit 0 when the task is done and non-zero when it is not done.
+- It must FAIL right now, before any work has been performed.
+- Use only what the task itself describes (its own snippets, its own test suite).
+- Do NOT reference /tests/ -- that path holds a sealed grader you must not read or run.
+
+TASK:
+{instruction}
+"""
+
 BRIDGE_PREFIX_RE = re.compile(r"(?:^|(?<=[;&|(]))\s*\.?/?run-in-container\s+")
 
 
@@ -216,6 +233,140 @@ class SuperstateDaemonAdapter(AgentAdapter):
             return False
 
     @staticmethod
+    def _is_sealed_gate(verify_cmd: Optional[str]) -> bool:
+        """Whether a verification command points at the sealed held-out grader."""
+        if not verify_cmd:
+            return True
+        return "/tests/" in verify_cmd or verify_cmd.strip().startswith("bash /tests")
+
+    @staticmethod
+    def _extract_gate(raw_response: str) -> Optional[str]:
+        """Pull a single shell command out of a driver response."""
+        if not raw_response:
+            return None
+        text = raw_response.strip()
+        fence = re.search(r"```(?:[a-zA-Z]*\n)?(.+?)```", text, re.DOTALL)
+        if fence:
+            text = fence.group(1).strip()
+        for line in (ln.strip() for ln in text.splitlines()):
+            if line and not line.startswith("#"):
+                return line
+        return None
+
+    def _derive_gate(
+        self,
+        workspace_path: Path,
+        task: TaskSpec,
+        driver: Any,
+        container: Any,
+        timeout_sec: float,
+    ) -> tuple[str, Optional[Any]]:
+        """Resolve a verification command that actually discriminates.
+
+        These benchmark tasks ship only a sealed held-out grader, which the agent must
+        never gate on -- that is the answer key. The harness therefore handed the daemon
+        `true`, which always passes, so the daemon declared completion after a single
+        driver turn and stopped. Its whole mechanism (gate, diagnose, retry) was inert.
+
+        The task instructions do describe how to check the work ("this snippet should
+        run", "these tests should still pass"), so the gate is recoverable: ask the
+        driver to author one, then fail closed -- a proposed gate is rejected unless it
+        currently FAILS, because a gate that already passes cannot discriminate.
+
+        Returns the gate and the telemetry of the authoring turn (for cost accounting).
+        """
+        declared = getattr(task, "verification_cmd", None)
+        if not self._is_sealed_gate(declared):
+            logger.info("Gate: using task-declared verifier %r", declared)
+            return str(declared), None
+
+        if driver is None:
+            logger.warning("Gate: no driver available to author one; falling back to no-op")
+            return "true", None
+
+        try:
+            telemetry = driver.run(
+                task,
+                workspace_path,
+                prompt_override=GATE_PROMPT.format(instruction=task.instruction),
+                timeout_sec=min(300.0, timeout_sec),
+                container=container,
+            )
+        except Exception as exc:
+            logger.warning("Gate: driver failed to author a gate (%s); falling back to no-op", exc)
+            return "true", None
+
+        candidate = self._extract_gate(getattr(telemetry, "raw_response", "") or "")
+        if not candidate:
+            logger.warning("Gate: driver returned no parseable command; falling back to no-op")
+            return "true", telemetry
+        if NOOP_GATE_RE.match(candidate) or self._is_sealed_gate(candidate):
+            logger.warning("Gate: rejected %r (no-op or reads the sealed grader)", candidate)
+            return "true", telemetry
+
+        passes_now, _, _ = self._run_gate_command(workspace_path, candidate, container=container)
+        if passes_now:
+            logger.warning("Gate: rejected %r -- already passes before any work", candidate)
+            return "true", telemetry
+
+        logger.info("Gate: driver authored %r (fails before work, as required)", candidate)
+        return candidate, telemetry
+
+    def _write_driver_wrapper(self, workspace_path: Path, driver: Any) -> Optional[Path]:
+        """Write a shell wrapper the Rust daemon invokes instead of a bare preset.
+
+        Two things are otherwise lost. The daemon expands the `agy` preset with only
+        `-p` and permission flags, so the harness's `--model` never reaches it and this
+        arm silently ran a different model than every other arm. And the daemon records
+        no driver usage at all, so the arm reported $0.00 / 0 tokens. Non-preset driver
+        commands are passed through unmodified, so a wrapper is the seam for both.
+        """
+        cli_path = getattr(driver, "cli_path", None)
+        model = getattr(driver, "model", None)
+        if not cli_path or not model:
+            return None
+
+        turns_dir = workspace_path / ".agent-state" / "driver-turns"
+        turns_dir.mkdir(parents=True, exist_ok=True)
+        wrapper = workspace_path / ".agent-state" / "driver-wrapper.sh"
+        script = (
+            "#!/bin/sh\n"
+            "# Generated by SuperstateDaemonAdapter -- do not edit.\n"
+            "# The daemon pipes the turnkey prompt on stdin and passes non-preset driver\n"
+            "# commands through unmodified, so this is where the harness pins the model\n"
+            "# and captures the usage the daemon itself never records.\n"
+            "PROMPT=$(cat)\n"
+            f'OUT="{turns_dir}/turn-$$-$(date +%s).json"\n'
+            f"{shlex.quote(str(cli_path))} \\\n"
+            f"  --model {shlex.quote(str(model))} \\\n"
+            "  --output-format json \\\n"
+            "  --dangerously-skip-permissions \\\n"
+            f"  --add-dir {shlex.quote(str(workspace_path))} \\\n"
+            '  --print "$PROMPT" > "$OUT" 2>/dev/null\n'
+            "status=$?\n"
+            'cat "$OUT"\n'
+            "exit $status\n"
+        )
+        wrapper.write_text(script, encoding="utf-8")
+        wrapper.chmod(0o755)
+        return wrapper
+
+    def _collect_driver_telemetry(self, workspace_path: Path) -> tuple[int, int]:
+        """Sum token usage across the driver turns the wrapper captured."""
+        turns_dir = workspace_path / ".agent-state" / "driver-turns"
+        total_in = total_out = 0
+        if not turns_dir.is_dir():
+            return 0, 0
+        for turn_file in sorted(turns_dir.glob("turn-*.json")):
+            try:
+                usage = json.loads(turn_file.read_text(encoding="utf-8")).get("usage", {})
+            except Exception:
+                continue
+            total_in += int(usage.get("input_tokens", 0) or 0)
+            total_out += int(usage.get("output_tokens", 0) or 0)
+        return total_in, total_out
+
+    @staticmethod
     def normalize_gate_command(verify_cmd: str, in_container: bool) -> str:
         """Strip bridge prefixes when running inside sandbox container."""
         if not in_container:
@@ -292,10 +443,14 @@ class SuperstateDaemonAdapter(AgentAdapter):
         budget = timeout_sec or task.agent_timeout_sec or 3600.0
         start_time = time.monotonic()
 
-        vcmd = getattr(task, "verification_cmd", None)
-        if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
-            vcmd = None
-        effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
+        effective_vcmd, gate_telemetry = self._derive_gate(
+            workspace_path, task, driver, container, budget
+        )
+
+        # Pin the model and capture usage the daemon does not record (see _write_driver_wrapper).
+        wrapper = self._write_driver_wrapper(workspace_path, driver)
+        if wrapper is not None:
+            self.driver_preset = str(wrapper)
 
         # Step 1: Initialize state
         if not self._init_daemon_state(workspace_path, task, effective_vcmd):
@@ -384,11 +539,27 @@ class SuperstateDaemonAdapter(AgentAdapter):
         if not final_success and not error_msg:
             error_msg = f"Verification failed (exit code {exit_code}): {output[:300]}"
 
+        # The Rust daemon spawns the driver itself, so the harness never sees those calls.
+        # Sum what the wrapper captured, plus the gate-authoring turn the adapter ran.
+        input_tokens, output_tokens = self._collect_driver_telemetry(workspace_path)
+        if gate_telemetry is not None:
+            input_tokens += int(getattr(gate_telemetry, "input_tokens", 0) or 0)
+            output_tokens += int(getattr(gate_telemetry, "output_tokens", 0) or 0)
+        # Imported locally: drivers -> adapters -> superstate_daemon is already a cycle,
+        # so a module-level import here breaks `python -m lab.engine.drivers.*`.
+        from lab.engine.drivers.agy_cli import estimate_cost_usd
+
+        model = getattr(driver, "model", None)
+        cost_usd = estimate_cost_usd(model, input_tokens, output_tokens) if model else 0.0
+
         return TaskRunResult(
             task_id=task.task_id,
             harness_name=self.name,
             success=final_success,
             duration_seconds=duration,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
             turns=max(1, self.step_count),
             error_message=error_msg if not final_success else None,
             provenance=self.get_provenance(),
