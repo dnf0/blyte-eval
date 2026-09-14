@@ -18,6 +18,7 @@ def test_daemon_adapter_run_mocked(tmp_path: Path):
         name="Daemon Test",
         instruction="Complete task autonomously",
         docker_image="test:latest",
+        verification_cmd="pytest /tests",
     )
 
     state_dir = tmp_path / ".agent-state"
@@ -30,9 +31,12 @@ def test_daemon_adapter_run_mocked(tmp_path: Path):
     state_file.write_text('{"status": "completed", "step": 1, "completed_tasks": [{"id": "task-1"}]}', encoding="utf-8")
 
     with patch("lab.engine.adapters.superstate_daemon.is_pid_alive", side_effect=[True, False]), \
+         patch("time.sleep"), \
          patch.object(adapter, "_init_daemon_state", return_value=True), \
          patch.object(adapter, "_spawn_daemon", return_value=True), \
          patch.object(adapter, "_run_gate_command", return_value=(True, 0, "pass")):
+        
+        # Test execute method
         result = adapter.execute(
             workspace_path=tmp_path,
             task=task,
@@ -43,3 +47,19 @@ def test_daemon_adapter_run_mocked(tmp_path: Path):
     assert result.success is True
     assert result.harness_name == "superstate_daemon"
     assert result.task_id == "daemon-test"
+
+    with patch("lab.engine.adapters.superstate_daemon.is_pid_alive", side_effect=[True, False]), \
+         patch("time.sleep"), \
+         patch.object(adapter, "_init_daemon_state", return_value=True), \
+         patch.object(adapter, "_spawn_daemon", return_value=True), \
+         patch.object(adapter, "_run_gate_command", return_value=(True, 0, "pass")):
+        
+        # Test run_task alias
+        result2 = adapter.run_task(
+            workspace_path=tmp_path,
+            task=task,
+            driver=MagicMock(),
+            timeout_sec=60.0,
+        )
+        
+    assert result2.success is True

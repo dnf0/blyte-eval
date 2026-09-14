@@ -38,11 +38,34 @@ class SuperstateDaemonAdapter(AgentAdapter):
         return self._name
 
     def _init_daemon_state(self, workspace_path: Path, task: TaskSpec) -> bool:
+        verify_cmd = (
+            getattr(task, "verification_cmd", None)
+            or getattr(task, "verify_cmd", None)
+            or getattr(task, "held_out_verifier", None)
+            or getattr(task, "verifier", None)
+        )
+        
+        cmd = ["superstate", "state", "init", "--goal", task.instruction]
+        if verify_cmd:
+            cmd.extend(["--verify-cmd", str(verify_cmd)])
+            
+        try:
+            subprocess.run(
+                cmd,
+                cwd=str(workspace_path),
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            logger.warning(f"superstate state init failed or not found, falling back: {e}")
+
         state_dir = workspace_path / ".agent-state"
         state_dir.mkdir(parents=True, exist_ok=True)
         state_file = state_dir / "state.json"
         
-        state_data = {
+        state_data: dict[str, Any] = {
             "status": "pending",
             "goal": task.instruction,
             "tasks": [
@@ -55,6 +78,9 @@ class SuperstateDaemonAdapter(AgentAdapter):
             ],
             "active_task": "task-1"
         }
+        if verify_cmd:
+            state_data["verify_cmd"] = str(verify_cmd)
+
         state_file.write_text(json.dumps(state_data, indent=2), encoding="utf-8")
         return True
 
@@ -180,3 +206,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             turns=turns,
             provenance={"driver_preset": self.driver_preset}
         )
+
+    def run_task(self, *args, **kwargs) -> TaskRunResult:
+        """Alias for execute to support alternative harness calling conventions."""
+        return self.execute(*args, **kwargs)
