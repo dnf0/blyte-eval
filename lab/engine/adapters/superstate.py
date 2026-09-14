@@ -92,7 +92,11 @@ ENGINE_RUST = "superstate-rust"
 
 ENGINE_PATHS: dict[str, tuple[Path, ...]] = {
     ENGINE_PYTHON: (
-        Path.home() / ".local/bin/superstate",
+        # `~/.local/bin/superstate` is deliberately NOT listed: since 2026-09-12 it is a
+        # symlink to `~/.cargo/bin/superstate` (the Rust engine, and since 2026-09-14 the
+        # ADR 0002 4-tool gateway). Listing it here made the Python arm silently execute
+        # Rust, which is the vacuous-comparison failure this module already guards against.
+        # `agent-rules` is the real Python entrypoint and exposes the same `state` verbs.
         Path.home() / ".local/bin/agent-rules",
     ),
     ENGINE_RUST: (
