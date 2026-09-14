@@ -28,7 +28,7 @@ def is_pid_alive(pid: int) -> bool:
 class SuperstateDaemonAdapter(AgentAdapter):
     """Execution adapter that launches a background superstate daemon."""
 
-    def __init__(self, driver_preset: str, poll_interval_sec: float = 1.0) -> None:
+    def __init__(self, driver_preset: str = "claude", poll_interval_sec: float = 1.0) -> None:
         self._name = "superstate_daemon"
         self.driver_preset = driver_preset
         self.poll_interval_sec = poll_interval_sec
