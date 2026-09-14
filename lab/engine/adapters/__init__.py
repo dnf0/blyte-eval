@@ -5,6 +5,7 @@ from lab.engine.adapters.superpowers import SuperpowersAdapter
 from lab.engine.adapters.superstate import SuperstateAdapter
 from lab.engine.adapters.superstate_agent_mcp import SuperstateAgentMcpAdapter
 from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
+from lab.engine.adapters.superstate_relay import SuperstateRelayAdapter
 from lab.engine.adapters.vanilla import VanillaAdapter
 
 __all__ = [
@@ -15,6 +16,7 @@ __all__ = [
     "SuperstateAdapter",
     "SuperstateAgentMcpAdapter",
     "SuperstateMcpAdapter",
+    "SuperstateRelayAdapter",
     "TaskRunResult",
     "VanillaAdapter",
 ]
