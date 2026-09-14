@@ -18,6 +18,7 @@ import shutil
 import subprocess
 from typing import Any, Dict, Optional
 
+from lab.benchmarks.gate_fixtures import agent_gate_for
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentAdapter, AgentDriver, BudgetHook, TaskRunResult
 from lab.engine.approval import resolve_next_turn_prompt
@@ -823,12 +824,17 @@ class SuperstateAdapter(AgentAdapter):
         plan_file = workspace_path / "plan.md"
         plan_text = plan_file.read_text(encoding="utf-8") if plan_file.is_file() else ""
 
-        vcmd = getattr(task, "verification_cmd", None)
-        # If verification_cmd references a held-out test suite (e.g. /tests/),
-        # it is sealed during the agent phase and cannot be executed by the agent.
-        # Fall back to "true" so the agent is not blocked by a missing held-out answer key.
-        if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
-            vcmd = None
+        # A hand-authored fixture is the contract of record, and every arm must receive the
+        # SAME one -- otherwise the arms are gated differently and the comparison measures
+        # the gates rather than the execution models. See lab/benchmarks/gate_fixtures.py.
+        vcmd = agent_gate_for(getattr(task, "name", "") or "")
+        if not vcmd:
+            vcmd = getattr(task, "verification_cmd", None)
+            # If verification_cmd references a held-out test suite (e.g. /tests/),
+            # it is sealed during the agent phase and cannot be executed by the agent.
+            # Fall back to "true" so the agent is not blocked by a missing held-out answer key.
+            if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
+                vcmd = None
         effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
         if not plan_text and self.zero_turn_planning:
             state_path = workspace_path / ".agent-state" / "state.json"

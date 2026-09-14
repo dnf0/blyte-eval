@@ -20,6 +20,7 @@ from lab.engine.adapters.base import (
     TaskRunResult,
     strip_preexisting_guidance,
 )
+from lab.benchmarks.gate_fixtures import agent_gate_for, references_sealed_grader
 from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
 from lab.engine.mcp.client import SuperstateMcpClient
 
@@ -273,10 +274,15 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
     @staticmethod
     def _is_sealed_gate(verify_cmd: Optional[str]) -> bool:
-        """Whether a verification command points at the sealed held-out grader."""
+        """Whether a verification command points at the sealed held-out grader.
+
+        Matches the container-root `/tests/` specifically. A package's own suite at
+        `/app/<pkg>/tests/` is a legitimate gate -- build-cython-ext's instruction asks
+        for exactly that -- and a bare substring test would reject it.
+        """
         if not verify_cmd:
             return True
-        return "/tests/" in verify_cmd or verify_cmd.strip().startswith("bash /tests")
+        return references_sealed_grader(verify_cmd)
 
     @staticmethod
     def _extract_gate(raw_response: str) -> Optional[str]:
@@ -314,6 +320,28 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         Returns the gate and the telemetry of the authoring turn (for cost accounting).
         """
+        # A hand-authored fixture is the contract of record. Deriving the gate per run made
+        # it a random variable on top of a constant spec, so no two runs measured the same
+        # task; see lab/benchmarks/gate_fixtures.py.
+        fixture = agent_gate_for(getattr(task, "name", "") or "")
+        if fixture:
+            # A fixture that already passes cannot discriminate, so the daemon would
+            # complete on its first turn having done nothing. That is a defect in the
+            # fixture, not a reason to fall back -- say so loudly and keep the contract.
+            passes_now, _, output = self._run_gate_command(
+                workspace_path, fixture, container=container
+            )
+            if passes_now:
+                logger.error(
+                    "Gate fixture for %s ALREADY PASSES before any work -- it cannot "
+                    "discriminate and this run is not measuring the task: %s",
+                    task.name,
+                    output[:200],
+                )
+            else:
+                logger.info("Gate: using hand-authored fixture for %s", task.name)
+            return fixture, None
+
         declared = getattr(task, "verification_cmd", None)
         if not self._is_sealed_gate(declared):
             logger.info("Gate: using task-declared verifier %r", declared)
