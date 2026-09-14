@@ -179,3 +179,27 @@ def test_collect_driver_telemetry_tolerates_corrupt_turns(tmp_path: Path) -> Non
     (turns / "turn-1-1.json").write_text("not json{{")
     (turns / "turn-2-2.json").write_text(json.dumps({"usage": {"input_tokens": 9}}))
     assert adapter._collect_driver_telemetry(tmp_path) == (9, 0)
+
+
+def test_wrapper_supplies_the_environment_contract_when_containerised(tmp_path: Path) -> None:
+    """The daemon's worker must be told where the project environment actually is.
+
+    The Rust daemon renders its own turnkey prompt and never appends the contract the
+    Python driver adds, so the worker did not know dependencies lived in the container
+    or that `./run-in-container` existed. It worked on the host while its own gate ran
+    inside the container -- the two halves of the handoff on different environments.
+    """
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    wrapper = adapter._write_driver_wrapper(tmp_path, _StubDriver(""), container=object())
+    assert wrapper is not None
+    script = wrapper.read_text()
+    assert "environment-contract.md" in script
+    contract = (tmp_path / ".agent-state" / "environment-contract.md").read_text()
+    assert "./run-in-container" in contract
+
+
+def test_wrapper_omits_the_contract_without_a_container(tmp_path: Path) -> None:
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    wrapper = adapter._write_driver_wrapper(tmp_path, _StubDriver(""), container=None)
+    assert wrapper is not None
+    assert "environment-contract.md" not in wrapper.read_text()

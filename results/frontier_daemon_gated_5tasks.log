@@ -1,0 +1,119 @@
+15:09:29 [INFO] superstate_eval.paired: ==============================================================================
+15:09:29 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=5  arms=superstate_daemon  concurrency=3
+15:09:29 [INFO] superstate_eval.paired: Runs=5  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260914-150928
+15:09:29 [INFO] superstate_eval.paired: ==============================================================================
+15:09:29 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [superstate_daemon] (budget: 5400s)
+15:09:29 [INFO] superstate_eval.paired: -> build-cython-ext [superstate_daemon] (budget: 900s)
+15:09:29 [INFO] superstate_eval.paired: -> sqlite-db-truncate [superstate_daemon] (budget: 1200s)
+15:09:29 [INFO] superstate_eval.docker_manager: Host disk check: 53.82 GB free on /
+15:09:29 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon] (Base budget: 900.0s)
+15:09:29 [INFO] superstate_eval.runner: Starting task 'terminal-bench/sqlite-db-truncate' [Arm: superstate_daemon] (Base budget: 1200.0s)
+15:09:29 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: superstate_daemon] (Base budget: 5400.0s)
+15:09:29 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 8.4 GB reported available], Disk limit=3, User override=None)
+15:09:29 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 8.4 GB reported available], Disk limit=3, User override=None)
+15:09:29 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 8.4 GB reported available], Disk limit=3, User override=None)
+15:09:31 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260914-150928/eval-terminal-bench_build-cython-ext-superstate_daemon-6111ca71/workspace
+15:09:31 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-150928/eval-terminal-bench_sqlite-db-truncate-superstate_daemon-ef7503d3/workspace from alexgshaw/sqlite-db-truncate:20251031:/app (1 entries)
+15:09:31 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0ad232add1b5 (alexgshaw/sqlite-db-truncate:20251031)
+15:09:31 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0d3bb3a90bff (alexgshaw/build-cython-ext:20251031)
+15:09:31 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using task-declared verifier 'pytest tests/'
+15:09:31 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests for the agent phase
+15:09:31 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+15:09:33 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-150928/eval-datacurve_fastapi-deprecation-response-headers-superstate_daemon-1d30bec1/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+15:09:33 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0136b7a8eb65 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+15:09:34 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/fastapi-deprecation-response-headers/tests for the agent phase
+15:09:34 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+15:09:34 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: ed10c1d7': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+15:09:34 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: ed10c1d7 (prev=None). Lease extended.
+15:09:53 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python -c "import pyknotid; from pyknotid.spacecurves import chelpers, ccomplexity; from pyknotid import cinvariants; import pyknotid.make as mk; import pyknotid.spacecurves as sp; k = sp.Knot(mk.three_twist(num_points=100)); out = k.alexander_polynomial(-1)"' (fails before work, as required)
+15:09:53 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 8d3e27eb': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+15:09:53 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 8d3e27eb (prev=None). Lease extended.
+15:13:09 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+15:13:09 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+15:13:09 [WARNING] superstate_eval.extractor: Task terminal-bench/sqlite-db-truncate has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+15:13:09 [WARNING] superstate_eval.extractor: Task terminal-bench/sqlite-db-truncate ships no tests directory; falling back to running the verification command inside the agent's own container without injected tests.
+15:13:09 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/sqlite-db-truncate arm=superstate_daemon: passed=False, reward=0.0, exit_code=127
+15:13:09 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0ad232add1b5
+15:13:09 [INFO] superstate_eval.runner: Finished task 'terminal-bench/sqlite-db-truncate' [Arm: superstate_daemon]: Passed=False, WallClock=220.31s, Cost=$0.17, TotalGrantedBudget=3600.0s
+15:13:09 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.1735 turns=2 220s  Agent run failed: Verification failed (exit code 127): /bin/sh: 1: pytest: not found
+ | grading then reported: Verification failed: Verification exit code 127, Reward was 0.0 < 1.0
+Output: OCI runtime exec failed: exec failed: unable to start container process: exec: "pytest": executable file not found in $PATH
+
+15:13:09 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] (budget: 900s)
+15:13:09 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+15:13:09 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.2 GB reported available], Disk limit=3, User override=None)
+15:13:09 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-150928/eval-terminal-bench_db-wal-recovery-superstate_daemon-f7edac5f/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+15:13:09 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 5f38cb6e37ee (alexgshaw/db-wal-recovery:20251031)
+15:13:09 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests for the agent phase
+15:13:09 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+15:13:19 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python -c \'import datetime as dt; from fastapi import FastAPI, APIRouter; from starlette.responses import JSONResponse; from fastapi.testclient import TestClient; from fastapi.middleware.deprecation import DeprecationTrackingMiddleware; d = dt.datetime(2035, 1, 1, 0, 0, 0, tzinfo=dt.timezone.utc); app = FastAPI(); app.get("/r1", deprecated=True)(lambda: {"ok": 1}); app.get("/r2", sunset=d, deprecation_date=d, successor_url="/v2")(lambda: JSONResponse({"ok": 2}, headers={"link": "<https://a>; rel=\\"prev\\""})); router = APIRouter(deprecated=True); router.get("/r3")(lambda: {"ok": 3}); app.include_router(router); app.get("/r5", deprecated=True, sunset=d)(lambda: JSONResponse({"ok": 5}, headers={"deprecation": "custom-dep", "sunset": "custom-sunset"})); mw = DeprecationTrackingMiddleware(app); assert callable(getattr(mw, "get_stats", None)) and callable(getattr(mw, "reset_stats", None)); c = TestClient(mw); assert c.get("/r1").headers.get("deprecation") == "true"; r2 = c.get("/r2"); assert r2.headers.get("deprecation") != "true" and "sunset" in r2.headers and "successor-version" in r2.headers.get("link", "") and "prev" in r2.headers.get("link", ""); assert c.get("/r3").headers.get("deprecation") == "true"; r5 = c.get("/r5"); assert r5.headers.get("deprecation") == "custom-dep" and r5.headers.get("sunset") == "custom-sunset"; schema = app.openapi()["paths"]["/r2"]["get"]; assert "x-sunset" in schema and "x-deprecation-date" in schema and "x-successor-url" in schema; stats = mw.get_stats(); assert stats.get("/r1", {}).get("deprecated_hits", 0) == 1 and stats.get("/r2", {}).get("deprecated_hits", 0) == 1 and stats.get("/r2", {}).get("sunset_hits", 0) == 1; mw.reset_stats(); assert mw.get_stats().get("/r1", {}).get("deprecated_hits", 0) == 0; app2 = FastAPI(deprecated=True); app2.get("/r4")(lambda: {"ok": 4}); assert TestClient(app2).get("/r4").headers.get("deprecation") == "true"\'' (fails before work, as required)
+15:14:39 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python3 -c \'import json; d = json.load(open("/app/recovered.json")); assert isinstance(d, list) and len(d) == 11 and all("id" in x and "name" in x and "value" in x for x in d) and [x["id"] for x in d] == sorted(x["id"] for x in d)\'' (fails before work, as required)
+15:14:39 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: cfda25bb': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+15:14:39 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: cfda25bb (prev=None). Lease extended.
+15:22:20 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+15:22:20 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+15:22:20 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+15:22:34 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+15:22:34 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 5f38cb6e37ee
+15:22:35 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=565.76s, Cost=$0.45, TotalGrantedBudget=3300.0s
+15:22:35 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.4461 turns=2 566s  
+15:22:35 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] (budget: 900s)
+15:22:35 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 900.0s)
+15:22:35 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.8 GB reported available], Disk limit=3, User override=None)
+15:22:35 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260914-150928/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-6457be9a/workspace
+15:22:35 [INFO] superstate_eval.docker_manager: Spawned sandbox container: c313bbc56a31 (alexgshaw/openssl-selfsigned-cert:20251031)
+15:22:35 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/openssl-selfsigned-cert/tests for the agent phase
+15:22:35 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+15:23:26 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python3 /app/check_cert.py' (fails before work, as required)
+15:23:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 19aee227': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+15:23:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 19aee227 (prev=None). Lease extended.
+15:24:05 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:20a4d520d6bf from /Users/danielfisher/.cache/superstate-eval/staged/fastapi-deprecation-response-headers/tests
+15:24:05 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1a0ec0a934b5 (superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:20a4d520d6bf)
+15:24:50 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1a0ec0a934b5
+15:24:50 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:20a4d520d6bf
+15:24:50 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/fastapi-deprecation-response-headers arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+15:24:50 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0136b7a8eb65
+15:24:50 [INFO] superstate_eval.runner: Finished task 'datacurve/fastapi-deprecation-response-headers' [Arm: superstate_daemon]: Passed=False, WallClock=921.41s, Cost=$0.70, TotalGrantedBudget=5400.0s
+15:24:50 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.6993 turns=1 921s  Agent run failed: Verification failed (exit code 1): Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'fastapi.middleware.deprecation'
+ | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output: from report (test did not run or produced no result — see raw output)
+[verifier] ✗ [f2p] tests.test_deprecation_sunset_headers.test_trace_route_deprecated_headers
+    missing from report (test did not run or produced no result — see raw output)
+P2P 3134/3134 pass 0 fail; F2P 0/137 pass 137 fail; PARTIAL 0.9581167838581474; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 137, "f2p_passed": 0, "p2p_total": 3134, "p2p_passed": 3134, "f2p": 0.0, "p2p": 1.0, "partial": 0.9581167838581474}
+
+15:25:03 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+15:25:07 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+15:25:07 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0d3bb3a90bff
+15:25:08 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon]: Passed=False, WallClock=939.12s, Cost=$0.67, TotalGrantedBudget=2100.0s
+15:25:08 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.6745 turns=1 939s  Agent run failed: Verification failed (exit code 1): Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import pyknotid; from pyknotid.spacecurves import chelpers, ccomplexity; from pyknotid import cinvariants; import pyknotid.make as mk; import pyknotid.spacecurves as sp; k = sp.Knot(mk.three_twist(num_points=100)); out = k | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output: t_outputs.py::test_cinvariants_cython_extension
+PASSED ../tests/test_outputs.py::test_chelpers
+FAILED ../tests/test_outputs.py::test_ccomplexity - AttributeError: module 'n...
+FAILED ../tests/test_outputs.py::test_cinvariants_python_vs_cython - Attribut...
+FAILED ../tests/test_outputs.py::test_example_usage - AttributeError: module ...
+FAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - AssertionEr...
+========================= 4 failed, 7 passed in 2.92s ==========================
+
+15:32:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b0c26857': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+15:32:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: b0c26857 (prev=19aee227). Lease extended.
+15:32:19 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+15:32:19 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+15:32:19 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+15:32:29 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+15:32:29 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: c313bbc56a31
+15:32:29 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+15:32:29 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=594.18s, Cost=$0.39, TotalGrantedBudget=4500.0s
+15:32:29 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.3944 turns=2 594s  
+
+| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|
+| superstate_daemon | 5 | 2 | 40.0% | $2.39 | $1.2 | 54.0m | 160.0m | 1065330 | 105302 |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/frontier_daemon_gated_5tasks.json
