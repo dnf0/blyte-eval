@@ -38,16 +38,19 @@ class SuperstateDaemonAdapter(AgentAdapter):
         return self._name
 
     def _init_daemon_state(self, workspace_path: Path, task: TaskSpec) -> bool:
-        verify_cmd = (
+        candidate_vcmd = (
             getattr(task, "verification_cmd", None)
             or getattr(task, "verify_cmd", None)
-            or getattr(task, "held_out_verifier", None)
-            or getattr(task, "verifier", None)
         )
+        # Avoid setting held-out grading verifiers as daemon gates since they are
+        # sealed inside the verifier container and absent from the agent workspace.
+        cand_str = str(candidate_vcmd) if candidate_vcmd else ""
+        if cand_str and "/tests/" not in cand_str and not cand_str.startswith("bash /tests"):
+            verify_cmd = cand_str
+        else:
+            verify_cmd = "true"
         
-        cmd = ["superstate", "state", "init", "--goal", task.instruction]
-        if verify_cmd:
-            cmd.extend(["--verify-cmd", str(verify_cmd)])
+        cmd = ["superstate", "state", "init", "--goal", task.instruction, "--verify-cmd", verify_cmd]
             
         try:
             subprocess.run(

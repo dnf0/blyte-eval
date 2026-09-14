@@ -63,3 +63,42 @@ def test_daemon_adapter_run_mocked(tmp_path: Path):
         )
         
     assert result2.success is True
+
+
+def test_init_daemon_state_filters_held_out_verifier(tmp_path: Path):
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    task_held_out = TaskSpec(
+        id="daemon-held-out",
+        name="Daemon Held Out",
+        instruction="Do work",
+        docker_image="test:latest",
+        verification_cmd="bash /tests/test.sh",
+    )
+
+    with patch("subprocess.run") as mock_run:
+        adapter._init_daemon_state(tmp_path, task_held_out)
+        args, kwargs = mock_run.call_args
+        cmd = args[0]
+        assert "--verify-cmd" in cmd
+        idx = cmd.index("--verify-cmd")
+        assert cmd[idx + 1] == "true"
+
+
+def test_init_daemon_state_preserves_local_verifier(tmp_path: Path):
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    task_local = TaskSpec(
+        id="daemon-local",
+        name="Daemon Local",
+        instruction="Do work",
+        docker_image="test:latest",
+        verification_cmd="pytest tests/local",
+    )
+
+    with patch("subprocess.run") as mock_run:
+        adapter._init_daemon_state(tmp_path, task_local)
+        args, kwargs = mock_run.call_args
+        cmd = args[0]
+        assert "--verify-cmd" in cmd
+        idx = cmd.index("--verify-cmd")
+        assert cmd[idx + 1] == "pytest tests/local"
+
