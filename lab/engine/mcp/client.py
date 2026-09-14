@@ -547,6 +547,131 @@ class SuperstateMcpClient:
             return str(path)
         return str(path / ".agent-state" / "state.json")
 
+    def _run_cli(
+        self,
+        args: list[str],
+        cwd: Optional[Path | str] = None,
+        timeout: float = 60.0,
+    ) -> tuple[int, str, str]:
+        """Invoke CLI binary fallback for low-level state mutation commands."""
+        if not self.superstate_bin:
+            return 1, "", "no superstate binary resolved"
+        effective_cwd = Path(cwd) if cwd else (self.cwd or Path.cwd())
+        try:
+            res = subprocess.run(
+                [str(self.superstate_bin), *args],
+                cwd=str(effective_cwd),
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+            return res.returncode, res.stdout, res.stderr
+        except Exception as e:
+            return 1, "", str(e)
+
+    # Gateway Tools (ADR 0002)
+
+    def superstate_handoff(
+        self,
+        goal: Optional[str] = None,
+        verify_cmd: Optional[str] = None,
+        milestones: Optional[list[dict[str, Any]]] = None,
+        driver: Optional[str] = None,
+        worktree: Optional[bool] = None,
+        no_worktree: Optional[bool] = None,
+        detach: Optional[bool] = None,
+        from_agent: Optional[str] = None,
+        to_agent: Optional[str] = None,
+        state: Optional[Path | str] = None,
+        files: Optional[list[str]] = None,
+    ) -> dict[str, Any]:
+        """Initiate autonomous task execution or handoff via the Gateway superstate_handoff tool."""
+        arguments: dict[str, Any] = {}
+        if goal is not None:
+            arguments["goal"] = goal
+        if verify_cmd is not None:
+            arguments["verify_cmd"] = verify_cmd
+        if milestones is not None:
+            arguments["milestones"] = milestones
+        if driver is not None:
+            arguments["driver"] = driver
+        if worktree is not None:
+            arguments["worktree"] = worktree
+        if no_worktree is not None:
+            arguments["no_worktree"] = no_worktree
+        if detach is not None:
+            arguments["detach"] = detach
+        if from_agent is not None:
+            arguments["from_agent"] = from_agent
+        if to_agent is not None:
+            arguments["to_agent"] = to_agent
+        if state is not None:
+            arguments["state"] = self._format_state_path(state)
+        if files is not None:
+            arguments["files"] = files
+
+        res = self.call_tool("superstate_handoff", arguments)
+        if isinstance(res.get("parsed_json"), dict):
+            return res["parsed_json"]
+        return res
+
+    def superstate_status(
+        self,
+        repo: Optional[Path | str] = None,
+        state_path: Optional[Path | str] = None,
+        slug: Optional[str] = None,
+        json_format: bool = True,
+    ) -> dict[str, Any]:
+        """Query execution progress, active milestone, and daemon status."""
+        arguments: dict[str, Any] = {"json": json_format}
+        target = state_path or repo
+        if target is not None:
+            arguments["state_path"] = self._format_state_path(target)
+        if slug is not None:
+            arguments["slug"] = slug
+
+        res = self.call_tool("superstate_status", arguments)
+        if isinstance(res.get("parsed_json"), dict):
+            return res["parsed_json"]
+        if isinstance(res.get("state"), dict):
+            return res["state"]
+        return res
+
+    def superstate_cancel(
+        self,
+        slug: Optional[str] = None,
+        all: bool = False,
+        state_path: Optional[Path | str] = None,
+    ) -> dict[str, Any]:
+        """Terminate running background daemon processes."""
+        arguments: dict[str, Any] = {"all": all}
+        if slug is not None:
+            arguments["slug"] = slug
+        if state_path is not None:
+            arguments["state_path"] = self._format_state_path(state_path)
+
+        res = self.call_tool("superstate_cancel", arguments)
+        if isinstance(res.get("parsed_json"), dict):
+            return res["parsed_json"]
+        return res
+
+    def superstate_doctor(
+        self,
+        driver: Optional[str] = None,
+        fix: bool = False,
+    ) -> dict[str, Any]:
+        """Run fail-closed environment and driver diagnostic preflight."""
+        arguments: dict[str, Any] = {"fix": fix}
+        if driver is not None:
+            arguments["driver"] = driver
+
+        res = self.call_tool("superstate_doctor", arguments)
+        if isinstance(res.get("parsed_json"), dict):
+            return res["parsed_json"]
+        return res
+
+    # Legacy In-Loop Methods with Gateway & CLI Adaptation
+
     def state_init(
         self,
         plan: Optional[Path | str] = None,
@@ -557,6 +682,28 @@ class SuperstateMcpClient:
         verify_cmd: Optional[str] = None,
     ) -> bool:
         """Initialize state machine tracking from a plan markdown or direct goal."""
+        if "superstate_handoff" in self.tools and "state_init" not in self.tools:
+            milestones = None
+            if plan is not None:
+                p = Path(plan)
+                if p.is_file():
+                    from lab.engine.adapters.superstate import _extract_plan_milestones
+
+                    ms = _extract_plan_milestones(p.read_text(encoding="utf-8"))
+                    milestones = [
+                        {"title": m.title, "verify_cmd": m.verify_cmd or "true"} for m in ms
+                    ]
+            res = self.superstate_handoff(
+                goal=goal or (f"Plan from {plan}" if plan else "Task execution"),
+                verify_cmd=verify_cmd or ("true" if not milestones else None),
+                milestones=milestones,
+                no_worktree=no_worktree or not worktree,
+                worktree=worktree and not no_worktree,
+                detach=False,
+                state=repo,
+            )
+            return res.get("status") in ("ready", "success", "ok", "detached")
+
         arguments: dict[str, Any] = {}
         if plan is not None:
             arguments["plan"] = str(plan)
@@ -586,6 +733,17 @@ class SuperstateMcpClient:
         no_worktree: bool = False,
     ) -> str:
         """Retrieve bounded turnkey prompt for the active task."""
+        if self.tools and "state_prompt" not in self.tools:
+            cmd = ["state", "prompt", "--state", self._format_state_path(repo)]
+            if with_graph:
+                cmd.append("--with-graph")
+            if no_worktree:
+                cmd.append("--no-worktree")
+            if task:
+                cmd.extend(["--task", task])
+            code, out, _ = self._run_cli(cmd, cwd=repo)
+            return out.strip() if code == 0 else ""
+
         arguments: dict[str, Any] = {
             "state": self._format_state_path(repo),
             "with_graph": with_graph,
@@ -615,6 +773,17 @@ class SuperstateMcpClient:
         ignore_untracked_glob: Optional[str] = None,
     ) -> bool:
         """Advance the milestone state machine past the current task."""
+        if self.tools and "state_next" not in self.tools:
+            cmd = ["state", "next", "--state", self._format_state_path(repo)]
+            if verify_cmd:
+                cmd.extend(["--verify-cmd", verify_cmd])
+            if verify_git_clean:
+                cmd.append("--verify-git-clean")
+            if ignore_untracked_glob:
+                cmd.extend(["--ignore-untracked-glob", ignore_untracked_glob])
+            code, _, _ = self._run_cli(cmd, cwd=repo)
+            return code == 0
+
         arguments: dict[str, Any] = {
             "state": self._format_state_path(repo),
             "verify_git_clean": verify_git_clean,
@@ -637,6 +806,9 @@ class SuperstateMcpClient:
         json_format: bool = True,
     ) -> dict[str, Any]:
         """Query current execution state and active milestone metadata."""
+        if "superstate_status" in self.tools and "state_status" not in self.tools:
+            return self.superstate_status(repo=repo, json_format=json_format)
+
         arguments: dict[str, Any] = {
             "state": self._format_state_path(repo),
             "json": json_format,
@@ -650,6 +822,17 @@ class SuperstateMcpClient:
 
     def state_ready(self, repo: Path | str) -> list[str]:
         """Query unblocked tasks eligible for parallel or sequential execution."""
+        if self.tools and "state_ready" not in self.tools:
+            cmd = ["state", "ready", "--json", "--state", self._format_state_path(repo)]
+            code, out, _ = self._run_cli(cmd, cwd=repo)
+            if code == 0:
+                try:
+                    data = json.loads(out)
+                    return [str(t) for t in data] if isinstance(data, list) else []
+                except Exception:
+                    pass
+            return []
+
         arguments: dict[str, Any] = {
             "state": self._format_state_path(repo),
             "json": True,
@@ -665,6 +848,9 @@ class SuperstateMcpClient:
 
     def state_doctor(self, repo: Path | str, repair: bool = False) -> dict[str, Any]:
         """Perform health checks and diagnosis on state integrity."""
+        if "superstate_doctor" in self.tools and "state_doctor" not in self.tools:
+            return self.superstate_doctor()
+
         arguments: dict[str, Any] = {
             "state": self._format_state_path(repo),
             "repair": repair,
@@ -684,6 +870,21 @@ class SuperstateMcpClient:
         advance: bool = False,
     ) -> dict[str, Any]:
         """Execute a verification command under safety checkpointing."""
+        if self.tools and "state_exec" not in self.tools:
+            args = ["state", "exec", "--state", self._format_state_path(repo), "--verify-cmd", verify_cmd or cmd]
+            if rollback_on_fail:
+                args.append("--rollback-on-fail")
+            if not advance:
+                args.append("--no-advance")
+            args.append("--json")
+            code, out, err = self._run_cli(args, cwd=repo)
+            if code == 0:
+                try:
+                    return json.loads(out)
+                except Exception:
+                    pass
+            return {"passed": code == 0, "output": out or err}
+
         arguments: dict[str, Any] = {
             "state": self._format_state_path(repo),
             "verify_cmd": verify_cmd or cmd,
@@ -698,6 +899,11 @@ class SuperstateMcpClient:
 
     def state_note(self, repo: Path | str, message: str) -> bool:
         """Record architectural discoveries or findings into the epistemic ledger."""
+        if self.tools and "state_note" not in self.tools:
+            cmd = ["state", "note", "--state", self._format_state_path(repo), message]
+            code, _, _ = self._run_cli(cmd, cwd=repo)
+            return code == 0
+
         arguments: dict[str, Any] = {
             "state": self._format_state_path(repo),
             "note": message,
@@ -711,6 +917,13 @@ class SuperstateMcpClient:
 
     def worktree_clean(self, repo: Path | str, force: bool = False) -> dict[str, Any]:
         """Clean orphaned or merged worktrees in the target repository."""
+        if self.tools and "worktree_clean" not in self.tools:
+            cmd = ["worktree", "clean", "--repo", str(repo)]
+            if force:
+                cmd.append("--force")
+            code, out, _ = self._run_cli(cmd, cwd=repo)
+            return {"cleaned": 1 if code == 0 else 0}
+
         arguments: dict[str, Any] = {
             "repo": str(repo),
             "force": force,
@@ -719,3 +932,4 @@ class SuperstateMcpClient:
         if isinstance(res.get("parsed_json"), dict):
             return res["parsed_json"]
         return res
+

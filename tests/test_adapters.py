@@ -911,6 +911,15 @@ def test_runner_resolves_mcp_adapters() -> None:
     adapter_agent = runner._get_adapter("superstate_agent_mcp")
     assert isinstance(adapter_agent, SuperstateAgentMcpAdapter)
 
+    # Test resolution of superstate_daemon
+    from lab.engine.adapters import SuperstateDaemonAdapter, SuperstateAdapter
+    adapter_daemon = runner._get_adapter("superstate_daemon")
+    assert isinstance(adapter_daemon, SuperstateDaemonAdapter)
+
+    # Test resolution of superstate_solo
+    adapter_solo = runner._get_adapter("superstate_solo")
+    assert isinstance(adapter_solo, SuperstateAdapter)
+
 
 def test_is_transient_stream_interruption_detection() -> None:
     """Verify is_transient_stream_interruption correctly classifies transport vs logical errors."""

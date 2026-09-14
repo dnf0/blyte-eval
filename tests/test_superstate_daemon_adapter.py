@@ -1,0 +1,45 @@
+from pathlib import Path
+from unittest.mock import patch
+
+from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
+
+
+def test_daemon_adapter_initialization() -> None:
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    assert adapter.name == "superstate_daemon"
+    assert adapter.driver_preset == "agy"
+
+
+def test_daemon_adapter_run_mocked(tmp_path: Path) -> None:
+    adapter = SuperstateDaemonAdapter(driver_preset="agy", poll_interval_sec=0.01)
+    task = TaskSpec(
+        id="daemon-test",
+        name="Daemon Test",
+        instruction="Complete task autonomously",
+        docker_image="test:latest",
+    )
+
+    state_dir = tmp_path / ".agent-state"
+    daemons_dir = state_dir / "daemons"
+    daemons_dir.mkdir(parents=True, exist_ok=True)
+    pid_file = daemons_dir / "default.pid"
+    pid_file.write_text("999999\n", encoding="utf-8")
+
+    state_file = state_dir / "state.json"
+    state_file.write_text('{"status": "completed", "step": 1, "completed_tasks": [{"id": "task-1"}]}', encoding="utf-8")
+
+    with patch("lab.engine.adapters.superstate_daemon.is_pid_alive", side_effect=[True, False]), \
+         patch.object(adapter, "_init_daemon_state", return_value=True), \
+         patch.object(adapter, "_spawn_daemon", return_value=True), \
+         patch.object(adapter, "_run_gate_command", return_value=(True, 0, "pass")):
+        result = adapter.run_task(
+            task=task,
+            workspace_path=tmp_path,
+            driver=None,
+            budget_sec=60.0,
+        )
+
+    assert result.success is True
+    assert result.harness_name == "superstate_daemon"
+    assert result.task_id == "daemon-test"
