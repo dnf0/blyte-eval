@@ -329,9 +329,14 @@ class SuperstateAdapter(AgentAdapter):
         """Invoke the state engine, returning (exit_code, stdout)."""
         if not self.superstate_bin:
             return 1, "no state engine binary resolved"
+        full_args = list(args)
+        if "--state" not in full_args and "-s" not in full_args:
+            state_file = workspace_path / ".agent-state" / "state.json"
+            if state_file.is_file():
+                full_args.extend(["--state", str(state_file)])
         try:
             res = subprocess.run(
-                [str(self.superstate_bin), "state", *args],
+                [str(self.superstate_bin), "state", *full_args],
                 cwd=str(workspace_path),
                 capture_output=True,
                 text=True,
@@ -642,6 +647,9 @@ class SuperstateAdapter(AgentAdapter):
                     logger.debug("Failed auto-committing milestone changes: %s", exc)
 
             cmd = [str(self.superstate_bin), "state", "next"]
+            state_file = workspace_path / ".agent-state" / "state.json"
+            if state_file.is_file():
+                cmd.extend(["--state", str(state_file)])
             if (workspace_path / ".git").exists():
                 cmd.append("--verify-git-clean")
             if self.engine != ENGINE_RUST:

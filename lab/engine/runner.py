@@ -21,7 +21,9 @@ from lab.engine.adapters import (
     SuperpowersAdapter,
     SuperstateAdapter,
     SuperstateAgentMcpAdapter,
+    SuperstateDaemonAdapter,
     SuperstateMcpAdapter,
+    SuperstateRelayAdapter,
     VanillaAdapter,
 )
 from lab.engine.adapters.superstate import ENGINE_PYTHON, ENGINE_RUST
@@ -126,6 +128,12 @@ class AblationRunner:
             return SuperstateAgentMcpAdapter(worktree=True)
         elif arm in ("superstate_agent_mcp_inplace", "superstate-agent-mcp-inplace", "agent_mcp_inplace"):
             return SuperstateAgentMcpAdapter(no_worktree=True)
+        elif arm in ("superstate_relay", "relay"):
+            return SuperstateRelayAdapter()
+        elif arm in ("superstate_daemon", "daemon"):
+            return SuperstateDaemonAdapter()
+        elif arm in ("superstate_solo", "solo"):
+            return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(
