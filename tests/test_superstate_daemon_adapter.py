@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -74,3 +75,23 @@ def test_execute_preserves_local_verifier(tmp_path: Path) -> None:
     with patch.object(adapter, "_init_daemon_state", return_value=False) as mock_init:
         adapter.execute(tmp_path, _task_with_verifier("pytest tests/local"))
     assert mock_init.call_args[0][2] == "pytest tests/local"
+
+
+def test_daemon_resolves_rust_engine_not_python() -> None:
+    """The daemon arm must resolve the Rust engine, which is the only one with `state daemon`.
+
+    Regression guard: this arm silently depended on ~/.local/bin/superstate being a
+    symlink to the Rust build, so a bare find_superstate_binary() (which defaults to
+    ENGINE_PYTHON) happened to return Rust. Once ENGINE_PYTHON was corrected to point at
+    agent-rules, every daemon spawn failed with "Failed to spawn superstate daemon".
+    """
+    adapter = SuperstateDaemonAdapter()
+    assert adapter.superstate_bin is not None, "daemon arm needs a Rust superstate build"
+    assert "agent-rules" not in str(adapter.superstate_bin)
+    help_text = subprocess.run(
+        [str(adapter.superstate_bin), "state", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    ).stdout
+    assert "daemon" in help_text, "resolved binary exposes no `state daemon` verb"

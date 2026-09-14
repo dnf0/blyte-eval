@@ -19,7 +19,7 @@ from lab.engine.adapters.base import (
     TaskRunResult,
     strip_preexisting_guidance,
 )
-from lab.engine.adapters.superstate import find_superstate_binary
+from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
 from lab.engine.mcp.client import SuperstateMcpClient
 
 logger = logging.getLogger("superstate_eval.adapters.superstate_daemon")
@@ -64,7 +64,14 @@ class SuperstateDaemonAdapter(AgentAdapter):
         worktree: bool = False,
     ) -> None:
         """Initialize SuperstateDaemonAdapter with driver preset and polling configuration."""
-        self.superstate_bin = Path(superstate_bin) if superstate_bin is not None else find_superstate_binary()
+        # `state daemon` exists ONLY in the Rust engine -- agent-rules (the Python
+        # engine, and the default for find_superstate_binary()) has no such verb. Resolve
+        # ENGINE_RUST explicitly and fail closed: this arm previously worked only because
+        # ~/.local/bin/superstate was a symlink to the Rust build, so the bare call
+        # silently returned Rust while claiming Python.
+        self.superstate_bin = (
+            Path(superstate_bin) if superstate_bin is not None else find_superstate_binary(ENGINE_RUST)
+        )
         self.driver_preset = driver_preset
         self.poll_interval_sec = poll_interval_sec
         self._name = name
