@@ -141,6 +141,73 @@ GATE_FIXTURES: dict[str, str] = {
         "assert not mw.get_stats().get('/a',{}).get('deprecated_hits',0), 'F4: reset_stats must clear counters'"
         '"'
     ),
+    # Response.iter_multipart() parsing two parts, MultipartPart type, header access,
+    # and DecodingError on a non-multipart response.
+    # Validated in-container: fails pre-implementation with
+    #   AttributeError: 'Response' object has no attribute 'iter_multipart'
+    "httpx-multipart-response-parsing": """cat <<'GATEEOF' | ./run-in-container python -
+import httpx
+body = (b"preamble\\r\\n--BB\\r\\nContent-Type: text/plain\\r\\nX-A: 1\\r\\n\\r\\nhello\\r\\n"
+        b"--BB\\r\\nContent-Type: application/json\\r\\n\\r\\n{}\\r\\n--BB--\\r\\nepilogue")
+r = httpx.Response(200, headers={"Content-Type": 'multipart/mixed; boundary="BB"'}, content=body)
+parts = list(r.iter_multipart())
+assert len(parts) == 2, f"expected 2 parts, got {len(parts)}"
+assert isinstance(parts[0], httpx.MultipartPart)
+assert parts[0].content == b"hello", parts[0].content
+assert parts[0].headers["x-a"] == "1"
+assert parts[1].content == b"{}"
+bad = httpx.Response(200, headers={"Content-Type": "text/plain"}, content=b"x")
+try:
+    list(bad.iter_multipart())
+except httpx.DecodingError:
+    pass
+else:
+    raise AssertionError("non-multipart must raise DecodingError")
+GATEEOF""",
+    # State(data=...) lifecycle: init on entry, removal on exit, reset on re-entry,
+    # per-instance storage, DataVar defaults, get/set accessors.
+    # Validated in-container: fails pre-implementation with
+    #   ImportError: cannot import name 'DataVar' from 'statemachine'
+    "python-statemachine-state-data-scoping": """cat <<'GATEEOF' | ./run-in-container python -
+from statemachine import State, StateMachine, DataVar
+
+class M(StateMachine):
+    idle = State(initial=True, data={"count": 0, "items": list})
+    busy = State(data={"n": DataVar(default=5)})
+    go = idle.to(busy)
+    back = busy.to(idle)
+
+m = M()
+assert m.get_state_data(m.idle) == {"count": 0, "items": []}
+m.go()
+assert m.get_state_data(m.idle) is None, "data must be removed on exit"
+assert m.get_state_data(m.busy) == {"n": 5}
+m.back()
+assert m.get_state_data(m.idle)["count"] == 0, "re-entry must reset to defaults"
+assert M().get_state_data(M().idle)["count"] == 0, "data must be per instance"
+assert isinstance(m.state_data_values, dict)
+m.set_state_data(m.idle, "count", 3)
+assert m.get_state_data(m.idle)["count"] == 3
+GATEEOF""",
+    # Bounded-memory mode: byte-identical json output vs unbounded, a non-empty spill
+    # file left in the configured dir, and the stats line with spills/peak fields.
+    # Validated in-container: exits 1 pre-implementation (flags unrecognised).
+    "scc-bounded-memory-spilling": """cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+cd /app
+go build -o /tmp/sccgate .
+mkdir -p /tmp/sccsrc && for i in 1 2 3 4 5; do printf 'package p\\nfunc F%s() {}\\n' "$i" > /tmp/sccsrc/f$i.go; done
+rm -rf /tmp/sccspill && mkdir -p /tmp/sccspill
+/tmp/sccgate --format-multi json:/tmp/unbounded.json /tmp/sccsrc
+/tmp/sccgate --bounded-memory --bounded-memory-dir /tmp/sccspill \\
+  --bounded-memory-max-in-memory-files 1 --bounded-memory-stats \\
+  --format-multi json:/tmp/bounded.json /tmp/sccsrc 2>/tmp/sccstats
+cmp -s /tmp/unbounded.json /tmp/bounded.json
+grep -q '^bounded-memory:' /tmp/sccstats
+grep -qE 'spills=[1-9][0-9]*' /tmp/sccstats
+grep -qE 'peak_in_memory_files=[0-9]+' /tmp/sccstats
+test -n "$(find /tmp/sccspill -type f -size +0c | head -1)"
+GATEEOF""",
 }
 
 

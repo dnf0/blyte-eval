@@ -1,0 +1,91 @@
+19:17:44 [INFO] superstate_eval.paired: ==============================================================================
+19:17:44 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=5  arms=vanilla, superstate_solo, superstate_daemon  concurrency=3
+19:17:44 [INFO] superstate_eval.paired: Runs=15  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260914-191744
+19:17:44 [INFO] superstate_eval.paired: ==============================================================================
+19:17:44 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] (budget: 5400s)
+19:17:44 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [superstate_solo] (budget: 5400s)
+19:17:44 [INFO] superstate_eval.docker_manager: Host disk check: 50.75 GB free on /
+19:17:44 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: superstate_solo] (Base budget: 5400.0s)
+19:17:44 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [superstate_daemon] (budget: 5400s)
+19:17:44 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
+19:17:44 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: superstate_daemon] (Base budget: 5400.0s)
+19:17:44 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=3, User override=None)
+19:17:44 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=3, User override=None)
+19:17:44 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=3, User override=None)
+19:17:48 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-191744/eval-datacurve_fastapi-deprecation-response-headers-vanilla-96010be1/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+19:17:48 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-191744/eval-datacurve_fastapi-deprecation-response-headers-superstate_solo-ce1cb30a/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+19:17:48 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-191744/eval-datacurve_fastapi-deprecation-response-headers-superstate_daemon-7d7b4f88/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+19:17:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 420d8a86afc4 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+19:17:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0de20ea6e123 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+19:17:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 372d9e0af4e0 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+19:17:49 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/fastapi-deprecation-response-headers/tests for the agent phase
+19:17:49 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+19:17:49 [INFO] superstate_eval.adapters.superstate: Direct state handoff active: initialized state directly with gate './run-in-container python -c "import datetime as dt;from fastapi import FastAPI, APIRouter;from fastapi.testclient import TestClient;from starlette.responses import JSONResponse;from fastapi.middleware.deprecation import DeprecationTrackingMiddleware;d=dt.datetime(2035,1,1,tzinfo=dt.timezone.utc);app=FastAPI();app.get('/a', deprecated=True)(lambda: {'ok':1});app.get('/b', sunset=d, successor_url='/v2')(lambda: {'ok':2});app.get('/c', deprecation_date=d)(lambda: {'ok':3});app.get('/d', deprecated=True)(lambda: JSONResponse({'ok':4}, headers={'deprecation':'keep-me'}));r=APIRouter(deprecated=True); r.get('/e')(lambda: {'ok':5}); app.include_router(r);mw=DeprecationTrackingMiddleware(app); c=TestClient(mw);assert c.get('/a').headers.get('deprecation')=='true', 'F1: deprecated=True must emit Deprecation: true';hb=c.get('/b').headers;assert 'sunset' in hb, 'F1: sunset must emit a Sunset header';assert 'successor-version' in hb.get('link',''), 'F3: successor_url must emit Link rel=successor-version';hc=c.get('/c').headers;assert hc.get('deprecation') not in (None,'true'), 'F2: deprecation_date must emit a date, not true';assert c.get('/d').headers.get('deprecation')=='keep-me', 'F5: an existing Deprecation header must be preserved';assert c.get('/e').headers.get('deprecation')=='true', 'F1: router-level deprecated=True must apply';s=app.openapi()['paths']['/b']['get'];assert 'x-sunset' in s and 'x-successor-url' in s, 'F1/F3: OpenAPI must carry x-sunset and x-successor-url';assert 'x-deprecation-date' in app.openapi()['paths']['/c']['get'], 'F2: OpenAPI must carry x-deprecation-date';st=mw.get_stats();assert st['/a']['deprecated_hits']==1, 'F4: middleware must count deprecated hits';assert st['/b']['sunset_hits']==1, 'F4: middleware must count sunset hits';mw.reset_stats();assert not mw.get_stats().get('/a',{}).get('deprecated_hits',0), 'F4: reset_stats must clear counters'"' without plan.md
+19:17:49 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+19:17:50 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for fastapi-deprecation-response-headers
+19:28:40 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:5e1a6d4e5dff from /Users/danielfisher/.cache/superstate-eval/staged/fastapi-deprecation-response-headers/tests
+19:28:40 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 36680f401580 (superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:5e1a6d4e5dff)
+19:29:24 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 36680f401580
+19:29:24 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:5e1a6d4e5dff
+19:29:24 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/fastapi-deprecation-response-headers arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+19:29:24 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 372d9e0af4e0
+19:29:24 [INFO] superstate_eval.runner: Finished task 'datacurve/fastapi-deprecation-response-headers' [Arm: superstate_daemon]: Passed=False, WallClock=699.92s, Cost=$0.48, TotalGrantedBudget=5400.0s
+19:29:24 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.4811 turns=1 700s  Agent run failed: Verification failed (exit code 1): Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'fastapi.middleware.deprecation'
+ | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output: from report (test did not run or produced no result — see raw output)
+[verifier] ✗ [f2p] tests.test_deprecation_sunset_headers.test_trace_route_deprecated_headers
+    missing from report (test did not run or produced no result — see raw output)
+P2P 3134/3134 pass 0 fail; F2P 0/137 pass 137 fail; PARTIAL 0.9581167838581474; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 137, "f2p_passed": 0, "p2p_total": 3134, "p2p_passed": 3134, "f2p": 0.0, "p2p": 1.0, "partial": 0.9581167838581474}
+
+19:29:24 [INFO] superstate_eval.paired: -> build-cython-ext [vanilla] (budget: 900s)
+19:29:24 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: vanilla] (Base budget: 900.0s)
+19:29:24 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.0 GB reported available], Disk limit=2, User override=None)
+19:29:29 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.0 GB reported available], Disk limit=2, User override=None)
+19:29:34 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.7 GB reported available], Disk limit=2, User override=None)
+19:29:39 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.7 GB reported available], Disk limit=2, User override=None)
+19:29:44 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.8 GB reported available], Disk limit=2, User override=None)
+19:29:49 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.8 GB reported available], Disk limit=2, User override=None)
+19:29:54 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.8 GB reported available], Disk limit=2, User override=None)
+19:29:59 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:30:04 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:30:09 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:30:14 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:30:19 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:30:24 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:30:29 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:30:34 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:30:39 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:30:44 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:30:49 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:30:54 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:30:59 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:31:04 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:31:09 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:31:14 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:31:19 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:31:24 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:31:29 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:31:34 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:31:39 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:31:44 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:31:49 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:31:54 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:31:59 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:32:04 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:32:09 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:32:14 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 4.6 GB reported available], Disk limit=2, User override=None)
+19:32:19 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.1 GB reported available], Disk limit=2, User override=None)
+19:32:24 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:32:29 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:32:35 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 4.6 GB reported available], Disk limit=2, User override=None)
+19:32:40 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:32:45 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:32:50 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+19:32:55 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:33:00 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:33:05 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
+19:33:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+19:33:15 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=2, User override=None)
