@@ -60,3 +60,19 @@ def test_fixtures_exercise_behaviour_not_mere_presence() -> None:
         assert any(tok in gate for tok in runners), (
             f"{name} gate only checks for presence, not behaviour"
         )
+
+
+def test_unmeasurable_tasks_are_documented_with_a_reason() -> None:
+    """A task whose grader cannot run scores every arm zero and shrinks the denominator.
+
+    sqlite-db-truncate ships no tests/ dir, so the loader falls back to `pytest tests/`
+    and the image has no pytest -- exit 127 for vanilla, solo and daemon alike. Recording
+    it stops it silently creeping back into a run.
+    """
+    from lab.benchmarks.gate_fixtures import UNMEASURABLE_TASKS, is_unmeasurable
+
+    assert UNMEASURABLE_TASKS, "expected at least the known-broken task to be recorded"
+    for name, reason in UNMEASURABLE_TASKS.items():
+        assert reason.strip(), f"{name} excluded without a stated reason"
+        assert is_unmeasurable(name) == reason
+    assert is_unmeasurable("db-wal-recovery") is None

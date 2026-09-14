@@ -94,18 +94,34 @@ GATE_FIXTURES: dict[str, str] = {
     ),
     # The README snippet must run, the compiled extensions must import, and the package's
     # own suite must still pass -- excluding the two files the instruction names as dead.
-    "build-cython-ext": (
-        "./run-in-container sh -c '"
-        "python -c \"import pyknotid; "
-        "from pyknotid.spacecurves import chelpers, ccomplexity; "
-        "from pyknotid import cinvariants; "
-        "import pyknotid.make as mk; import pyknotid.spacecurves as sp; "
-        "k = sp.Knot(mk.three_twist(num_points=100)); k.alexander_polynomial(-1)\" && "
-        "python -m pytest /app/pyknotid/tests "
-        "--ignore=/app/pyknotid/tests/test_random_curves.py "
-        "--ignore=/app/pyknotid/tests/test_catalogue.py -q"
-        "'"
-    ),
+    # Every clause is stated in the instruction: numpy 2.x compatibility, the /app/pyknotid
+    # clone location, the three named extensions being *compiled* ("the compiled extensions
+    # ... should work in their original context"), the README snippet, and the repository's
+    # own suite minus the two files the instruction names as dead.
+    #
+    # The earlier version checked only that the extensions imported. A pure-Python fallback
+    # satisfies that, so the daemon reached `status: completed` with its retry loop working
+    # correctly and still failed the grader -- the contract was narrower than the job.
+    "build-cython-ext": """cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+python - <<'PYEOF'
+import numpy, os
+assert numpy.__version__.startswith("2."), f"needs numpy 2.x, got {numpy.__version__}"
+assert os.path.isdir("/app/pyknotid"), "source must be cloned to /app/pyknotid"
+import pyknotid
+from pyknotid.spacecurves import chelpers, ccomplexity
+from pyknotid import cinvariants
+for m in (chelpers, ccomplexity, cinvariants):
+    f = getattr(m, "__file__", "") or ""
+    assert f.endswith((".so", ".pyd")), f"{m.__name__} is not a compiled extension: {f}"
+import pyknotid.make as mk, pyknotid.spacecurves as sp
+k = sp.Knot(mk.three_twist(num_points=100))
+assert k.alexander_polynomial(-1) is not None
+PYEOF
+python -m pytest /app/pyknotid/tests \\
+  --ignore=/app/pyknotid/tests/test_random_curves.py \\
+  --ignore=/app/pyknotid/tests/test_catalogue.py -q
+GATEEOF""",
     # Features 1-5 of the instruction: Deprecation/Sunset/Link headers, the OpenAPI
     # x-* extensions, the tracking middleware, and header preservation with Link merging.
     "fastapi-deprecation-response-headers": (
@@ -209,6 +225,23 @@ grep -qE 'peak_in_memory_files=[0-9]+' /tmp/sccstats
 test -n "$(find /tmp/sccspill -type f -size +0c | head -1)"
 GATEEOF""",
 }
+
+
+# Tasks whose SEALED GRADER cannot run, so every arm scores zero regardless of its work.
+# These are not hard tasks -- they are unmeasurable, and including them silently depresses
+# every arm's pass rate and shrinks the paired-comparison denominator.
+UNMEASURABLE_TASKS: dict[str, str] = {
+    # Ships no tests/ directory, so task_loader falls back to `pytest tests/` -- and pytest
+    # is not installed in the image. Observed exit 127 for vanilla, solo and daemon alike:
+    #   OCI runtime exec failed: exec: "pytest": executable file not found in $PATH
+    # Re-include once the task carries a verifier that actually executes.
+    "sqlite-db-truncate": "grader exits 127: pytest not present in the task image",
+}
+
+
+def is_unmeasurable(task_name: str) -> Optional[str]:
+    """Reason a task cannot be scored, or None if it can."""
+    return UNMEASURABLE_TASKS.get(task_name)
 
 
 def agent_gate_for(task_name: str) -> Optional[str]:
