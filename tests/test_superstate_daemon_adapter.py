@@ -126,7 +126,8 @@ def test_gate_rejects_a_proposal_that_already_passes(tmp_path: Path) -> None:
         tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
     )
     assert gate == "true", "a gate that already passes must be rejected"
-    assert telemetry is not None and telemetry.input_tokens == 11
+    # Authoring turn plus critique turn, both costed.
+    assert telemetry is not None and telemetry.input_tokens == 22
 
 
 def test_gate_accepts_a_proposal_that_currently_fails(tmp_path: Path) -> None:
@@ -203,3 +204,64 @@ def test_wrapper_omits_the_contract_without_a_container(tmp_path: Path) -> None:
     wrapper = adapter._write_driver_wrapper(tmp_path, _StubDriver(""), container=None)
     assert wrapper is not None
     assert "environment-contract.md" not in wrapper.read_text()
+
+
+class _ScriptedDriver:
+    """Driver stub returning a different response per successive turn."""
+
+    cli_path = "/usr/bin/agy"
+    model = "gemini-3.8-flash-high"
+
+    def __init__(self, *responses: str) -> None:
+        self.responses = list(responses)
+        self.calls = 0
+
+    def run(self, *_args: object, **_kwargs: object) -> SimpleNamespace:
+        response = self.responses[min(self.calls, len(self.responses) - 1)]
+        self.calls += 1
+        return SimpleNamespace(raw_response=response, input_tokens=10, output_tokens=5)
+
+
+def test_critique_widens_an_incomplete_gate(tmp_path: Path) -> None:
+    """An incomplete gate is worse than no gate: the worker stops the moment it passes.
+
+    build-cython-ext failed exactly this way -- the gate checked only the snippet the task
+    called "at the very least", so the two requirements it omitted were never done and the
+    sealed grader failed on precisely those.
+    """
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    narrow = "test -f ./snippet-runs"
+    widened = "test -f ./snippet-runs && test -f ./suite-passes"
+    driver = _ScriptedDriver(narrow, widened)
+
+    gate, telemetry = adapter._derive_gate(
+        tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+    )
+    assert gate == widened, "critique must widen a gate that misses requirements"
+    assert driver.calls == 2, "expected one authoring turn and one critique turn"
+    # Both turns must be costed, not just the first.
+    assert telemetry is not None and telemetry.input_tokens == 20
+
+
+def test_critique_cannot_weaken_the_gate(tmp_path: Path) -> None:
+    """A critique may only strengthen the contract. A no-op reply keeps the original."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    original = "test -f ./artifact"
+    driver = _ScriptedDriver(original, "true")
+
+    gate, _ = adapter._derive_gate(
+        tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+    )
+    assert gate == original
+
+
+def test_critique_rejecting_an_already_passing_gate(tmp_path: Path) -> None:
+    """A widened gate that already passes cannot discriminate, so the original stands."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    original = "test -f ./artifact"
+    driver = _ScriptedDriver(original, "echo always-passes")
+
+    gate, _ = adapter._derive_gate(
+        tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+    )
+    assert gate == original

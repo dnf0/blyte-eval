@@ -10,6 +10,7 @@ import re
 import shlex
 import subprocess
 import time
+from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
@@ -28,13 +29,54 @@ logger = logging.getLogger("superstate_eval.adapters.superstate_daemon")
 # accepting one reproduces exactly the no-op-gate failure this derivation exists to fix.
 NOOP_GATE_RE = re.compile(r"^\s*(true|:|exit\s+0)\s*;?\s*$", re.IGNORECASE)
 
-GATE_PROMPT = """Read the task below and output ONE shell command that verifies whether it is complete.
+
+def _sum_telemetry(first: Any, second: Any) -> Any:
+    """Combine two driver turns' token counts so gate authoring is costed in full."""
+    return SimpleNamespace(
+        input_tokens=int(getattr(first, "input_tokens", 0) or 0)
+        + int(getattr(second, "input_tokens", 0) or 0),
+        output_tokens=int(getattr(first, "output_tokens", 0) or 0)
+        + int(getattr(second, "output_tokens", 0) or 0),
+        raw_response=getattr(second, "raw_response", ""),
+    )
+
+GATE_PROMPT = """Read the task below and write a verification command covering EVERY requirement it states.
+
+The worker that receives your command is told to stop the moment it exits 0. Anything you
+leave out will therefore not get done. An incomplete gate is worse than no gate, because it
+narrows the job rather than merely under-checking it.
+
+Method:
+1. List every separately checkable claim the task makes -- snippets that must run, test
+   suites that must still pass, artifacts that must exist, modules that must import.
+2. Turn each into a shell check.
+3. Join them with `&&` into ONE command.
 
 Rules:
 - Output ONLY the command. No prose, no markdown fences, no explanation.
-- It must exit 0 when the task is done and non-zero when it is not done.
+- It must exit 0 only when EVERY requirement is met, and non-zero otherwise.
 - It must FAIL right now, before any work has been performed.
-- Use only what the task itself describes (its own snippets, its own test suite).
+- "At the very least ..." marks a floor to exceed, never the target. Cover it AND the rest.
+- If the task names its own test suite, include it, honouring any files it excludes.
+- Use only what the task itself describes.
+- Do NOT reference /tests/ -- that path holds a sealed grader you must not read or run.
+
+TASK:
+{instruction}
+"""
+
+GATE_CRITIQUE_PROMPT = """You proposed this verification command for the task below:
+
+    {gate}
+
+List any requirement the task states that this command does NOT check.
+
+If it covers everything, output the command unchanged. Otherwise output a corrected command
+covering the gaps, joined with `&&`.
+
+Rules:
+- Output ONLY the command. No prose, no markdown fences, no explanation.
+- It must still FAIL right now, before any work has been performed.
 - Do NOT reference /tests/ -- that path holds a sealed grader you must not read or run.
 
 TASK:
@@ -304,6 +346,15 @@ class SuperstateDaemonAdapter(AgentAdapter):
             logger.warning("Gate: rejected %r (no-op or reads the sealed grader)", candidate)
             return "true", telemetry
 
+        # One critique pass. Omissions are the expensive failure mode here: the worker is
+        # told to stop the moment the gate passes, so anything the gate misses never gets
+        # done. A single extra turn is cheap against a whole task scored zero.
+        candidate, critique = self._critique_gate(
+            workspace_path, task, driver, container, timeout_sec, candidate
+        )
+        if critique is not None:
+            telemetry = _sum_telemetry(telemetry, critique)
+
         passes_now, _, _ = self._run_gate_command(workspace_path, candidate, container=container)
         if passes_now:
             logger.warning("Gate: rejected %r -- already passes before any work", candidate)
@@ -311,6 +362,50 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         logger.info("Gate: driver authored %r (fails before work, as required)", candidate)
         return candidate, telemetry
+
+    def _critique_gate(
+        self,
+        workspace_path: Path,
+        task: TaskSpec,
+        driver: Any,
+        container: Any,
+        timeout_sec: float,
+        candidate: str,
+    ) -> tuple[str, Optional[Any]]:
+        """Ask the driver what its own gate fails to check, and widen it.
+
+        Keeps the original whenever the critique returns nothing usable, a no-op, a gate
+        that reads the sealed grader, or one that already passes -- a critique is only
+        ever allowed to strengthen the contract, never weaken it.
+        """
+        try:
+            critique = driver.run(
+                task,
+                workspace_path,
+                prompt_override=GATE_CRITIQUE_PROMPT.format(
+                    gate=candidate, instruction=task.instruction
+                ),
+                timeout_sec=min(300.0, timeout_sec),
+                container=container,
+            )
+        except Exception as exc:
+            logger.warning("Gate critique failed (%s); keeping the original", exc)
+            return candidate, None
+
+        widened = self._extract_gate(getattr(critique, "raw_response", "") or "")
+        if not widened or widened == candidate:
+            return candidate, critique
+        if NOOP_GATE_RE.match(widened) or self._is_sealed_gate(widened):
+            logger.warning("Gate critique proposed %r; keeping the original", widened)
+            return candidate, critique
+
+        passes_now, _, _ = self._run_gate_command(workspace_path, widened, container=container)
+        if passes_now:
+            logger.warning("Gate critique proposed a gate that already passes; keeping original")
+            return candidate, critique
+
+        logger.info("Gate widened by critique: %r", widened)
+        return widened, critique
 
     def _write_driver_wrapper(
         self, workspace_path: Path, driver: Any, container: Any = None

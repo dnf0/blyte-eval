@@ -1,0 +1,163 @@
+17:25:25 [INFO] superstate_eval.paired: ==============================================================================
+17:25:25 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=5  arms=superstate_daemon  concurrency=3
+17:25:25 [INFO] superstate_eval.paired: Runs=5  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260914-172525
+17:25:25 [INFO] superstate_eval.paired: ==============================================================================
+17:25:25 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [superstate_daemon] (budget: 5400s)
+17:25:25 [INFO] superstate_eval.docker_manager: Host disk check: 47.75 GB free on /
+17:25:25 [INFO] superstate_eval.paired: -> build-cython-ext [superstate_daemon] (budget: 900s)
+17:25:25 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: superstate_daemon] (Base budget: 5400.0s)
+17:25:25 [INFO] superstate_eval.paired: -> sqlite-db-truncate [superstate_daemon] (budget: 1200s)
+17:25:25 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon] (Base budget: 900.0s)
+17:25:25 [INFO] superstate_eval.runner: Starting task 'terminal-bench/sqlite-db-truncate' [Arm: superstate_daemon] (Base budget: 1200.0s)
+17:25:25 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 8.0 GB reported available], Disk limit=2, User override=None)
+17:25:25 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 8.0 GB reported available], Disk limit=2, User override=None)
+17:25:25 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 8.0 GB reported available], Disk limit=2, User override=None)
+17:25:28 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260914-172525/eval-terminal-bench_build-cython-ext-superstate_daemon-0600b57d/workspace
+17:25:28 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 9f754ee6f6cc (alexgshaw/build-cython-ext:20251031)
+17:25:28 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests for the agent phase
+17:25:28 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+17:25:30 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-172525/eval-datacurve_fastapi-deprecation-response-headers-superstate_daemon-a94238c6/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+17:25:30 [INFO] superstate_eval.docker_manager: Spawned sandbox container: c2e847556d55 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+17:25:30 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/fastapi-deprecation-response-headers/tests for the agent phase
+17:25:30 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+17:25:30 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.8 GB reported available], Disk limit=2, User override=None)
+17:25:35 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=2, User override=None)
+17:25:40 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=2, User override=None)
+17:25:45 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=2, User override=None)
+17:25:50 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=2, User override=None)
+17:25:55 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=2, User override=None)
+17:26:00 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.7 GB reported available], Disk limit=2, User override=None)
+17:26:05 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=2, User override=None)
+17:26:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.3 GB reported available], Disk limit=2, User override=None)
+17:26:15 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.3 GB reported available], Disk limit=2, User override=None)
+17:26:20 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.3 GB reported available], Disk limit=2, User override=None)
+17:26:25 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:26:28 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python -c "import pyknotid; from pyknotid.spacecurves import chelpers, ccomplexity; from pyknotid import cinvariants; import pyknotid.make as mk; import pyknotid.spacecurves as sp; k = sp.Knot(mk.three_twist(num_points=100)); out = k.alexander_polynomial(-1)"' (fails before work, as required)
+17:26:28 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 10a2d3a4': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+17:26:28 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 10a2d3a4 (prev=None). Lease extended.
+17:26:30 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:26:35 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:26:40 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:26:45 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:26:50 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:26:55 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.5 GB reported available], Disk limit=2, User override=None)
+17:27:00 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.5 GB reported available], Disk limit=2, User override=None)
+17:27:05 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.7 GB reported available], Disk limit=2, User override=None)
+17:27:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.9 GB reported available], Disk limit=2, User override=None)
+17:27:15 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.7 GB reported available], Disk limit=2, User override=None)
+17:27:20 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.8 GB reported available], Disk limit=2, User override=None)
+17:27:25 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.8 GB reported available], Disk limit=2, User override=None)
+17:27:30 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.9 GB reported available], Disk limit=2, User override=None)
+17:27:35 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.5 GB reported available], Disk limit=2, User override=None)
+17:27:40 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 7.0 GB reported available], Disk limit=2, User override=None)
+17:27:45 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 7.0 GB reported available], Disk limit=2, User override=None)
+17:27:50 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.9 GB reported available], Disk limit=2, User override=None)
+17:27:55 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 7.0 GB reported available], Disk limit=2, User override=None)
+17:28:00 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.8 GB reported available], Disk limit=2, User override=None)
+17:28:05 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.9 GB reported available], Disk limit=2, User override=None)
+17:28:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.7 GB reported available], Disk limit=2, User override=None)
+17:28:15 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.8 GB reported available], Disk limit=2, User override=None)
+17:28:20 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=2, User override=None)
+17:28:25 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.7 GB reported available], Disk limit=2, User override=None)
+17:28:30 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.9 GB reported available], Disk limit=2, User override=None)
+17:28:35 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.3 GB reported available], Disk limit=2, User override=None)
+17:28:40 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.5 GB reported available], Disk limit=2, User override=None)
+17:28:45 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:28:50 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.8 GB reported available], Disk limit=2, User override=None)
+17:28:55 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.5 GB reported available], Disk limit=2, User override=None)
+17:29:00 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:29:05 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.4 GB reported available], Disk limit=2, User override=None)
+17:29:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.0 GB reported available], Disk limit=2, User override=None)
+17:29:15 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.6 GB reported available], Disk limit=3, User override=None)
+17:29:16 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-172525/eval-terminal-bench_sqlite-db-truncate-superstate_daemon-1e28b82c/workspace from alexgshaw/sqlite-db-truncate:20251031:/app (1 entries)
+17:29:16 [INFO] superstate_eval.docker_manager: Spawned sandbox container: b2869926ffc7 (alexgshaw/sqlite-db-truncate:20251031)
+17:29:16 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using task-declared verifier 'pytest tests/'
+17:29:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: ad8a65cd': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+17:29:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: ad8a65cd (prev=None). Lease extended.
+17:30:30 [WARNING] superstate_eval.drivers.agy_cli: agy turn exceeded timeout of 300.0s
+17:30:30 [WARNING] superstate_eval.adapters.superstate_daemon: Gate: driver returned no parseable command; falling back to no-op
+17:33:01 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+17:33:01 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+17:33:01 [WARNING] superstate_eval.extractor: Task terminal-bench/sqlite-db-truncate has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+17:33:01 [WARNING] superstate_eval.extractor: Task terminal-bench/sqlite-db-truncate ships no tests directory; falling back to running the verification command inside the agent's own container without injected tests.
+17:33:02 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/sqlite-db-truncate arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+17:33:02 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: b2869926ffc7
+17:33:02 [INFO] superstate_eval.runner: Finished task 'terminal-bench/sqlite-db-truncate' [Arm: superstate_daemon]: Passed=True, WallClock=456.60s, Cost=$0.26, TotalGrantedBudget=3600.0s
+17:33:02 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.2593 turns=2 457s  
+17:33:02 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] (budget: 900s)
+17:33:02 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+17:33:02 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 6.5 GB reported available], Disk limit=3, User override=None)
+17:33:02 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260914-172525/eval-terminal-bench_db-wal-recovery-superstate_daemon-0f2590a0/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+17:33:02 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 57c12bfd006d (alexgshaw/db-wal-recovery:20251031)
+17:33:02 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests for the agent phase
+17:33:02 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+17:34:30 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python3 -c "import json; data = json.load(open(\'/app/recovered.json\')); assert len(data) == 11 and [x[\'id\'] for x in data] == sorted(x[\'id\'] for x in data) and all(\'id\' in x and \'name\' in x and \'value\' in x for x in data)"' (fails before work, as required)
+17:34:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: fef81359': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+17:34:30 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: fef81359 (prev=None). Lease extended.
+17:35:33 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+17:35:33 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+17:36:04 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:0f5032512194 from /Users/danielfisher/.cache/superstate-eval/staged/fastapi-deprecation-response-headers/tests
+17:36:04 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7bc429739d6e (superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:0f5032512194)
+17:36:47 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7bc429739d6e
+17:36:47 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:0f5032512194
+17:36:47 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/fastapi-deprecation-response-headers arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+17:36:47 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: c2e847556d55
+17:36:47 [INFO] superstate_eval.runner: Finished task 'datacurve/fastapi-deprecation-response-headers' [Arm: superstate_daemon]: Passed=False, WallClock=681.72s, Cost=$0.22, TotalGrantedBudget=6600.0s
+17:36:47 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.2205 turns=2 682s  Verification failed: Reward was 0.0 < 1.0
+Output: from report (test did not run or produced no result — see raw output)
+[verifier] ✗ [f2p] tests.test_deprecation_sunset_headers.test_trace_route_deprecated_headers
+    missing from report (test did not run or produced no result — see raw output)
+P2P 3134/3134 pass 0 fail; F2P 0/137 pass 137 fail; PARTIAL 0.9581167838581474; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 137, "f2p_passed": 0, "p2p_total": 3134, "p2p_passed": 3134, "f2p": 0.0, "p2p": 1.0, "partial": 0.9581167838581474}
+
+17:36:47 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] (budget: 900s)
+17:36:47 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 900.0s)
+17:36:47 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=6, RAM limit=9 [24.0 GB total - 6.0 GB reserve, 2.0 GB per worker; 4.4 GB reported available], Disk limit=3, User override=None)
+17:36:47 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260914-172525/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-6d6f51d0/workspace
+17:36:47 [INFO] superstate_eval.docker_manager: Spawned sandbox container: aa10a4ec147c (alexgshaw/openssl-selfsigned-cert:20251031)
+17:36:47 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/openssl-selfsigned-cert/tests for the agent phase
+17:36:47 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=300.0s, conversation_id=None)
+17:38:04 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python3 /app/check_cert.py' (fails before work, as required)
+17:38:04 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 78614d0f': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+17:38:04 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 78614d0f (prev=None). Lease extended.
+17:38:05 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+17:38:05 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+17:38:05 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+17:38:26 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+17:38:26 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 57c12bfd006d
+17:38:26 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=324.67s, Cost=$0.31, TotalGrantedBudget=3300.0s
+17:38:26 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.3125 turns=2 325s  
+17:41:38 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 231a3b01': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+17:41:38 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 231a3b01 (prev=10a2d3a4). Lease extended.
+17:41:39 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+17:41:39 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+17:41:40 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+17:41:46 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+17:41:46 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 9f754ee6f6cc
+17:41:46 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon]: Passed=False, WallClock=981.04s, Cost=$0.93, TotalGrantedBudget=4500.0s
+17:41:46 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.9269 turns=2 981s  Verification failed: Reward was 0.0 < 1.0
+Output: lexity_cython_extension
+PASSED ../tests/test_outputs.py::test_cinvariants_cython_extension
+PASSED ../tests/test_outputs.py::test_chelpers
+PASSED ../tests/test_outputs.py::test_cinvariants_python_vs_cython
+PASSED ../tests/test_outputs.py::test_example_usage
+FAILED ../tests/test_outputs.py::test_ccomplexity - AttributeError: module 'n...
+FAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - AssertionEr...
+========================= 2 failed, 9 passed in 4.75s ==========================
+
+17:47:23 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+17:47:23 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+17:47:23 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+17:47:33 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+17:47:33 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: aa10a4ec147c
+17:47:33 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+17:47:33 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=646.08s, Cost=$0.31, TotalGrantedBudget=3300.0s
+17:47:33 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.3115 turns=2 646s  
+
+| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|
+| superstate_daemon | 5 | 3 | 60.0% | $2.03 | $0.68 | 51.5m | 200.0m | 628956 | 54711 |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/frontier_daemon_fp_5tasks.json
