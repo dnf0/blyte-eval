@@ -40,48 +40,45 @@ def _sum_telemetry(first: Any, second: Any) -> Any:
         raw_response=getattr(second, "raw_response", ""),
     )
 
-GATE_PROMPT = """Read the task below and write a verification command covering EVERY requirement it states.
+GATE_PROMPT = """Write ONE shell command verifying EVERY requirement the task below states.
 
-The worker that receives your command is told to stop the moment it exits 0. Anything you
-leave out will therefore not get done. An incomplete gate is worse than no gate, because it
-narrows the job rather than merely under-checking it.
-
-Method:
-1. List every separately checkable claim the task makes -- snippets that must run, test
-   suites that must still pass, artifacts that must exist, modules that must import.
-2. Turn each into a shell check.
-3. Join them with `&&` into ONE command.
+The worker is told to stop the moment your command exits 0, so whatever you leave out will
+not get done. Cover each checkable requirement and join them with `&&`.
 
 Rules:
-- Output ONLY the command. No prose, no markdown fences, no explanation.
+- Output ONLY the command, on one line. No prose, no markdown fences, no explanation.
+- Answer immediately. Do not explore the repository first.
 - It must exit 0 only when EVERY requirement is met, and non-zero otherwise.
 - It must FAIL right now, before any work has been performed.
-- "At the very least ..." marks a floor to exceed, never the target. Cover it AND the rest.
+- "At the very least ..." is a floor to exceed, not the target. Cover it AND the rest.
 - If the task names its own test suite, include it, honouring any files it excludes.
-- Use only what the task itself describes.
 - Do NOT reference /tests/ -- that path holds a sealed grader you must not read or run.
 
 TASK:
 {instruction}
 """
 
-GATE_CRITIQUE_PROMPT = """You proposed this verification command for the task below:
+GATE_CRITIQUE_PROMPT = """This verification command was proposed for the task below:
 
     {gate}
 
-List any requirement the task states that this command does NOT check.
-
-If it covers everything, output the command unchanged. Otherwise output a corrected command
-covering the gaps, joined with `&&`.
+If it already checks every requirement the task states, output it unchanged. Otherwise
+output a corrected command that also covers what it misses, joined with `&&`.
 
 Rules:
-- Output ONLY the command. No prose, no markdown fences, no explanation.
+- Output ONLY the command, on one line. No prose, no markdown fences, no explanation.
+- Answer immediately. Do not explore the repository first.
 - It must still FAIL right now, before any work has been performed.
 - Do NOT reference /tests/ -- that path holds a sealed grader you must not read or run.
 
 TASK:
 {instruction}
 """
+
+# Gate authoring is a single short answer, but the richer completeness prompt pushed the
+# turn past the previous 300s cap on every task -- agy timed out, returned nothing, and
+# every gate silently degraded to `true`. Give it room, still bounded by the task budget.
+GATE_TURN_TIMEOUT_SEC = 900.0
 
 BRIDGE_PREFIX_RE = re.compile(r"(?:^|(?<=[;&|(]))\s*\.?/?run-in-container\s+")
 
@@ -331,7 +328,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
                 task,
                 workspace_path,
                 prompt_override=GATE_PROMPT.format(instruction=task.instruction),
-                timeout_sec=min(300.0, timeout_sec),
+                timeout_sec=min(GATE_TURN_TIMEOUT_SEC, timeout_sec),
                 container=container,
             )
         except Exception as exc:
@@ -385,7 +382,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
                 prompt_override=GATE_CRITIQUE_PROMPT.format(
                     gate=candidate, instruction=task.instruction
                 ),
-                timeout_sec=min(300.0, timeout_sec),
+                timeout_sec=min(GATE_TURN_TIMEOUT_SEC, timeout_sec),
                 container=container,
             )
         except Exception as exc:

@@ -265,3 +265,27 @@ def test_critique_rejecting_an_already_passing_gate(tmp_path: Path) -> None:
         tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
     )
     assert gate == original
+
+
+def test_gate_turn_gets_more_than_the_driver_default_timeout() -> None:
+    """Gate authoring must not be capped so tightly that it silently degrades to no-gate.
+
+    Regression: the completeness prompt pushed the authoring turn past a 300s cap on all
+    five tasks. agy timed out, returned an empty response, and every gate fell back to
+    `true` -- a whole run measuring "no gate" while appearing to measure gate quality.
+    """
+    from lab.engine.adapters.superstate_daemon import GATE_TURN_TIMEOUT_SEC
+
+    assert GATE_TURN_TIMEOUT_SEC > 300.0
+
+
+def test_timed_out_gate_turn_falls_back_loudly(tmp_path: Path, caplog) -> None:
+    """A gate that cannot be derived must be visible in the log, not silent."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    driver = _StubDriver("")  # empty response, as a timed-out turn produces
+    with caplog.at_level("WARNING"):
+        gate, _ = adapter._derive_gate(
+            tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+        )
+    assert gate == "true"
+    assert any("no parseable command" in r.message for r in caplog.records)
