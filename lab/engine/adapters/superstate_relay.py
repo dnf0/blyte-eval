@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
@@ -97,9 +98,19 @@ class SuperstateRelayAdapter(AgentAdapter):
                 error_message="Stage 1 failed: Claude returned failure or error"
             )
 
-        # Pre-check handoff
+        # Pre-check handoff (check root or subdirectories)
         state_dir = workspace_path / ".agent-state"
         handoff_file = state_dir / "handoff.md"
+        
+        if not handoff_file.exists():
+            candidates = sorted(workspace_path.glob("**/.agent-state/handoff.md"))
+            if candidates:
+                handoff_file = candidates[0]
+                state_dir.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.copy2(handoff_file, state_dir / "handoff.md")
+                except Exception:
+                    pass
         
         if not handoff_file.exists():
             return TaskRunResult(
