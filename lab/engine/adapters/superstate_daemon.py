@@ -81,6 +81,15 @@ TASK:
 # every gate silently degraded to `true`. Give it room, still bounded by the task budget.
 GATE_TURN_TIMEOUT_SEC = 900.0
 
+# Gate derivation is OFF by default. The daemon executes against a contract it is handed;
+# authoring its own inverts the handoff and makes the contract vary per run.
+GATE_DERIVATION_ENV_FLAG = "SUPERSTATE_EVAL_DERIVE_GATES"
+
+
+def gate_derivation_enabled() -> bool:
+    """Whether the daemon may author its own verification contract when none is supplied."""
+    return os.environ.get(GATE_DERIVATION_ENV_FLAG, "0").strip().lower() in ("1", "true", "yes", "on")
+
 BRIDGE_PREFIX_RE = re.compile(r"(?:^|(?<=[;&|(]))\s*\.?/?run-in-container\s+")
 
 
@@ -346,6 +355,22 @@ class SuperstateDaemonAdapter(AgentAdapter):
         if not self._is_sealed_gate(declared):
             logger.info("Gate: using task-declared verifier %r", declared)
             return str(declared), None
+
+        # The daemon takes the contract it is handed; it does not invent one.
+        #
+        # superstate_handoff's entire premise is that the CALLER supplies verify_cmd -- a
+        # human or agent states what "done" means, and the daemon executes against it.
+        # Having the daemon author its own gate inverts that: the specification work moves
+        # inside the thing being specified, and the daemon ends up grading its own homework
+        # against a contract it wrote. It also made the contract a per-run random variable,
+        # so no two runs measured the same task.
+        #
+        # Derivation is retained behind a flag purely to reproduce the 2026-09-15 runs that
+        # used it. The default is the same fallback superstate_mcp uses: "true", leaving the
+        # real verdict to the harness's sealed grader.
+        if not gate_derivation_enabled():
+            logger.info("Gate: no caller-supplied contract for %s; handing off ungated", task.name)
+            return "true", None
 
         if driver is None:
             logger.warning("Gate: no driver available to author one; falling back to no-op")

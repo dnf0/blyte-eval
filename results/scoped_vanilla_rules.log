@@ -35,3 +35,198 @@
 14:29:11 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/arktype-json-schema-refs-dependencies/tests for the agent phase
 14:29:11 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
 14:29:11 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:38:49 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-arktype-json-schema-refs-dependencies:709d0a4e78db from /Users/danielfisher/.cache/superstate-eval/staged/arktype-json-schema-refs-dependencies/tests
+14:38:50 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0e2abe1092d6 (superstate-eval-verifier/datacurve-arktype-json-schema-refs-dependencies:709d0a4e78db)
+14:40:09 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0e2abe1092d6
+14:40:09 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-arktype-json-schema-refs-dependencies:709d0a4e78db
+14:40:09 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/arktype-json-schema-refs-dependencies arm=vanilla: passed=False, reward=0.0, exit_code=0
+14:40:09 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 9f12f3048e60
+14:40:09 [INFO] superstate_eval.runner: Finished task 'datacurve/arktype-json-schema-refs-dependencies' [Arm: vanilla]: Passed=False, WallClock=777.80s, Cost=$0.41, TotalGrantedBudget=5400.0s
+14:40:09 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$0.4121 turns=1 778s  Agent run failed: Your previous response was cut off because it exceeded the output token limit
+Please continue from where you left off, keeping your response shorter
+Retries remaining: 3 | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output:   AssertionError Expected values to be strictly equal:
+    
+    true !== false
+[verifier] ✗ [f2p] dependent if/then: applies 'then' schema when 'if' condition matches
+    AssertionError Expected values to be strictly equal:
+    
+    true !== false
+P2P 1679/1679 pass 0 fail; F2P 0/25 pass 25 fail; PARTIAL 0.9853286384976526; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 25, "f2p_passed": 0, "p2p_total": 1679, "p2p_passed": 1679, "f2p": 0.0, "p2p": 1.0, "partial": 0.9853286384976526}
+
+14:40:09 [INFO] superstate_eval.paired: -> httpx-multipart-response-parsing [vanilla] (budget: 5400s)
+14:40:09 [INFO] superstate_eval.runner: Starting task 'datacurve/httpx-multipart-response-parsing' [Arm: vanilla] (Base budget: 5400.0s)
+14:40:09 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.6 GB reported available], Disk limit=5, User override=None)
+14:40:10 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_httpx-multipart-response-parsing-vanilla-d58789ba/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1:/app (182 entries)
+14:40:10 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d6431ac81fff (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1)
+14:40:10 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/httpx-multipart-response-parsing/tests for the agent phase
+14:40:10 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+14:40:10 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:48:34 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 3983561f': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+14:48:34 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: 3983561f (prev=3f269a72). Lease extended.
+14:48:56 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:fe825b4f0f57 from /Users/danielfisher/.cache/superstate-eval/staged/anko-typed-variable-bindings/tests
+14:48:56 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 705ef84c50f1 (superstate-eval-verifier/datacurve-anko-typed-variable-bindings:fe825b4f0f57)
+14:50:11 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 705ef84c50f1
+14:50:11 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:fe825b4f0f57
+14:50:11 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=vanilla: passed=False, reward=0.0, exit_code=0
+14:50:11 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: fb9e199d2e0c
+14:50:11 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla]: Passed=False, WallClock=1380.08s, Cost=$1.33, TotalGrantedBudget=6600.0s
+14:50:11 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.3251 turns=1 1380s  Verification failed: Reward was 0.0 < 1.0
+Output: cted: <nil>
+        main_test.go:216: Run output - received: "hello" - expected: <nil> - script: var a, b: int64 = 1, "hello"
+        main_test.go:217: received type: string - expected: <nil>
+    --- FAIL: TestTypedBindingsDeclarations (0.03s)
+P2P 94/94 pass 0 fail; F2P 7/9 pass 2 fail; PARTIAL 0.9805825242718447; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 9, "f2p_passed": 7, "p2p_total": 94, "p2p_passed": 94, "f2p": 0.7777777777777778, "p2p": 1.0, "partial": 0.9805825242718447}
+
+14:50:11 [INFO] superstate_eval.paired: -> katex-multicolumn-array-spans [vanilla] (budget: 5400s)
+14:50:11 [INFO] superstate_eval.runner: Starting task 'datacurve/katex-multicolumn-array-spans' [Arm: vanilla] (Base budget: 5400.0s)
+14:50:11 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=5, User override=None)
+14:50:43 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_katex-multicolumn-array-spans-vanilla-9145b6bc/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1:/app (40235 entries)
+14:50:43 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7cf9a4046da6 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1)
+14:50:48 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/katex-multicolumn-array-spans/tests for the agent phase
+14:50:48 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+14:50:48 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:51:28 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: bb854c63': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+14:51:28 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: bb854c63 (prev=11614be9). Lease extended.
+14:52:04 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:85247cf1f45c from /Users/danielfisher/.cache/superstate-eval/staged/fastapi-deprecation-response-headers/tests
+14:52:04 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e19f74c593d1 (superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:85247cf1f45c)
+14:52:55 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e19f74c593d1
+14:52:55 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:85247cf1f45c
+14:52:55 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/fastapi-deprecation-response-headers arm=vanilla: passed=False, reward=0.0, exit_code=0
+14:52:55 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f62ef62b04dd
+14:52:55 [INFO] superstate_eval.runner: Finished task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla]: Passed=False, WallClock=1543.97s, Cost=$1.49, TotalGrantedBudget=6600.0s
+14:52:55 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.4862 turns=1 1544s  Verification failed: Reward was 0.0 < 1.0
+Output: eaders["sunset"] == SUNSET_RFC7231_2
+    E   AssertionError: assert 'Tue, 01 Jan ... 00:00:00 GMT' == 'Sun, 15 Jun ... 12:00:00 GMT'
+    E     
+    E     - Sun, 15 Jun 2031 12:00:00 GMT
+    E     + Tue, 01 Jan 2030 00:00:00 GMT
+P2P 3134/3134 pass 0 fail; F2P 136/137 pass 1 fail; PARTIAL 0.9996942830938551; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 137, "f2p_passed": 136, "p2p_total": 3134, "p2p_passed": 3134, "f2p": 0.9927007299270073, "p2p": 1.0, "partial": 0.9996942830938551}
+
+14:52:55 [INFO] superstate_eval.paired: -> meriyah-explicit-resource-declarations [vanilla] (budget: 5400s)
+14:52:55 [INFO] superstate_eval.runner: Starting task 'datacurve/meriyah-explicit-resource-declarations' [Arm: vanilla] (Base budget: 5400.0s)
+14:52:55 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 5.1 GB reported available], Disk limit=5, User override=None)
+14:53:57 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_meriyah-explicit-resource-declarations-vanilla-557e487d/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7398skqnxqwg9hbmdj7ncmk1822aa0-v1.1:/app (82162 entries)
+14:53:57 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4b2f5e113cb1 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7398skqnxqwg9hbmdj7ncmk1822aa0-v1.1)
+14:54:02 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/meriyah-explicit-resource-declarations/tests for the agent phase
+14:54:02 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+14:54:02 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:59:46 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 1b189dcb': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+14:59:46 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: 1b189dcb (prev=b5addb64). Lease extended.
+15:00:19 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 01929f42': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+15:00:19 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: 01929f42 (prev=851b241a). Lease extended.
+15:00:23 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:1f4bb7e76b2e from /Users/danielfisher/.cache/superstate-eval/staged/httpx-multipart-response-parsing/tests
+15:00:23 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 30a5d8bb5632 (superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:1f4bb7e76b2e)
+15:00:36 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 30a5d8bb5632
+15:00:36 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:1f4bb7e76b2e
+15:00:36 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/httpx-multipart-response-parsing arm=vanilla: passed=False, reward=0.0, exit_code=0
+15:00:36 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d6431ac81fff
+15:00:36 [INFO] superstate_eval.runner: Finished task 'datacurve/httpx-multipart-response-parsing' [Arm: vanilla]: Passed=False, WallClock=1226.79s, Cost=$1.19, TotalGrantedBudget=6600.0s
+15:00:36 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.1875 turns=1 1227s  Verification failed: Reward was 0.0 < 1.0
+Output:     >       assert part.headers[expected[0]] == expected[1]
+    E       AssertionError: assert '1\tz' == '1 z'
+    E         
+    E         - 1 z
+    E         + 1	z
+    
+    tests/test_multipart_response.py:221: AssertionError
+P2P 1272/1272 pass 0 fail; F2P 121/122 pass 1 fail; PARTIAL 0.9992826398852224; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 122, "f2p_passed": 121, "p2p_total": 1272, "p2p_passed": 1272, "f2p": 0.9918032786885246, "p2p": 1.0, "partial": 0.9992826398852224}
+
+15:00:36 [INFO] superstate_eval.paired: -> python-statemachine-state-data-scoping [vanilla] (budget: 5400s)
+15:00:36 [INFO] superstate_eval.runner: Starting task 'datacurve/python-statemachine-state-data-scoping' [Arm: vanilla] (Base budget: 5400.0s)
+15:00:36 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 5.2 GB reported available], Disk limit=5, User override=None)
+15:00:37 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_python-statemachine-state-data-scoping-vanilla-47511b63/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1:/app (611 entries)
+15:00:37 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 56fbd274f6c0 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1)
+15:00:38 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/python-statemachine-state-data-scoping/tests for the agent phase
+15:00:38 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+15:00:38 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+15:00:47 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-expr-try-catch-errors:d2e7f7ae7f52 from /Users/danielfisher/.cache/superstate-eval/staged/expr-try-catch-errors/tests
+15:00:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: efb333d0615b (superstate-eval-verifier/datacurve-expr-try-catch-errors:d2e7f7ae7f52)
+15:03:31 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: efb333d0615b
+15:03:31 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-expr-try-catch-errors:d2e7f7ae7f52
+15:03:31 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/expr-try-catch-errors arm=vanilla: passed=False, reward=0.0, exit_code=0
+15:03:31 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 3c63e5e54ecd
+15:03:32 [INFO] superstate_eval.runner: Finished task 'datacurve/expr-try-catch-errors' [Arm: vanilla]: Passed=False, WallClock=2180.64s, Cost=$1.90, TotalGrantedBudget=6600.0s
+15:03:32 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.8997 turns=1 2181s  Verification failed: Reward was 0.0 < 1.0
+Output:     	            	 | try(items[0], nil) ?? "fallback"
+            	            	 | ...................^
+            	Test:       	TestTryCatch_BuiltinWithNilCoalescing
+    --- FAIL: TestTryCatch_BuiltinWithNilCoalescing (0.00s)
+P2P 66265/66265 pass 0 fail; F2P 76/79 pass 3 fail; PARTIAL 0.9999547811407211; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 79, "f2p_passed": 76, "p2p_total": 66265, "p2p_passed": 66265, "f2p": 0.9620253164556962, "p2p": 1.0, "partial": 0.9999547811407211}
+
+15:03:32 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [vanilla] (budget: 5400s)
+15:03:32 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: vanilla] (Base budget: 5400.0s)
+15:03:32 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 3.9 GB reported available], Disk limit=5, User override=None)
+15:03:34 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_scc-bounded-memory-spilling-vanilla-c6b3cba1/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+15:03:34 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 3faaa4f5ce1b (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+15:03:34 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests for the agent phase
+15:03:34 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+15:03:34 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+15:18:00 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:08549f8d7a38 from /Users/danielfisher/.cache/superstate-eval/staged/katex-multicolumn-array-spans/tests
+15:18:00 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f7b99d345203 (superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:08549f8d7a38)
+15:18:10 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f7b99d345203
+15:18:10 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:08549f8d7a38
+15:18:10 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/katex-multicolumn-array-spans arm=vanilla: passed=False, reward=0.0, exit_code=0
+15:18:10 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7cf9a4046da6
+15:18:10 [INFO] superstate_eval.runner: Finished task 'datacurve/katex-multicolumn-array-spans' [Arm: vanilla]: Passed=False, WallClock=1678.39s, Cost=$1.68, TotalGrantedBudget=5400.0s
+15:18:10 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.6808 turns=1 1678s  Verification failed: Reward was 0.0 < 1.0
+Output: shift')
+[verifier] ✗ [f2p] \multicolumn with complete separator suppression should have fewer separators when all rows have multicolumn at same position
+    TypeError: Cannot read properties of undefined (reading 'shift')
+P2P 597/599 pass 2 fail; F2P 92/94 pass 2 fail; PARTIAL 0.9942279942279942; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 94, "f2p_passed": 92, "p2p_total": 599, "p2p_passed": 597, "f2p": 0.9787234042553191, "p2p": 0.996661101836394, "partial": 0.9942279942279942}
+
+15:41:11 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 29a8a3f3': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+15:41:11 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: 29a8a3f3 (prev=bc2796e0). Lease extended.
+15:41:32 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:78939bc464ff from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+15:41:32 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 33db5e51049a (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:78939bc464ff)
+15:43:17 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 33db5e51049a
+15:43:17 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:78939bc464ff
+15:43:17 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=vanilla: passed=False, reward=0.0, exit_code=0
+15:43:17 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 3faaa4f5ce1b
+15:43:17 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: vanilla]: Passed=False, WallClock=2385.08s, Cost=$1.53, TotalGrantedBudget=6600.0s
+15:43:17 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.5261 turns=1 2385s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.63s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+15:43:40 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 3d0cec0c': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+15:43:40 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: 3d0cec0c (prev=d141eb14). Lease extended.
+15:44:19 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-meriyah-explicit-resource-declarations:8b1f289c4dc7 from /Users/danielfisher/.cache/superstate-eval/staged/meriyah-explicit-resource-declarations/tests
+15:44:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: b69a9d675f7a (superstate-eval-verifier/datacurve-meriyah-explicit-resource-declarations:8b1f289c4dc7)
+15:46:52 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: b69a9d675f7a
+15:46:53 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-meriyah-explicit-resource-declarations:8b1f289c4dc7
+15:46:53 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/meriyah-explicit-resource-declarations arm=vanilla: passed=False, reward=0.0, exit_code=0
+15:46:53 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 4b2f5e113cb1
+15:46:53 [INFO] superstate_eval.runner: Finished task 'datacurve/meriyah-explicit-resource-declarations' [Arm: vanilla]: Passed=False, WallClock=3237.32s, Cost=$1.72, TotalGrantedBudget=6600.0s
+15:46:53 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.7162 turns=1 3237s  Verification failed: Reward was 0.0 < 1.0
+Output: RES (1) =====
+[verifier] ✗ [f2p] test/parser/declarations/using.ts: Declarations - using > Using in for-of loops > should parse for-of with using and of as binding name
+    expected undefined to be 'using' // Object.is equality
+P2P 51469/51469 pass 0 fail; F2P 48/49 pass 1 fail; PARTIAL 0.9999805893085911; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 49, "f2p_passed": 48, "p2p_total": 51469, "p2p_passed": 51469, "f2p": 0.9795918367346939, "p2p": 1.0, "partial": 0.9999805893085911}
+
+16:30:48 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:153566ddd726 from /Users/danielfisher/.cache/superstate-eval/staged/python-statemachine-state-data-scoping/tests
+16:30:48 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 812e49f0c057 (superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:153566ddd726)
+16:31:13 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 812e49f0c057
+16:31:13 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:153566ddd726
+16:31:13 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/python-statemachine-state-data-scoping arm=vanilla: passed=True, reward=1.0, exit_code=0
+16:31:13 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 56fbd274f6c0
+16:31:13 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+16:31:13 [INFO] superstate_eval.runner: Finished task 'datacurve/python-statemachine-state-data-scoping' [Arm: vanilla]: Passed=True, WallClock=5437.07s, Cost=$1.94, TotalGrantedBudget=5400.0s
+16:31:13 [INFO] superstate_eval.paired:    vanilla: passed=True cost=$1.9358 turns=1 5437s  
+
+| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|
+| vanilla | 9 | 1 | 11.1% | $13.17 | $13.17 | 330.8m | 120.0m | 11639615 | 1183937 |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/scoped_vanilla_rules.json

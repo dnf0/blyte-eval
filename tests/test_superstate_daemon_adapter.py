@@ -7,6 +7,20 @@ from unittest.mock import patch
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
 
+import pytest
+
+
+@pytest.fixture
+def derivation_on(monkeypatch):
+    """Gate derivation is opt-in: the daemon does not author its own contract by default.
+
+    These tests exercise that opt-in machinery, so they enable it explicitly rather than
+    relying on a default that would invert the handoff.
+    """
+    from lab.engine.adapters.superstate_daemon import GATE_DERIVATION_ENV_FLAG
+
+    monkeypatch.setenv(GATE_DERIVATION_ENV_FLAG, "1")
+
 
 def test_daemon_adapter_initialization() -> None:
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
@@ -114,7 +128,7 @@ class _StubDriver:
         return SimpleNamespace(raw_response=self.response, input_tokens=11, output_tokens=7)
 
 
-def test_gate_rejects_a_proposal_that_already_passes(tmp_path: Path) -> None:
+def test_gate_rejects_a_proposal_that_already_passes(tmp_path: Path, derivation_on) -> None:
     """A gate that passes before any work cannot discriminate, so it must be refused.
 
     This is the failure that made the daemon arm score 0-1/5: with a gate that always
@@ -130,7 +144,7 @@ def test_gate_rejects_a_proposal_that_already_passes(tmp_path: Path) -> None:
     assert telemetry is not None and telemetry.input_tokens == 22
 
 
-def test_gate_accepts_a_proposal_that_currently_fails(tmp_path: Path) -> None:
+def test_gate_accepts_a_proposal_that_currently_fails(tmp_path: Path, derivation_on) -> None:
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
     proposed = "test -f ./artifact-the-task-must-produce"
     driver = _StubDriver(proposed)
@@ -140,7 +154,7 @@ def test_gate_accepts_a_proposal_that_currently_fails(tmp_path: Path) -> None:
     assert gate == proposed
 
 
-def test_gate_refuses_to_read_the_sealed_grader(tmp_path: Path) -> None:
+def test_gate_refuses_to_read_the_sealed_grader(tmp_path: Path, derivation_on) -> None:
     """The driver must never gate on /tests/ -- that is the answer key."""
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
     driver = _StubDriver("bash /tests/test.sh")
@@ -222,7 +236,7 @@ class _ScriptedDriver:
         return SimpleNamespace(raw_response=response, input_tokens=10, output_tokens=5)
 
 
-def test_critique_widens_an_incomplete_gate(tmp_path: Path) -> None:
+def test_critique_widens_an_incomplete_gate(tmp_path: Path, derivation_on) -> None:
     """An incomplete gate is worse than no gate: the worker stops the moment it passes.
 
     build-cython-ext failed exactly this way -- the gate checked only the snippet the task
@@ -243,7 +257,7 @@ def test_critique_widens_an_incomplete_gate(tmp_path: Path) -> None:
     assert telemetry is not None and telemetry.input_tokens == 20
 
 
-def test_critique_cannot_weaken_the_gate(tmp_path: Path) -> None:
+def test_critique_cannot_weaken_the_gate(tmp_path: Path, derivation_on) -> None:
     """A critique may only strengthen the contract. A no-op reply keeps the original."""
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
     original = "test -f ./artifact"
@@ -255,7 +269,7 @@ def test_critique_cannot_weaken_the_gate(tmp_path: Path) -> None:
     assert gate == original
 
 
-def test_critique_rejecting_an_already_passing_gate(tmp_path: Path) -> None:
+def test_critique_rejecting_an_already_passing_gate(tmp_path: Path, derivation_on) -> None:
     """A widened gate that already passes cannot discriminate, so the original stands."""
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
     original = "test -f ./artifact"
@@ -279,7 +293,7 @@ def test_gate_turn_gets_more_than_the_driver_default_timeout() -> None:
     assert GATE_TURN_TIMEOUT_SEC > 300.0
 
 
-def test_timed_out_gate_turn_falls_back_loudly(tmp_path: Path, caplog) -> None:
+def test_timed_out_gate_turn_falls_back_loudly(tmp_path: Path, caplog, derivation_on) -> None:
     """A gate that cannot be derived must be visible in the log, not silent."""
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
     driver = _StubDriver("")  # empty response, as a timed-out turn produces
@@ -289,3 +303,46 @@ def test_timed_out_gate_turn_falls_back_loudly(tmp_path: Path, caplog) -> None:
         )
     assert gate == "true"
     assert any("no parseable command" in r.message for r in caplog.records)
+
+
+def test_daemon_does_not_author_its_own_gate_by_default(tmp_path: Path) -> None:
+    """The daemon executes against a contract it is handed; it does not invent one.
+
+    superstate_handoff's premise is that the caller states what "done" means. A daemon that
+    authors its own gate moves the specification inside the thing being specified, grades
+    itself against a contract it wrote, and makes that contract a per-run random variable.
+    """
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    driver = _StubDriver("test -f ./something")
+    gate, _ = adapter._derive_gate(
+        tmp_path, _task_with_verifier("bash /tests/test.sh"), driver, None, 60.0
+    )
+    assert gate == "true", "an unsupplied contract must hand off ungated, not be invented"
+    assert driver.calls == 0, "the driver must not be consulted to author a gate"
+
+
+def test_gate_derivation_can_be_re_enabled_for_reproduction() -> None:
+    """Retained behind a flag so the 2026-09-15 runs that used it stay reproducible."""
+    import os
+    from unittest.mock import patch
+
+    from lab.engine.adapters.superstate_daemon import (
+        GATE_DERIVATION_ENV_FLAG,
+        gate_derivation_enabled,
+    )
+
+    with patch.dict(os.environ, {}, clear=True):
+        assert gate_derivation_enabled() is False
+    with patch.dict(os.environ, {GATE_DERIVATION_ENV_FLAG: "1"}, clear=True):
+        assert gate_derivation_enabled() is True
+
+
+def test_caller_supplied_contract_is_still_honoured(tmp_path: Path) -> None:
+    """A fixture, or a task-declared non-sealed verifier, is the caller's contract."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    driver = _StubDriver("")
+    gate, _ = adapter._derive_gate(
+        tmp_path, _task_with_verifier("pytest tests/local"), driver, None, 60.0
+    )
+    assert gate == "pytest tests/local"
+    assert driver.calls == 0
