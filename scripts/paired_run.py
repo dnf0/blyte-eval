@@ -12,6 +12,7 @@ import argparse
 import concurrent.futures
 import json
 import logging
+import os
 from pathlib import Path
 import sys
 import time
@@ -102,10 +103,19 @@ def main() -> int:
         driver = ClaudeCliDriver(model=model)
     else:
         driver = AgyCliDriver(model=args.model)
+    # These runs are LLM-bound, not local-compute-bound: the wall clock is the agent
+    # waiting on the model, not this machine working. Measured footprint per worker is
+    # ~0.6 GB (task containers sit at 5-25 MiB each; the agy processes dominate at
+    # ~100 MB apiece), against the 4.0 GB previously assumed. That over-estimate capped
+    # concurrency at 2-4 and made a 9-task sweep a six-hour job.
+    #
+    # 1.5 GB keeps a wide margin over the measured figure while roughly tripling the
+    # worker ceiling. CPU per worker is likewise generous for a process that is mostly
+    # blocked on network I/O.
     governor = ConcurrencyGovernor(
-        cpus_per_worker=2.0,
-        ram_gb_per_worker=4.0,
-        ram_headroom_gb=6.0,
+        cpus_per_worker=float(os.environ.get("SUPERSTATE_EVAL_CPUS_PER_WORKER", "1.0")),
+        ram_gb_per_worker=float(os.environ.get("SUPERSTATE_EVAL_RAM_PER_WORKER_GB", "1.5")),
+        ram_headroom_gb=float(os.environ.get("SUPERSTATE_EVAL_RAM_HEADROOM_GB", "4.0")),
     ) if args.concurrency > 1 else None
     runner = AblationRunner(
         workspace_root=args.workspace_root,

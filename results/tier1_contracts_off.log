@@ -369,3 +369,30 @@ P2P 94/94 pass 0 fail; F2P 5/9 pass 4 fail; PARTIAL 0.9611650485436893; BINARY 0
 08:25:10 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-075539/eval-datacurve_arktype-json-schema-refs-dependencies-superstate_daemon-45d7692a/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1:/app (83800 entries)
 08:25:11 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 489b251cff77 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1)
 08:26:20 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for arktype-json-schema-refs-dependencies
+08:45:51 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 833ec0bc': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+08:45:51 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_SOLO] New git commit detected: 833ec0bc (prev=04355e8b). Lease extended.
+08:47:31 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-arktype-json-schema-refs-dependencies:d6ca502cca3a from /Users/danielfisher/.cache/superstate-eval/staged/arktype-json-schema-refs-dependencies/tests
+08:47:31 [INFO] superstate_eval.docker_manager: Spawned sandbox container: b4cf75d2849e (superstate-eval-verifier/datacurve-arktype-json-schema-refs-dependencies:d6ca502cca3a)
+08:48:37 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: b4cf75d2849e
+08:48:38 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-arktype-json-schema-refs-dependencies:d6ca502cca3a
+08:48:38 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/arktype-json-schema-refs-dependencies arm=superstate_solo: passed=False, reward=0.0, exit_code=0
+08:48:38 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: efb028853be9
+08:48:38 [INFO] superstate_eval.runner: Finished task 'datacurve/arktype-json-schema-refs-dependencies' [Arm: superstate_solo]: Passed=False, WallClock=1860.92s, Cost=$1.40, TotalGrantedBudget=6600.0s
+08:48:38 [INFO] superstate_eval.paired:    superstate_solo: passed=False cost=$1.4031 turns=1 1861s  Verification failed: Reward was 0.0 < 1.0
+Output:   AssertionError Expected values to be strictly equal:
+    
+    true !== false
+[verifier] ✗ [f2p] dependent $ref: supports recursive $defs references
+    AssertionError Expected values to be strictly equal:
+    
+    true !== false
+P2P 1678/1679 pass 1 fail; F2P 23/25 pass 2 fail; PARTIAL 0.9982394366197183; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 25, "f2p_passed": 23, "p2p_total": 1679, "p2p_passed": 1678, "f2p": 0.92, "p2p": 0.9994044073853484, "partial": 0.9982394366197183}
+
+08:48:38 [INFO] superstate_eval.paired: -> expr-try-catch-errors [vanilla] (budget: 5400s)
+08:48:38 [INFO] superstate_eval.runner: Starting task 'datacurve/expr-try-catch-errors' [Arm: vanilla] (Base budget: 5400.0s)
+08:48:38 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 5.5 GB reported available], Disk limit=6, User override=None)
+08:48:38 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-075539/eval-datacurve_expr-try-catch-errors-vanilla-eb609e8a/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1:/app (350 entries)
+08:48:38 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 25393b39323b (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1)
+08:48:38 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/expr-try-catch-errors/tests for the agent phase
+08:48:38 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)

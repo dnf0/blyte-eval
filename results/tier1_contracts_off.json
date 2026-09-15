@@ -152,5 +152,60 @@
       "milestones_planned": 1,
       "decomposed": true
     }
+  },
+  {
+    "task_id": "datacurve/arktype-json-schema-refs-dependencies",
+    "arm": "superstate_solo",
+    "passed": false,
+    "wall_clock_sec": 1860.92,
+    "cost_usd": 1.40310375,
+    "input_tokens": 1326835,
+    "output_tokens": 108794,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 6600.0,
+    "failure_reason": "Verification failed: Reward was 0.0 < 1.0\nOutput:   AssertionError Expected values to be strictly equal:\n    \n    true !== false\n[verifier] \u2717 [f2p] dependent $ref: supports recursive $defs references\n    AssertionError Expected values to be strictly equal:\n    \n    true !== false\nP2P 1678/1679 pass 1 fail; F2P 23/25 pass 2 fail; PARTIAL 0.9982394366197183; BINARY 0\n[verifier] reward.json={\"reward\": 0, \"f2p_total\": 25, \"f2p_passed\": 23, \"p2p_total\": 1679, \"p2p_passed\": 1678, \"f2p\": 0.92, \"p2p\": 0.9994044073853484, \"partial\": 0.9982394366197183}\n",
+    "extra": {
+      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_solo-ac711eab",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": "none",
+      "nano_cpus": 2000000000,
+      "mem_limit": "8192m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 0.0,
+      "test_stats": {
+        "reward": 0,
+        "f2p_total": 25,
+        "f2p_passed": 23,
+        "p2p_total": 1679,
+        "p2p_passed": 1678,
+        "f2p": 0.92,
+        "p2p": 0.9994044073853484,
+        "partial": 0.9982394366197183
+      },
+      "test_pass_fraction": 0.9982394366197183,
+      "f2p_fraction": 0.92,
+      "p2p_fraction": 0.9994044073853484,
+      "tests_passed": 1701,
+      "tests_total": 1704,
+      "patch_path": "/tmp/superstate_eval_runs/20260915-075539/eval-datacurve_arktype-json-schema-refs-dependencies-superstate_solo-ac711eab/logs/artifacts/model.patch",
+      "logs_dir": "/tmp/superstate_eval_runs/20260915-075539/eval-datacurve_arktype-json-schema-refs-dependencies-superstate_solo-ac711eab/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/arktype-json-schema-refs-dependencies/tests"
+      ],
+      "state_engine": "superstate_binary",
+      "engine": "superstate-rust",
+      "superstate_bin": "/Users/danielfisher/repos/superstate/target/release/superstate",
+      "no_worktree": true,
+      "worktree": false,
+      "zero_turn_planning": true,
+      "plan_source": "direct_state_handoff",
+      "milestones_planned": 1,
+      "decomposed": true
+    }
   }
 ]

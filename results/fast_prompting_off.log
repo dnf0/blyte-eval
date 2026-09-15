@@ -1,0 +1,74 @@
+12:20:07 [INFO] superstate_eval.paired: ==============================================================================
+12:20:07 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=5  arms=vanilla, superstate_solo  concurrency=3
+12:20:07 [INFO] superstate_eval.paired: Runs=10  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260915-122007
+12:20:07 [INFO] superstate_eval.paired: ==============================================================================
+12:20:07 [INFO] superstate_eval.paired: -> expr-try-catch-errors [vanilla] (budget: 5400s)
+12:20:07 [INFO] superstate_eval.paired: -> expr-try-catch-errors [superstate_solo] (budget: 5400s)
+12:20:07 [INFO] superstate_eval.runner: Starting task 'datacurve/expr-try-catch-errors' [Arm: superstate_solo] (Base budget: 5400.0s)
+12:20:07 [INFO] superstate_eval.docker_manager: Host disk check: 84.96 GB free on /
+12:20:07 [INFO] superstate_eval.runner: Starting task 'datacurve/expr-try-catch-errors' [Arm: vanilla] (Base budget: 5400.0s)
+12:20:07 [INFO] superstate_eval.paired: -> httpx-multipart-response-parsing [vanilla] (budget: 5400s)
+12:20:07 [INFO] superstate_eval.runner: Starting task 'datacurve/httpx-multipart-response-parsing' [Arm: vanilla] (Base budget: 5400.0s)
+12:20:07 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.4 GB reported available], Disk limit=6, User override=None)
+12:20:07 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.4 GB reported available], Disk limit=6, User override=None)
+12:20:07 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=6, RAM limit=4 [24.0 GB total - 6.0 GB reserve, 4.0 GB per worker; 4.4 GB reported available], Disk limit=6, User override=None)
+12:20:08 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-122007/eval-datacurve_httpx-multipart-response-parsing-vanilla-21d16050/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1:/app (182 entries)
+12:20:08 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-122007/eval-datacurve_expr-try-catch-errors-vanilla-966b090a/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1:/app (350 entries)
+12:20:08 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-122007/eval-datacurve_expr-try-catch-errors-superstate_solo-ba558fb3/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1:/app (350 entries)
+12:20:08 [INFO] superstate_eval.docker_manager: Spawned sandbox container: b30039166a25 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1)
+12:20:08 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 5948821fb146 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1)
+12:20:08 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 897368abb3a1 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1)
+12:20:08 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/httpx-multipart-response-parsing/tests for the agent phase
+12:20:08 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+12:20:09 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/expr-try-catch-errors/tests for the agent phase
+12:20:09 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+12:20:09 [INFO] superstate_eval.adapters.superstate: Direct state handoff active: initialized state directly with gate 'cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+rm -rf /tmp/exprgate && mkdir -p /tmp/exprgate && cd /tmp/exprgate
+cat > go.mod <<'EOM'
+module exprgate
+go 1.21
+require github.com/expr-lang/expr v0.0.0
+replace github.com/expr-lang/expr => /app
+EOM
+cat > main.go <<'EOM'
+package main
+
+import (
+	"log"
+
+	"github.com/expr-lang/expr"
+)
+
+func evalOK(src string, want any) {
+	got, err := expr.Eval(src, nil)
+	if err != nil {
+		log.Fatalf("%s: unexpected error: %v", src, err)
+	}
+	if got != want {
+		log.Fatalf("%s: got %v, want %v", src, got, want)
+	}
+}
+
+func main() {
+	evalOK(`try(1/0, "fallback")`, "fallback")
+	evalOK(`try(6*7, "fallback")`, 42)
+	evalOK(`try(throw("boom"), "caught")`, "caught")
+	evalOK(`try { throw("boom") } catch e { errtype(e) }`, "custom")
+	evalOK(`errtype(nil)`, "none")
+	evalOK(`try { 1/0 } catch { "handled" }`, "handled")
+	evalOK(`try { 1 } catch { 2 } finally { 3 }`, 1)
+	if _, err := expr.Eval(`try(1)`, nil); err == nil {
+		log.Fatal("try requires exactly two arguments")
+	}
+	if _, err := expr.Eval(`throw()`, nil); err == nil {
+		log.Fatal("throw requires exactly one argument")
+	}
+	if _, err := expr.Eval(`retry`, nil); err == nil {
+		log.Fatal("retry outside a catch block must error")
+	}
+}
+EOM
+go run .
+GATEEOF' without plan.md
+12:20:09 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
