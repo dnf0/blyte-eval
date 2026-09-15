@@ -367,6 +367,128 @@ mustThrow("for (using x in {}) {}", "not allowed in for-in");
 mustThrow("using {a} = {};", "cannot have destructuring");
 '
 GATEEOF""",
+    # \multicolumn in array-like environments, MathML columnspan/columnalign, and ParseError
+    # for every invalid form the instruction lists. The image ships no esbuild and the source
+    # entry is katex.ts, so the gate runs the project's own jest with --roots pointing OUTSIDE
+    # /app: the test never lands in the repository the grader diffs.
+    # Validated in-container: exits 1 pre-implementation, with the two rendering assertions
+    # failing because \multicolumn is unknown.
+    "katex-multicolumn-array-spans": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+mkdir -p /tmp/gate
+cat > /tmp/gate/katex.test.js <<'JSEOF'
+const mod = require("/app/katex.ts");
+const katex = mod.default || mod;
+
+const render = (tex) => katex.renderToString(tex, { throwOnError: true });
+const mustThrow = (tex, why) => {
+  let threw = false;
+  try { render(tex); } catch (e) { threw = true; }
+  if (!threw) throw new Error("expected ParseError: " + why + "  [" + tex + "]");
+};
+
+test("multicolumn renders in array-like environments", () => {
+  const html = render("\\begin{array}{cc}\\multicolumn{2}{c}{x}\\end{array}");
+  expect(html).toEqual(expect.stringContaining("columnspan"));
+  for (const env of ["matrix", "pmatrix", "bmatrix", "cases", "aligned", "smallmatrix"]) {
+    render(`\\begin{${env}}\\multicolumn{1}{c}{x}\\end{${env}}`);
+  }
+});
+
+test("multicolumn emits MathML columnspan and columnalign", () => {
+  const html = render("\\begin{array}{ccc}\\multicolumn{2}{r}{x}&y\\end{array}");
+  expect(html).toEqual(expect.stringContaining("columnspan"));
+  expect(html).toEqual(expect.stringContaining("columnalign"));
+});
+
+test("invalid multicolumn is a ParseError", () => {
+  mustThrow("\\begin{array}{cc}\\multicolumn{0}{c}{x}\\end{array}", "n < 1");
+  mustThrow("\\begin{array}{cc}\\multicolumn{1.5}{c}{x}\\end{array}", "non-integer n");
+  mustThrow("\\begin{array}{cc}\\multicolumn{3}{c}{x}\\end{array}", "n exceeds remaining columns");
+  mustThrow("\\begin{array}{cc}\\multicolumn{1}{q}{x}\\end{array}", "invalid alignment");
+  mustThrow("\\begin{array}{cc}\\multicolumn{1}{cc}{x}\\end{array}", "more than one alignment char");
+  mustThrow("\\multicolumn{1}{c}{x}", "used outside an array-like environment");
+});
+JSEOF
+cd /app
+npx --no-install jest --rootDir /app --roots /tmp/gate --testMatch "**/*.test.js"
+GATEEOF""",
+    # dependentRequired / dependentSchemas, local $ref with recursion, the two exact error
+    # messages the instruction specifies, if/then/else, and deep enum equality.
+    #
+    # @ark/json-schema resolves to out/index.js, which does not exist until the monorepo is
+    # built, so the gate runs `pnpm build` first (verified working in the image, unlike
+    # meriyah's). Mocha needs --no-config or the project's own spec glob pulls in the whole
+    # suite, and NODE_PATH so a test outside /app can still resolve the workspace packages.
+    # Validated in-container: exits 5 pre-implementation (0 passing, 5 failing).
+    "arktype-json-schema-refs-dependencies": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+cd /app
+pnpm build >/dev/null 2>&1
+mkdir -p /tmp/gate
+cat > /tmp/gate/ark.test.ts <<'TSEOF'
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const t = (schema: unknown) => jsonSchemaToType(schema as never)
+const mustReject = (schema: unknown, needle: string) => {
+	let msg = ""
+	try { t(schema) } catch (e) { msg = String((e as Error).message) }
+	if (!msg) throw new Error("expected a rejection for " + JSON.stringify(schema))
+	if (!msg.includes(needle))
+		throw new Error("expected " + JSON.stringify(needle) + " got " + JSON.stringify(msg))
+}
+
+describe("json-schema refs and dependencies", () => {
+	it("dependentRequired requires dependent keys when the trigger is present", () => {
+		const T = t({ type: "object", dependentRequired: { a: ["b"] } })
+		if (T.allows({ a: 1 } as never)) throw new Error("a without b must fail")
+		if (!T.allows({ a: 1, b: 2 } as never)) throw new Error("a with b must pass")
+		if (!T.allows({ b: 2 } as never)) throw new Error("no trigger means no requirement")
+	})
+
+	it("dependentSchemas validates against the schema when the trigger is present", () => {
+		const T = t({
+			type: "object",
+			dependentSchemas: { a: { type: "object", properties: { b: { type: "number" } }, required: ["b"] } }
+		})
+		if (T.allows({ a: 1, b: "x" } as never)) throw new Error("dependent schema must be enforced")
+		if (!T.allows({ a: 1, b: 2 } as never)) throw new Error("satisfying the dependent schema must pass")
+	})
+
+	it("resolves local $ref and supports recursion", () => {
+		const T = t({
+			$defs: { node: { type: "object", properties: { next: { $ref: "#/$defs/node" } } } },
+			$ref: "#/$defs/node"
+		})
+		if (!T.allows({ next: {} } as never)) throw new Error("recursive $ref must resolve")
+	})
+
+	it("rejects unsupported and unresolvable refs with the stated messages", () => {
+		mustReject(
+			{ $ref: "https://example.com/schema" },
+			"Only local $ref values of the form #/$defs/<name> are supported"
+		)
+		mustReject(
+			{ $ref: "#/$defs/NonExistentDef" },
+			'Unable to resolve $ref "#/$defs/NonExistentDef" from root $defs'
+		)
+	})
+
+	it("supports if/then/else and deep enum equality", () => {
+		const T = t({
+			if: { type: "object", properties: { a: { const: 1 } }, required: ["a"] },
+			then: { type: "object", required: ["b"] }
+		})
+		if (T.allows({ a: 1 } as never)) throw new Error("then must apply when if matches")
+		if (!T.allows({ a: 1, b: 2 } as never)) throw new Error("satisfying then must pass")
+		const E = t({ enum: [{ x: [1, 2] }] })
+		if (!E.allows({ x: [1, 2] } as never)) throw new Error("enum must use deep equality")
+	})
+})
+TSEOF
+NODE_PATH=/app/node_modules ./node_modules/.bin/mocha --no-config --no-package \
+  --node-option import=tsx /tmp/gate/ark.test.ts
+GATEEOF""",
 }
 
 
