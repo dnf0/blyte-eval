@@ -1,0 +1,37 @@
+14:27:11 [INFO] superstate_eval.paired: ==============================================================================
+14:27:11 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=9  arms=vanilla  concurrency=4
+14:27:11 [INFO] superstate_eval.paired: Runs=9  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260915-142711
+14:27:11 [INFO] superstate_eval.paired: ==============================================================================
+14:27:11 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [vanilla] (budget: 5400s)
+14:27:11 [INFO] superstate_eval.docker_manager: Host disk check: 80.34 GB free on /
+14:27:11 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla] (Base budget: 5400.0s)
+14:27:11 [INFO] superstate_eval.paired: -> arktype-json-schema-refs-dependencies [vanilla] (budget: 5400s)
+14:27:11 [INFO] superstate_eval.runner: Starting task 'datacurve/arktype-json-schema-refs-dependencies' [Arm: vanilla] (Base budget: 5400.0s)
+14:27:11 [INFO] superstate_eval.paired: -> expr-try-catch-errors [vanilla] (budget: 5400s)
+14:27:11 [INFO] superstate_eval.runner: Starting task 'datacurve/expr-try-catch-errors' [Arm: vanilla] (Base budget: 5400.0s)
+14:27:11 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [vanilla] (budget: 5400s)
+14:27:11 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: vanilla] (Base budget: 5400.0s)
+14:27:11 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=6, User override=None)
+14:27:11 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=6, User override=None)
+14:27:11 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=6, User override=None)
+14:27:11 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=6, User override=None)
+14:27:12 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_anko-typed-variable-bindings-vanilla-7c019af5/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+14:27:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: fb9e199d2e0c (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+14:27:12 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_expr-try-catch-errors-vanilla-1e9aed2f/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1:/app (350 entries)
+14:27:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 3c63e5e54ecd (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71gkadwafw4ry4r6g37era0182qpms-v1.1)
+14:27:13 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/anko-typed-variable-bindings/tests for the agent phase
+14:27:13 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+14:27:13 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:27:13 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/expr-try-catch-errors/tests for the agent phase
+14:27:13 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+14:27:13 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:27:15 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_fastapi-deprecation-response-headers-vanilla-2b09224e/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+14:27:15 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f62ef62b04dd (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+14:27:16 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/fastapi-deprecation-response-headers/tests for the agent phase
+14:27:16 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+14:27:16 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:29:03 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-142711/eval-datacurve_arktype-json-schema-refs-dependencies-vanilla-8a4f1765/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1:/app (83800 entries)
+14:29:03 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 9f12f3048e60 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh771gpr8crkjsnt9pj81bafgs8229em-v1.1)
+14:29:11 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/arktype-json-schema-refs-dependencies/tests for the agent phase
+14:29:11 [INFO] superstate_eval.prompt_contracts: Injecting generic execution rules for vanilla (SUPERSTATE_EVAL_GENERIC_RULES=1)
+14:29:11 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
