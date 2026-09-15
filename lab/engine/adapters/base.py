@@ -186,8 +186,17 @@ class TurnBasedAdapter(AgentAdapter):
         """Configure or sanitize workspace prior to agent invocation."""
 
     def get_initial_prompt(self, task: TaskSpec) -> str:
-        """Provide initial instruction prompt for the task."""
-        return task.instruction
+        """Provide initial instruction prompt for the task.
+
+        Baseline arms (vanilla, superpowers) reach the driver through here. The portable
+        discipline rules are appended only when SUPERSTATE_EVAL_GENERIC_RULES=1, so the
+        default measurement still gives the baselines the bare instruction -- and the
+        third experimental leg can ask whether that discipline is portable or only pays
+        off alongside a verification gate. See lab/engine/prompt_contracts.py.
+        """
+        from lab.engine.prompt_contracts import apply_generic_rules
+
+        return apply_generic_rules(task.instruction, self.name)
 
     def get_provenance(self) -> Dict[str, Any]:
         """Report arm-specific facts about how this run was actually configured."""
