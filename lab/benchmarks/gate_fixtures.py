@@ -224,6 +224,149 @@ grep -qE 'spills=[1-9][0-9]*' /tmp/sccstats
 grep -qE 'peak_in_memory_files=[0-9]+' /tmp/sccstats
 test -n "$(find /tmp/sccspill -type f -size +0c | head -1)"
 GATEEOF""",
+    # Typed declarations parse and execute under TypedBindings, mismatched assignment is a
+    # "type error" naming the variable, nil into a primitive errors, and both the disabled
+    # option and untyped `var` stay dynamic. Tested through a throwaway module that
+    # `replace`s the package to /app, so the repo the grader diffs is never written to.
+    # Validated in-container: fails to compile pre-implementation --
+    #   unknown field TypedBindings in struct literal of type vm.Options
+    "anko-typed-variable-bindings": """cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+rm -rf /tmp/ankogate && mkdir -p /tmp/ankogate && cd /tmp/ankogate
+cat > go.mod <<'EOM'
+module ankogate
+go 1.21
+require github.com/mattn/anko v0.0.0
+replace github.com/mattn/anko => /app
+EOM
+cat > main.go <<'EOM'
+package main
+
+import (
+	"log"
+	"strings"
+
+	"github.com/mattn/anko/env"
+	"github.com/mattn/anko/vm"
+)
+
+func run(src string, typed bool) (interface{}, error) {
+	return vm.Execute(env.NewEnv(), &vm.Options{TypedBindings: typed}, src)
+}
+
+func main() {
+	if v, err := run("var x: int64 = 10\nx", true); err != nil || v == nil {
+		log.Fatalf("typed declaration failed: %v", err)
+	}
+	if _, err := run("var a, b: int64 = 1, 2\na", true); err != nil {
+		log.Fatalf("multi typed declaration failed: %v", err)
+	}
+	_, err := run("var y: int64 = 1\ny = \"s\"", true)
+	if err == nil {
+		log.Fatal("type mismatch must error when TypedBindings is enabled")
+	}
+	if !strings.Contains(err.Error(), "type error") || !strings.Contains(err.Error(), "y") {
+		log.Fatalf("error must contain 'type error' and the variable name, got: %v", err)
+	}
+	if _, err := run("var n: int64 = 1\nn = nil", true); err == nil {
+		log.Fatal("nil assignment to a primitive must error")
+	}
+	if _, err := run("var z: int64 = 1\nz = \"s\"", false); err != nil {
+		log.Fatalf("TypedBindings disabled must behave dynamically, got: %v", err)
+	}
+	if _, err := run("var q = 1\nq = \"s\"", true); err != nil {
+		log.Fatalf("untyped declaration must stay dynamic, got: %v", err)
+	}
+}
+EOM
+go run .
+GATEEOF""",
+    # try()/throw()/errtype()/retry and the block form with catch and finally, plus arity
+    # enforcement. Same throwaway-module approach as anko.
+    # Validated in-container: exits 1 pre-implementation (try/throw/retry unparseable).
+    "expr-try-catch-errors": """cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+rm -rf /tmp/exprgate && mkdir -p /tmp/exprgate && cd /tmp/exprgate
+cat > go.mod <<'EOM'
+module exprgate
+go 1.21
+require github.com/expr-lang/expr v0.0.0
+replace github.com/expr-lang/expr => /app
+EOM
+cat > main.go <<'EOM'
+package main
+
+import (
+	"log"
+
+	"github.com/expr-lang/expr"
+)
+
+func evalOK(src string, want any) {
+	got, err := expr.Eval(src, nil)
+	if err != nil {
+		log.Fatalf("%s: unexpected error: %v", src, err)
+	}
+	if got != want {
+		log.Fatalf("%s: got %v, want %v", src, got, want)
+	}
+}
+
+func main() {
+	evalOK(`try(1/0, "fallback")`, "fallback")
+	evalOK(`try(6*7, "fallback")`, 42)
+	evalOK(`try(throw("boom"), "caught")`, "caught")
+	evalOK(`try { throw("boom") } catch e { errtype(e) }`, "custom")
+	evalOK(`errtype(nil)`, "none")
+	evalOK(`try { 1/0 } catch { "handled" }`, "handled")
+	evalOK(`try { 1 } catch { 2 } finally { 3 }`, 1)
+	if _, err := expr.Eval(`try(1)`, nil); err == nil {
+		log.Fatal("try requires exactly two arguments")
+	}
+	if _, err := expr.Eval(`throw()`, nil); err == nil {
+		log.Fatal("throw requires exactly one argument")
+	}
+	if _, err := expr.Eval(`retry`, nil); err == nil {
+		log.Fatal("retry outside a catch block must error")
+	}
+}
+EOM
+go run .
+GATEEOF""",
+    # `using` / `await using` declarations under next:true, the no-line-terminator rule, and
+    # the five required error substrings. The image's own `npm run build` is broken (rollup
+    # cannot parse the TS source), so the gate bundles with esbuild instead -- otherwise it
+    # would fail on tooling rather than on the feature.
+    # Validated in-container: fails pre-implementation with
+    #   Error: [1:6-1:7]: Unexpected token: 'identifier'
+    # which is exactly the pre-feature behaviour the instruction describes.
+    "meriyah-explicit-resource-declarations": """cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+cd /app
+npx --no-install esbuild src/meriyah.ts --bundle --platform=node --format=cjs --outfile=/tmp/meriyah_gate.cjs >/dev/null
+node -e '
+const { parseScript, parseModule } = require("/tmp/meriyah_gate.cjs");
+const d = parseModule("using x = null;", { next: true }).body[0];
+if (d.type !== "VariableDeclaration" || d.kind !== "using")
+  throw new Error("expected VariableDeclaration kind=using, got " + d.type + "/" + d.kind);
+if (parseModule("await using y = null;", { next: true }).body[0].kind !== "await using")
+  throw new Error("expected kind=await using");
+if (parseModule("using\nx = null;", { next: true }).body[0].kind === "using")
+  throw new Error("a line break must stop using being a declaration");
+const mustThrow = (src, needle, parse) => {
+  let msg = null;
+  try { (parse || parseModule)(src, { next: true }); } catch (e) { msg = e.message; }
+  if (msg === null) throw new Error("expected a parse error for: " + src);
+  if (!msg.includes(needle))
+    throw new Error(src + ": expected " + JSON.stringify(needle) + " got " + JSON.stringify(msg));
+};
+mustThrow("using x = null;", "not allowed in the global scope", parseScript);
+mustThrow("await using z = null;", "only allowed inside async", parseScript);
+mustThrow("using x;", "must have an initializer");
+mustThrow("for (using x in {}) {}", "not allowed in for-in");
+mustThrow("using {a} = {};", "cannot have destructuring");
+'
+GATEEOF""",
 }
 
 

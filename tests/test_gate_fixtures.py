@@ -55,7 +55,7 @@ def test_fixtures_exercise_behaviour_not_mere_presence() -> None:
     Each fixture must actually run something -- import the module, execute the suite,
     inspect the artifact's contents -- rather than only assert a path exists.
     """
-    runners = ("python", "pytest", "openssl", "go build", "go test", "node", "npm", "npx")
+    runners = ("python", "pytest", "openssl", "go build", "go test", "go run", "node", "npm", "npx")
     for name, gate in GATE_FIXTURES.items():
         assert any(tok in gate for tok in runners), (
             f"{name} gate only checks for presence, not behaviour"
