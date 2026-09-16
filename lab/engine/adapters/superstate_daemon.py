@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 from pathlib import Path
 import re
@@ -458,7 +459,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         return widened, critique
 
     def _write_driver_wrapper(
-        self, workspace_path: Path, driver: Any, container: Any = None
+        self, workspace_path: Path, driver: Any, container: Any = None, budget_sec: float = 3600.0
     ) -> Optional[Path]:
         """Write a shell wrapper the Rust daemon invokes instead of a bare preset.
 
@@ -513,6 +514,12 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "  --output-format json \\\n"
             "  --dangerously-skip-permissions \\\n"
             f"  --add-dir {shlex.quote(str(workspace_path))} \\\n"
+            # agy's own --print-timeout defaults to 5m, so without this every turn longer
+            # than that is truncated by the CLI no matter what budget the task was granted.
+            # AgyCliDriver sets it for every other arm; the daemon spawns its own worker and
+            # so was silently capped at 5m -- which is why it held up on short tasks and
+            # failed the long ones.
+            f"  --print-timeout {max(60, int(math.ceil(budget_sec)))}s \\\n"
             '  --print "$PROMPT" > "$OUT" 2>/dev/null\n'
             "status=$?\n"
             'cat "$OUT"\n'
@@ -629,7 +636,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         # Pin the model, capture usage, and supply the environment contract the daemon's
         # own prompt omits (see _write_driver_wrapper).
-        wrapper = self._write_driver_wrapper(workspace_path, driver, container)
+        wrapper = self._write_driver_wrapper(workspace_path, driver, container, budget)
         if wrapper is not None:
             self.driver_preset = str(wrapper)
 

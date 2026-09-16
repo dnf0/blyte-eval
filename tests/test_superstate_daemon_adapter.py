@@ -346,3 +346,26 @@ def test_caller_supplied_contract_is_still_honoured(tmp_path: Path) -> None:
     )
     assert gate == "pytest tests/local"
     assert driver.calls == 0
+
+
+def test_wrapper_passes_the_task_budget_as_print_timeout(tmp_path: Path) -> None:
+    """agy truncates any turn longer than its 5-minute default --print-timeout.
+
+    AgyCliDriver sets this for every other arm. The daemon spawns its own worker and so was
+    silently capped at 5 minutes regardless of the budget the task was granted -- which is
+    why it held up on short tasks (db-wal-recovery ~2.7 min, openssl ~2.3 min, both 5/5) and
+    failed the long one (build-cython-ext, 30-45 min, 0-2/5).
+    """
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    script = adapter._write_driver_wrapper(
+        tmp_path, _StubDriver(""), container=None, budget_sec=2400
+    ).read_text()
+    assert "--print-timeout 2400s" in script
+
+
+def test_wrapper_print_timeout_never_below_a_usable_floor(tmp_path: Path) -> None:
+    adapter = SuperstateDaemonAdapter(driver_preset="agy")
+    script = adapter._write_driver_wrapper(
+        tmp_path, _StubDriver(""), container=None, budget_sec=5
+    ).read_text()
+    assert "--print-timeout 60s" in script

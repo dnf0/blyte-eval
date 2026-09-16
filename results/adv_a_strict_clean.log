@@ -1,0 +1,178 @@
+10:27:24 [INFO] superstate_eval.paired: ==============================================================================
+10:27:24 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=2  arms=superstate_daemon:5  concurrency=4
+10:27:24 [INFO] superstate_eval.paired: Runs=10  budget=2400s/arm  workspaces=/tmp/superstate_eval_runs/20260916-102724
+10:27:24 [INFO] superstate_eval.paired: ==============================================================================
+10:27:24 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] [run 1/5] (budget: 2400s)
+10:27:24 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] [run 2/5] (budget: 2400s)
+10:27:24 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:27:24 [INFO] superstate_eval.docker_manager: Host disk check: 85.23 GB free on /
+10:27:24 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:27:24 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] [run 3/5] (budget: 2400s)
+10:27:24 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] [run 4/5] (budget: 2400s)
+10:27:24 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:27:24 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:27:24 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.4 GB reported available], Disk limit=6, User override=None)
+10:27:24 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.4 GB reported available], Disk limit=6, User override=None)
+10:27:24 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.4 GB reported available], Disk limit=6, User override=None)
+10:27:24 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.4 GB reported available], Disk limit=6, User override=None)
+10:27:25 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_db-wal-recovery-superstate_daemon-f71f52a5/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+10:27:25 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_db-wal-recovery-superstate_daemon-75f80c78/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+10:27:25 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_db-wal-recovery-superstate_daemon-1f0016f6/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+10:27:25 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_db-wal-recovery-superstate_daemon-89bf5f09/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+10:27:25 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 07f9be99affe (alexgshaw/db-wal-recovery:20251031)
+10:27:25 [INFO] superstate_eval.docker_manager: Spawned sandbox container: bbcfef99974b (alexgshaw/db-wal-recovery:20251031)
+10:27:25 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 53cd3504b775 (alexgshaw/db-wal-recovery:20251031)
+10:27:25 [INFO] superstate_eval.docker_manager: Spawned sandbox container: aa03e2ee49dc (alexgshaw/db-wal-recovery:20251031)
+10:27:25 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests for the agent phase
+10:27:25 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for db-wal-recovery
+10:27:25 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for db-wal-recovery
+10:27:25 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for db-wal-recovery
+10:27:25 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for db-wal-recovery
+10:27:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5f7ad80d': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:27:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5f7ad80d (prev=None). Lease extended.
+10:27:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5f7ad80d': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:27:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5f7ad80d (prev=None). Lease extended.
+10:27:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5f7ad80d': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:27:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5f7ad80d (prev=None). Lease extended.
+10:27:27 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5f7ad80d': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:27:27 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5f7ad80d (prev=None). Lease extended.
+10:30:43 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5241651b': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:30:43 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5241651b (prev=5f7ad80d). Lease extended.
+10:30:44 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6000.0s, completed milestones: 3)
+10:30:44 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:30:44 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:30:46 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:30:46 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:30:46 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:30:53 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 1a5ce576': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:30:53 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 1a5ce576 (prev=5f7ad80d). Lease extended.
+10:30:54 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6000.0s, completed milestones: 3)
+10:30:54 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:30:54 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:31:00 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:31:00 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: bbcfef99974b
+10:31:01 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=216.45s, Cost=$0.14, TotalGrantedBudget=6000.0s
+10:31:01 [INFO] superstate_eval.paired:    superstate_daemon [run 3/5]: passed=True cost=$0.1410 turns=2 216s  
+10:31:01 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] [run 5/5] (budget: 2400s)
+10:31:01 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:31:01 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.3 GB reported available], Disk limit=6, User override=None)
+10:31:01 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_db-wal-recovery-superstate_daemon-68ac5d7e/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+10:31:01 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 2a8eafb8e678 (alexgshaw/db-wal-recovery:20251031)
+10:31:01 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for db-wal-recovery
+10:31:01 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:31:01 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: aa03e2ee49dc
+10:31:02 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=217.17s, Cost=$0.13, TotalGrantedBudget=4800.0s
+10:31:02 [INFO] superstate_eval.paired:    superstate_daemon [run 4/5]: passed=True cost=$0.1264 turns=2 217s  
+10:31:02 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] [run 1/5] (budget: 2400s)
+10:31:02 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:31:02 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.4 GB reported available], Disk limit=6, User override=None)
+10:31:02 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-fe001893/workspace
+10:31:02 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ad9a14694e81 (alexgshaw/openssl-selfsigned-cert:20251031)
+10:31:02 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/openssl-selfsigned-cert/tests for the agent phase
+10:31:02 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 094bf3e8': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:31:02 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 094bf3e8 (prev=None). Lease extended.
+10:31:02 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for openssl-selfsigned-cert
+10:31:02 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: fd6f9452': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:31:02 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: fd6f9452 (prev=None). Lease extended.
+10:31:08 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:31:08 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 53cd3504b775
+10:31:08 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=223.67s, Cost=$0.17, TotalGrantedBudget=6000.0s
+10:31:08 [INFO] superstate_eval.paired:    superstate_daemon [run 2/5]: passed=True cost=$0.1658 turns=2 224s  
+10:31:08 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] [run 2/5] (budget: 2400s)
+10:31:08 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:31:08 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.1 GB reported available], Disk limit=6, User override=None)
+10:31:08 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-7bd4ca0d/workspace
+10:31:08 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 85ca91d42412 (alexgshaw/openssl-selfsigned-cert:20251031)
+10:31:08 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for openssl-selfsigned-cert
+10:31:09 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 07bd0578': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:31:09 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 07bd0578 (prev=None). Lease extended.
+10:31:42 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:31:42 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:31:42 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:31:54 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:31:54 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 07f9be99affe
+10:31:54 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=270.09s, Cost=$0.18, TotalGrantedBudget=4800.0s
+10:31:54 [INFO] superstate_eval.paired:    superstate_daemon [run 1/5]: passed=True cost=$0.1810 turns=2 270s  
+10:31:54 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] [run 3/5] (budget: 2400s)
+10:31:54 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:31:54 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.1 GB reported available], Disk limit=6, User override=None)
+10:31:54 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-d2e64c6a/workspace
+10:31:55 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e5c921768e44 (alexgshaw/openssl-selfsigned-cert:20251031)
+10:31:55 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for openssl-selfsigned-cert
+10:31:55 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 9b4cc461': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:31:55 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 9b4cc461 (prev=None). Lease extended.
+10:32:47 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b9f35fbe': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:32:47 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: b9f35fbe (prev=07bd0578). Lease extended.
+10:32:48 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6000.0s, completed milestones: 3)
+10:32:48 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:32:48 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:32:57 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:32:57 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 85ca91d42412
+10:32:57 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=109.33s, Cost=$0.11, TotalGrantedBudget=6000.0s
+10:32:57 [INFO] superstate_eval.paired:    superstate_daemon [run 2/5]: passed=True cost=$0.1113 turns=2 109s  
+10:32:57 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] [run 4/5] (budget: 2400s)
+10:32:57 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:32:57 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.1 GB reported available], Disk limit=6, User override=None)
+10:32:57 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-2239fcf4/workspace
+10:32:58 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0591d03967fc (alexgshaw/openssl-selfsigned-cert:20251031)
+10:32:58 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for openssl-selfsigned-cert
+10:32:58 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 61910642': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:32:58 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 61910642 (prev=None). Lease extended.
+10:33:13 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: f554e9af': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:33:13 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: f554e9af (prev=fd6f9452). Lease extended.
+10:33:14 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6000.0s, completed milestones: 3)
+10:33:14 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:33:14 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:33:24 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:33:24 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ad9a14694e81
+10:33:24 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=142.16s, Cost=$0.10, TotalGrantedBudget=6000.0s
+10:33:24 [INFO] superstate_eval.paired:    superstate_daemon [run 1/5]: passed=True cost=$0.1000 turns=2 142s  
+10:33:24 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] [run 5/5] (budget: 2400s)
+10:33:24 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 2400.0s)
+10:33:24 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.1 GB reported available], Disk limit=6, User override=None)
+10:33:24 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-102724/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-21d2fcc3/workspace
+10:33:24 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7c6d293109a8 (alexgshaw/openssl-selfsigned-cert:20251031)
+10:33:24 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for openssl-selfsigned-cert
+10:33:24 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 2b4631aa': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 1)
+10:33:24 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 2b4631aa (prev=None). Lease extended.
+10:34:20 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:34:20 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:34:20 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:34:31 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:34:31 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e5c921768e44
+10:34:31 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=156.50s, Cost=$0.14, TotalGrantedBudget=4800.0s
+10:34:31 [INFO] superstate_eval.paired:    superstate_daemon [run 3/5]: passed=True cost=$0.1363 turns=2 156s  
+10:36:04 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:36:04 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:36:04 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:36:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 6da662f4': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:36:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 6da662f4 (prev=2b4631aa). Lease extended.
+10:36:19 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6000.0s, completed milestones: 3)
+10:36:19 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:36:19 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:36:19 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:36:19 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 2a8eafb8e678
+10:36:20 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=318.93s, Cost=$0.19, TotalGrantedBudget=4800.0s
+10:36:20 [INFO] superstate_eval.paired:    superstate_daemon [run 5/5]: passed=True cost=$0.1866 turns=2 319s  
+10:36:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5eb6cac9': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 2)
+10:36:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5eb6cac9 (prev=61910642). Lease extended.
+10:36:27 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 6000.0s, completed milestones: 3)
+10:36:27 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+10:36:27 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+10:36:28 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:36:28 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7c6d293109a8
+10:36:29 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=184.96s, Cost=$0.10, TotalGrantedBudget=6000.0s
+10:36:29 [INFO] superstate_eval.paired:    superstate_daemon [run 5/5]: passed=True cost=$0.1050 turns=2 185s  
+10:36:36 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+10:36:36 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0591d03967fc
+10:36:36 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+10:36:36 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=219.07s, Cost=$0.13, TotalGrantedBudget=6000.0s
+10:36:36 [INFO] superstate_eval.paired:    superstate_daemon [run 4/5]: passed=True cost=$0.1299 turns=2 219s  
+
+| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|
+| superstate_daemon | 10 | 10 | 100.0% | $1.38 | $0.14 | 34.3m | 520.0m | 117393 | 13408 |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/adv_a_strict_clean.json
