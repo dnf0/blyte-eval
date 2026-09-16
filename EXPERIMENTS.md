@@ -13,7 +13,7 @@ have — both cost more than checking would have.
 | Status | Means |
 |---|---|
 | `STANDS` | the verdict is still believed |
-| `WITHDRAWN` | the verdict was wrong — usually a harness bug, not a real finding. **Leave the row in.** Three daemon findings were withdrawn; deleting them would have let each be rediscovered |
+| `WITHDRAWN` | the verdict was wrong — usually a harness bug, not a real finding. **Leave the row in.** 13 of the rows below are withdrawn, 9 of them to a single cause (the missing `--print-timeout`); deleting them would have let that be rediscovered run after run |
 | `SUPERSEDED` | correct at the time, replaced by a later run |
 | `PARTIAL` | the run did not finish; the file is a mid-run snapshot |
 | `PLANNED` | registered, not yet run |
@@ -109,3 +109,22 @@ Derived from the runs above rather than from a run of their own.
   control that would size it.
 * **Gate strength is the binding constraint.** In EXP-047, `merge-diff-arc-agi-task` and
   `sanitize-git-repo` passed their gates on every turn and still failed the sealed grader.
+* **A `vanilla` arm earns its place in two cases only, not four.** It costs 26% of all spend
+  ever ($90 of $341) and the diagnostic role once claimed for it does not hold up: of the 13
+  withdrawn rows, only **2** included a vanilla arm at all (EXP-020, EXP-035). The other 11
+  were caught by reading code, not by a control. Floor and ceiling effects show up in any arm
+  — `tier1_contracts_off` at 0 and `quick_prompting_off` at 1/5 need no baseline to look
+  wrong, and `gated_repeats` was *not* an undiscriminating set, since `superstate_daemon`
+  scored 10/15 on it where the others scored 15/15.
+
+  What a control uniquely provides is the finding that a treatment is **worse than nothing** —
+  EXP-020, where vanilla's 28/40 beat `superstate_rust`'s 19/38 and exposed the prompt-contract
+  confound. No superstate-vs-superstate comparison can surface that. So run `vanilla` when:
+
+  1. the task set is new and its difficulty is unmeasured;
+  2. the driver or model has changed;
+  3. a lift is about to be claimed in an ADR or write-up.
+
+  Otherwise omit it. Gate-strength work and daemon-vs-mcp comparisons are measured entirely
+  within the superstate arms, where `vanilla` has no gate and contributes nothing. The lift
+  itself is banked at EXP-049 and does not need re-measuring.

@@ -196,5 +196,20 @@ of which has already happened:
   10/16 vs 15/15 for a comparison whose real outcome was 12/20 vs 12/20. `check` compares row
   count against the declared `n`.
 
-**Never delete a `WITHDRAWN` row.** Three daemon findings were withdrawn as harness bugs; the
-withdrawal is the finding, and deleting the row invites rediscovery.
+**Never delete a `WITHDRAWN` row.** Thirteen rows are withdrawn, nine of them to one cause --
+the missing `--print-timeout`. The withdrawal is the finding, and deleting the row invites
+rediscovery.
+
+### Do not run `vanilla` by default
+
+It is 26% of all spend ever recorded ($90 of $341), and it does less diagnostic work than was
+once claimed: of the 13 withdrawn rows, **2** included a vanilla arm. The rest were caught by
+reading code. A floor or ceiling effect is visible in any arm without a baseline.
+
+Run it only when (1) the task set is new, (2) the driver or model changed, or (3) a lift is
+about to be claimed. Its unique contribution is showing a treatment is *worse than nothing* --
+EXP-020, where vanilla beat `superstate_rust` and exposed the prompt-contract confound.
+
+Gate-strength and daemon-vs-mcp questions are settled within the superstate arms; `vanilla` has
+no gate and contributes nothing to either. The lift is banked at EXP-049 (67.5% vs 45%, n=40,
+p=0.037) and does not need re-measuring.
