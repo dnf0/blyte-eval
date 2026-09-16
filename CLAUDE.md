@@ -159,3 +159,30 @@ comparison confounded, because baselines have no equivalent.
 `paired_run.py` invocations belong in a `#!/bin/bash` script. The interactive shell is zsh,
 which does **not** word-split unquoted variables, so `--tasks $TASKS` passes the whole list
 as one filename.
+
+## Before running anything: check the ledger
+
+`EXPERIMENTS.md` holds one row per evaluation run — the question, the arms, the switches,
+the results file and the verdict. **Query it before proposing a run.**
+
+```
+scripts/experiments.py list <query>   # has this been run?
+scripts/experiments.py check          # orphans, ghosts, truncated files
+scripts/experiments.py scan           # tallies straight from results/, ledger ignored
+```
+
+Register the row *before* the run starts, not after. Three things this exists to stop, each
+of which has already happened:
+
+- **A run proposed that had already happened.** Answering "have we run this?" took ten
+  minutes of grepping git history and 59 result files.
+- **A run believed to have happened that had not.** `vanilla + state_prompt` was thought to be
+  EXP-039 — but EXP-039 injected `GENERIC_EXECUTION_RULES`, a different text with no content
+  in common. `vanilla.py` has never referenced `state_prompt` in any commit.
+- **A truncated results file read as a finished one.** `paired_run.py` saves incrementally, so
+  a killed run leaves a plausible partial file. A 31-of-40-row snapshot reached main showing
+  10/16 vs 15/15 for a comparison whose real outcome was 12/20 vs 12/20. `check` compares row
+  count against the declared `n`.
+
+**Never delete a `WITHDRAWN` row.** Three daemon findings were withdrawn as harness bugs; the
+withdrawal is the finding, and deleting the row invites rediscovery.
