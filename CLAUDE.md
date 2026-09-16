@@ -1,5 +1,17 @@
 # Working in superstate-eval
 
+**[FINDINGS.md](FINDINGS.md) says what the evaluation establishes.** Read it before forming a
+view, quoting a number, or proposing a run -- it exists because the same conclusions kept
+being re-derived and re-litigated, including by me.
+
+Two rules that follow from how this project has actually gone wrong:
+
+* **Verify what produced a number before reporting it.** Every retraction here came from
+  reading a result without checking what generated it: 40 runs that were 20, precision 60%
+  that was 92%, +29pp that was +19pp.
+* **Do not propose a run without naming the decision that changes on its outcome.** Chasing a
+  p-value is not a decision.
+
 ## Terminology — use these exact words
 
 Two different things are both called "contract" in conversation. They are not related, and
@@ -171,6 +183,45 @@ wrong interpreter.
 `paired_run.py` invocations belong in a `#!/bin/bash` script. The interactive shell is zsh,
 which does **not** word-split unquoted variables, so `--tasks $TASKS` passes the whole list
 as one filename.
+
+## Run `--core`, not the whole corpus
+
+The 30-task corpus holds **14 usable tasks**. The rest cannot move an arm-vs-arm result:
+
+| | | |
+|---|---|---|
+| 8 | ungradeable | ship no held-out `tests/` — see below |
+| 7 | at ceiling | every arm solves them every time (`openssl-selfsigned-cert` is 22/22 for vanilla alone) |
+| 1 | at floor | no arm has ever solved it (`fastapi-deprecation-response-headers`) |
+
+Running the full corpus spends over half the budget on tasks that cannot teach anything, and
+dilutes the reported pass rate — which is not neutral, since it compresses every arm toward
+the middle and makes a real difference look smaller than it is.
+
+```
+scripts/paired_run.py --core ...      # the 14 that can carry signal
+```
+
+The split by family is the practical finding: **datacurve 8 of 9 usable, terminal-bench 6 of
+21.** The tier-1 repository tasks are where discrimination lives; most of terminal-bench is a
+ceiling for this driver.
+
+**`--core` inflates the measured gap by construction** — excluding tasks where both arms tie
+at a ceiling removes zero-difference cases, so the average difference rises whether or not
+anything improved:
+
+| task set | n | vanilla | mcp | gap |
+|---|---|---|---|---|
+| gradeable only | 48 | 65% | 83% | **+19pp** ← the honest headline |
+| gradeable and discriminating (`--core`) | 26 | 38% | 69% | **+31pp** ← mechanism work only |
+
+Report a benchmark claim on the **gradeable** set. Use `--core` for mechanism work and for
+statistical power, and never quote its number as a benchmark result.
+
+Membership is in `lab/benchmarks/task_sets.py`, every exclusion carries a reason, and a test
+fails if a task belongs to no category. The pooled rates used to classify them mix models,
+budgets and prompt settings — they are sound for spotting a ceiling or floor and are **not**
+effect sizes. Do not quote them as lift.
 
 ## A task with no sealed grader cannot be scored
 

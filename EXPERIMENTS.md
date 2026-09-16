@@ -1,5 +1,8 @@
 # Experiment ledger
 
+**For what the experiments jointly establish, read [FINDINGS.md](FINDINGS.md) first.**
+This file is the raw record; that one is the conclusion.
+
 Every evaluation run gets a row **before** it starts. A results file with no row is an
 orphan; a row with no results file is a ghost. `scripts/experiments.py check` finds both.
 
@@ -91,6 +94,7 @@ have — both cost more than checking would have.
 | EXP-048 | 2026-09-16 | gated repeatability | superstate_daemon, superstate_mcp, vanilla | 45 | all OFF | `gated_repeats.json` | 3 tasks all arms pass — too easy to discriminate | STANDS |
 | EXP-049 | 2026-09-16 | **Condition B vs vanilla at scale, contracts off** | superstate_daemon, superstate_mcp, vanilla | 120 | all OFF | `ov2_repeats.json` | **mcp 27/40 (67.5%) vs vanilla 18/40 (45%), p=0.037** | STANDS |
 | EXP-051 | 2026-09-16 | **do the strengthened gates reject turn-one work, and does solve rate follow** | superstate_daemon, superstate_mcp | 16 | all OFF | `gates_v2_8tasks.json` | 0/8 both arms — but **7 of the 8 tasks have no sealed grader at all** and exit 127. The premise was wrong: these were never gate failures. See the corrected cross-cutting finding below | STANDS |
+| EXP-052 | 2026-09-16 | **is the lift real on datacurve, with nothing contaminated** | vanilla, superstate_mcp | 7 | all OFF | `datacurve_clean_9tasks.json` | **stopped at 7 of 36 runs, deliberately** — no decision depended on the significance figure it would have produced. Its one completed task is worth keeping: `anko` went vanilla 0/2, mcp 2/2, with the gate rejecting and the worker iterating to 3 turns — the first time the loop has fired in any run | PARTIAL |
 | EXP-050 | - | **how much of the lift is `superstate state prompt` itself** | vanilla, vanilla+state_prompt, superstate_mcp | 60 | all OFF | - | Not run. `vanilla.py` has never referenced `state_prompt` in any commit; EXP-039 tested a *different* text | PLANNED |
 
 ## Cross-cutting findings
@@ -122,6 +126,14 @@ Derived from the runs above rather than from a run of their own.
 
   11-2 on discordant pairs is still significant (sign test p≈0.011), but the margin is
   **+18pp, not +29pp**. Every published figure resting on the larger number is wrong.
+
+* **The corpus holds 14 usable tasks, not 30.** Eight are ungradeable, seven sit at a ceiling
+  every arm clears, one at a floor no arm has reached. By family: **datacurve 8 of 9 usable,
+  terminal-bench 6 of 21** — the tier-1 repository tasks are where discrimination lives, and
+  most of terminal-bench is a ceiling for this driver. That is why both superstate arms scored
+  12/13 on the gradeable terminal-bench subset in EXP-047: it is a ceiling, not a gap, and no
+  iteration loop can improve on it. Use `paired_run.py --core`; membership and the reason for
+  every exclusion are in `lab/benchmarks/task_sets.py`.
 
 * **The lift is not the gate.** The verification command handed to `superstate_mcp` was
   literally `true` for 22 of 30 tasks, and the margin holds there. On the tasks mcp wins and
