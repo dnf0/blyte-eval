@@ -81,3 +81,28 @@ def test_unmeasurable_tasks_are_documented_with_a_reason() -> None:
         assert reason.strip(), f"{name} excluded without a stated reason"
         assert is_unmeasurable(name) == reason
     assert is_unmeasurable("db-wal-recovery") is None
+
+
+def test_tasks_without_a_sealed_grader_are_marked_unmeasurable() -> None:
+    """A task with no held-out tests/ cannot be scored, so it must be listed.
+
+    The harness falls back to `pytest tests/` run in the agent's own container, which
+    grades the agent against tests it wrote. That inflated superstate_mcp by 7 discordant
+    pairs against vanilla before it was caught.
+    """
+    from pathlib import Path
+
+    from lab.benchmarks.gate_fixtures import is_unmeasurable
+    from lab.benchmarks.task_loader import load_benchmark_tasks
+
+    root = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
+    if not root.is_dir():
+        import pytest as _pytest
+
+        _pytest.skip("benchmark corpus not present")
+
+    ungradeable = [t.name for t in load_benchmark_tasks(root) if t.tests_dir is None]
+    unlisted = [name for name in ungradeable if not is_unmeasurable(name)]
+    assert not unlisted, (
+        f"tasks ship no held-out grader but are not listed in UNMEASURABLE_TASKS: {unlisted}"
+    )

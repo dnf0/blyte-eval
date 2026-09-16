@@ -172,12 +172,32 @@ wrong interpreter.
 which does **not** word-split unquoted variables, so `--tasks $TASKS` passes the whole list
 as one filename.
 
+## A task with no sealed grader cannot be scored
+
+Seven terminal-bench tasks ship no `tests/` directory. `task_loader` falls back to
+`pytest tests/`, and the harness used to run that **inside the agent's own container** --
+grading the agent against tests it wrote itself.
+
+It was not symmetrical. Over 55 paired runs those tasks went **vanilla 0/7,
+`superstate_mcp` 7/7**, because superstate's handoff prompt asks the worker to produce and
+run a verification command while the baseline gets no such instruction. They supplied 7 of
+the 18 discordant pairs behind the headline lift, which is +18pp once they are removed, not
++29pp. Where the agent wrote no `tests/`, the same fallback exited 127 and scored zero for
+every arm -- spurious passes and spurious failures from one defect.
+
+`extractor.py` now records such a task `UNMEASURABLE` instead of grading it, and
+`test_tasks_without_a_sealed_grader_are_marked_unmeasurable` fails if one is missing from
+`UNMEASURABLE_TASKS`. **Before quoting any pass rate, check how many of its tasks were
+gradeable** -- `TaskSpec.tests_dir is None` means no.
+
 ## Gate precision — read it after every run
 
 The gate tells the worker it is done. When it passes on work the sealed grader rejects, the
 worker stops early and the retry loop never engages, so *no* architectural difference between
-arms can show up. EXP-047 measured this: the gate ran 20 times, **passed 20 times**, and was
-wrong on 8. Precision 60%, recall against bad work zero.
+arms can show up. EXP-047 measured this: the gate ran 20 times and **passed 20 times**. Of the 8 it got
+wrong, 7 were tasks with no sealed grader at all (see above), so true precision on gradeable
+tasks was **92%, not 60%** -- the gate is not a rubber stamp. Count only gradeable tasks
+when reading this metric, or a corpus defect will look like a gate defect.
 
 ```
 scripts/gate_precision.py /tmp/superstate_eval_runs/<stamp> results/<run>.json

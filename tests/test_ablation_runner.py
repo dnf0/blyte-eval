@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.budget_policy import RunTelemetry
 from lab.engine.reporter import generate_comparison_summary
 
@@ -211,11 +212,25 @@ def test_ablation_runner_default_execution_mounts_workspace_into_container(tmp_p
         default_driver=StubDriver(),
     )
 
+    # A sealed grader is required for a run to be gradeable at all: without tests_dir the
+    # harness now records the task unmeasurable rather than running the agent's own tests.
+    task_dir = tmp_path / "sample-task"
+    (task_dir / "tests").mkdir(parents=True)
+    (task_dir / "tests" / "test_held_out.py").write_text("def test_x():\n    assert True\n")
+
     telemetry = runner.run_task(
         task_id="test/sample-task",
         arm="vanilla",
         image="test:latest",
         base_budget_sec=600.0,
+        task_spec=TaskSpec(
+            id="test/sample-task",
+            name="sample-task",
+            instruction="Solve it",
+            docker_image="test:latest",
+            verification_cmd="pytest tests/",
+            task_dir=task_dir,
+        ),
     )
 
     assert telemetry.passed is True

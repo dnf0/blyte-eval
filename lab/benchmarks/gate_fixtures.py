@@ -942,6 +942,24 @@ UNMEASURABLE_TASKS: dict[str, str] = {
     #   OCI runtime exec failed: exec: "pytest": executable file not found in $PATH
     # Re-include once the task carries a verifier that actually executes.
     "sqlite-db-truncate": "grader exits 127: pytest not present in the task image",
+    # The seven below ship no held-out tests/ directory at all. task_loader falls back to
+    # `pytest tests/`, which the harness then runs INSIDE THE AGENT'S OWN CONTAINER -- so
+    # whatever the agent wrote into tests/ becomes the grader. That is self-grading, and it
+    # is not symmetrical between arms: measured 2026-09-16 over 55 paired runs, these tasks
+    # went vanilla 0/7 and superstate_mcp 7/7, because superstate's handoff prompt asks the
+    # worker to produce and run a verification command while the baseline gets no such
+    # instruction. They supplied 7 of the 18 discordant pairs behind the headline lift.
+    #
+    # Where the agent writes no tests/, the same fallback instead exits 127 (pytest absent)
+    # and scores zero for every arm. So these tasks are simultaneously a source of spurious
+    # passes and spurious failures. extractor.py now refuses to grade them at all.
+    "largest-eigenval": "no held-out tests/; grading would run the agent's own tests",
+    "log-summary-date-ranges": "no held-out tests/; grading would run the agent's own tests",
+    "merge-diff-arc-agi-task": "no held-out tests/; grading would run the agent's own tests",
+    "modernize-scientific-stack": "no held-out tests/; grading would run the agent's own tests",
+    "multi-source-data-merger": "no held-out tests/; grading would run the agent's own tests",
+    "polyglot-c-py": "no held-out tests/; grading would run the agent's own tests",
+    "sanitize-git-repo": "no held-out tests/; grading would run the agent's own tests",
 }
 
 
