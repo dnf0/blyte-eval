@@ -17,6 +17,67 @@ Never say "contract" unqualified. Say *verification command* or *prompt contract
 A package's own suite at `/app/<pkg>/tests/` is **not** the sealed grader. Match the grader
 by path position (`references_sealed_grader()`), never by substring.
 
+### Gated vs ungated — why it decides what a run measures
+
+A verification command is **ungated** when it cannot fail. `true`, `:`, `exit 0`, `/bin/true`
+and the empty string all pass unconditionally, so they certify nothing.
+
+This is not an edge case: it is the harness's *default*. Most benchmark tasks ship their real
+verifier sealed at `/tests/`, which the agent must never run — it is the answer key. The
+loader therefore strips it and falls back to `true`, so unless a task has an entry in
+`GATE_FIXTURES` it runs **ungated**.
+
+Ungating changes what each arm is even doing:
+
+| Arm | Given an ungated verification command |
+|---|---|
+| `superstate_daemon` | iteration is **gate-driven**: the gate passes on turn one, the state machine records completion, and it commits and merges. Without the ungated turn floor it exits after a single turn and behaves like `vanilla` |
+| `superstate_mcp` | iteration is **turn-driven** (`max_turns_per_milestone`, gate checked *after* the agent concludes), so it keeps working regardless and degrades gracefully |
+| `vanilla` | unaffected — it has no gate either way |
+
+Measured consequences, all from real runs:
+
+- Ungated, the daemon scored 10/20 against `superstate_mcp`'s 14/20 **while running faster
+  than `vanilla`** — not working harder, exiting on a gate that could not say no.
+- 20 of 24 ungated daemon runs recorded two turn-floor notes and **zero** verify-fail: turns
+  spent solely because nothing could refuse. On gated tasks the same daemon recorded genuine
+  verify-fail/retry cycles.
+- Of 12 ungated self-reported completions, **5 were wrong** and had already been committed and
+  merged. Gated, 3 of 3 were correct.
+
+So: **a result from ungated tasks measures the fallback, not the mechanism.** Before comparing
+arms, check how many of the tasks are gated — `agent_gate_for(task_name)` — and say so in the
+write-up. All 20 terminal-bench tasks are now gated; the DataCurve/tier1 set is only partly so.
+
+## Three different things get called "the agent"
+
+Say which one. They sit at different layers and confusing them makes a sentence unfalsifiable.
+
+| Layer | What it is | Where |
+|---|---|---|
+| **orchestrator** | whoever decides the work and states the verification command — a human, or an agent in a chat session. Never measured by the benchmark; it is the thing being *replaced* by an arm | outside the harness |
+| **arm** | the execution model under test: how turns are structured, when the gate is checked, whether state is external. This is what a benchmark number describes | `lab/engine/adapters/` |
+| **driver** (worker) | the coding agent that actually edits files. Addressed in the turnkey prompt as *"You are an Implementer Subagent"*. Interchangeable — the arm is the treatment, the driver is held constant | `lab/engine/drivers/` |
+
+An arm's score is **not** a statement about the driver. `superstate_mcp` scoring 70% against
+`vanilla`'s 45% means the execution model differs, with the same driver on both sides.
+
+### Drivers
+
+| Driver | Runtime | Default model | Notes |
+|---|---|---|---|
+| `AgyCliDriver` | Google Antigravity (`agy`) | `gemini-3.8-flash-high` | used for nearly every run here. Effort suffixes `-low/-medium/-high/-xhigh/-max` change how many tokens are spent, not price per token |
+| `ClaudeCliDriver` | Claude Code (`claude`) | `claude-opus-5` | |
+| `InContainerClaudeDriver` | Claude, executing inside the sandbox | — | |
+
+Pick the effort level deliberately. `-low` with a clamped budget floored every arm at 1/5 on
+a task set where `-high` discriminated — fast, and measuring nothing.
+
+Both CLI drivers receive `CONTAINER_GUIDANCE_TEMPLATE`, which tells the worker that
+dependencies live in the sandbox and to reach them via `./run-in-container`. The daemon spawns
+its worker itself, so that guidance has to be re-supplied through the wrapper — when it was
+missing, the worker edited the host while its own gate ran inside the container.
+
 ## Arms — check the name before comparing anything
 
 The benchmark's Condition labels map to specific arm names. Getting this wrong invalidates
