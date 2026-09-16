@@ -15,6 +15,7 @@ import shlex
 import subprocess
 from typing import Any, Dict, Optional
 
+from lab.benchmarks.gate_fixtures import agent_gate_for
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.condition_b import conversation_id_for
 from lab.engine.prompt_contracts import apply_contract
@@ -532,9 +533,15 @@ class SuperstateMcpAdapter(AgentAdapter):
             if plan_text:
                 self.plan_source = "plan.md"
 
-            vcmd = getattr(task, "verification_cmd", None)
-            if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
-                vcmd = None
+            # Every arm must receive the SAME verification command, or the comparison
+            # measures the gate rather than the execution model. This arm was missed when
+            # fixtures were added, so it ran on `true` while the daemon ran on a strict
+            # gate -- and the daemon "lost" 5-0 purely because of that asymmetry.
+            vcmd = agent_gate_for(getattr(task, "name", "") or "")
+            if not vcmd:
+                vcmd = getattr(task, "verification_cmd", None)
+                if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
+                    vcmd = None
             effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
 
             # Phase 0: Zero-turn planning or planning turn

@@ -97,6 +97,28 @@ a comparison silently, and has.
 Condition B arms must never thread `conversation_id` — zero-turn injection is the mechanism
 the result rests on. See `lab/engine/condition_b.py`.
 
+## Arm input parity — the single most common source of false findings
+
+**Five times** an apparent architectural difference between arms turned out to be one arm
+receiving something another did not:
+
+| What differed | What it looked like |
+|---|---|
+| `--model` not pinned | the daemon "performing worse" — it was running a different model |
+| `--output-format json` missing | the daemon "costing $0.00" — telemetry was never parsed |
+| container guidance missing | the daemon "failing build tasks" — its worker edited the host while its gate ran in the container |
+| `--print-timeout` missing | the daemon "unable to do long tasks" — every turn truncated at agy's 5-minute default |
+| `agent_gate_for` missing | the daemon "losing 5-0" — it had a strict gate while `superstate_mcp` ran on `true` |
+
+Every one produced a plausible finding that dissolved on inspection, and each cost a run.
+
+**Before trusting any arm-vs-arm number, diff what the arms actually receive.**
+`tests/test_arm_input_parity.py` enforces the known cases; it will not catch a new one.
+
+The daemon is the recurring offender because it spawns its own worker and therefore bypasses
+`AgyCliDriver`, which does this work for every other arm. Any new flag or prompt addition
+there must be mirrored into `_write_driver_wrapper`.
+
 ## Verify before asserting
 
 Every wrong claim in this repo's history came from inferring instead of checking. All are
