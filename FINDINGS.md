@@ -15,11 +15,11 @@ numbers in this repo claimed** — those were inflated by defects since fixed.
 
 | | |
 |---|---|
-| **Effect** | superstate ahead on 8 of 10 tasks where the arms differ (sign test p=0.109) |
-| **Size** | +19pp on gradeable tasks, run-level |
+| **Effect** | superstate ahead on 4 of 6 informative tasks; mean per-task difference **+40pp** |
+| **Size** | +19pp pooled across gradeable runs |
 | **Mechanism** | the handoff prompt, delivered in one turn |
 | **Cost** | comparable per run; the daemon is 23% cheaper than the MCP arm |
-| **Not yet established** | statistical significance on clean data |
+| **Not yet established** | statistical significance — p=0.125, and only **6 informative tasks** exist |
 
 ---
 
@@ -31,15 +31,29 @@ Paired runs, same driver and task on both sides, prompt contracts off.
 |---|---|---|---|---|
 | gradeable tasks | 48 | 65% | 83% | **+19pp** |
 
-Aggregating to task level — five repeats of one task are not five independent observations —
-the surviving clean evidence is **8 tasks where superstate leads, 2 where vanilla leads**.
-A sign test on that gives **p=0.109**: the right direction, consistently, but not significant
-at the conventional threshold.
+The unit of analysis is the **task**. Five repeats of one task are one observation, and so are
+the same task's runs appearing in three different results files. Pooling correctly
+(`scripts/significance.py`, pre-specified) gives:
 
-**This is the honest headline.** Earlier figures of +29pp and p=0.037 do not survive removing
-self-graded tasks, prompt-contract-contaminated runs, and run-level pseudo-replication.
+| | |
+|---|---|
+| independent gradeable tasks | 16 |
+| ties — both arms identical, nearly all at 100% | **10** |
+| **informative tasks** | **6** — superstate ahead on 4, vanilla on 2 |
+| mean per-task difference | **+40pp** |
+| exact permutation test | **p = 0.125** |
 
-*Evidence: EXP-041, EXP-049, EXP-021.*
+**Not significant, and no statistic can fix that.** Six informative tasks is too few under any
+test. This figure moved four times in one day — +29pp/p=0.037, then p=0.109, then p=0.017,
+then p=0.125 — every move caused by how runs were counted rather than by new data. The script
+exists so it stops moving.
+
+**The binding constraint is the number of independent discriminating tasks.** Ten of sixteen
+are ceiling ties both arms always solve; more repeats of those cannot help. Only new
+discriminating tasks can, and 8 of the 14 in the core set remain unmeasured — all of them
+datacurve.
+
+*Evidence: EXP-041, EXP-049, EXP-052 (partial).*
 
 ## 2. The mechanism is the handoff prompt, not the control loop
 
