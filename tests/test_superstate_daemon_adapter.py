@@ -357,15 +357,19 @@ def test_wrapper_passes_the_task_budget_as_print_timeout(tmp_path: Path) -> None
     failed the long one (build-cython-ext, 30-45 min, 0-2/5).
     """
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
-    script = adapter._write_driver_wrapper(
+    wrapper = adapter._write_driver_wrapper(
         tmp_path, _StubDriver(""), container=None, budget_sec=2400
-    ).read_text()
+    )
+    assert wrapper is not None
+    script = wrapper.read_text()
     assert "--print-timeout 2400s" in script
 
 
 def test_wrapper_print_timeout_never_below_a_usable_floor(tmp_path: Path) -> None:
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
-    script = adapter._write_driver_wrapper(
+    wrapper = adapter._write_driver_wrapper(
         tmp_path, _StubDriver(""), container=None, budget_sec=5
-    ).read_text()
+    )
+    assert wrapper is not None
+    script = wrapper.read_text()
     assert "--print-timeout 60s" in script
