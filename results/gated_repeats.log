@@ -1,0 +1,30 @@
+07:33:39 [INFO] superstate_eval.paired: ==============================================================================
+07:33:39 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=3  arms=vanilla:5, superstate_mcp:5, superstate_daemon:5  concurrency=4
+07:33:39 [INFO] superstate_eval.paired: Runs=45  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260916-073339
+07:33:39 [INFO] superstate_eval.paired: ==============================================================================
+07:33:39 [INFO] superstate_eval.paired: -> build-cython-ext [vanilla] [run 1/5] (budget: 900s)
+07:33:39 [INFO] superstate_eval.paired: -> build-cython-ext [vanilla] [run 2/5] (budget: 900s)
+07:33:39 [INFO] superstate_eval.paired: -> build-cython-ext [vanilla] [run 3/5] (budget: 900s)
+07:33:39 [INFO] superstate_eval.docker_manager: Host disk check: 85.13 GB free on /
+07:33:39 [INFO] superstate_eval.paired: -> build-cython-ext [vanilla] [run 4/5] (budget: 900s)
+07:33:39 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: vanilla] (Base budget: 900.0s)
+07:33:39 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: vanilla] (Base budget: 900.0s)
+07:33:39 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: vanilla] (Base budget: 900.0s)
+07:33:39 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: vanilla] (Base budget: 900.0s)
+07:33:39 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.1 GB reported available], Disk limit=6, User override=None)
+07:33:39 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.1 GB reported available], Disk limit=6, User override=None)
+07:33:39 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.1 GB reported available], Disk limit=6, User override=None)
+07:33:39 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.1 GB reported available], Disk limit=6, User override=None)
+07:33:39 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-073339/eval-terminal-bench_build-cython-ext-vanilla-991f008a/workspace
+07:33:39 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-073339/eval-terminal-bench_build-cython-ext-vanilla-f358620d/workspace
+07:33:39 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-073339/eval-terminal-bench_build-cython-ext-vanilla-7a8a17c2/workspace
+07:33:39 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260916-073339/eval-terminal-bench_build-cython-ext-vanilla-71a29c0f/workspace
+07:33:40 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ff7a7aa6448e (alexgshaw/build-cython-ext:20251031)
+07:33:40 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e50dbc2211a4 (alexgshaw/build-cython-ext:20251031)
+07:33:40 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e6ac45d1ad61 (alexgshaw/build-cython-ext:20251031)
+07:33:40 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 90377d00c702 (alexgshaw/build-cython-ext:20251031)
+07:33:40 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests for the agent phase
+07:33:40 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:33:40 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:33:40 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:33:40 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)

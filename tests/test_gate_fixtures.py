@@ -55,10 +55,15 @@ def test_fixtures_exercise_behaviour_not_mere_presence() -> None:
     Each fixture must actually run something -- import the module, execute the suite,
     inspect the artifact's contents -- rather than only assert a path exists.
     """
-    runners = ("python", "pytest", "openssl", "go build", "go test", "go run", "node", "npm", "npx")
+    # Either execute something, or inspect the CONTENT of what was produced. A gate that
+    # only asserts a path exists is satisfiable by `touch`, which is the failure mode this
+    # guards against -- a derived gate once reduced to `test -f <file> && not-on-main`.
+    runners = ("python", "pytest", "openssl", "go build", "go test", "go run",
+               "node", "npm", "npx", "git ", "gcc ")
+    content_checks = ("grep ", "cmp -s", "[ \"$(")
     for name, gate in GATE_FIXTURES.items():
-        assert any(tok in gate for tok in runners), (
-            f"{name} gate only checks for presence, not behaviour"
+        assert any(tok in gate for tok in runners + content_checks), (
+            f"{name} gate only checks for presence, not behaviour or content"
         )
 
 

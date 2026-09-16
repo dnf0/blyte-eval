@@ -489,6 +489,268 @@ TSEOF
 NODE_PATH=/app/node_modules ./node_modules/.bin/mocha --no-config --no-package \
   --node-option import=tsx /tmp/gate/ark.test.ts
 GATEEOF""",
+    # move.txt holds one or more [src][dst] moves.
+    # Validated in-container: exits non-zero pre-implementation.
+    "chess-best-move": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/move.txt
+python3 - <<'PY'
+import re
+lines = [l.strip() for l in open("/app/move.txt") if l.strip()]
+assert lines, "move.txt must contain at least one move"
+for l in lines:
+    assert re.fullmatch(r"[a-h][1-8][a-h][1-8]", l), f"move {l!r} must be [src][dst], e.g. e2e4"
+PY
+GATEEOF""",
+    # output.txt starts with the prefix the instruction itself discloses.
+    # Validated in-container: exits non-zero pre-implementation.
+    "code-from-image": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/output.txt
+grep -q '^bee26a' /app/output.txt
+GATEEOF""",
+    # a 1-hour VEVENT with all three attendees, inside the stated hard constraints.
+    # Validated in-container: exits non-zero pre-implementation.
+    "constraints-scheduling": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/meeting_scheduled.ics
+python3 - <<'PY'
+import re
+t = open("/app/meeting_scheduled.ics").read()
+assert "BEGIN:VEVENT" in t and "END:VEVENT" in t, "must be a VEVENT calendar entry"
+for who in ("alice@example.com", "bob@example.com", "carol@example.com"):
+    assert who in t, f"{who} must be an attendee"
+assert re.search(r"SUMMARY:.*Team Planning Meeting", t, re.I), "summary must name the meeting"
+s = re.search(r"DTSTART[^:]*:(\d{8})T(\d{2})(\d{2})", t)
+e = re.search(r"DTEND[^:]*:(\d{8})T(\d{2})(\d{2})", t)
+assert s and e, "needs DTSTART and DTEND"
+sh, sm = int(s.group(2)), int(s.group(3)); eh, em = int(e.group(2)), int(e.group(3))
+assert (eh*60+em) - (sh*60+sm) == 60, "meeting must be exactly 1 hour"
+# Hard constraints from the brief: Bob no meetings before 10:00; Alice none after 14:00.
+assert sh >= 10, "Bob cannot meet before 10 AM"
+assert eh*60+em <= 14*60, "Alice cannot meet after 2 PM"
+PY
+GATEEOF""",
+    # extract.js runs and emits a JSON object of integer values keyed by numeric address.
+    # Validated in-container: exits non-zero pre-implementation.
+    "extract-elf": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/extract.js
+node /app/extract.js /app/a.out > /tmp/out.json
+python3 - <<'PY'
+import json
+d = json.load(open("/tmp/out.json"))
+assert isinstance(d, dict) and d, "must be a non-empty JSON object"
+for k, v in d.items():
+    assert str(k).isdigit(), f"address {k!r} must be a numeric key"
+    assert isinstance(v, int), f"value for {k} must be an int, got {type(v).__name__}"
+PY
+GATEEOF""",
+    # out.txt carries the decoded text.
+    # Validated in-container: exits non-zero pre-implementation.
+    "gcode-to-text": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/out.txt
+python3 -c "
+t=open('/app/out.txt').read().strip()
+assert t, 'out.txt must not be empty'
+assert any(c.isalnum() for c in t), 'out.txt must contain the printed text'
+"
+GATEEOF""",
+    # secret recovered AND unreachable anywhere in the repo, history included.
+    # Validated in-container: exits non-zero pre-implementation.
+    "git-leak-recovery": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/secret.txt
+grep -qE '^secret' /app/secret.txt
+# The secret must no longer be recoverable anywhere in the repo, including history.
+S=$(tr -d '\r\n' < /app/secret.txt)
+cd /app/repo
+! git grep -q -- "$S" $(git rev-list --all) 2>/dev/null
+! grep -rq -- "$S" . 2>/dev/null
+GATEEOF""",
+    # the regex compiles, matches only the LAST date on an IPv4 line, and rejects look-alikes.
+    # Validated in-container: exits non-zero pre-implementation.
+    "regex-log": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/regex.txt
+python3 - <<'PY'
+import re
+pat = open("/app/regex.txt").read().strip()
+assert pat, "regex.txt must not be empty"
+rx = re.compile(pat)              # must compile
+# A line with an IPv4 and two dates: only the LAST date may match.
+line = "2020-01-01 host 10.0.0.1 evt 2021-12-31"
+got = rx.findall(line + "\n")
+flat = [g if isinstance(g, str) else next((x for x in g if x), "") for g in got]
+assert flat == ["2021-12-31"], f"expected only the last date, got {flat}"
+# A line with no IPv4 must not match at all.
+assert not rx.findall("2020-01-01 no address here\n"), "must require an IPv4 on the line"
+# Near-misses must not match.
+assert not rx.findall("user 1134-12-1234 and 10.0.0.1\n"), "must reject alphanumeric-adjacent look-alikes"
+PY
+GATEEOF""",
+    # proto, generated stubs, server class and port all present.
+    # Validated in-container: exits non-zero pre-implementation.
+    "kv-store-grpc": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/kv-store.proto
+ls /app/*_pb2.py /app/*_pb2_grpc.py >/dev/null
+test -s /app/server.py
+python3 -c "import grpc, grpc_tools" 2>/dev/null
+grep -q 'service KVStore' /app/kv-store.proto
+grep -qE 'rpc +GetVal' /app/kv-store.proto
+grep -qE 'rpc +SetVal' /app/kv-store.proto
+grep -q 'class Server' /app/server.py
+grep -q '5328' /app/server.py
+GATEEOF""",
+    # one file that python3 and gcc both run, agreeing on Fibonacci.
+    # Validated in-container: exits non-zero pre-implementation.
+    "polyglot-c-py": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+F=/app/polyglot/main.py.c
+test -s "$F"
+# Same source must run under python3 and compile+run under gcc, agreeing on Fibonacci.
+for n in 0 1 10; do
+  p=$(python3 "$F" $n)
+  gcc "$F" -o /tmp/cmain 2>/dev/null
+  c=$(/tmp/cmain $n)
+  [ "$p" = "$c" ] || { echo "python=$p gcc=$c for n=$n"; exit 1; }
+done
+[ "$(python3 "$F" 10)" = "55" ]
+[ "$(python3 "$F" 0)" = "0" ]
+[ "$(python3 "$F" 1)" = "1" ]
+GATEEOF""",
+    # results.txt holds a FLAG{...} value.
+    # Validated in-container: exits non-zero pre-implementation.
+    "vulnerable-secret": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/results.txt
+grep -qE 'FLAG\{.+\}' /app/results.txt
+GATEEOF""",
+    # merged parquet and conflict report both produced and readable.
+    # Validated in-container: exits non-zero pre-implementation.
+    "multi-source-data-merger": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/merged_users.parquet
+test -s /app/conflicts.json
+python3 - <<'PY'
+import json
+import pandas as pd
+df = pd.read_parquet("/app/merged_users.parquet")
+assert len(df) > 0, "merged dataset must not be empty"
+c = json.load(open("/app/conflicts.json"))
+assert isinstance(c, (list, dict)), "conflict report must be JSON"
+PY
+GATEEOF""",
+    # summary.csv has the exact header and every period/severity row.
+    # Validated in-container: exits non-zero pre-implementation.
+    "log-summary-date-ranges": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/summary.csv
+python3 - <<'PY'
+import csv
+rows = list(csv.reader(open("/app/summary.csv")))
+assert rows and rows[0] == ["period", "severity", "count"], f"header must be period,severity,count; got {rows[:1]}"
+body = rows[1:]
+seen = {(r[0], r[1]) for r in body if len(r) >= 3}
+for period in ("today", "last_7_days", "last_30_days"):
+    for sev in ("ERROR", "WARNING", "INFO"):
+        assert (period, sev) in seen, f"missing row for {period}/{sev}"
+for r in body:
+    assert r[2].strip().isdigit(), f"count must be an integer, got {r[2]!r}"
+PY
+GATEEOF""",
+    # stated placeholders present and no live-looking credential remains.
+    # Validated in-container: exits non-zero pre-implementation.
+    "sanitize-git-repo": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+cd /app
+R=$(ls -d */ 2>/dev/null | head -1)
+[ -n "$R" ]
+# The stated placeholders must be present...
+grep -rq -- '<your-aws-access-key-id>\|<your-aws-secret-access-key>\|<your-github-token>\|<your-huggingface-token>' . 
+# ...and no live-looking credential may remain anywhere, including history.
+! grep -rqE 'AKIA[0-9A-Z]{16}' . 2>/dev/null
+! grep -rqE 'ghp_[0-9A-Za-z]{30,}' . 2>/dev/null
+! grep -rqE 'hf_[0-9A-Za-z]{30,}' . 2>/dev/null
+GATEEOF""",
+    # correct dominant pair AND faster than the numpy reference.
+    # Validated in-container: exits non-zero pre-implementation.
+    "largest-eigenval": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+python3 - <<'PY'
+import time, numpy as np, sys
+sys.path.insert(0, "/app")
+from eigen import find_dominant_eigenvalue_and_eigenvector as f
+rng = np.random.default_rng(0)
+for n in (3, 7, 10):
+    A = rng.standard_normal((n, n))
+    val, vec = f(A)
+    vec = np.asarray(vec).reshape(-1)
+    assert np.allclose(A @ vec, val * vec, atol=1e-6), f"eigen pair wrong for n={n}"
+    # dominant = largest magnitude
+    assert np.isclose(abs(val), max(abs(np.linalg.eigvals(A))), rtol=1e-6), f"not dominant for n={n}"
+# must beat numpy's reference on median time
+A = rng.standard_normal((10, 10))
+def med(fn, k=25):
+    ts = []
+    for _ in range(k):
+        t0 = time.perf_counter(); fn(); ts.append(time.perf_counter() - t0)
+    return sorted(ts)[len(ts)//2]
+mine = med(lambda: f(A))
+ref = med(lambda: np.linalg.eig(A))
+assert mine < ref, f"must be faster than numpy reference: {mine:.6f} vs {ref:.6f}"
+PY
+GATEEOF""",
+    # repo initialised with branch1 and branch2 checked out.
+    # Validated in-container: exits non-zero pre-implementation.
+    "merge-diff-arc-agi-task": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -d /app/repo/.git
+cd /app/repo
+git rev-parse --verify branch1 >/dev/null 2>&1
+git rev-parse --verify branch2 >/dev/null 2>&1
+GATEEOF""",
+    # modernised script and dependency file present, script runs.
+    # Validated in-container: exits non-zero pre-implementation.
+    "modernize-scientific-stack": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/analyze_climate_modern.py
+test -s /app/requirements.txt -o -s /app/pyproject.toml
+python3 -c "import ast,sys; ast.parse(open('/app/analyze_climate_modern.py').read())"
+python3 /app/analyze_climate_modern.py >/dev/null 2>&1
+GATEEOF""",
+    # paired primers within the stated length and melting-temperature bounds.
+    # Validated in-container: exits non-zero pre-implementation.
+    "dna-insert": r"""cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+test -s /app/primers.fasta
+python3 - <<'PY'
+import re, subprocess, shutil
+seqs, name = [], None
+for line in open("/app/primers.fasta"):
+    line = line.strip()
+    if line.startswith(">"):
+        name = line
+    elif line and name is not None:
+        seqs.append(line.upper())
+assert seqs, "primers.fasta must contain sequences"
+assert len(seqs) % 2 == 0, "primers must be grouped in forward/reverse pairs"
+for s in seqs:
+    assert re.fullmatch(r"[ACGT]+", s), f"non-nucleotide characters in {s[:20]!r}"
+    assert 15 <= len(s) <= 45, f"annealing length must be 15-45, got {len(s)}"
+oligotm = shutil.which("oligotm")
+if oligotm:
+    flags = ["-tp", "1", "-sc", "1", "-mv", "50", "-dv", "2", "-n", "0.8", "-d", "500"]
+    tms = [float(subprocess.run([oligotm, *flags, s], capture_output=True, text=True).stdout.strip())
+           for s in seqs]
+    for t in tms:
+        assert 58 <= t <= 72, f"melting temperature {t} outside 58-72"
+    for i in range(0, len(tms), 2):
+        assert abs(tms[i] - tms[i+1]) <= 5, f"pair Tm differ by more than 5C: {tms[i]} vs {tms[i+1]}"
+PY
+GATEEOF""",
 }
 
 

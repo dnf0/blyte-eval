@@ -1,0 +1,533 @@
+21:57:29 [INFO] superstate_eval.paired: ==============================================================================
+21:57:29 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=20  arms=superstate_daemon  concurrency=4
+21:57:29 [INFO] superstate_eval.paired: Runs=20  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260915-215729
+21:57:29 [INFO] superstate_eval.paired: ==============================================================================
+21:57:29 [INFO] superstate_eval.paired: -> build-cython-ext [superstate_daemon] (budget: 900s)
+21:57:29 [INFO] superstate_eval.paired: -> chess-best-move [superstate_daemon] (budget: 900s)
+21:57:29 [INFO] superstate_eval.runner: Starting task 'terminal-bench/chess-best-move' [Arm: superstate_daemon] (Base budget: 900.0s)
+21:57:29 [INFO] superstate_eval.docker_manager: Host disk check: 84.83 GB free on /
+21:57:29 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon] (Base budget: 900.0s)
+21:57:29 [INFO] superstate_eval.paired: -> code-from-image [superstate_daemon] (budget: 1200s)
+21:57:29 [INFO] superstate_eval.runner: Starting task 'terminal-bench/code-from-image' [Arm: superstate_daemon] (Base budget: 1200.0s)
+21:57:29 [INFO] superstate_eval.paired: -> constraints-scheduling [superstate_daemon] (budget: 1200s)
+21:57:29 [INFO] superstate_eval.runner: Starting task 'terminal-bench/constraints-scheduling' [Arm: superstate_daemon] (Base budget: 1200.0s)
+21:57:29 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 8.1 GB reported available], Disk limit=6, User override=None)
+21:57:29 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 8.1 GB reported available], Disk limit=6, User override=None)
+21:57:29 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 8.1 GB reported available], Disk limit=6, User override=None)
+21:57:29 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 8.1 GB reported available], Disk limit=6, User override=None)
+21:57:29 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_build-cython-ext-superstate_daemon-5dd1874c/workspace
+21:57:29 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_code-from-image-superstate_daemon-413c3978/workspace from alexgshaw/code-from-image:20251031:/app (1 entries)
+21:57:29 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_constraints-scheduling-superstate_daemon-ece0e584/workspace from alexgshaw/constraints-scheduling:20251031:/app (3 entries)
+21:57:29 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_chess-best-move-superstate_daemon-913c16fe/workspace from alexgshaw/chess-best-move:20251031:/app (1 entries)
+21:57:30 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 209b5bc59496 (alexgshaw/code-from-image:20251031)
+21:57:30 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f8f190bba688 (alexgshaw/build-cython-ext:20251031)
+21:57:30 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 24407d743415 (alexgshaw/chess-best-move:20251031)
+21:57:30 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d72669741a29 (alexgshaw/constraints-scheduling:20251031)
+21:57:30 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests for the agent phase
+21:57:30 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/code-from-image/tests for the agent phase
+21:57:30 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for code-from-image; handing off ungated
+21:57:30 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/constraints-scheduling/tests for the agent phase
+21:57:30 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for constraints-scheduling; handing off ungated
+21:57:30 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/chess-best-move/tests for the agent phase
+21:57:30 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for chess-best-move; handing off ungated
+21:57:30 [ERROR] superstate_eval.adapters.superstate_daemon: Gate fixture for build-cython-ext ALREADY PASSES before any work -- it cannot discriminate and this run is not measuring the task: Held-out test path /tests sealed during agent phase
+21:57:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: c7d642c2': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+21:57:30 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: c7d642c2 (prev=None). Lease extended.
+21:57:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b0807efa': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+21:57:30 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: b0807efa (prev=None). Lease extended.
+21:57:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: e4de3b3e': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+21:57:30 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: e4de3b3e (prev=None). Lease extended.
+21:57:31 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 02b4e9fe': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+21:57:31 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 02b4e9fe (prev=None). Lease extended.
+22:02:09 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+22:02:09 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:02:09 [WARNING] superstate_eval.extractor: Task terminal-bench/code-from-image has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:02:20 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/code-from-image arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:02:20 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 209b5bc59496
+22:02:20 [INFO] superstate_eval.runner: Finished task 'terminal-bench/code-from-image' [Arm: superstate_daemon]: Passed=True, WallClock=290.50s, Cost=$0.23, TotalGrantedBudget=3600.0s
+22:02:20 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.2288 turns=2 291s  
+22:02:20 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] (budget: 900s)
+22:02:20 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:02:20 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.8 GB reported available], Disk limit=6, User override=None)
+22:02:20 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_db-wal-recovery-superstate_daemon-2c7fe419/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+22:02:20 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4593ce4ed593 (alexgshaw/db-wal-recovery:20251031)
+22:02:20 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests for the agent phase
+22:02:20 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for db-wal-recovery
+22:02:21 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 1512846c': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:02:21 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 1512846c (prev=None). Lease extended.
+22:05:01 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:05:01 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:05:01 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:05:16 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:05:16 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 4593ce4ed593
+22:05:17 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=177.01s, Cost=$0.15, TotalGrantedBudget=3300.0s
+22:05:17 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.1500 turns=2 177s  
+22:05:17 [INFO] superstate_eval.paired: -> dna-insert [superstate_daemon] (budget: 1800s)
+22:05:17 [INFO] superstate_eval.runner: Starting task 'terminal-bench/dna-insert' [Arm: superstate_daemon] (Base budget: 1800.0s)
+22:05:17 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 7.4 GB reported available], Disk limit=6, User override=None)
+22:05:17 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_dna-insert-superstate_daemon-08c8b9bf/workspace from alexgshaw/dna-insert:20251031:/app (1 entries)
+22:05:17 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 8b0970d59786 (alexgshaw/dna-insert:20251031)
+22:05:17 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/dna-insert/tests for the agent phase
+22:05:17 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for dna-insert; handing off ungated
+22:05:17 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 6e4e03aa': granted +1200.0s lease extension (Total budget: 3000.0s, completed milestones: 1)
+22:05:17 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 6e4e03aa (prev=None). Lease extended.
+22:10:52 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:10:52 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:10:52 [WARNING] superstate_eval.extractor: Task terminal-bench/chess-best-move has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:11:05 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+22:11:05 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:11:05 [WARNING] superstate_eval.extractor: Task terminal-bench/constraints-scheduling has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:11:08 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/chess-best-move arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:11:08 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 24407d743415
+22:11:08 [INFO] superstate_eval.runner: Finished task 'terminal-bench/chess-best-move' [Arm: superstate_daemon]: Passed=True, WallClock=818.67s, Cost=$0.63, TotalGrantedBudget=3300.0s
+22:11:08 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.6316 turns=2 819s  
+22:11:08 [INFO] superstate_eval.paired: -> extract-elf [superstate_daemon] (budget: 900s)
+22:11:08 [INFO] superstate_eval.runner: Starting task 'terminal-bench/extract-elf' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:11:08 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.7 GB reported available], Disk limit=6, User override=None)
+22:11:08 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_extract-elf-superstate_daemon-2db91bbc/workspace from alexgshaw/extract-elf:20251031:/app (2 entries)
+22:11:08 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 60e9e7877759 (alexgshaw/extract-elf:20251031)
+22:11:08 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/extract-elf/tests for the agent phase
+22:11:08 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for extract-elf; handing off ungated
+22:11:08 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 4a4a21e6': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:11:08 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 4a4a21e6 (prev=None). Lease extended.
+22:11:22 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/constraints-scheduling arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:11:22 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d72669741a29
+22:11:22 [INFO] superstate_eval.runner: Finished task 'terminal-bench/constraints-scheduling' [Arm: superstate_daemon]: Passed=True, WallClock=833.13s, Cost=$0.70, TotalGrantedBudget=3600.0s
+22:11:22 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.7019 turns=2 833s  
+22:11:22 [INFO] superstate_eval.paired: -> gcode-to-text [superstate_daemon] (budget: 900s)
+22:11:22 [INFO] superstate_eval.runner: Starting task 'terminal-bench/gcode-to-text' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:11:22 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.4 GB reported available], Disk limit=6, User override=None)
+22:11:22 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_gcode-to-text-superstate_daemon-4d44e9e6/workspace from alexgshaw/gcode-to-text:20251031:/app (1 entries)
+22:11:23 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 51418e707dd7 (alexgshaw/gcode-to-text:20251031)
+22:11:23 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/gcode-to-text/tests for the agent phase
+22:11:23 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for gcode-to-text; handing off ungated
+22:11:23 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: a7c1dad6': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:11:23 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: a7c1dad6 (prev=None). Lease extended.
+22:20:22 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4200.0s, completed milestones: 2)
+22:20:22 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:20:22 [WARNING] superstate_eval.extractor: Task terminal-bench/dna-insert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:20:36 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/dna-insert arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+22:20:36 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 8b0970d59786
+22:20:37 [INFO] superstate_eval.runner: Finished task 'terminal-bench/dna-insert' [Arm: superstate_daemon]: Passed=False, WallClock=919.83s, Cost=$0.81, TotalGrantedBudget=4200.0s
+22:20:37 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.8100 turns=2 920s  Verification failed: Reward was 0.0 < 1.0
+Output: rs_path} does not exist."
+E       AssertionError: File /app/primers.fasta does not exist.
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/app/primers.fasta').exists
+
+/tests/test_outputs.py:48: AssertionError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_primers - AssertionError: File /app/pri...
+============================== 1 failed in 0.06s ===============================
+
+22:20:37 [INFO] superstate_eval.paired: -> git-leak-recovery [superstate_daemon] (budget: 900s)
+22:20:37 [INFO] superstate_eval.runner: Starting task 'terminal-bench/git-leak-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:20:37 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:20:37 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_git-leak-recovery-superstate_daemon-411e2ca7/workspace from alexgshaw/git-leak-recovery:20251031:/app (57 entries)
+22:20:37 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d948c2f2aefb (alexgshaw/git-leak-recovery:20251031)
+22:20:37 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/git-leak-recovery/tests for the agent phase
+22:20:37 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for git-leak-recovery; handing off ungated
+22:20:37 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: f00a3733': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:20:37 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: f00a3733 (prev=None). Lease extended.
+22:22:02 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:22:02 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:22:02 [WARNING] superstate_eval.extractor: Task terminal-bench/gcode-to-text has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:22:11 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/gcode-to-text arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:22:11 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 51418e707dd7
+22:22:11 [INFO] superstate_eval.runner: Finished task 'terminal-bench/gcode-to-text' [Arm: superstate_daemon]: Passed=True, WallClock=648.82s, Cost=$0.58, TotalGrantedBudget=3300.0s
+22:22:11 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.5779 turns=2 649s  
+22:22:11 [INFO] superstate_eval.paired: -> kv-store-grpc [superstate_daemon] (budget: 900s)
+22:22:11 [INFO] superstate_eval.runner: Starting task 'terminal-bench/kv-store-grpc' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:22:11 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.1 GB reported available], Disk limit=6, User override=None)
+22:22:11 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/kv-store-grpc:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_kv-store-grpc-superstate_daemon-4e6652bf/workspace
+22:22:11 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e2325d442f0d (alexgshaw/kv-store-grpc:20251031)
+22:22:11 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/kv-store-grpc/tests for the agent phase
+22:22:11 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for kv-store-grpc; handing off ungated
+22:22:12 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 8a6c0e51': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:22:12 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 8a6c0e51 (prev=None). Lease extended.
+22:24:38 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 7dbc8d2a': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:24:38 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 7dbc8d2a (prev=02b4e9fe). Lease extended.
+22:24:40 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+22:24:40 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:24:40 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:24:45 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+22:24:45 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f8f190bba688
+22:24:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon]: Passed=False, WallClock=1635.86s, Cost=$1.38, TotalGrantedBudget=4500.0s
+22:24:45 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$1.3782 turns=2 1636s  Verification failed: Reward was 0.0 < 1.0
+Output: ts.py::test_ccomplexity_cython_extension
+PASSED ../tests/test_outputs.py::test_cinvariants_cython_extension
+PASSED ../tests/test_outputs.py::test_chelpers
+PASSED ../tests/test_outputs.py::test_cinvariants_python_vs_cython
+PASSED ../tests/test_outputs.py::test_example_usage
+PASSED ../tests/test_outputs.py::test_pyknotid_repository_tests
+FAILED ../tests/test_outputs.py::test_ccomplexity - AttributeError: module 'n...
+========================= 1 failed, 10 passed in 3.56s =========================
+
+22:24:45 [INFO] superstate_eval.paired: -> largest-eigenval [superstate_daemon] (budget: 900s)
+22:24:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/largest-eigenval' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:24:45 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:24:45 [ERROR] superstate_eval.runner: Error during execution of task 'terminal-bench/largest-eigenval' [Arm: superstate_daemon]: Cannot seed workspace: image 'alexgshaw/largest-eigenval:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/largest-eigenval:20251031")). Pull or build the task image before running the evaluation.
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 275, in _raise_for_status
+    response.raise_for_status()
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/requests/models.py", line 1167, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: http+docker://localhost/v1.55/containers/create
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 120, in seed_workspace_from_image
+    container = self.client.containers.create(image=image, command="true")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/models/containers.py", line 936, in create
+    resp = self.client.api.create_container(**create_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 440, in create_container
+    return self.create_container_from_config(config, name, platform)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 457, in create_container_from_config
+    return self._result(res, True)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 281, in _result
+    self._raise_for_status(response)
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 277, in _raise_for_status
+    raise create_api_error_from_http_exception(e) from e
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/errors.py", line 39, in create_api_error_from_http_exception
+    raise cls(e, response=response, explanation=explanation) from e
+docker.errors.ImageNotFound: 404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/largest-eigenval:20251031")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/engine/runner.py", line 248, in run_task
+    self.docker_manager.seed_workspace_from_image(
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 122, in seed_workspace_from_image
+    raise WorkspaceSeedError(
+lab.sandbox.docker_manager.WorkspaceSeedError: Cannot seed workspace: image 'alexgshaw/largest-eigenval:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/largest-eigenval:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/largest-eigenval' [Arm: superstate_daemon]: Passed=False, WallClock=0.08s, Cost=$0.00, TotalGrantedBudget=900.0s
+22:24:45 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.0000 turns=None 0s  Cannot seed workspace: image 'alexgshaw/largest-eigenval:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/largest-eigenval:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.paired: -> log-summary-date-ranges [superstate_daemon] (budget: 900s)
+22:24:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/log-summary-date-ranges' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:24:45 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:24:45 [ERROR] superstate_eval.runner: Error during execution of task 'terminal-bench/log-summary-date-ranges' [Arm: superstate_daemon]: Cannot seed workspace: image 'alexgshaw/log-summary-date-ranges:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/log-summary-date-ranges:20251031")). Pull or build the task image before running the evaluation.
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 275, in _raise_for_status
+    response.raise_for_status()
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/requests/models.py", line 1167, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: http+docker://localhost/v1.55/containers/create
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 120, in seed_workspace_from_image
+    container = self.client.containers.create(image=image, command="true")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/models/containers.py", line 936, in create
+    resp = self.client.api.create_container(**create_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 440, in create_container
+    return self.create_container_from_config(config, name, platform)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 457, in create_container_from_config
+    return self._result(res, True)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 281, in _result
+    self._raise_for_status(response)
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 277, in _raise_for_status
+    raise create_api_error_from_http_exception(e) from e
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/errors.py", line 39, in create_api_error_from_http_exception
+    raise cls(e, response=response, explanation=explanation) from e
+docker.errors.ImageNotFound: 404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/log-summary-date-ranges:20251031")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/engine/runner.py", line 248, in run_task
+    self.docker_manager.seed_workspace_from_image(
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 122, in seed_workspace_from_image
+    raise WorkspaceSeedError(
+lab.sandbox.docker_manager.WorkspaceSeedError: Cannot seed workspace: image 'alexgshaw/log-summary-date-ranges:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/log-summary-date-ranges:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/log-summary-date-ranges' [Arm: superstate_daemon]: Passed=False, WallClock=0.00s, Cost=$0.00, TotalGrantedBudget=900.0s
+22:24:45 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.0000 turns=None 0s  Cannot seed workspace: image 'alexgshaw/log-summary-date-ranges:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/log-summary-date-ranges:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.paired: -> merge-diff-arc-agi-task [superstate_daemon] (budget: 900s)
+22:24:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/merge-diff-arc-agi-task' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:24:45 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:24:45 [ERROR] superstate_eval.runner: Error during execution of task 'terminal-bench/merge-diff-arc-agi-task' [Arm: superstate_daemon]: Cannot seed workspace: image 'alexgshaw/merge-diff-arc-agi-task:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/merge-diff-arc-agi-task:20251031")). Pull or build the task image before running the evaluation.
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 275, in _raise_for_status
+    response.raise_for_status()
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/requests/models.py", line 1167, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: http+docker://localhost/v1.55/containers/create
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 120, in seed_workspace_from_image
+    container = self.client.containers.create(image=image, command="true")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/models/containers.py", line 936, in create
+    resp = self.client.api.create_container(**create_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 440, in create_container
+    return self.create_container_from_config(config, name, platform)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 457, in create_container_from_config
+    return self._result(res, True)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 281, in _result
+    self._raise_for_status(response)
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 277, in _raise_for_status
+    raise create_api_error_from_http_exception(e) from e
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/errors.py", line 39, in create_api_error_from_http_exception
+    raise cls(e, response=response, explanation=explanation) from e
+docker.errors.ImageNotFound: 404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/merge-diff-arc-agi-task:20251031")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/engine/runner.py", line 248, in run_task
+    self.docker_manager.seed_workspace_from_image(
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 122, in seed_workspace_from_image
+    raise WorkspaceSeedError(
+lab.sandbox.docker_manager.WorkspaceSeedError: Cannot seed workspace: image 'alexgshaw/merge-diff-arc-agi-task:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/merge-diff-arc-agi-task:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/merge-diff-arc-agi-task' [Arm: superstate_daemon]: Passed=False, WallClock=0.00s, Cost=$0.00, TotalGrantedBudget=900.0s
+22:24:45 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.0000 turns=None 0s  Cannot seed workspace: image 'alexgshaw/merge-diff-arc-agi-task:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/merge-diff-arc-agi-task:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.paired: -> modernize-scientific-stack [superstate_daemon] (budget: 600s)
+22:24:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/modernize-scientific-stack' [Arm: superstate_daemon] (Base budget: 600.0s)
+22:24:45 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:24:45 [ERROR] superstate_eval.runner: Error during execution of task 'terminal-bench/modernize-scientific-stack' [Arm: superstate_daemon]: Cannot seed workspace: image 'alexgshaw/modernize-scientific-stack:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/modernize-scientific-stack:20251031")). Pull or build the task image before running the evaluation.
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 275, in _raise_for_status
+    response.raise_for_status()
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/requests/models.py", line 1167, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: http+docker://localhost/v1.55/containers/create
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 120, in seed_workspace_from_image
+    container = self.client.containers.create(image=image, command="true")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/models/containers.py", line 936, in create
+    resp = self.client.api.create_container(**create_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 440, in create_container
+    return self.create_container_from_config(config, name, platform)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 457, in create_container_from_config
+    return self._result(res, True)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 281, in _result
+    self._raise_for_status(response)
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 277, in _raise_for_status
+    raise create_api_error_from_http_exception(e) from e
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/errors.py", line 39, in create_api_error_from_http_exception
+    raise cls(e, response=response, explanation=explanation) from e
+docker.errors.ImageNotFound: 404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/modernize-scientific-stack:20251031")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/engine/runner.py", line 248, in run_task
+    self.docker_manager.seed_workspace_from_image(
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 122, in seed_workspace_from_image
+    raise WorkspaceSeedError(
+lab.sandbox.docker_manager.WorkspaceSeedError: Cannot seed workspace: image 'alexgshaw/modernize-scientific-stack:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/modernize-scientific-stack:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/modernize-scientific-stack' [Arm: superstate_daemon]: Passed=False, WallClock=0.00s, Cost=$0.00, TotalGrantedBudget=600.0s
+22:24:45 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.0000 turns=None 0s  Cannot seed workspace: image 'alexgshaw/modernize-scientific-stack:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/modernize-scientific-stack:20251031")). Pull or build the task image before running the evaluation.
+22:24:45 [INFO] superstate_eval.paired: -> multi-source-data-merger [superstate_daemon] (budget: 900s)
+22:24:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/multi-source-data-merger' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:24:45 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:24:45 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/multi-source-data-merger:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_multi-source-data-merger-superstate_daemon-d1c4d753/workspace
+22:24:45 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7884e7aafd28 (alexgshaw/multi-source-data-merger:20251031)
+22:24:45 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using task-declared verifier 'pytest tests/'
+22:24:48 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 95b52e3e': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:24:48 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 95b52e3e (prev=None). Lease extended.
+22:26:14 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:26:14 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:26:14 [WARNING] superstate_eval.extractor: Task terminal-bench/extract-elf has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:26:46 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/extract-elf arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+22:26:46 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 60e9e7877759
+22:26:47 [INFO] superstate_eval.runner: Finished task 'terminal-bench/extract-elf' [Arm: superstate_daemon]: Passed=False, WallClock=938.77s, Cost=$0.63, TotalGrantedBudget=3300.0s
+22:26:47 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.6256 turns=2 939s  Verification failed: Reward was 0.0 < 1.0
+Output: . node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v18.19.1\n").returncode
+
+/tests/test_outputs.py:345: AssertionError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_extract_js_exists - AssertionError: Fil...
+FAILED ../tests/test_outputs.py::test_output_matches_reference - AssertionErr...
+============================== 2 failed in 2.19s ===============================
+
+22:26:47 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] (budget: 900s)
+22:26:47 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:26:47 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:26:47 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-6e5eed06/workspace
+22:26:47 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 777afd0ebc8f (alexgshaw/openssl-selfsigned-cert:20251031)
+22:26:47 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/openssl-selfsigned-cert/tests for the agent phase
+22:26:47 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using hand-authored fixture for openssl-selfsigned-cert
+22:26:48 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 6cd76a8c': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:26:48 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 6cd76a8c (prev=None). Lease extended.
+22:27:32 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:27:32 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:27:32 [WARNING] superstate_eval.extractor: Task terminal-bench/git-leak-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:27:46 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/git-leak-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:27:46 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d948c2f2aefb
+22:27:46 [INFO] superstate_eval.runner: Finished task 'terminal-bench/git-leak-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=429.64s, Cost=$0.46, TotalGrantedBudget=3300.0s
+22:27:46 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.4621 turns=2 430s  
+22:27:46 [INFO] superstate_eval.paired: -> polyglot-c-py [superstate_daemon] (budget: 900s)
+22:27:46 [INFO] superstate_eval.runner: Starting task 'terminal-bench/polyglot-c-py' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:27:46 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:27:46 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/polyglot-c-py:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_polyglot-c-py-superstate_daemon-d2346553/workspace
+22:27:46 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4ff4b805261a (alexgshaw/polyglot-c-py:20251031)
+22:27:46 [INFO] superstate_eval.adapters.superstate_daemon: Gate: using task-declared verifier 'pytest tests/'
+22:27:47 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 3a2f1736': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:27:47 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 3a2f1736 (prev=None). Lease extended.
+22:28:59 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: ceeb0642': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:28:59 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: ceeb0642 (prev=6cd76a8c). Lease extended.
+22:29:00 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+22:29:00 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:29:01 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:29:12 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:29:12 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 777afd0ebc8f
+22:29:12 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=145.07s, Cost=$0.14, TotalGrantedBudget=4500.0s
+22:29:12 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.1350 turns=2 145s  
+22:29:12 [INFO] superstate_eval.paired: -> regex-log [superstate_daemon] (budget: 900s)
+22:29:12 [INFO] superstate_eval.runner: Starting task 'terminal-bench/regex-log' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:29:12 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.2 GB reported available], Disk limit=6, User override=None)
+22:29:12 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/regex-log:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_regex-log-superstate_daemon-af7d1a4a/workspace
+22:29:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e4138d81d4b6 (alexgshaw/regex-log:20251031)
+22:29:12 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/regex-log/tests for the agent phase
+22:29:12 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for regex-log; handing off ungated
+22:29:12 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5668f4bc': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:29:12 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5668f4bc (prev=None). Lease extended.
+22:34:14 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:34:14 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:34:14 [WARNING] superstate_eval.extractor: Task terminal-bench/kv-store-grpc has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:34:17 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/kv-store-grpc arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:34:17 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e2325d442f0d
+22:34:17 [INFO] superstate_eval.runner: Finished task 'terminal-bench/kv-store-grpc' [Arm: superstate_daemon]: Passed=True, WallClock=725.98s, Cost=$0.59, TotalGrantedBudget=3300.0s
+22:34:17 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.5887 turns=2 726s  
+22:34:17 [INFO] superstate_eval.paired: -> sanitize-git-repo [superstate_daemon] (budget: 900s)
+22:34:17 [INFO] superstate_eval.runner: Starting task 'terminal-bench/sanitize-git-repo' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:34:17 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.1 GB reported available], Disk limit=6, User override=None)
+22:34:17 [ERROR] superstate_eval.runner: Error during execution of task 'terminal-bench/sanitize-git-repo' [Arm: superstate_daemon]: Cannot seed workspace: image 'alexgshaw/sanitize-git-repo:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/sanitize-git-repo:20251031")). Pull or build the task image before running the evaluation.
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 275, in _raise_for_status
+    response.raise_for_status()
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/requests/models.py", line 1167, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: http+docker://localhost/v1.55/containers/create
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 120, in seed_workspace_from_image
+    container = self.client.containers.create(image=image, command="true")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/models/containers.py", line 936, in create
+    resp = self.client.api.create_container(**create_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 440, in create_container
+    return self.create_container_from_config(config, name, platform)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/container.py", line 457, in create_container_from_config
+    return self._result(res, True)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 281, in _result
+    self._raise_for_status(response)
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/api/client.py", line 277, in _raise_for_status
+    raise create_api_error_from_http_exception(e) from e
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danielfisher/repos/superstate-eval/.venv/lib/python3.12/site-packages/docker/errors.py", line 39, in create_api_error_from_http_exception
+    raise cls(e, response=response, explanation=explanation) from e
+docker.errors.ImageNotFound: 404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/sanitize-git-repo:20251031")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/danielfisher/repos/superstate-eval/lab/engine/runner.py", line 248, in run_task
+    self.docker_manager.seed_workspace_from_image(
+  File "/Users/danielfisher/repos/superstate-eval/lab/sandbox/docker_manager.py", line 122, in seed_workspace_from_image
+    raise WorkspaceSeedError(
+lab.sandbox.docker_manager.WorkspaceSeedError: Cannot seed workspace: image 'alexgshaw/sanitize-git-repo:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/sanitize-git-repo:20251031")). Pull or build the task image before running the evaluation.
+22:34:17 [INFO] superstate_eval.runner: Finished task 'terminal-bench/sanitize-git-repo' [Arm: superstate_daemon]: Passed=False, WallClock=0.00s, Cost=$0.00, TotalGrantedBudget=900.0s
+22:34:17 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.0000 turns=None 0s  Cannot seed workspace: image 'alexgshaw/sanitize-git-repo:20251031' is unavailable (404 Client Error for http+docker://localhost/v1.55/containers/create: Not Found ("No such image: alexgshaw/sanitize-git-repo:20251031")). Pull or build the task image before running the evaluation.
+22:34:17 [INFO] superstate_eval.paired: -> vulnerable-secret [superstate_daemon] (budget: 900s)
+22:34:17 [INFO] superstate_eval.runner: Starting task 'terminal-bench/vulnerable-secret' [Arm: superstate_daemon] (Base budget: 900.0s)
+22:34:17 [INFO] superstate_eval.governor: Calculated concurrency: 6 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.1 GB reported available], Disk limit=6, User override=None)
+22:34:17 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260915-215729/eval-terminal-bench_vulnerable-secret-superstate_daemon-adb6b3a8/workspace from alexgshaw/vulnerable-secret:20251031:/app (1 entries)
+22:34:17 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 871a05766809 (alexgshaw/vulnerable-secret:20251031)
+22:34:17 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/vulnerable-secret/tests for the agent phase
+22:34:17 [INFO] superstate_eval.adapters.superstate_daemon: Gate: no caller-supplied contract for vulnerable-secret; handing off ungated
+22:34:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: fe0c3f11': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+22:34:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: fe0c3f11 (prev=None). Lease extended.
+22:37:54 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 502031e8': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:37:54 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 502031e8 (prev=3a2f1736). Lease extended.
+22:37:57 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:37:57 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:37:57 [WARNING] superstate_eval.extractor: Task terminal-bench/vulnerable-secret has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:37:57 [WARNING] superstate_eval.extractor: Task terminal-bench/polyglot-c-py has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:37:57 [WARNING] superstate_eval.extractor: Task terminal-bench/polyglot-c-py ships no tests directory; falling back to running the verification command inside the agent's own container without injected tests.
+22:38:00 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/polyglot-c-py arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:38:00 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 4ff4b805261a
+22:38:00 [INFO] superstate_eval.runner: Finished task 'terminal-bench/polyglot-c-py' [Arm: superstate_daemon]: Passed=True, WallClock=613.54s, Cost=$0.52, TotalGrantedBudget=3300.0s
+22:38:00 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.5170 turns=2 614s  
+22:38:07 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/vulnerable-secret arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+22:38:07 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 871a05766809
+22:38:07 [INFO] superstate_eval.runner: Finished task 'terminal-bench/vulnerable-secret' [Arm: superstate_daemon]: Passed=False, WallClock=230.22s, Cost=$0.18, TotalGrantedBudget=3300.0s
+22:38:07 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.1799 turns=2 230s  Verification failed: Reward was 0.0 < 1.0
+Output: 2] No such file or directory: '/app/results.txt'
+
+/tests/test_outputs.py:29: FileNotFoundError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_results_file_exists - AssertionError: F...
+FAILED ../tests/test_outputs.py::test_results_file_contains_secret_flag - Fil...
+FAILED ../tests/test_outputs.py::test_results_file_format - FileNotFoundError...
+============================== 3 failed in 0.06s ===============================
+
+22:38:13 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 000b5451': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:38:13 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 000b5451 (prev=95b52e3e). Lease extended.
+22:38:14 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+22:38:14 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:38:15 [WARNING] superstate_eval.extractor: Task terminal-bench/multi-source-data-merger has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:38:15 [WARNING] superstate_eval.extractor: Task terminal-bench/multi-source-data-merger ships no tests directory; falling back to running the verification command inside the agent's own container without injected tests.
+22:38:16 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/multi-source-data-merger arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+22:38:16 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7884e7aafd28
+22:38:16 [INFO] superstate_eval.runner: Finished task 'terminal-bench/multi-source-data-merger' [Arm: superstate_daemon]: Passed=True, WallClock=811.07s, Cost=$0.73, TotalGrantedBudget=4500.0s
+22:38:16 [INFO] superstate_eval.paired:    superstate_daemon: passed=True cost=$0.7342 turns=2 811s  
+22:44:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+22:44:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+22:44:18 [WARNING] superstate_eval.extractor: Task terminal-bench/regex-log has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+22:44:31 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/regex-log arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+22:44:31 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e4138d81d4b6
+22:44:31 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+22:44:31 [INFO] superstate_eval.runner: Finished task 'terminal-bench/regex-log' [Arm: superstate_daemon]: Passed=False, WallClock=919.14s, Cost=$0.58, TotalGrantedBudget=3300.0s
+22:44:31 [INFO] superstate_eval.paired:    superstate_daemon: passed=False cost=$0.5766 turns=2 919s  Verification failed: Reward was 0.0 < 1.0
+Output: {regex_file} does not exist"
+E       AssertionError: Regex file /app/regex.txt does not exist
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/app/regex.txt').exists
+
+/tests/test_outputs.py:22: AssertionError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_regex_matches_dates - AssertionError: R...
+============================== 1 failed in 0.06s ===============================
+
+
+| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|
+| superstate_daemon | 20 | 10 | 50.0% | $8.3 | $0.83 | 169.0m | 660.0m | 774792 | 66308 |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/ov1_daemon_turnfloor.json
