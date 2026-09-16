@@ -41,7 +41,7 @@ about to test guarantees some of the result you find. Measured on the same paire
 These are two different quantities and must not be mixed:
 
   * **lift on the benchmark** -> every gradeable task, no outcome-based filtering. This is the
-    only set a published claim may use, and it is what `scripts/significance.py` analyses.
+    only set a published claim may use, and it is what `scripts/effect.py` analyses.
   * **lift where lift is possible** -> this set. Legitimate for mechanism work, for deciding
     where to spend a run, and for statistical power. Never for a benchmark result.
 

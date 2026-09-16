@@ -15,11 +15,17 @@ numbers in this repo claimed** — those were inflated by defects since fixed.
 
 | | |
 |---|---|
-| **Effect** | superstate ahead on 4 of 6 informative tasks; mean per-task difference **+40pp** |
-| **Size** | +19pp pooled across gradeable runs |
-| **Mechanism** | the handoff prompt, delivered in one turn |
-| **Cost** | comparable per run; the daemon is 23% cheaper than the MCP arm |
-| **Not yet established** | statistical significance — p=0.125, and only **6 informative tasks** exist |
+| **Effect** | **+15pp** per task, 95% CI [0, +32]. Among the 6 tasks where the arms differ, **+40pp** [+6, +72] |
+| **Solve rate** | 72% → 82% |
+| **Cost** | **$0.54 → $0.59 per solve.** Hand off ~10 tasks to gain one extra solve, for ~$1 of extra spend |
+| **Mechanism** | the handoff prompt, one turn. Premature "done" falls from 26% of runs to 18% |
+| **Not established** | that the effect is distinguishable from zero — the interval touches it, and only 6 informative tasks exist |
+
+Read `scripts/effect.py` output, not a p-value. A p-value asks whether the effect differs from
+*exactly* zero, which is not a live hypothesis — the mechanism is identified and visible in
+telemetry — and mostly reports whether the corpus is large enough, which is a fact about the
+benchmark. The decision is whether an agent should hand work over, and that turns on how much
+gets converted and what it costs.
 
 ---
 
@@ -33,7 +39,7 @@ Paired runs, same driver and task on both sides, prompt contracts off.
 
 The unit of analysis is the **task**. Five repeats of one task are one observation, and so are
 the same task's runs appearing in three different results files. Pooling correctly
-(`scripts/significance.py`, pre-specified) gives:
+(`scripts/effect.py`, pre-specified) gives:
 
 | | |
 |---|---|
@@ -131,7 +137,7 @@ set is selected on the dependent variable — membership reads how the arms perf
 inflates the gap by construction, +19pp becoming +31pp.
 
 A published claim must come from every gradeable task with no outcome-based filtering, which is
-what `scripts/significance.py` analyses. The cleanest new evidence comes from tasks holding **no
+what `scripts/effect.py` analyses. The cleanest new evidence comes from tasks holding **no
 superstate result at all**, since they cannot have been chosen for their outcome — six of the
 nine datacurve tasks qualify. Run a whole family, not a pick from within it, and register the
 list before the run.
