@@ -126,9 +126,15 @@ carry nearly all the discriminating power. Most of terminal-bench is a ceiling f
 — which is why both superstate arms scored 12/13 on its gradeable subset, and why no
 architectural difference could show up there.
 
-Use `paired_run.py --core`. Note that filtering to it **inflates the gap by construction**
-(+19pp becomes +31pp) by removing zero-difference cases; that number is for mechanism work and
-statistical power, never for a benchmark claim.
+Use `paired_run.py --core` to decide where to spend a run. **Never for a headline claim:** the
+set is selected on the dependent variable — membership reads how the arms performed — so it
+inflates the gap by construction, +19pp becoming +31pp.
+
+A published claim must come from every gradeable task with no outcome-based filtering, which is
+what `scripts/significance.py` analyses. The cleanest new evidence comes from tasks holding **no
+superstate result at all**, since they cannot have been chosen for their outcome — six of the
+nine datacurve tasks qualify. Run a whole family, not a pick from within it, and register the
+list before the run.
 
 ---
 

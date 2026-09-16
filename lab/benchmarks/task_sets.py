@@ -29,9 +29,10 @@ when it is *gradeable* (`TaskSpec.tests_dir is not None`, so a sealed verifier e
 fails). `openssl-selfsigned-cert` is excluded not because it is a poor task but because
 vanilla solves it 22 times out of 22, so no arm can separate from another on it.
 
-**Filtering to this set inflates the measured gap, by construction.** Excluding tasks where
-both arms tie at a ceiling removes zero-difference cases, which raises the average
-difference whether or not anything improved. Measured on the same paired runs:
+**This set is SELECTED ON THE DEPENDENT VARIABLE, so it can never carry a headline claim.**
+Membership was decided partly by reading how the arms performed -- a task is excluded when
+*no arm* varies, which consults superstate's own results. Selecting on the outcome you are
+about to test guarantees some of the result you find. Measured on the same paired runs:
 
     everything (incl. ungradeable)      n=55   vanilla 56%   mcp 85%   +29pp
     gradeable only                      n=48   vanilla 65%   mcp 83%   +19pp
@@ -39,10 +40,25 @@ difference whether or not anything improved. Measured on the same paired runs:
 
 These are two different quantities and must not be mixed:
 
-  * **lift on the benchmark** -> the gradeable set, +19pp. This is the honest headline.
-  * **lift where lift is possible** -> this set, +31pp. More sensitive, and the right set for
-    mechanism work or for buying statistical power cheaply. Never quote it as a benchmark
-    result.
+  * **lift on the benchmark** -> every gradeable task, no outcome-based filtering. This is the
+    only set a published claim may use, and it is what `scripts/significance.py` analyses.
+  * **lift where lift is possible** -> this set. Legitimate for mechanism work, for deciding
+    where to spend a run, and for statistical power. Never for a benchmark result.
+
+WHAT COUNTS AS SAFE SELECTION
+-----------------------------
+    reads a property known before any run      SAFE   gradeable, language, repo, task family
+    reads the BASELINE arm's rate only         WEAK   independent of the difference, but
+                                                      conditioning on a noisy rate invites
+                                                      regression to the mean
+    reads EITHER arm's results                 UNSAFE selection on the dependent variable
+
+The cleanest new evidence therefore comes from tasks carrying **no superstate result at all**,
+since they cannot have been chosen for their outcome. As of 2026-09-16 six of the nine
+datacurve tasks qualify: expr-try-catch-errors, httpx-multipart-response-parsing,
+katex-multicolumn-array-spans, meriyah-explicit-resource-declarations,
+python-statemachine-state-data-scoping and scc-bounded-memory-spilling. Run a whole family
+rather than a pick from within it, and register the task list before the run.
 
 Further limits: the 10%/90% thresholds are a judgement call, not a derived boundary; and
 "ceiling" means ceiling *for gemini-3.8-flash-high* -- a weaker driver moves tasks back into
