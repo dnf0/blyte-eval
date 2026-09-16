@@ -18,7 +18,9 @@ import sys
 import time
 from typing import Any
 
+from lab.benchmarks.gate_fixtures import is_unmeasurable
 from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
+from lab.benchmarks.task_sets import is_discriminating
 from lab.engine.drivers.agy_cli import AgyCliDriver
 from lab.engine.drivers.claude_cli import ClaudeCliDriver
 from lab.engine.governor import ConcurrencyGovernor
@@ -54,6 +56,9 @@ def main() -> int:
                     default=Path("/tmp/superstate_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
     ap.add_argument("--tasks", nargs="+", help="Specific task names or directories")
     ap.add_argument("--tier1", action="store_true", help="Run the 9 Tier-1 Frontier software engineering tasks")
+    ap.add_argument("--core", action="store_true",
+                    help="Run only tasks that can contribute signal: gradeable, and not at a "
+                         "ceiling or floor. 14 of the 30-task corpus. See lab/benchmarks/task_sets.py")
     ap.add_argument("--out", type=Path, help="Write results JSON here")
     args = ap.parse_args()
 
@@ -92,8 +97,25 @@ def main() -> int:
 
     if args.tier1:
         tasks = [t for t in tasks if t.name in tier1_names or t.id.split("/")[-1] in tier1_names]
+    if args.core:
+        before = len(tasks)
+        tasks = [t for t in tasks if is_discriminating(t.name)]
+        logger.info(
+            "Core set: %d of %d tasks. Excluded are ungradeable (no held-out tests/) or at a "
+            "ceiling or floor, so they cannot move an arm-vs-arm result.",
+            len(tasks), before,
+        )
     if args.only_with_verifier:
         tasks = [t for t in tasks if t.tests_dir]
+    ungradeable = [(t.name, is_unmeasurable(t.name)) for t in tasks if is_unmeasurable(t.name)]
+    if ungradeable:
+        logger.warning(
+            "%d selected task(s) cannot be graded and will score zero for every arm:",
+            len(ungradeable),
+        )
+        for name, reason in ungradeable:
+            logger.warning("    %s -- %s", name, reason)
+
     if not tasks:
         logger.error("No tasks selected")
         return 1
