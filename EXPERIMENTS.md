@@ -90,6 +90,7 @@ have — both cost more than checking would have.
 | EXP-047 | 2026-09-16 | **daemon vs mcp, all 20 tasks gated, inputs verified identical** | superstate_daemon, superstate_mcp | 40 | all OFF | `daemon_v_mcp_gated20.json` | **12/20 each, disagreeing on zero tasks; daemon $0.25/run vs $0.33.** Real worker invocations: daemon 1 in 19/20, mcp 1 in 16/20 — the iteration loop is dormant, so the tie is by construction | STANDS |
 | EXP-048 | 2026-09-16 | gated repeatability | superstate_daemon, superstate_mcp, vanilla | 45 | all OFF | `gated_repeats.json` | 3 tasks all arms pass — too easy to discriminate | STANDS |
 | EXP-049 | 2026-09-16 | **Condition B vs vanilla at scale, contracts off** | superstate_daemon, superstate_mcp, vanilla | 120 | all OFF | `ov2_repeats.json` | **mcp 27/40 (67.5%) vs vanilla 18/40 (45%), p=0.037** | STANDS |
+| EXP-051 | 2026-09-16 | **do the strengthened gates reject turn-one work, and does solve rate follow** | superstate_daemon, superstate_mcp | 16 | all OFF | `gates_v2_8tasks.json` | running — the 8 tasks whose gates false-passed in EXP-047, with gates rewritten to assert sufficient conditions and both arms now recording a gate verdict | PLANNED |
 | EXP-050 | - | **how much of the lift is `superstate state prompt` itself** | vanilla, vanilla+state_prompt, superstate_mcp | 60 | all OFF | - | Not run. `vanilla.py` has never referenced `state_prompt` in any commit; EXP-039 tested a *different* text | PLANNED |
 
 ## Cross-cutting findings
