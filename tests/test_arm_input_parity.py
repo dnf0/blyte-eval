@@ -62,3 +62,27 @@ def test_daemon_worker_invocation_matches_the_shared_driver() -> None:
             f"the daemon's worker wrapper omits {flag}, which AgyCliDriver sets for every "
             "other arm. Differences here look like architectural weaknesses."
         )
+
+
+def test_daemon_reports_driver_turns_not_state_steps() -> None:
+    """`turns` must count worker invocations in every arm, or arms cannot be compared.
+
+    The daemon once reported its state-machine `step` counter as `turns`. A step
+    advances on a transition whether or not the worker ran, so every gated daemon run
+    recorded turns=2 while the wrapper had captured a single driver invocation in 19
+    of 20 -- making a dormant iteration loop look active.
+    """
+    src = (
+        pathlib.Path(__file__).resolve().parents[1]
+        / "lab/engine/adapters/superstate_daemon.py"
+    ).read_text(encoding="utf-8")
+
+    assert "turns=max(1, driver_turns)" in src, (
+        "daemon must report driver invocations as `turns`"
+    )
+    assert "turns=max(1, self.step_count)" not in src, (
+        "daemon must not report state-machine steps as `turns`"
+    )
+    assert '"daemon_steps": self.step_count' in src, (
+        "step count is still worth recording -- under its own name, in provenance"
+    )

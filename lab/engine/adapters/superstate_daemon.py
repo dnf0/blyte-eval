@@ -162,6 +162,9 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "driver_preset": self.driver_preset,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
             "daemon_pid": self.daemon_pid,
+            # State-machine transitions, recorded separately because it is NOT the
+            # turn count: a step advances without the worker being invoked.
+            "daemon_steps": self.step_count,
             "no_worktree": self.no_worktree,
             "worktree": self.worktree,
         }
@@ -529,20 +532,30 @@ class SuperstateDaemonAdapter(AgentAdapter):
         wrapper.chmod(0o755)
         return wrapper
 
-    def _collect_driver_telemetry(self, workspace_path: Path) -> tuple[int, int]:
-        """Sum token usage across the driver turns the wrapper captured."""
+    def _collect_driver_telemetry(self, workspace_path: Path) -> tuple[int, int, int]:
+        """Sum token usage across the driver turns the wrapper captured.
+
+        Returns (input_tokens, output_tokens, driver_turns). The turn count is the
+        number of times the worker was actually invoked -- one file per invocation.
+        It is NOT the daemon's `step` counter: a step is a state-machine transition
+        and advances even when no worker ran, so reporting it as `turns` made the
+        daemon look like it iterated twice on every task when it had in fact made a
+        single driver call in 19 of 20 runs. `turns` must mean the same thing in
+        every arm or the arms cannot be compared. See CLAUDE.md, arm input parity.
+        """
         turns_dir = workspace_path / ".agent-state" / "driver-turns"
         total_in = total_out = 0
-        if not turns_dir.is_dir():
-            return 0, 0
-        for turn_file in sorted(turns_dir.glob("turn-*.json")):
+        turn_files = sorted(turns_dir.glob("turn-*.json")) if turns_dir.is_dir() else []
+        if not turn_files:
+            return 0, 0, 0
+        for turn_file in turn_files:
             try:
                 usage = json.loads(turn_file.read_text(encoding="utf-8")).get("usage", {})
             except Exception:
                 continue
             total_in += int(usage.get("input_tokens", 0) or 0)
             total_out += int(usage.get("output_tokens", 0) or 0)
-        return total_in, total_out
+        return total_in, total_out, len(turn_files)
 
     @staticmethod
     def normalize_gate_command(verify_cmd: str, in_container: bool) -> str:
@@ -729,7 +742,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         # The Rust daemon spawns the driver itself, so the harness never sees those calls.
         # Sum what the wrapper captured, plus the gate-authoring turn the adapter ran.
-        input_tokens, output_tokens = self._collect_driver_telemetry(workspace_path)
+        input_tokens, output_tokens, driver_turns = self._collect_driver_telemetry(workspace_path)
         if gate_telemetry is not None:
             input_tokens += int(getattr(gate_telemetry, "input_tokens", 0) or 0)
             output_tokens += int(getattr(gate_telemetry, "output_tokens", 0) or 0)
@@ -748,7 +761,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=cost_usd,
-            turns=max(1, self.step_count),
+            turns=max(1, driver_turns),
             error_message=error_msg if not final_success else None,
             provenance=self.get_provenance(),
         )
