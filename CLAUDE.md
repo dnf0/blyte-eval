@@ -154,6 +154,18 @@ one command.
 Defaults measure state management alone. Turning the first on makes any arm-vs-arm
 comparison confounded, because baselines have no equivalent.
 
+## Python environment
+
+**Run everything through `.venv/bin/python`, never a bare `python3`.** The shell's `python3`
+is a pyenv shim with a partial set of the project's dependencies, so `python3 -m pytest tests/`
+aborts at collection on `ModuleNotFoundError: deepdiff` and silently omits
+`tests/test_differential.py`. The suite is **297 tests**; a run reporting 292 was taken on the
+wrong interpreter.
+
+```
+.venv/bin/python -m pytest tests/ -q       # 297 passed
+```
+
 ## Shell
 
 `paired_run.py` invocations belong in a `#!/bin/bash` script. The interactive shell is zsh,
