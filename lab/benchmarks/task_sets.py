@@ -21,6 +21,33 @@ The split by family is stark, and it is the practical finding:
     datacurve        8 of 9 tasks usable
     terminal-bench   6 of 21 usable
 
+WHAT "USABLE" MEANS, AND WHAT IT COSTS
+--------------------------------------
+Usable is a statement about measurement capacity, not about task quality. A task qualifies
+when it is *gradeable* (`TaskSpec.tests_dir is not None`, so a sealed verifier exists) and
+*discriminating* (pooled across every recorded run, not every arm passes and not every arm
+fails). `openssl-selfsigned-cert` is excluded not because it is a poor task but because
+vanilla solves it 22 times out of 22, so no arm can separate from another on it.
+
+**Filtering to this set inflates the measured gap, by construction.** Excluding tasks where
+both arms tie at a ceiling removes zero-difference cases, which raises the average
+difference whether or not anything improved. Measured on the same paired runs:
+
+    everything (incl. ungradeable)      n=55   vanilla 56%   mcp 85%   +29pp
+    gradeable only                      n=48   vanilla 65%   mcp 83%   +19pp
+    gradeable AND discriminating        n=26   vanilla 38%   mcp 69%   +31pp
+
+These are two different quantities and must not be mixed:
+
+  * **lift on the benchmark** -> the gradeable set, +19pp. This is the honest headline.
+  * **lift where lift is possible** -> this set, +31pp. More sensitive, and the right set for
+    mechanism work or for buying statistical power cheaply. Never quote it as a benchmark
+    result.
+
+Further limits: the 10%/90% thresholds are a judgement call, not a derived boundary; and
+"ceiling" means ceiling *for gemini-3.8-flash-high* -- a weaker driver moves tasks back into
+range, which is why every exclusion below states its reason rather than being deleted.
+
 CAVEAT ON THE RATES BELOW
 -------------------------
 Membership here was decided by pooling runs with different models, budgets and prompt

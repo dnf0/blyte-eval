@@ -194,6 +194,18 @@ The split by family is the practical finding: **datacurve 8 of 9 usable, termina
 21.** The tier-1 repository tasks are where discrimination lives; most of terminal-bench is a
 ceiling for this driver.
 
+**`--core` inflates the measured gap by construction** — excluding tasks where both arms tie
+at a ceiling removes zero-difference cases, so the average difference rises whether or not
+anything improved:
+
+| task set | n | vanilla | mcp | gap |
+|---|---|---|---|---|
+| gradeable only | 48 | 65% | 83% | **+19pp** ← the honest headline |
+| gradeable and discriminating (`--core`) | 26 | 38% | 69% | **+31pp** ← mechanism work only |
+
+Report a benchmark claim on the **gradeable** set. Use `--core` for mechanism work and for
+statistical power, and never quote its number as a benchmark result.
+
 Membership is in `lab/benchmarks/task_sets.py`, every exclusion carries a reason, and a test
 fails if a task belongs to no category. The pooled rates used to classify them mix models,
 budgets and prompt settings — they are sound for spotting a ceiling or floor and are **not**
