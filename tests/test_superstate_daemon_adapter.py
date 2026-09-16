@@ -184,7 +184,7 @@ def test_driver_wrapper_pins_model_and_captures_usage(tmp_path: Path) -> None:
     (turns / "turn-2-2.json").write_text(
         json.dumps({"usage": {"input_tokens": 5, "output_tokens": 3}})
     )
-    assert adapter._collect_driver_telemetry(tmp_path) == (105, 23)
+    assert adapter._collect_driver_telemetry(tmp_path) == (105, 23, 2)
 
 
 def test_collect_driver_telemetry_tolerates_corrupt_turns(tmp_path: Path) -> None:
@@ -193,7 +193,10 @@ def test_collect_driver_telemetry_tolerates_corrupt_turns(tmp_path: Path) -> Non
     turns.mkdir(parents=True)
     (turns / "turn-1-1.json").write_text("not json{{")
     (turns / "turn-2-2.json").write_text(json.dumps({"usage": {"input_tokens": 9}}))
-    assert adapter._collect_driver_telemetry(tmp_path) == (9, 0)
+    # The corrupt file still counts as a turn: the worker was invoked, only its usage
+    # is unreadable. Dropping it would under-report iteration, which is the failure
+    # this accounting was introduced to fix.
+    assert adapter._collect_driver_telemetry(tmp_path) == (9, 0, 2)
 
 
 def test_wrapper_supplies_the_environment_contract_when_containerised(tmp_path: Path) -> None:
