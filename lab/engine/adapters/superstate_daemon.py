@@ -617,6 +617,43 @@ class SuperstateDaemonAdapter(AgentAdapter):
         except Exception as e:
             return False, None, str(e)
 
+    @staticmethod
+    def _record_gate_verdict(
+        recorder: Any,
+        task: TaskSpec,
+        verify_cmd: str,
+        gate_passed: bool,
+        gate_exit_code: Optional[int],
+        gate_output: str,
+        turns_used: int,
+        advanced: bool,
+    ) -> None:
+        """Persist the gate verdict, matching the record superstate_mcp writes.
+
+        The daemon runs exactly one milestone, so index 0 is the whole run.
+        """
+        if recorder is None:
+            return
+        from lab.engine.trace import MilestoneRecord
+
+        try:
+            recorder.record_milestone(
+                MilestoneRecord(
+                    index=0,
+                    title=getattr(task, "name", "") or getattr(task, "id", "task-1"),
+                    verify_cmd=verify_cmd,
+                    turns_used=turns_used,
+                    advanced=advanced,
+                    gate_ran=True,
+                    gate_passed=bool(gate_passed),
+                    gate_exit_code=gate_exit_code,
+                    gate_output=gate_output,
+                    extra={"engine": "superstate_rust_daemon"},
+                )
+            )
+        except Exception as err:  # tracing must never fail a run
+            logger.warning("Could not record daemon gate verdict: %s", err)
+
     def execute(
         self,
         workspace_path: Path,
@@ -734,15 +771,34 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         # Step 4: Verification gate validation
         duration = time.monotonic() - start_time
+        driver_telemetry = self._collect_driver_telemetry(workspace_path)
+        driver_turns_recorded = driver_telemetry[2]
         passed, exit_code, output = self._run_gate_command(workspace_path, effective_vcmd, container=container)
         final_success = is_completed and passed
+
+        # Record the gate verdict in the same shape superstate_mcp uses. Without this the
+        # daemon's run.json carried an empty `gates_failed` whether the gate passed or was
+        # never consulted, so gate precision -- how often a passing gate agrees with the
+        # sealed grader -- was computable for one arm only. EXP-047 measured 60% precision
+        # and zero recall against bad work on superstate_mcp; the daemon could not be
+        # checked at all. See CLAUDE.md, arm input parity.
+        self._record_gate_verdict(
+            recorder,
+            task=task,
+            verify_cmd=effective_vcmd,
+            gate_passed=passed,
+            gate_exit_code=exit_code,
+            gate_output=output,
+            turns_used=driver_turns_recorded,
+            advanced=is_completed,
+        )
 
         if not final_success and not error_msg:
             error_msg = f"Verification failed (exit code {exit_code}): {output[:300]}"
 
         # The Rust daemon spawns the driver itself, so the harness never sees those calls.
         # Sum what the wrapper captured, plus the gate-authoring turn the adapter ran.
-        input_tokens, output_tokens, driver_turns = self._collect_driver_telemetry(workspace_path)
+        input_tokens, output_tokens, driver_turns = driver_telemetry
         if gate_telemetry is not None:
             input_tokens += int(getattr(gate_telemetry, "input_tokens", 0) or 0)
             output_tokens += int(getattr(gate_telemetry, "output_tokens", 0) or 0)

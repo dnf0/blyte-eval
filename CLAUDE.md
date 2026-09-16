@@ -172,6 +172,27 @@ wrong interpreter.
 which does **not** word-split unquoted variables, so `--tasks $TASKS` passes the whole list
 as one filename.
 
+## Gate precision — read it after every run
+
+The gate tells the worker it is done. When it passes on work the sealed grader rejects, the
+worker stops early and the retry loop never engages, so *no* architectural difference between
+arms can show up. EXP-047 measured this: the gate ran 20 times, **passed 20 times**, and was
+wrong on 8. Precision 60%, recall against bad work zero.
+
+```
+scripts/gate_precision.py /tmp/superstate_eval_runs/<stamp> results/<run>.json
+scripts/validate_gates.py [task ...]    # every gate must FAIL on a pristine container
+```
+
+Both arms now write a `MilestoneRecord` carrying the verdict, so precision is computable for
+each. The daemon did not until 2026-09-16, and its empty `gates_failed` meant either "gate
+passed" or "gate never ran" with no way to tell them apart -- treat any daemon run from before
+that date as unscoreable rather than as a pass.
+
+A gate must assert the **sufficient** condition, not a necessary one. Eight gates checked that
+an artefact existed and concluded the task was done; `sanitize-git-repo` passed when the agent
+deleted the file it was meant to sanitise.
+
 ## Before running anything: check the ledger
 
 `EXPERIMENTS.md` holds one row per evaluation run — the question, the arms, the switches,
