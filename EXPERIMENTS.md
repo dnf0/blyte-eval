@@ -90,18 +90,48 @@ have — both cost more than checking would have.
 | EXP-047 | 2026-09-16 | **daemon vs mcp, all 20 tasks gated, inputs verified identical** | superstate_daemon, superstate_mcp | 40 | all OFF | `daemon_v_mcp_gated20.json` | **12/20 each, disagreeing on zero tasks; daemon $0.25/run vs $0.33.** Real worker invocations: daemon 1 in 19/20, mcp 1 in 16/20 — the iteration loop is dormant, so the tie is by construction | STANDS |
 | EXP-048 | 2026-09-16 | gated repeatability | superstate_daemon, superstate_mcp, vanilla | 45 | all OFF | `gated_repeats.json` | 3 tasks all arms pass — too easy to discriminate | STANDS |
 | EXP-049 | 2026-09-16 | **Condition B vs vanilla at scale, contracts off** | superstate_daemon, superstate_mcp, vanilla | 120 | all OFF | `ov2_repeats.json` | **mcp 27/40 (67.5%) vs vanilla 18/40 (45%), p=0.037** | STANDS |
-| EXP-051 | 2026-09-16 | **do the strengthened gates reject turn-one work, and does solve rate follow** | superstate_daemon, superstate_mcp | 16 | all OFF | `gates_v2_8tasks.json` | running — the 8 tasks whose gates false-passed in EXP-047, with gates rewritten to assert sufficient conditions and both arms now recording a gate verdict | PLANNED |
+| EXP-051 | 2026-09-16 | **do the strengthened gates reject turn-one work, and does solve rate follow** | superstate_daemon, superstate_mcp | 16 | all OFF | `gates_v2_8tasks.json` | 0/8 both arms — but **7 of the 8 tasks have no sealed grader at all** and exit 127. The premise was wrong: these were never gate failures. See the corrected cross-cutting finding below | STANDS |
 | EXP-050 | - | **how much of the lift is `superstate state prompt` itself** | vanilla, vanilla+state_prompt, superstate_mcp | 60 | all OFF | - | Not run. `vanilla.py` has never referenced `state_prompt` in any commit; EXP-039 tested a *different* text | PLANNED |
 
 ## Cross-cutting findings
 
 Derived from the runs above rather than from a run of their own.
 
-* **The lift is not the gate.** Across 55 live paired runs (EXP-021, EXP-041, EXP-049) the
-  verification command handed to `superstate_mcp` was literally `true` for 22 of 30 tasks, and
-  the margin holds there: vanilla 31/48, mcp 40/48. On the 18 tasks mcp wins and vanilla loses,
-  **15 of vanilla's failures are "declared done, graded wrong"**, at $0.069 median spend against
-  the $0.187 it spends on tasks it solves. It quits early and confidently.
+* **Seven terminal-bench tasks have no sealed grader, and the harness was self-grading them.**
+  `largest-eigenval`, `log-summary-date-ranges`, `merge-diff-arc-agi-task`,
+  `modernize-scientific-stack`, `multi-source-data-merger`, `polyglot-c-py` and
+  `sanitize-git-repo` ship no `tests/` directory. `task_loader` fell back to `pytest tests/`,
+  which the harness ran **inside the agent's own container** -- so whatever the agent wrote
+  into `tests/` became the grader.
+
+  This was not symmetrical between arms. Over 55 paired runs these tasks went
+  **vanilla 0/7, `superstate_mcp` 7/7**, because superstate's handoff prompt asks the worker
+  to produce and run a verification command and the baseline gets no such instruction. They
+  supplied **7 of the 18 discordant pairs** behind the headline lift. Where the agent wrote no
+  `tests/`, the same fallback exited 127 and scored zero for every arm -- so these tasks
+  produced spurious passes and spurious failures at once. `extractor.py` now refuses to grade
+  them; all eight (with `sqlite-db-truncate`) are in `UNMEASURABLE_TASKS`, and a test fails if
+  an ungradeable task is ever left off that list.
+
+* **The lift survives, smaller.** Excluding the ungradeable tasks, across the same paired runs:
+
+  | | n | vanilla | superstate_mcp | mcp-only wins | vanilla-only wins |
+  |---|---|---|---|---|---|
+  | as previously reported | 55 | 31 (56%) | 47 (85%) | 18 | 2 |
+  | **measurable tasks only** | 48 | 31 (65%) | **40 (83%)** | **11** | 2 |
+
+  11-2 on discordant pairs is still significant (sign test p≈0.011), but the margin is
+  **+18pp, not +29pp**. Every published figure resting on the larger number is wrong.
+
+* **The lift is not the gate.** The verification command handed to `superstate_mcp` was
+  literally `true` for 22 of 30 tasks, and the margin holds there. On the tasks mcp wins and
+  vanilla loses, **most of vanilla's failures are "declared done, graded wrong"**, at $0.069
+  median spend against the $0.187 it spends on tasks it solves. It quits early and confidently.
+
+* **Gate precision was 92%, not 60%.** An earlier reading of EXP-047 counted the seven
+  ungradeable tasks as gate errors. On the 13 tasks that can actually be graded the gate agreed
+  with the grader on 12. The gate is not a rubber stamp, and "gate strength is the binding
+  constraint" was wrong -- the binding constraint is the corpus, 35% of which cannot be scored.
 * **The lift is not iteration, decomposition, or time.** Worker invocations are 1; milestones
   planned is 1 in 70/70; mcp uses 23% of its granted budget where vanilla uses 36%.
 * **What remains is the handoff text.** `superstate state prompt` emits role framing, a goal

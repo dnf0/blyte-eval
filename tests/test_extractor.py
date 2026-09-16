@@ -23,6 +23,14 @@ class MockTask:
         self.tests_dir = tests_dir
 
 
+def _sealed_grader(tmp_path: Path) -> Path:
+    """A stand-in held-out tests/ directory, so a test exercises the graded path."""
+    d = tmp_path / "sealed_tests"
+    d.mkdir(exist_ok=True)
+    (d / "test_held_out.py").write_text("def test_x():\n    assert True\n", encoding="utf-8")
+    return d
+
+
 def test_extract_and_grade_passing_reward_json(tmp_path: Path) -> None:
     logs_dir = tmp_path / "logs"
     verifier_dir = logs_dir / "verifier"
@@ -39,7 +47,7 @@ def test_extract_and_grade_passing_reward_json(tmp_path: Path) -> None:
     # exec_run returns (exit_code, output_bytes)
     mock_container.exec_run.return_value = (0, b"All tests passed")
 
-    task = MockTask(task_id="task-1", verification_cmd="pytest tests/")
+    task = MockTask(task_id="task-1", verification_cmd="pytest tests/", tests_dir=_sealed_grader(tmp_path))
     result = extract_and_grade(
         container=mock_container,
         task=task,
@@ -64,7 +72,7 @@ def test_extract_and_grade_failing_reward_json(tmp_path: Path) -> None:
     mock_container = MagicMock()
     mock_container.exec_run.return_value = (1, b"AssertionError: failed")
 
-    task = MockTask(task_id="task-1", verification_cmd="pytest tests/")
+    task = MockTask(task_id="task-1", verification_cmd="pytest tests/", tests_dir=_sealed_grader(tmp_path))
     result = extract_and_grade(
         container=mock_container,
         task=task,
@@ -102,26 +110,43 @@ def test_extract_and_grade_missing_reward_json_fails(tmp_path: Path) -> None:
     assert "Missing or invalid verifier/reward.json" in str(result.failure_reason)
 
 
-def test_extract_and_grade_in_container_no_tests_dir_success(tmp_path: Path) -> None:
+def test_extract_and_grade_refuses_to_self_grade_without_a_sealed_verifier(
+    tmp_path: Path,
+) -> None:
+    """A task with no held-out tests must be recorded unmeasurable, never scored.
+
+    `verification_cmd` for these tasks is `pytest tests/`, and with no sealed suite to
+    inject that runs whatever the AGENT put in tests/ -- the agent grading itself.
+
+    Measured 2026-09-16 across 55 paired runs: the 7 terminal-bench tasks with no sealed
+    grader went vanilla 0/7, superstate_mcp 7/7, because superstate's handoff prompt asks
+    the worker to produce and run a verification command and the baseline gets no such
+    instruction. That supplied 7 of the 18 discordant pairs behind the headline lift.
+    """
     logs_dir = tmp_path / "logs"
     logs_dir.mkdir(parents=True)
 
     mock_container = MagicMock()
-    mock_container.exec_run.return_value = (0, b"6 passed in 0.92s")
+    # The agent's own tests pass, which under the old behaviour scored 1.0.
+    mock_container.exec_run.return_value = (0, b"3 passed")
 
     task = MockTask(task_id="task-1", verification_cmd="pytest tests/", tests_dir=None)
     result = extract_and_grade(
         container=mock_container,
         task=task,
-        arm="superstate",
+        arm="superstate_mcp",
         logs_dir=logs_dir,
     )
 
-    # When tests_dir is None and exit_code == 0, reward is 1.0 (PASS)
-    assert result.passed is True
-    assert result.reward == 1.0
-    assert result.exit_code == 0
-    assert result.failure_reason is None
+    assert result.passed is False, "an ungradeable task must never be recorded as a pass"
+    assert result.reward is None, "there is no reward to report without a grader"
+    assert "UNMEASURABLE" in str(result.failure_reason)
+    assert result.stats == {"unmeasurable": True}
+    # exec_run is still used for blind patch extraction; what must never happen is the
+    # verification command being run against the agent's own workspace.
+    ran = [str(call) for call in mock_container.exec_run.call_args_list]
+    assert not any("pytest tests/" in c for c in ran), \
+        f"the agent's own tests must not be executed as a grader: {ran}"
 
 
 class _HeldOutTask:
@@ -303,7 +328,7 @@ def test_extract_and_grade_propagates_stats_from_reward_json(tmp_path: Path) -> 
     mock_container = MagicMock()
     mock_container.exec_run.return_value = (0, b"Passed")
 
-    task = MockTask(task_id="task-stats-1", verification_cmd="pytest")
+    task = MockTask(task_id="task-stats-1", verification_cmd="pytest", tests_dir=_sealed_grader(tmp_path))
     result = extract_and_grade(
         container=mock_container,
         task=task,

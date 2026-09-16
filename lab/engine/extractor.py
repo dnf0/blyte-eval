@@ -191,6 +191,38 @@ def _inject_tests_to_container(container: Any, tests_dir: Path) -> None:
         container.put_archive("/", bio.read())
 
 
+def _unmeasurable_result(
+    task_id: str,
+    arm: str,
+    reason: str,
+    patch_path: Path | None,
+    logs_dir: Path,
+    recorder: Any | None,
+) -> EvaluationResult:
+    """Record a task that cannot be graded, rather than scoring it.
+
+    A task with no sealed grader is not a task the agent failed -- it is a task nobody can
+    mark. Scoring it as a failure understates every arm; scoring the agent's own tests as a
+    pass overstates whichever arm happens to write tests. Both have happened here.
+    """
+    if recorder is not None:
+        try:
+            recorder.record_verifier_output(f"UNMEASURABLE: {reason}")
+        except Exception:
+            pass
+    return EvaluationResult(
+        task_id=task_id,
+        arm=arm,
+        passed=False,
+        reward=None,
+        exit_code=-1,
+        patch_path=patch_path,
+        state_json_path=None,
+        failure_reason=f"UNMEASURABLE: {reason}",
+        stats={"unmeasurable": True},
+    )
+
+
 def extract_and_grade(
     container: Any,
     task: Any,
@@ -255,10 +287,32 @@ def extract_and_grade(
             except Exception as err:
                 logger.warning("Failed to inject tests into container for %s: %s", task_id, err)
         elif tests_dir is None:
-            logger.warning(
-                "Task %s ships no tests directory; falling back to running the "
-                "verification command inside the agent's own container without injected tests.",
+            # No sealed grader exists for this task. Running `verification_cmd` in the
+            # agent's own container would execute whatever the agent put in tests/ --
+            # the agent would be grading itself, and a pass would mean nothing.
+            #
+            # Measured 2026-09-16: across 55 paired runs, the 7 terminal-bench tasks with
+            # no sealed grader went vanilla 0/7, superstate_mcp 7/7. Superstate's handoff
+            # prompt tells the worker to produce and run a verification command, so it
+            # wrote tests and scored 1.0 on all of them while the baseline wrote none.
+            # That accounted for 7 of the 18 discordant pairs in the headline lift.
+            #
+            # Grade as unmeasurable rather than as a pass or a failure of the agent.
+            logger.error(
+                "Task %s ships no held-out tests; refusing to grade it against the agent's "
+                "own tests/ directory. Recorded as unmeasurable.",
                 task_id,
+            )
+            return _unmeasurable_result(
+                task_id=task_id,
+                arm=arm,
+                reason=(
+                    "No held-out verifier: task ships no tests/ directory, and grading "
+                    "against the agent's own tests would be self-grading"
+                ),
+                patch_path=patch_path,
+                logs_dir=logs_dir,
+                recorder=recorder,
             )
 
         verification_cmd = getattr(task, "verification_cmd", None) or "pytest"
