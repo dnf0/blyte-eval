@@ -605,21 +605,35 @@ grep -q 'class Server' /app/server.py
 grep -q '5328' /app/server.py
 GATEEOF""",
     # one file that python3 and gcc both run, agreeing on Fibonacci.
-    # Validated in-container: exits non-zero pre-implementation.
+    # one file that python3 and gcc both run, agreeing on Fibonacci across a wide range,
+    # compiled to the path the instruction names and with no compiler diagnostics on stderr.
+    # The old gate checked three inputs and compiled to /tmp.
     "polyglot-c-py": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 F=/app/polyglot/main.py.c
 test -s "$F"
-# Same source must run under python3 and compile+run under gcc, agreeing on Fibonacci.
-for n in 0 1 10; do
-  p=$(python3 "$F" $n)
-  gcc "$F" -o /tmp/cmain 2>/dev/null
-  c=$(/tmp/cmain $n)
-  [ "$p" = "$c" ] || { echo "python=$p gcc=$c for n=$n"; exit 1; }
-done
-[ "$(python3 "$F" 10)" = "55" ]
-[ "$(python3 "$F" 0)" = "0" ]
-[ "$(python3 "$F" 1)" = "1" ]
+# The instruction names this output path explicitly.
+gcc "$F" -o /app/polyglot/cmain
+test -x /app/polyglot/cmain
+python3 - <<'PY'
+import subprocess
+
+def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+
+for n in (0, 1, 2, 3, 5, 10, 20, 30, 40):
+    py = subprocess.run(["python3", "/app/polyglot/main.py.c", str(n)],
+                        capture_output=True, text=True)
+    c = subprocess.run(["/app/polyglot/cmain", str(n)], capture_output=True, text=True)
+    assert py.returncode == 0, f"python3 failed for n={n}: {py.stderr[-200:]}"
+    assert c.returncode == 0, f"compiled binary failed for n={n}: {c.stderr[-200:]}"
+    p_out, c_out = py.stdout.strip(), c.stdout.strip()
+    assert p_out == c_out, f"n={n}: python printed {p_out!r}, C printed {c_out!r}"
+    assert p_out == str(fib(n)), f"n={n}: expected {fib(n)}, got {p_out!r}"
+PY
 GATEEOF""",
     # results.txt holds a FLAG{...} value.
     # Validated in-container: exits non-zero pre-implementation.
@@ -629,126 +643,291 @@ test -s /app/results.txt
 grep -qE 'FLAG\{.+\}' /app/results.txt
 GATEEOF""",
     # merged parquet and conflict report both produced and readable.
-    # Validated in-container: exits non-zero pre-implementation.
+    # merged parquet carries the stated schema for every user across all three sources,
+    # and the conflict report is internally consistent. The old gate asserted only that
+    # the parquet was non-empty and conflicts.json parsed as JSON.
     "multi-source-data-merger": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 test -s /app/merged_users.parquet
 test -s /app/conflicts.json
 python3 - <<'PY'
-import json
+import json, re
 import pandas as pd
+
 df = pd.read_parquet("/app/merged_users.parquet")
+for col in ("user_id", "name", "email", "created_date"):
+    assert col in df.columns, f"merged output missing column {col!r}"
 assert len(df) > 0, "merged dataset must not be empty"
-c = json.load(open("/app/conflicts.json"))
-assert isinstance(c, (list, dict)), "conflict report must be JSON"
+assert df["user_id"].is_unique, "one row per unique user"
+assert pd.api.types.is_integer_dtype(df["user_id"]), "user_id must be an integer column"
+for value in df["created_date"].dropna().astype(str):
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", value), f"created_date must be YYYY-MM-DD, got {value!r}"
+
+# Every unique user from all three sources must survive the merge.
+def ids_from(records):
+    out = set()
+    for rec in records:
+        for key in ("user_id", "id", "userId"):
+            if key in rec and rec[key] is not None:
+                out.add(int(rec[key]))
+                break
+    return out
+
+expected = ids_from(json.load(open("/data/source_a/users.json")))
+expected |= ids_from(pd.read_csv("/data/source_b/users.csv").to_dict("records"))
+expected |= ids_from(pd.read_parquet("/data/source_c/users.parquet").to_dict("records"))
+missing = expected - set(df["user_id"].astype(int))
+assert not missing, f"users dropped during merge: {sorted(missing)[:10]}"
+
+report = json.load(open("/app/conflicts.json"))
+assert isinstance(report, dict), "conflict report must be a JSON object"
+assert "total_conflicts" in report and "conflicts" in report
+assert report["total_conflicts"] == len(report["conflicts"]), \
+    "total_conflicts must equal the number of entries in conflicts"
+for entry in report["conflicts"]:
+    for key in ("user_id", "field", "values", "selected"):
+        assert key in entry, f"conflict entry missing {key!r}"
 PY
 GATEEOF""",
     # summary.csv has the exact header and every period/severity row.
-    # Validated in-container: exits non-zero pre-implementation.
+    # summary.csv carries the exact header and ALL FIVE periods the instruction lists.
+    # The old gate checked three of them, so a file missing month_to_date and total passed.
     "log-summary-date-ranges": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 test -s /app/summary.csv
 python3 - <<'PY'
 import csv
+
 rows = list(csv.reader(open("/app/summary.csv")))
-assert rows and rows[0] == ["period", "severity", "count"], f"header must be period,severity,count; got {rows[:1]}"
-body = rows[1:]
-seen = {(r[0], r[1]) for r in body if len(r) >= 3}
-for period in ("today", "last_7_days", "last_30_days"):
-    for sev in ("ERROR", "WARNING", "INFO"):
+assert rows and rows[0] == ["period", "severity", "count"], \
+    f"header must be period,severity,count; got {rows[:1]}"
+body = [r for r in rows[1:] if r and any(c.strip() for c in r)]
+
+periods = ("today", "last_7_days", "last_30_days", "month_to_date", "total")
+severities = ("ERROR", "WARNING", "INFO")
+seen = {(r[0].strip(), r[1].strip()): r[2].strip() for r in body if len(r) >= 3}
+for period in periods:
+    for sev in severities:
         assert (period, sev) in seen, f"missing row for {period}/{sev}"
-for r in body:
-    assert r[2].strip().isdigit(), f"count must be an integer, got {r[2]!r}"
+assert len(body) == len(periods) * len(severities), \
+    f"expected {len(periods) * len(severities)} data rows, got {len(body)}"
+for (period, sev), count in seen.items():
+    assert count.isdigit(), f"count for {period}/{sev} must be an integer, got {count!r}"
+
+# `total` counts every file regardless of date, so it cannot be smaller than any window.
+for sev in severities:
+    total = int(seen[("total", sev)])
+    for period in ("today", "last_7_days", "last_30_days", "month_to_date"):
+        assert int(seen[(period, sev)]) <= total, \
+            f"{period}/{sev} exceeds total/{sev}"
+    assert int(seen[("today", sev)]) <= int(seen[("last_7_days", sev)]) <= int(seen[("last_30_days", sev)]), \
+        f"{sev} windows are not nested"
 PY
 GATEEOF""",
     # stated placeholders present and no live-looking credential remains.
-    # Validated in-container: exits non-zero pre-implementation.
+    # placeholders present and consistent, no live credential anywhere INCLUDING history,
+    # and no uncontaminated file deleted. The instruction asks for all three; the old gate
+    # checked only the first two, so wiping a file passed.
     "sanitize-git-repo": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 cd /app
 R=$(ls -d */ 2>/dev/null | head -1)
 [ -n "$R" ]
+cd "$R"
 # The stated placeholders must be present...
-grep -rq -- '<your-aws-access-key-id>\|<your-aws-secret-access-key>\|<your-github-token>\|<your-huggingface-token>' . 
-# ...and no live-looking credential may remain anywhere, including history.
+grep -rq -- '<your-aws-access-key-id>\|<your-aws-secret-access-key>\|<your-github-token>\|<your-huggingface-token>' .
+# ...no live-looking credential may remain in the working tree...
 ! grep -rqE 'AKIA[0-9A-Z]{16}' . 2>/dev/null
 ! grep -rqE 'ghp_[0-9A-Za-z]{30,}' . 2>/dev/null
 ! grep -rqE 'hf_[0-9A-Za-z]{30,}' . 2>/dev/null
+# ...nor anywhere in history, which is what "not present in the repository" requires.
+if [ -d .git ]; then
+  ! git log -p --all 2>/dev/null | grep -qE 'AKIA[0-9A-Z]{16}'
+  ! git log -p --all 2>/dev/null | grep -qE 'ghp_[0-9A-Za-z]{30,}'
+  ! git log -p --all 2>/dev/null | grep -qE 'hf_[0-9A-Za-z]{30,}'
+  # Deleting a contaminated file is not sanitising it; the instruction forbids
+  # removing or modifying files that were never contaminated.
+  ! git status --porcelain 2>/dev/null | grep -qE '^( D|D |AD)'
+fi
 GATEEOF""",
     # correct dominant pair AND faster than the numpy reference.
-    # Validated in-container: exits non-zero pre-implementation.
+    # correct dominant pair on several non-symmetric matrices AND reliably faster than the
+    # numpy reference, with a margin and repeated trials. The old gate timed one matrix once,
+    # which a marginal implementation passes by luck.
     "largest-eigenval": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 python3 - <<'PY'
-import time, numpy as np, sys
+import time
+import numpy as np
+import sys
+
 sys.path.insert(0, "/app")
 from eigen import find_dominant_eigenvalue_and_eigenvector as f
+
 rng = np.random.default_rng(0)
-for n in (3, 7, 10):
+for trial in range(12):
+    n = int(rng.integers(2, 11))
     A = rng.standard_normal((n, n))
     val, vec = f(A)
     vec = np.asarray(vec).reshape(-1)
-    assert np.allclose(A @ vec, val * vec, atol=1e-6), f"eigen pair wrong for n={n}"
-    # dominant = largest magnitude
-    assert np.isclose(abs(val), max(abs(np.linalg.eigvals(A))), rtol=1e-6), f"not dominant for n={n}"
-# must beat numpy's reference on median time
-A = rng.standard_normal((10, 10))
-def med(fn, k=25):
-    ts = []
+    assert np.allclose(A @ vec, val * vec, atol=1e-6), \
+        f"trial {trial} (n={n}): A@v != lambda*v"
+    assert np.isclose(abs(val), max(abs(np.linalg.eigvals(A))), rtol=1e-6), \
+        f"trial {trial} (n={n}): eigenvalue is not the dominant one"
+
+def median_time(fn, k=51):
+    samples = []
     for _ in range(k):
-        t0 = time.perf_counter(); fn(); ts.append(time.perf_counter() - t0)
-    return sorted(ts)[len(ts)//2]
-mine = med(lambda: f(A))
-ref = med(lambda: np.linalg.eig(A))
-assert mine < ref, f"must be faster than numpy reference: {mine:.6f} vs {ref:.6f}"
+        t0 = time.perf_counter()
+        fn()
+        samples.append(time.perf_counter() - t0)
+    return sorted(samples)[len(samples) // 2]
+
+# Must win on every size, not just one, and by a margin that survives jitter.
+for n in (3, 7, 10):
+    A = rng.standard_normal((n, n))
+    f(A)                      # warm up any JIT or import cost
+    np.linalg.eig(A)
+    mine = median_time(lambda: f(A))
+    ref = median_time(lambda: np.linalg.eig(A))
+    assert mine < ref * 0.95, \
+        f"n={n}: {mine:.6f}s vs numpy {ref:.6f}s -- must be reliably faster"
 PY
 GATEEOF""",
     # repo initialised with branch1 and branch2 checked out.
-    # Validated in-container: exits non-zero pre-implementation.
+    # branch2 genuinely merged into branch1, and algo.py reproduces every example.
+    # The instruction states both explicitly; the old gate checked only that two branch
+    # refs existed, which `git branch` alone satisfies.
     "merge-diff-arc-agi-task": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 test -d /app/repo/.git
 cd /app/repo
 git rev-parse --verify branch1 >/dev/null 2>&1
 git rev-parse --verify branch2 >/dev/null 2>&1
+# branch2 must actually be merged into branch1, not merely exist alongside it.
+git merge-base --is-ancestor branch2 branch1
+test -s /app/repo/algo.py
+python3 - <<'PY'
+import importlib.util, json
+spec = importlib.util.spec_from_file_location("algo", "/app/repo/algo.py")
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+fn = getattr(mod, "map", None)
+assert callable(fn), "algo.py must define a callable named map"
+raw = json.load(open("/app/examples.json"))
+cases = raw.get("train", raw) if isinstance(raw, dict) else raw
+assert cases, "examples.json holds no cases"
+for i, case in enumerate(cases):
+    got = fn(case["input"])
+    want = case["output"]
+    assert got == want, f"example {i}: map() returned {got!r}, expected {want!r}"
+PY
 GATEEOF""",
     # modernised script and dependency file present, script runs.
-    # Validated in-container: exits non-zero pre-implementation.
+    # the modern script prints the stated line for BOTH stations, the legacy file is
+    # untouched, and the dependency file names the required packages with version pins.
+    # The old gate only checked the script parsed and exited 0.
     "modernize-scientific-stack": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 test -s /app/analyze_climate_modern.py
-test -s /app/requirements.txt -o -s /app/pyproject.toml
-python3 -c "import ast,sys; ast.parse(open('/app/analyze_climate_modern.py').read())"
-python3 /app/analyze_climate_modern.py >/dev/null 2>&1
+# The legacy script is explicitly DO NOT MODIFY.
+test -s /app/climate_analyzer/analyze_climate.py
+python3 -c "import ast; ast.parse(open('/app/analyze_climate_modern.py').read())"
+OUT=$(python3 /app/analyze_climate_modern.py 2>/dev/null)
+echo "$OUT" | grep -qE 'Station 101 mean temperature: -?[0-9]+\.[0-9]' || {
+  echo "missing/badly formatted line for station 101"; exit 1; }
+echo "$OUT" | grep -qE 'Station 102 mean temperature: -?[0-9]+\.[0-9]' || {
+  echo "missing/badly formatted line for station 102"; exit 1; }
+python3 - <<'PY'
+import os, re
+path = "/app/requirements.txt" if os.path.exists("/app/requirements.txt") else "/app/pyproject.toml"
+assert os.path.exists(path), "need /app/requirements.txt or /app/pyproject.toml"
+text = open(path).read().lower()
+for pkg in ("numpy", "pandas"):
+    assert pkg in text, f"dependency file must include {pkg}"
+assert "matplotlib" in text or "scipy" in text, "need at least one of matplotlib, scipy"
+assert re.search(r"(>=|==|~=)\s*\d", text), "versions must be constrained with >=, == or ~="
+PY
 GATEEOF""",
     # paired primers within the stated length and melting-temperature bounds.
-    # Validated in-container: exits non-zero pre-implementation.
+    # primer pairs whose ANNEALING REGION (not the whole primer, which may carry a 5' tail)
+    # satisfies the stated length and melting-temperature bounds, with oligotm as ground
+    # truth. The old gate wrapped every temperature check in `if oligotm:`, so on an image
+    # without the tool it silently degraded to a shape check -- and it measured the whole
+    # PARTIALLY VERIFIABLE -- see the note below. Checks every requirement the image can
+    # actually support: primers pair up, and each one's ANNEALING REGION (the 3' part that
+    # matches the template, not the whole primer, which may carry a 5' tail) is a real
+    # template match of the stated 15-45nt length.
+    #
+    # The melting-temperature bounds CANNOT be checked here. The instruction names primer3's
+    # `oligotm` as ground truth, and the image ships no oligotm binary, no primer3-py, no
+    # pip3 and no network -- verified 2026-09-16. The previous gate wrapped the temperature
+    # checks in `if oligotm:`, so on this image it silently skipped them and degraded to a
+    # shape check that `touch`-grade output passes. This version keeps every check it can
+    # enforce mandatory and states plainly which requirement is out of reach, rather than
+    # hiding the gap behind a conditional.
     "dna-insert": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 test -s /app/primers.fasta
 python3 - <<'PY'
-import re, subprocess, shutil
-seqs, name = [], None
-for line in open("/app/primers.fasta"):
-    line = line.strip()
-    if line.startswith(">"):
-        name = line
-    elif line and name is not None:
-        seqs.append(line.upper())
-assert seqs, "primers.fasta must contain sequences"
-assert len(seqs) % 2 == 0, "primers must be grouped in forward/reverse pairs"
-for s in seqs:
+import re, shutil, subprocess
+
+def read_fasta(path):
+    out, name = [], None
+    for line in open(path):
+        line = line.strip()
+        if line.startswith(">"):
+            name = line
+        elif line and name is not None:
+            out.append(line.upper())
+    return out
+
+primers = read_fasta("/app/primers.fasta")
+assert primers, "primers.fasta must contain sequences"
+assert len(primers) % 2 == 0, "primers must be grouped in forward/reverse pairs"
+for s in primers:
     assert re.fullmatch(r"[ACGT]+", s), f"non-nucleotide characters in {s[:20]!r}"
-    assert 15 <= len(s) <= 45, f"annealing length must be 15-45, got {len(s)}"
+
+template = max(read_fasta("/app/sequences.fasta"), key=len)
+COMP = str.maketrans("ACGT", "TGCA")
+def rc(s):
+    return s.translate(COMP)[::-1]
+# The plasmid is circular, so an annealing site may wrap the origin.
+haystack = (template + template) + "|" + (rc(template) + rc(template))
+
+def annealing_region(primer):
+    # Longest 3-prime suffix of the primer that is present in the template.
+    for start in range(len(primer)):
+        suffix = primer[start:]
+        if suffix in haystack:
+            return suffix
+    return ""
+
+regions = []
+for s in primers:
+    region = annealing_region(s)
+    assert region, f"primer {s[:20]!r} does not anneal to the template at its 3' end"
+    assert 15 <= len(region) <= 45, \
+        f"annealing length must be 15-45, got {len(region)} for {s[:20]!r}"
+    regions.append(region)
+
+# Melting temperature: enforced only where the stated ground-truth tool exists. On an image
+# without it the bound is unverifiable -- this is reported, never silently skipped.
 oligotm = shutil.which("oligotm")
 if oligotm:
-    flags = ["-tp", "1", "-sc", "1", "-mv", "50", "-dv", "2", "-n", "0.8", "-d", "500"]
-    tms = [float(subprocess.run([oligotm, *flags, s], capture_output=True, text=True).stdout.strip())
-           for s in seqs]
-    for t in tms:
-        assert 58 <= t <= 72, f"melting temperature {t} outside 58-72"
-    for i in range(0, len(tms), 2):
-        assert abs(tms[i] - tms[i+1]) <= 5, f"pair Tm differ by more than 5C: {tms[i]} vs {tms[i+1]}"
+    FLAGS = ["-tp", "1", "-sc", "1", "-mv", "50", "-dv", "2", "-n", "0.8", "-d", "500"]
+    temps = []
+    for region in regions:
+        proc = subprocess.run([oligotm, *FLAGS, region], capture_output=True, text=True)
+        assert proc.returncode == 0, f"oligotm failed on {region[:20]!r}: {proc.stderr[-200:]}"
+        tm = float(proc.stdout.strip())
+        assert 58 <= tm <= 72, f"melting temperature {tm} outside 58-72 for {region[:20]!r}"
+        temps.append(tm)
+    for i in range(0, len(temps), 2):
+        assert abs(temps[i] - temps[i + 1]) <= 5, \
+            f"pair {i // 2} melting temperatures differ by more than 5C"
+else:
+    print("GATE LIMITATION: oligotm absent, melting-temperature bounds NOT verified")
 PY
 GATEEOF""",
 }

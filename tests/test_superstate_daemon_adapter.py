@@ -376,3 +376,51 @@ def test_wrapper_print_timeout_never_below_a_usable_floor(tmp_path: Path) -> Non
     assert wrapper is not None
     script = wrapper.read_text()
     assert "--print-timeout 60s" in script
+
+
+def test_daemon_records_its_gate_verdict(tmp_path: Path) -> None:
+    """Gate precision must be computable for the daemon, not just superstate_mcp.
+
+    run.json derives `gates_failed` from milestone records. The daemon wrote none, so an
+    empty list meant either "gate passed" or "gate never ran" and the two could not be
+    told apart -- leaving EXP-047's 60%-precision/zero-recall finding measurable on one
+    arm only.
+    """
+    from lab.engine.trace import RunRecorder
+
+    adapter = SuperstateDaemonAdapter(driver_preset="agy", poll_interval_sec=0.01)
+    task = TaskSpec(
+        id="daemon-gate-trace",
+        name="Daemon Gate Trace",
+        instruction="Do work",
+        docker_image="test:latest",
+        verification_cmd="pytest tests/local",
+    )
+
+    state_dir = tmp_path / ".agent-state"
+    (state_dir / "daemons").mkdir(parents=True, exist_ok=True)
+    (state_dir / "daemons" / "default.pid").write_text("999999\n", encoding="utf-8")
+    (state_dir / "state.json").write_text(
+        '{"status": "completed", "step": 1, "completed_tasks": [{"id": "task-1"}]}',
+        encoding="utf-8",
+    )
+
+    logs = tmp_path / "logs"
+    recorder = RunRecorder(logs, task_id=task.id, arm=adapter.name)
+
+    with patch("lab.engine.adapters.superstate_daemon.is_pid_alive", side_effect=[True, False]), \
+         patch.object(adapter, "_init_daemon_state", return_value=True), \
+         patch.object(adapter, "_spawn_daemon", return_value=True), \
+         patch.object(adapter, "_run_gate_command", return_value=(False, 1, "gate said no")):
+        adapter.execute(tmp_path, task, driver=None, recorder=recorder)
+
+    assert recorder.milestones, "the daemon must record a milestone carrying its gate verdict"
+    record = recorder.milestones[0]
+    assert record.gate_ran is True
+    assert record.gate_passed is False
+    assert record.gate_exit_code == 1
+    assert record.verify_cmd == "pytest tests/local"
+
+    recorder.write_run_record(telemetry=None)
+    run_record = json.loads((logs / "run.json").read_text(encoding="utf-8"))
+    assert run_record["gates_failed"], "a failing gate must show up in run.json"
