@@ -1,5 +1,17 @@
 # Working in superstate-eval
 
+**[FINDINGS.md](FINDINGS.md) says what the evaluation establishes.** Read it before forming a
+view, quoting a number, or proposing a run -- it exists because the same conclusions kept
+being re-derived and re-litigated, including by me.
+
+Two rules that follow from how this project has actually gone wrong:
+
+* **Verify what produced a number before reporting it.** Every retraction here came from
+  reading a result without checking what generated it: 40 runs that were 20, precision 60%
+  that was 92%, +29pp that was +19pp.
+* **Do not propose a run without naming the decision that changes on its outcome.** Chasing a
+  p-value is not a decision.
+
 ## Terminology — use these exact words
 
 Two different things are both called "contract" in conversation. They are not related, and

@@ -1,0 +1,154 @@
+# What the evaluation establishes
+
+One place for what is true, so it stops being re-derived. Every claim names the experiment
+behind it; `EXPERIMENTS.md` holds the full ledger, `CLAUDE.md` the working rules.
+
+Last revised 2026-09-16.
+
+---
+
+## The short version
+
+`superstate` makes a coding agent finish work it would otherwise abandon. The effect is real
+and consistent in direction, the mechanism is understood, and it is **smaller than earlier
+numbers in this repo claimed** — those were inflated by defects since fixed.
+
+| | |
+|---|---|
+| **Effect** | superstate ahead on 8 of 10 tasks where the arms differ (sign test p=0.109) |
+| **Size** | +19pp on gradeable tasks, run-level |
+| **Mechanism** | the handoff prompt, delivered in one turn |
+| **Cost** | comparable per run; the daemon is 23% cheaper than the MCP arm |
+| **Not yet established** | statistical significance on clean data |
+
+---
+
+## 1. The effect is real, and its size is +19pp
+
+Paired runs, same driver and task on both sides, prompt contracts off.
+
+| | n | vanilla | superstate_mcp | gap |
+|---|---|---|---|---|
+| gradeable tasks | 48 | 65% | 83% | **+19pp** |
+
+Aggregating to task level — five repeats of one task are not five independent observations —
+the surviving clean evidence is **8 tasks where superstate leads, 2 where vanilla leads**.
+A sign test on that gives **p=0.109**: the right direction, consistently, but not significant
+at the conventional threshold.
+
+**This is the honest headline.** Earlier figures of +29pp and p=0.037 do not survive removing
+self-graded tasks, prompt-contract-contaminated runs, and run-level pseudo-replication.
+
+*Evidence: EXP-041, EXP-049, EXP-021.*
+
+## 2. The mechanism is the handoff prompt, not the control loop
+
+Four candidate explanations, all eliminated on telemetry:
+
+* **Not more turns.** `turns=1` in 69 of 70 MCP runs on terminal-bench.
+* **Not decomposition.** `milestones_planned=1` in 70 of 70.
+* **Not more time.** On tasks it wins and vanilla loses, superstate uses 23% of its granted
+  budget where vanilla uses 36%.
+* **Not the gate.** The verification command was literally `true` for 22 of 30 tasks, and the
+  margin holds there.
+
+What remains is the text `superstate state prompt` emits: role framing, the goal restated, the
+verification command, and five rules including *"HARD STOP UPON PASSING"*. Vanilla's dominant
+failure mode is declaring done while wrong — 15 of 18 losses — at **$0.069 median spend against
+the $0.187 it spends on tasks it solves**. It quits early and confidently. The handoff prompt
+is what stops that.
+
+**Consequence worth stating plainly:** `SUPERSTATE_EVAL_PROMPT_CONTRACTS=0` does not remove
+prompt engineering from a run. It removes the *harness's* copy. Superstate's own prompt is a
+behavioural contract shipped inside the Rust binary. So the supported claim is *"a structured
+handoff beats a bare instruction"*, not *"state management beats no state management"*.
+
+The control that would separate those — vanilla given the state prompt, no engine — has never
+been run (EXP-050, registered, unrun).
+
+## 3. The daemon is a legitimate default
+
+| arm | solved | cost/run |
+|---|---|---|
+| `superstate_daemon` | 12/20 | **$0.25** |
+| `superstate_mcp` | 12/20 | $0.33 |
+
+Across 20 paired tasks they disagreed on **none**. Every deficit the daemon previously appeared
+to have was a harness defect: a missing `--print-timeout` truncating every turn at agy's
+5-minute default, and a missing gate lookup leaving it strictly gated while the MCP arm ran on
+`true`.
+
+**Caveat that matters:** this equivalence was measured on a task set where the iteration loop
+never fired — 1 real worker invocation in 19 of 20 runs. The two arms differ precisely in *how
+they respond to a gate failure*, so agreement in a regime with no gate failures is weak
+evidence. Untested where it counts.
+
+*Evidence: EXP-047.*
+
+## 4. The loop does fire — on hard enough tasks
+
+On `anko-typed-variable-bindings`: vanilla **0/2**, superstate_mcp **2/2**, with the gate
+rejecting and the worker iterating to **3 turns**.
+
+This had not happened once across 70 terminal-bench runs. The machinery is not inert by
+design; terminal-bench was too easy to exercise it. One task only — suggestive, not
+established.
+
+*Evidence: EXP-052 (partial, 7 of 36 runs; stopped deliberately).*
+
+## 5. The benchmark corpus is a third the size it appears
+
+Of 30 tasks, **14 can carry signal**:
+
+| | |
+|---|---|
+| 8 | ungradeable — ship no held-out `tests/` |
+| 7 | at ceiling — every arm solves them every time |
+| 1 | at floor — no arm has ever solved it |
+| **14** | **usable** |
+
+By family: **datacurve 8 of 9 usable, terminal-bench 6 of 21.** The tier-1 repository tasks
+carry nearly all the discriminating power. Most of terminal-bench is a ceiling for this driver
+— which is why both superstate arms scored 12/13 on its gradeable subset, and why no
+architectural difference could show up there.
+
+Use `paired_run.py --core`. Note that filtering to it **inflates the gap by construction**
+(+19pp becomes +31pp) by removing zero-difference cases; that number is for mechanism work and
+statistical power, never for a benchmark claim.
+
+---
+
+## Withdrawn
+
+Thirteen ledger rows are `WITHDRAWN`. They are kept, because the withdrawal is the finding.
+
+| claim | why it fell |
+|---|---|
+| lift is +29pp | 7 of 18 discordant pairs were self-graded |
+| p=0.037 | run-level counting treated repeats as independent |
+| gate precision 60%, "a rubber stamp" | 7 ungradeable tasks counted as gate errors; true figure is 92% |
+| gate strength is the binding constraint | it isn't — the corpus is |
+| daemon 2x cost premium | missing `--print-timeout` |
+| daemon loses 5-0 on gated tasks | the MCP arm was running on `true` |
+| in-loop MCP state tools are an anti-pattern | applies to `superstate_agent_mcp` only; the harness-driven arm is fine |
+
+**The self-grading defect is the one to remember.** Seven tasks ship no sealed verifier, so the
+harness ran `pytest tests/` inside the agent's own container — grading the agent against tests
+it wrote. It was not symmetrical: **vanilla 0/7, superstate_mcp 7/7**, because superstate's
+prompt asks the worker to build a verification command and the baseline gets no such
+instruction. `extractor.py` now refuses to grade such a task.
+
+---
+
+## What would change the picture
+
+* **The clean significance test.** 9 datacurve tasks, contracts off, 2 repeats. Would move
+  8-2 to roughly 14-16 task-pairs — enough to reach p<0.05 if the effect is real at the
+  apparent size, and enough to show it is not if it is not. *Only worth running if a claim is
+  going to be published.*
+* **EXP-050** — vanilla plus the state prompt, no engine. Sizes how much of the effect is the
+  text. Changes the framing of the claim, not what gets built.
+* **daemon vs mcp where the loop fires.** The one genuinely untested architectural question.
+
+None of these change what to build next. The daemon works, it is cheaper, and the mechanism is
+understood well enough to act on.
