@@ -13,13 +13,31 @@ Last revised 2026-09-16.
 and consistent in direction, the mechanism is understood, and it is **smaller than earlier
 numbers in this repo claimed** — those were inflated by defects since fixed.
 
+**Revised 2026-09-17 after EXP-053, which did not support the earlier claim.**
+
 | | |
 |---|---|
-| **Effect** | **+15pp** per task, 95% CI [0, +32]. Among the 6 tasks where the arms differ, **+40pp** [+6, +72] |
-| **Solve rate** | 72% → 82% |
-| **Cost** | **$0.54 → $0.59 per solve.** Hand off ~10 tasks to gain one extra solve, for ~$1 of extra spend |
-| **Mechanism** | the handoff prompt, one turn. Premature "done" falls from 26% of runs to 18% |
-| **Not established** | that the effect is distinguishable from zero — the interval touches it, and only 6 informative tasks exist |
+| **Effect** | **+3pp** per task, 95% CI **[-9, +15]** — the interval straddles zero |
+| **Direction** | 20 tasks, 8 informative: superstate ahead on **4**, vanilla ahead on **4** |
+| **Cost** | **$1.01 → $0.90 per solve** — superstate is now the cheaper arm |
+| **Mechanism** | still visible: the handoff prompt, one turn; premature "done" falls 26% → 18% of runs |
+| **Conclusion** | **the lift claim is not supported.** The mechanism is real; the outcome benefit is not demonstrated |
+
+### The split that matters
+
+| family | tasks | informative | superstate ahead | vanilla ahead | mean |
+|---|---|---|---|---|---|
+| terminal-bench | 13 | 5 | 3 | 2 | **+10pp** |
+| datacurve | 7 | 3 | 1 | 2 | **-11pp** |
+
+The earlier positive figure came almost entirely from terminal-bench. On datacurve — repository
+tasks, and the tasks chosen *before* any superstate result existed, so immune to selection on
+the outcome — superstate is behind.
+
+**Hypothesis, not established:** the handoff prompt helps where "done" is a checkable artefact
+the worker produces (write a file, emit a value) and hurts where the task requires exploring an
+unfamiliar codebase, because *"HARD STOP UPON PASSING"* discourages the exploration such a task
+needs. Testable, and worth testing before any further investment.
 
 Read `scripts/effect.py` output, not a p-value. A p-value asks whether the effect differs from
 *exactly* zero, which is not a live hypothesis — the mechanism is identified and visible in
@@ -39,20 +57,20 @@ Paired runs, same driver and task on both sides, prompt contracts off.
 
 The unit of analysis is the **task**. Five repeats of one task are one observation, and so are
 the same task's runs appearing in three different results files. Pooling correctly
-(`scripts/effect.py`, pre-specified) gives:
+(`scripts/effect.py`, pre-specified) gives, after EXP-053:
 
 | | |
 |---|---|
-| independent gradeable tasks | 16 |
-| ties — both arms identical, nearly all at 100% | **10** |
-| **informative tasks** | **6** — superstate ahead on 4, vanilla on 2 |
-| mean per-task difference | **+40pp** |
-| exact permutation test | **p = 0.125** |
+| independent gradeable tasks | 20 |
+| ties — both arms identical, nearly all at 100% | **12** |
+| **informative tasks** | **8** — superstate ahead on 4, vanilla on 4 |
+| mean per-task difference | **+2.8pp**, 95% CI [-9, +15] |
+| exact permutation test | p = 0.664 |
 
-**Not significant, and no statistic can fix that.** Six informative tasks is too few under any
-test. This figure moved four times in one day — +29pp/p=0.037, then p=0.109, then p=0.017,
-then p=0.125 — every move caused by how runs were counted rather than by new data. The script
-exists so it stops moving.
+**The effect is not distinguishable from zero, and the point estimate has collapsed toward it**
+as clean tasks were added. The figure moved five times — +29pp, +19pp, +15pp, then +3pp — and
+every move but the last came from how runs were counted. The last came from new, unbiased data,
+which is the only kind of move that should change a conclusion.
 
 **The binding constraint is the number of independent discriminating tasks.** Ten of sixteen
 are ceiling ties both arms always solve; more repeats of those cannot help. Only new

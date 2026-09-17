@@ -70,6 +70,7 @@ ELIGIBLE = (
     "gated_repeats.json",
     "frontier_raw_gains_5tasks.json",
     "datacurve_clean_9tasks.json",
+    "datacurve_3arm_9tasks.json",
 )
 SUPERSTATE_ARMS = {"superstate_mcp", "superstate_daemon", "superstate_solo"}
 
@@ -80,8 +81,19 @@ COST_RUNS: dict = {}
 
 
 def _infra_failure(run: dict) -> bool:
+    """A run that measured the harness, not the agent, and must not be scored.
+
+    `governor slot` is the starvation failure: when the concurrency governor cannot grant a
+    slot the worker waits, gives up at exactly 300s, and the harness records it as a task
+    failure. EXP-053 lost 12 of 54 runs that way and the first integrity check missed every
+    one, because starvation produces neither a seeding error nor a $0.00 cost.
+    """
     reason = run.get("failure_reason") or ""
-    return reason.startswith("Cannot seed workspace") or run.get("wall_clock_sec", 0) < 5
+    return (
+        reason.startswith("Cannot seed workspace")
+        or "governor slot" in reason
+        or run.get("wall_clock_sec", 0) < 5
+    )
 
 
 def collect(results_dir: Path) -> list[tuple[str, float, float, int, int]]:

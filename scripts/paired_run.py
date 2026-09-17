@@ -134,11 +134,38 @@ def main() -> int:
     # 1.5 GB keeps a wide margin over the measured figure while roughly tripling the
     # worker ceiling. CPU per worker is likewise generous for a process that is mostly
     # blocked on network I/O.
+    # Size a worker from what the TASKS actually demand, not a constant. TaskSpec.memory_mb
+    # is what runner.py passes to Docker as the container limit: 2048m for terminal-bench but
+    # 8192m for the datacurve/tier-1 repos. A fixed 1.5 GB under-counts the latter fivefold,
+    # so the governor advertises a ceiling the machine cannot honour. EXP-053 ran at
+    # concurrency 5 under that ceiling, swapped 8.5 GB, and lost 12 of 54 runs to workers that
+    # waited for a slot, gave up at 300s, and were recorded as task failures.
+    declared_gb = [t.memory_mb / 1024 for t in tasks if getattr(t, "memory_mb", None)]
+    ram_per_worker = float(
+        os.environ.get("SUPERSTATE_EVAL_RAM_PER_WORKER_GB")
+        or (max(declared_gb) if declared_gb else 1.5)
+    )
+    if declared_gb and ram_per_worker > 1.5:
+        logger.info(
+            "Sizing workers at %.1f GB from the tasks' declared memory_mb (was a flat 1.5 GB)",
+            ram_per_worker,
+        )
     governor = ConcurrencyGovernor(
         cpus_per_worker=float(os.environ.get("SUPERSTATE_EVAL_CPUS_PER_WORKER", "1.0")),
-        ram_gb_per_worker=float(os.environ.get("SUPERSTATE_EVAL_RAM_PER_WORKER_GB", "1.5")),
+        ram_gb_per_worker=ram_per_worker,
         ram_headroom_gb=float(os.environ.get("SUPERSTATE_EVAL_RAM_HEADROOM_GB", "4.0")),
     ) if args.concurrency > 1 else None
+    if governor is not None:
+        ceiling = governor.calculate_max_concurrency()
+        if args.concurrency > ceiling:
+            logger.error(
+                "--concurrency %d exceeds the governor's ceiling of %d for these tasks. "
+                "Surplus workers starve, give up at 300s, and are recorded as TASK failures. "
+                "Re-run with --concurrency %d or fewer.",
+                args.concurrency, ceiling, ceiling,
+            )
+            return 1
+
     runner = AblationRunner(
         workspace_root=args.workspace_root,
         default_driver=driver,
