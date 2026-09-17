@@ -310,47 +310,35 @@ subset rather than of superstate.
 that should have been the first thing done, and was prompted by the user asking three times
 whether functionality had been lost.*
 
-## 10. The product is the routing decision, and nothing implements it
+## 10. The +20pp routing lift was an in-sample artifact
 
-superstate's 2026-09-11 design spec says single-milestone for atomic tasks, multi-milestone for
-complex ones. That choice — not either policy — is where the value is. Pooling every recorded
-run by task and comparing fixed policies against choosing correctly per task:
+Commit `42cfa79` suggested that superstate's value lay in oracle routing between single-milestone
+and multi-milestone execution (+20pp on datacurve, +6pp on terminal-bench).
 
-| family | vanilla | always-single | always-multi | **routed** |
-|---|---|---|---|---|
-| terminal-bench (artefact) | 80% | 89% | **65%** | **95%** |
-| datacurve (repo) | 26% | 31% | 31% | **51%** |
+A reproducible verification (`scripts/eval_routing_split.py`) shows that this was an in-sample
+max-selection artifact over small-$n$ cells and confounded historical data:
 
-**Always-multi is worse than always-single on artefact tasks** (65% vs 89%), and on repo tasks
-the two fixed policies **tie** at 31%. Choosing per task is worth **+6pp** and **+20pp** over the
-better fixed policy — larger than any effect measured anywhere else in this document.
-
-**The routing signal is not the task family.** On datacurve, `anko`, `arktype` and `httpx` want
-multi while `expr`, `fastapi` and `katex` want single. On terminal-bench, `dna-insert`,
-`extract-elf` and `gcode-to-text` want multi while `build-cython-ext`, `openssl` and
-`chess-best-move` want single. Finding what does predict it is the open research question.
-
-**Nothing makes the choice.** `superstate_mcp` always uses one milestone; `superstate_mcp_planned`
-always asks the planner. The planner is told *"for atomic, single-objective tasks create at most
-1 to 2 milestones"* and decomposes regardless — it gave `chess-best-move`, which writes one move
-to one file, two milestones. The one place adaptivity was meant to live is inert.
-
-**Caveats.** This is *oracle* routing: it picks the winner with hindsight, so 95% and 51% are a
-ceiling rather than an achievable score. It establishes that the decision is worth a great deal,
-not that the decision can be made in advance. Runs are pooled across eras and configurations with
-small n per cell.
-
-This supersedes the framing of every earlier section. A fixed-policy comparison — which is what
-every experiment here has been — cannot measure a system whose design is to choose.
+1. **Terminal-bench collapses out-of-sample.** On the 13 gradeable tasks, a 1000-trial Monte Carlo
+   split-half test (train on 50% of runs to pick the arm, score on held-out 50%) turns the in-sample
+   oracle lift (+4.4pp) into a **-3.1pp held-out loss** (single 86.0% vs routed 84.2%). Picking the
+   historical winner performs worse than a fixed single policy.
+2. **The datacurve "multi" data is an era confound.** The "always-multi" runs on repo tasks were not
+   produced by `superstate_mcp_planned` (which had 0 completed runs). They were 100% sourced from
+   pre-09-15 arms (`superstate_rust` and `superstate_agent_mcp`) from the September 12–14 era with
+   prompt contracts injected. With only $n=4$ to $12$ runs per cell, the oracle selected whichever
+   historical arm was favored by small-sample variance.
+3. **Verdict:** Withdrawn. There is no evidence of a routing signal to predict; training a classifier
+   on these task labels would be fitting historical noise.
 
 ---
 
 ## Withdrawn
 
-Thirteen ledger rows are `WITHDRAWN`. They are kept, because the withdrawal is the finding.
+Fourteen ledger rows and findings are `WITHDRAWN`. They are kept, because the withdrawal is the finding.
 
 | claim | why it fell |
 |---|---|
+| +20pp routing lift | in-sample max-selection artifact over n=4-12 cells; collapses to -3.1pp held-out on terminal-bench; multi data was pre-09-15 confounded arms |
 | lift is +29pp | 7 of 18 discordant pairs were self-graded |
 | p=0.037 | run-level counting treated repeats as independent |
 | gate precision 60%, "a rubber stamp" | 7 ungradeable tasks counted as gate errors; true figure is 92% |
