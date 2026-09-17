@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 RUNS_DIR = Path("/tmp/superstate_eval_runs")
-OUTPUT_FILE = Path(__file__).resolve().parent.parent / "results" / "harvested_run_diffs_20260917.json"
+OUTPUT_FILE = Path(__file__).resolve().parent.parent / "data" / "harvested_run_diffs_20260917.json"
 
 
 def get_git_diff_and_untracked(workspace_dir: Path) -> tuple[str, list[str]]:

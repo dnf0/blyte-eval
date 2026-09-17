@@ -93,8 +93,9 @@ def cmd_check() -> int:
             continue
         path = RESULTS / r["results"]
         if not path.is_file():
-            print(f"GHOST      {r['id']}  {r['results']} is missing from results/")
-            problems += 1
+            if r["status"] != "PLANNED":
+                print(f"GHOST      {r['id']}  {r['results']} is missing from results/")
+                problems += 1
             continue
         rowcount, _, _ = tally(path)
         try:
@@ -102,11 +103,12 @@ def cmd_check() -> int:
         except ValueError:
             declared = 0
         if declared and rowcount < declared:
-            print(
-                f"TRUNCATED  {r['id']}  {r['results']} holds {rowcount} runs, "
-                f"ledger declares {declared} -- killed mid-run?"
-            )
-            problems += 1
+            if r["status"] != "PLANNED":
+                print(
+                    f"TRUNCATED  {r['id']}  {r['results']} holds {rowcount} runs, "
+                    f"ledger declares {declared} -- killed mid-run?"
+                )
+                problems += 1
         if r["status"] not in VALID_STATUS:
             print(f"BAD STATUS {r['id']}  '{r['status']}' not in {sorted(VALID_STATUS)}")
             problems += 1
