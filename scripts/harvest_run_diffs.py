@@ -107,8 +107,12 @@ def harvest() -> None:
                                 milestones.append(json.loads(line))
                 except Exception as e:
                     milestones = [{"error": f"Failed to parse milestones.jsonl: {e}"}]
-
-            diff_str, untracked = get_git_diff_and_untracked(ws_dir)
+            model_patch_path = logs_dir / "artifacts" / "model.patch"
+            if model_patch_path.is_file():
+                diff_str = model_patch_path.read_text(encoding="utf-8", errors="replace")
+                untracked = []
+            else:
+                diff_str, untracked = get_git_diff_and_untracked(ws_dir)
 
             telemetry = run_data.get("telemetry", {})
             extra = telemetry.get("extra", {})
