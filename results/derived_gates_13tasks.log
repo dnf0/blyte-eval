@@ -555,3 +555,21 @@ FAILED ../tests/test_outputs.py::test_results_file_contains_secret_flag - Fil...
 FAILED ../tests/test_outputs.py::test_results_file_format - FileNotFoundError...
 ============================== 3 failed in 0.07s ===============================
 
+08:56:29 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: a155e24d': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:56:29 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: a155e24d (prev=678d8718). Lease extended.
+08:56:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+08:56:30 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:56:30 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:56:43 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+08:56:43 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 65f089e828ac
+08:56:43 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+08:56:43 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=3193.23s, Cost=$1.20, TotalGrantedBudget=4500.0s
+08:56:43 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$1.2017 turns=3 1261s  Agent run failed: Verification failed (exit code 127): /bin/sh: 1: {conversation_id:52f61415-f04b-4d57-bdf4-f12f09200305,status:ERROR,response:,error:There was a network issue connecting to the server, please try again.,duration_seconds:0,num_turns:1,usage:{input_tokens:0,output_tokens:0,thinking_tokens:0,cache_read_tokens:0,total_tokens:0}}: File name 
+
+| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|
+| superstate_daemon | 26 | 22 | 84.6% | $9.66 | $0.44 | 330.7m | 1340.0m | 311053 | 54826 |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/derived_gates_13tasks.json

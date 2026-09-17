@@ -215,9 +215,28 @@ observation of that path produced a gate `touch` satisfies.
 Meanwhile even careful, container-validated, hand-authored gates ranged from **92% precision on
 terminal-bench to 17% on datacurve**, both written by us.
 
-*Caveat: the LLM-gate evidence is two runs of one task recorded in a docstring, not a results
-file. It is directionally consistent with the 17% measured for hand-authored datacurve gates,
-but deserves a real measurement before being treated as established.*
+### Measured (EXP-054): an agent writes gates nearly as well as we do
+
+| gate author | precision | solved |
+|---|---|---|
+| hand-authored fixtures | **92%** (12/13) | 92% |
+| driver-authored | **79%** (19/24) | 85% (22/26) |
+
+Same 13 tasks, same arm, same model; the only difference is who wrote the gate. **No
+`touch`-satisfiable gate appeared** — the fail-closed critique, which rejects any proposal that
+already passes, refused them, and the earlier docstring observation appears to predate it. What
+the driver produces is substantive:
+
+```
+chess-best-move:   test -s /app/move.txt && grep -qE '^[a-h][1-8][a-h][1-8][a-zA-Z]?\r?$'
+vulnerable-secret: test -s /app/secret.txt && grep -qE '^secret\[.+\]' /app/secret.txt
+```
+
+So the central tension is weaker than feared, **on this family**. Terminal-bench instructions
+state the success condition outright, making gate authoring close to transcription. Datacurve
+tasks are "change the repo so held-out tests pass", where the success condition is precisely
+what is withheld — and our own careful gates reach only 17% there. Driver-authored gates on
+datacurve are unmeasured, and that is where the question is actually hard.
 
 ## 7. The gate is not an eval convention — it is ours
 
