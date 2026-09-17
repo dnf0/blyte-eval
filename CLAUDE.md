@@ -90,6 +90,24 @@ dependencies live in the sandbox and to reach them via `./run-in-container`. The
 its worker itself, so that guidance has to be re-supplied through the wrapper — when it was
 missing, the worker edited the host while its own gate ran inside the container.
 
+## `superstate_mcp` is not superstate
+
+The arm named `superstate_mcp` runs `zero_turn_planning=True`: **one milestone, one gate, no
+dependency graph**. It is the plan-free fast path added on 2026-09-11 for *atomic* tasks, whose
+own design spec says multi-milestone planning is **not** being discarded and remains for complex
+work. That boundary was never enforced, and 253 of 309 recorded runs used the fast path.
+
+So a result from `superstate_mcp` describes `init` + `prompt` + one shell gate. It is not a
+measurement of the control plane, and must not be reported as one.
+
+The arm that runs the design is **`superstate_mcp_planned`** (`zero_turn_planning=False`): the
+driver writes a plan, milestones are parsed with their dependencies and file lists, each carries
+its own verification command, and the adapter advances via `state_ready` — the DAG. It had never
+been run until EXP-055.
+
+**Before quoting any superstate number, check which of the two produced it.** See
+`superstate/docs/SYSTEM-REVIEW.md` for how the two diverged.
+
 ## Arms — check the name before comparing anything
 
 The benchmark's Condition labels map to specific arm names. Getting this wrong invalidates
@@ -100,7 +118,8 @@ a comparison silently, and has.
 | `vanilla` | Baseline 1 | nothing — single shot | conversational |
 | `superpowers` | Baseline 2 | nothing | conversational |
 | `superstate_agent_mcp` | **Condition A** | the *agent*, in-loop via JSON-RPC | conversational *by design* |
-| `superstate_mcp` | **Condition B** — the arm that scored 76% | the *harness*, over stdio MCP | stateless |
+| `superstate_mcp` | **Condition B** — the arm that scored 76% | the *harness*, over stdio MCP | stateless, **single milestone, no graph** |
+| `superstate_mcp_planned` | the design: decomposed DAG, per-milestone gates | the *harness*, over stdio MCP | stateless, **multi-milestone** |
 | `superstate_daemon` | (post-ADR-0002) | the Rust `DaemonRunner`, detached | stateless |
 | `superstate_solo` | alias of `superstate_rust_inplace`/`_fast` | Python turn loop over the CLI | stateless |
 

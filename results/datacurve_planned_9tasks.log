@@ -1,0 +1,167 @@
+11:19:24 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+11:19:24 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=2 [24.0 GB total - 4.0 GB reserve, 8.0 GB per worker; 6.1 GB reported available], Disk limit=4, User override=None)
+11:19:24 [INFO] superstate_eval.paired: ==============================================================================
+11:19:24 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=9  arms=vanilla:2, superstate_mcp:2, superstate_mcp_planned:2  concurrency=2
+11:19:24 [INFO] superstate_eval.paired: Runs=54  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260917-111924
+11:19:24 [INFO] superstate_eval.paired: ==============================================================================
+11:19:24 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [vanilla] [run 1/2] (budget: 5400s)
+11:19:24 [INFO] superstate_eval.docker_manager: Host disk check: 69.01 GB free on /
+11:19:24 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [vanilla] [run 2/2] (budget: 5400s)
+11:19:24 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla] (Base budget: 5400.0s)
+11:19:24 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla] (Base budget: 5400.0s)
+11:19:24 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 6.1 GB reported available], Disk limit=4, User override=None)
+11:19:24 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 6.1 GB reported available], Disk limit=4, User override=None)
+11:19:24 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-111924/eval-datacurve_anko-typed-variable-bindings-vanilla-fe7bde13/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+11:19:24 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-111924/eval-datacurve_anko-typed-variable-bindings-vanilla-e332170b/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+11:19:24 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 280e50d25d53 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+11:19:24 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 8ba3b770fa2b (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+11:19:25 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/anko-typed-variable-bindings/tests for the agent phase
+11:19:25 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+11:19:25 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+11:40:28 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 44563585': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+11:40:28 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: 44563585 (prev=3f269a72). Lease extended.
+11:40:47 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:3d8d8d52921f from /Users/danielfisher/.cache/superstate-eval/staged/anko-typed-variable-bindings/tests
+11:40:47 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1639820207f9 (superstate-eval-verifier/datacurve-anko-typed-variable-bindings:3d8d8d52921f)
+11:40:47 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b0505e20': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+11:40:47 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: b0505e20 (prev=3f269a72). Lease extended.
+11:41:01 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:fbfb45aa3ec9 from /Users/danielfisher/.cache/superstate-eval/staged/anko-typed-variable-bindings/tests
+11:41:01 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 9ccb7a1d3f4c (superstate-eval-verifier/datacurve-anko-typed-variable-bindings:fbfb45aa3ec9)
+11:41:55 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1639820207f9
+11:41:55 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:3d8d8d52921f
+11:41:55 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=vanilla: passed=True, reward=1.0, exit_code=0
+11:41:55 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 280e50d25d53
+11:41:55 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla]: Passed=True, WallClock=1351.07s, Cost=$1.33, TotalGrantedBudget=6600.0s
+11:41:55 [INFO] superstate_eval.paired:    vanilla [run 2/2]: passed=True cost=$1.3294 turns=1 1351s  
+11:41:55 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [superstate_mcp] [run 1/2] (budget: 5400s)
+11:41:55 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: superstate_mcp] (Base budget: 5400.0s)
+11:41:55 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=4, User override=None)
+11:41:55 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-111924/eval-datacurve_anko-typed-variable-bindings-superstate_mcp-44b9b475/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+11:41:56 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4ff0feea272a (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+11:41:56 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/anko-typed-variable-bindings/tests for the agent phase
+11:41:56 [INFO] superstate_eval.adapters.superstate_mcp: Initialized MCP state directly with gate 'cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+rm -rf /tmp/ankogate && mkdir -p /tmp/ankogate && cd /tmp/ankogate
+cat > go.mod <<'EOM'
+module ankogate
+go 1.21
+require github.com/mattn/anko v0.0.0
+replace github.com/mattn/anko => /app
+EOM
+cat > main.go <<'EOM'
+package main
+
+import (
+	"log"
+	"strings"
+
+	"github.com/mattn/anko/env"
+	"github.com/mattn/anko/vm"
+)
+
+func run(src string, typed bool) (interface{}, error) {
+	return vm.Execute(env.NewEnv(), &vm.Options{TypedBindings: typed}, src)
+}
+
+func main() {
+	if v, err := run("var x: int64 = 10
+x", true); err != nil || v == nil {
+		log.Fatalf("typed declaration failed: %v", err)
+	}
+	if _, err := run("var a, b: int64 = 1, 2
+a", true); err != nil {
+		log.Fatalf("multi typed declaration failed: %v", err)
+	}
+	_, err := run("var y: int64 = 1
+y = "s"", true)
+	if err == nil {
+		log.Fatal("type mismatch must error when TypedBindings is enabled")
+	}
+	if !strings.Contains(err.Error(), "type error") || !strings.Contains(err.Error(), "y") {
+		log.Fatalf("error must contain 'type error' and the variable name, got: %v", err)
+	}
+	if _, err := run("var n: int64 = 1
+n = nil", true); err == nil {
+		log.Fatal("nil assignment to a primitive must error")
+	}
+	if _, err := run("var z: int64 = 1
+z = "s"", false); err != nil {
+		log.Fatalf("TypedBindings disabled must behave dynamically, got: %v", err)
+	}
+	if _, err := run("var q = 1
+q = "s"", true); err != nil {
+		log.Fatalf("untyped declaration must stay dynamic, got: %v", err)
+	}
+}
+EOM
+go run .
+GATEEOF' (zero-turn planning)
+11:41:56 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+11:42:09 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 9ccb7a1d3f4c
+11:42:09 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-anko-typed-variable-bindings:fbfb45aa3ec9
+11:42:09 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/anko-typed-variable-bindings arm=vanilla: passed=True, reward=1.0, exit_code=0
+11:42:09 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 8ba3b770fa2b
+11:42:09 [INFO] superstate_eval.runner: Finished task 'datacurve/anko-typed-variable-bindings' [Arm: vanilla]: Passed=True, WallClock=1365.08s, Cost=$1.54, TotalGrantedBudget=6600.0s
+11:42:09 [INFO] superstate_eval.paired:    vanilla [run 1/2]: passed=True cost=$1.5439 turns=1 1365s  
+11:42:09 [INFO] superstate_eval.paired: -> anko-typed-variable-bindings [superstate_mcp] [run 2/2] (budget: 5400s)
+11:42:09 [INFO] superstate_eval.runner: Starting task 'datacurve/anko-typed-variable-bindings' [Arm: superstate_mcp] (Base budget: 5400.0s)
+11:42:09 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=4, User override=None)
+11:42:09 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-111924/eval-datacurve_anko-typed-variable-bindings-superstate_mcp-36f42072/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1:/app (202 entries)
+11:42:09 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 053bbc8babff (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79betfed7ets4an20cr4j57182y9wt-v1.1)
+11:42:10 [INFO] superstate_eval.adapters.superstate_mcp: Initialized MCP state directly with gate 'cat <<'GATEEOF' | ./run-in-container sh -s
+set -e
+rm -rf /tmp/ankogate && mkdir -p /tmp/ankogate && cd /tmp/ankogate
+cat > go.mod <<'EOM'
+module ankogate
+go 1.21
+require github.com/mattn/anko v0.0.0
+replace github.com/mattn/anko => /app
+EOM
+cat > main.go <<'EOM'
+package main
+
+import (
+	"log"
+	"strings"
+
+	"github.com/mattn/anko/env"
+	"github.com/mattn/anko/vm"
+)
+
+func run(src string, typed bool) (interface{}, error) {
+	return vm.Execute(env.NewEnv(), &vm.Options{TypedBindings: typed}, src)
+}
+
+func main() {
+	if v, err := run("var x: int64 = 10
+x", true); err != nil || v == nil {
+		log.Fatalf("typed declaration failed: %v", err)
+	}
+	if _, err := run("var a, b: int64 = 1, 2
+a", true); err != nil {
+		log.Fatalf("multi typed declaration failed: %v", err)
+	}
+	_, err := run("var y: int64 = 1
+y = "s"", true)
+	if err == nil {
+		log.Fatal("type mismatch must error when TypedBindings is enabled")
+	}
+	if !strings.Contains(err.Error(), "type error") || !strings.Contains(err.Error(), "y") {
+		log.Fatalf("error must contain 'type error' and the variable name, got: %v", err)
+	}
+	if _, err := run("var n: int64 = 1
+n = nil", true); err == nil {
+		log.Fatal("nil assignment to a primitive must error")
+	}
+	if _, err := run("var z: int64 = 1
+z = "s"", false); err != nil {
+		log.Fatalf("TypedBindings disabled must behave dynamically, got: %v", err)
+	}
+	if _, err := run("var q = 1
+q = "s"", true); err != nil {
+		log.Fatalf("untyped declaration must stay dynamic, got: %v", err)
+	}
+}
+EOM
+go run .
+GATEEOF' (zero-turn planning)
+11:42:10 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
