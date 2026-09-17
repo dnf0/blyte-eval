@@ -1,0 +1,557 @@
+07:26:16 [INFO] superstate_eval.paired: Sizing workers at 4.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+07:26:16 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 7.6 GB reported available], Disk limit=5, User override=None)
+07:26:16 [INFO] superstate_eval.paired: ==============================================================================
+07:26:16 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=13  arms=superstate_daemon:2  concurrency=4
+07:26:16 [INFO] superstate_eval.paired: Runs=26  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260917-072616
+07:26:16 [INFO] superstate_eval.paired: ==============================================================================
+07:26:16 [INFO] superstate_eval.paired: -> build-cython-ext [superstate_daemon] [run 1/2] (budget: 900s)
+07:26:16 [INFO] superstate_eval.docker_manager: Host disk check: 71.8 GB free on /
+07:26:16 [INFO] superstate_eval.paired: -> build-cython-ext [superstate_daemon] [run 2/2] (budget: 900s)
+07:26:16 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:26:16 [INFO] superstate_eval.paired: -> chess-best-move [superstate_daemon] [run 1/2] (budget: 900s)
+07:26:16 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:26:16 [INFO] superstate_eval.paired: -> chess-best-move [superstate_daemon] [run 2/2] (budget: 900s)
+07:26:16 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.6 GB reported available], Disk limit=5, User override=None)
+07:26:16 [INFO] superstate_eval.runner: Starting task 'terminal-bench/chess-best-move' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:26:16 [INFO] superstate_eval.runner: Starting task 'terminal-bench/chess-best-move' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:26:16 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.6 GB reported available], Disk limit=5, User override=None)
+07:26:16 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.6 GB reported available], Disk limit=5, User override=None)
+07:26:16 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 7.6 GB reported available], Disk limit=5, User override=None)
+07:26:16 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_build-cython-ext-superstate_daemon-227165bc/workspace
+07:26:16 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_build-cython-ext-superstate_daemon-df5ed542/workspace
+07:26:16 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_chess-best-move-superstate_daemon-e6db5b6c/workspace from alexgshaw/chess-best-move:20251031:/app (1 entries)
+07:26:16 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_chess-best-move-superstate_daemon-60dc57fc/workspace from alexgshaw/chess-best-move:20251031:/app (1 entries)
+07:26:16 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f8e2bb4aabd2 (alexgshaw/build-cython-ext:20251031)
+07:26:16 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 722add96cff0 (alexgshaw/build-cython-ext:20251031)
+07:26:16 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4845b687e262 (alexgshaw/chess-best-move:20251031)
+07:26:16 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 146ec6f14e2b (alexgshaw/chess-best-move:20251031)
+07:26:16 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests for the agent phase
+07:26:16 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:26:16 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:26:16 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:26:16 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:26:16 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/chess-best-move/tests for the agent phase
+07:26:16 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:26:16 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:26:16 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:26:16 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:26:57 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:26:58 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:27:08 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:27:23 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:27:24 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -d /app/pyknotid && ./run-in-container python3 -c "import importlib.machinery as s, pyknotid, pyknotid.make as mk, pyknotid.spacecurves as sp; from pyknotid.spacecurves import chelpers, ccomplexity; from pyknotid import cinvariants; assert all(any(m.__file__.endswith(e) for e in s.EXTENSION_SUFFIXES) for m in (chelpers, ccomplexity, cinvariants)); k = sp.Knot(mk.three_twist(num_points=100)); out = k.alexander_polynomial(-1)" && ./run-in-container bash -c "cd /app/pyknotid && python3 -m pytest tests --ignore=tests/test_random_curves.py --ignore=tests/test_catalogue.py"' (fails before work, as required)
+07:27:25 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 511b1a8b': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:27:25 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 511b1a8b (prev=None). Lease extended.
+07:27:41 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -s /app/move.txt && ./run-in-container grep -qE '^[a-h][1-8][a-h][1-8][a-zA-Z]?\\r?$' /app/move.txt && ! ./run-in-container grep -qvE '^[a-h][1-8][a-h][1-8][a-zA-Z]?\\r?$' /app/move.txt" (fails before work, as required)
+07:27:41 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 022b7a20': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:27:41 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 022b7a20 (prev=None). Lease extended.
+07:27:55 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -d /app/pyknotid && ./run-in-container python3 -c "import pyknotid; from pyknotid.spacecurves import chelpers, ccomplexity; from pyknotid import cinvariants; import pyknotid.make as mk; import pyknotid.spacecurves as sp; k = sp.Knot(mk.three_twist(num_points=100)); out = k.alexander_polynomial(-1)" && ./run-in-container bash -c "cd /app/pyknotid && pytest tests --ignore=tests/test_random_curves.py --ignore=tests/test_catalogue.py"' (fails before work, as required)
+07:27:55 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b31a8983': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:27:55 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: b31a8983 (prev=None). Lease extended.
+07:29:03 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -f /app/move.txt && ./run-in-container test -s /app/move.txt && ./run-in-container grep -Eq '^[a-h][1-8][a-h][1-8]' /app/move.txt" (fails before work, as required)
+07:29:04 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 7fd3d8f1': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:29:04 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 7fd3d8f1 (prev=None). Lease extended.
+07:32:15 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:32:15 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:32:15 [WARNING] superstate_eval.extractor: Task terminal-bench/chess-best-move has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:32:26 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/chess-best-move arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:32:26 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 4845b687e262
+07:32:26 [INFO] superstate_eval.runner: Finished task 'terminal-bench/chess-best-move' [Arm: superstate_daemon]: Passed=True, WallClock=370.14s, Cost=$0.38, TotalGrantedBudget=3300.0s
+07:32:26 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.3787 turns=1 370s  
+07:32:26 [INFO] superstate_eval.paired: -> code-from-image [superstate_daemon] [run 1/2] (budget: 1200s)
+07:32:26 [INFO] superstate_eval.runner: Starting task 'terminal-bench/code-from-image' [Arm: superstate_daemon] (Base budget: 1200.0s)
+07:32:26 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.7 GB reported available], Disk limit=5, User override=None)
+07:32:26 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_code-from-image-superstate_daemon-a54a156f/workspace from alexgshaw/code-from-image:20251031:/app (1 entries)
+07:32:26 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4bf1fe805da0 (alexgshaw/code-from-image:20251031)
+07:32:26 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/code-from-image/tests for the agent phase
+07:32:26 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:32:26 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:33:00 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:33:15 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -f /app/output.txt && ./run-in-container grep -q '^bee26a' /app/output.txt" (fails before work, as required)
+07:33:15 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: d4fbed7c': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+07:33:15 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: d4fbed7c (prev=None). Lease extended.
+07:33:59 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: f73b70f6': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+07:33:59 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: f73b70f6 (prev=d4fbed7c). Lease extended.
+07:34:00 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 3)
+07:34:00 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:34:00 [WARNING] superstate_eval.extractor: Task terminal-bench/code-from-image has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:34:10 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/code-from-image arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:34:10 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 4bf1fe805da0
+07:34:10 [INFO] superstate_eval.runner: Finished task 'terminal-bench/code-from-image' [Arm: superstate_daemon]: Passed=True, WallClock=104.40s, Cost=$0.10, TotalGrantedBudget=4800.0s
+07:34:10 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.1021 turns=1 104s  
+07:34:10 [INFO] superstate_eval.paired: -> code-from-image [superstate_daemon] [run 2/2] (budget: 1200s)
+07:34:10 [INFO] superstate_eval.runner: Starting task 'terminal-bench/code-from-image' [Arm: superstate_daemon] (Base budget: 1200.0s)
+07:34:10 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.1 GB reported available], Disk limit=5, User override=None)
+07:34:10 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_code-from-image-superstate_daemon-47ddb21c/workspace from alexgshaw/code-from-image:20251031:/app (1 entries)
+07:34:10 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7445a7bed835 (alexgshaw/code-from-image:20251031)
+07:34:10 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/code-from-image/tests for the agent phase
+07:34:10 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:34:10 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:34:27 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:34:39 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -s /app/output.txt && ./run-in-container grep -q '^bee26a' /app/output.txt" (fails before work, as required)
+07:34:40 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: a2718baf': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+07:34:40 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: a2718baf (prev=None). Lease extended.
+07:35:31 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+07:35:31 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:35:31 [WARNING] superstate_eval.extractor: Task terminal-bench/code-from-image has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:35:40 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:35:40 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:35:40 [WARNING] superstate_eval.extractor: Task terminal-bench/chess-best-move has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:35:41 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/code-from-image arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:35:41 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7445a7bed835
+07:35:41 [INFO] superstate_eval.runner: Finished task 'terminal-bench/code-from-image' [Arm: superstate_daemon]: Passed=True, WallClock=91.21s, Cost=$0.10, TotalGrantedBudget=3600.0s
+07:35:41 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.0950 turns=1 91s  
+07:35:41 [INFO] superstate_eval.paired: -> constraints-scheduling [superstate_daemon] [run 1/2] (budget: 1200s)
+07:35:41 [INFO] superstate_eval.runner: Starting task 'terminal-bench/constraints-scheduling' [Arm: superstate_daemon] (Base budget: 1200.0s)
+07:35:41 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.3 GB reported available], Disk limit=5, User override=None)
+07:35:41 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_constraints-scheduling-superstate_daemon-867c8345/workspace from alexgshaw/constraints-scheduling:20251031:/app (3 entries)
+07:35:42 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e14a9dd376ab (alexgshaw/constraints-scheduling:20251031)
+07:35:42 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/constraints-scheduling/tests for the agent phase
+07:35:42 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:35:42 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:35:50 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 79a3aa83': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:35:50 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 79a3aa83 (prev=511b1a8b). Lease extended.
+07:35:51 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/chess-best-move arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:35:51 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 146ec6f14e2b
+07:35:52 [INFO] superstate_eval.runner: Finished task 'terminal-bench/chess-best-move' [Arm: superstate_daemon]: Passed=True, WallClock=575.96s, Cost=$0.36, TotalGrantedBudget=3300.0s
+07:35:52 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.3580 turns=1 576s  
+07:35:52 [INFO] superstate_eval.paired: -> constraints-scheduling [superstate_daemon] [run 2/2] (budget: 1200s)
+07:35:52 [INFO] superstate_eval.runner: Starting task 'terminal-bench/constraints-scheduling' [Arm: superstate_daemon] (Base budget: 1200.0s)
+07:35:52 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.3 GB reported available], Disk limit=5, User override=None)
+07:35:52 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_constraints-scheduling-superstate_daemon-1889fd98/workspace from alexgshaw/constraints-scheduling:20251031:/app (3 entries)
+07:35:52 [INFO] superstate_eval.docker_manager: Spawned sandbox container: fede8a8633f1 (alexgshaw/constraints-scheduling:20251031)
+07:35:52 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:35:52 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:35:53 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+07:35:53 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:35:55 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:36:00 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:36:00 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f8e2bb4aabd2
+07:36:01 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon]: Passed=True, WallClock=584.92s, Cost=$0.60, TotalGrantedBudget=4500.0s
+07:36:01 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.5979 turns=1 585s  
+07:36:01 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] [run 1/2] (budget: 900s)
+07:36:01 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:36:01 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.2 GB reported available], Disk limit=5, User override=None)
+07:36:01 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_db-wal-recovery-superstate_daemon-5362ee50/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+07:36:01 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1b81569cb0f9 (alexgshaw/db-wal-recovery:20251031)
+07:36:01 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/db-wal-recovery/tests for the agent phase
+07:36:01 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:36:01 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:37:05 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:38:04 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:38:22 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 3caa8fa2': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:38:22 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 3caa8fa2 (prev=b31a8983). Lease extended.
+07:38:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+07:38:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:38:27 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -f /app/recovered.json && ./run-in-container python3 -c "import json; d = json.load(open(\'/app/recovered.json\')); assert isinstance(d, list) and len(d) == 11 and [x[\'id\'] for x in d] == sorted(x[\'id\'] for x in d) and len(set(x[\'id\'] for x in d)) == 11 and all(isinstance(x, dict) and \'id\' in x and \'name\' in x and \'value\' in x for x in d)" && ./run-in-container python3 -c "import glob, os, sqlite3; assert any(c.execute(f\'SELECT count(*) FROM \\"{t[0]}\\"\').fetchone()[0] == 11 for f in glob.glob(\'/app/**\', recursive=True) if os.path.isfile(f) and open(f, \'rb\').read(15) == b\'SQLite format 3\' for c in [sqlite3.connect(f)] for t in c.execute(\\"SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\'\\").fetchall())"' (fails before work, as required)
+07:38:27 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: aa70a7cf': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:38:27 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: aa70a7cf (prev=None). Lease extended.
+07:38:28 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:38:33 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:38:33 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 722add96cff0
+07:38:33 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: superstate_daemon]: Passed=True, WallClock=737.55s, Cost=$0.67, TotalGrantedBudget=4500.0s
+07:38:33 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.6685 turns=1 738s  
+07:38:33 [INFO] superstate_eval.paired: -> db-wal-recovery [superstate_daemon] [run 2/2] (budget: 900s)
+07:38:33 [INFO] superstate_eval.runner: Starting task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:38:33 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.7 GB reported available], Disk limit=5, User override=None)
+07:38:33 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_db-wal-recovery-superstate_daemon-eff4d0ea/workspace from alexgshaw/db-wal-recovery:20251031:/app (2 entries)
+07:38:33 [INFO] superstate_eval.docker_manager: Spawned sandbox container: a0525e5177e0 (alexgshaw/db-wal-recovery:20251031)
+07:38:33 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:38:33 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:39:23 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -f /app/meeting_scheduled.ics && ./run-in-container test -s /app/alice_calendar.ics && ./run-in-container test -s /app/bob_calendar.ics && ./run-in-container test -s /app/carol_calendar.ics && ./run-in-container grep -q "BEGIN:VCALENDAR" /app/meeting_scheduled.ics && ./run-in-container grep -q "END:VCALENDAR" /app/meeting_scheduled.ics && ./run-in-container grep -q "VERSION:2.0" /app/meeting_scheduled.ics && ./run-in-container grep -q "PRODID" /app/meeting_scheduled.ics && ./run-in-container grep -q "BEGIN:VEVENT" /app/meeting_scheduled.ics && ./run-in-container grep -q "END:VEVENT" /app/meeting_scheduled.ics && ./run-in-container grep -qi "Team Planning Meeting" /app/meeting_scheduled.ics && ./run-in-container grep -qi "alice@example.com" /app/meeting_scheduled.ics && ./run-in-container grep -qi "bob@example.com" /app/meeting_scheduled.ics && ./run-in-container grep -qi "carol@example.com" /app/meeting_scheduled.ics && ./run-in-container python3 -c \'import sys, re, datetime; t = open("/app/meeting_scheduled.ics").read(); assert t.strip().startswith("BEGIN:VCALENDAR") and t.strip().endswith("END:VCALENDAR"); sm = re.search(r"DTSTART[^:]*:([0-9]{8}T[0-9]{6}Z)", t); em = re.search(r"DTEND[^:]*:([0-9]{8}T[0-9]{6}Z)", t); assert sm and em; s = datetime.datetime.strptime(sm.group(1), "%Y%m%dT%H%M%SZ"); e = datetime.datetime.strptime(em.group(1), "%Y%m%dT%H%M%SZ"); assert (e - s).total_seconds() == 3600 and datetime.datetime(2024, 1, 15) <= s and e <= datetime.datetime(2024, 1, 19, 23, 59, 59) and 0 <= s.weekday() <= 4 and s.time() >= datetime.time(9, 0) and e.time() <= datetime.time(14, 0) and s.time() >= datetime.time(10, 0) and (s.weekday() not in (1, 3) or e.time() <= datetime.time(16, 30)) and (e.time() <= datetime.time(12, 0) or s.time() >= datetime.time(12, 30)); conflicts = [c for c in ["/app/alice_calendar.ics", "/app/bob_calendar.ics", "/app/carol_calendar.ics"] for v in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT", open(c).read(), re.DOTALL) for m1, m2 in [(re.search(r"DTSTART[^:]*:([0-9]{8}T[0-9]{6}Z)", v), re.search(r"DTEND[^:]*:([0-9]{8}T[0-9]{6}Z)", v))] if m1 and m2 for cs, ce in [(datetime.datetime.strptime(m1.group(1), "%Y%m%dT%H%M%SZ"), datetime.datetime.strptime(m2.group(1), "%Y%m%dT%H%M%SZ") + (datetime.timedelta(minutes=15) if "carol" in c and datetime.datetime.strptime(m2.group(1), "%Y%m%dT%H%M%SZ").time() >= datetime.time(16, 45) else datetime.timedelta()))] if s < ce and e > cs]; assert not conflicts, f"Conflicts found: {conflicts}"\'' (fails before work, as required)
+07:39:23 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 258445c0': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+07:39:23 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 258445c0 (prev=None). Lease extended.
+07:40:15 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:40:27 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:40:58 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -f /app/recovered.json && ./run-in-container python3 -c \'import json; d = json.load(open("/app/recovered.json")); assert isinstance(d, list) and len(d) == 11 and [r["id"] for r in d] == sorted(r["id"] for r in d) and len(set(r["id"] for r in d)) == 11 and all(isinstance(r, dict) and isinstance(r.get("id"), int) and isinstance(r.get("name"), str) and "value" in r for r in d)\' && ./run-in-container python3 -c \'import glob, os, sqlite3; dbs = [f for f in glob.glob("/app/*") if os.path.isfile(f) and open(f, "rb").read(16) == b"SQLite format 3\\x00"]; assert len(dbs) > 0 and any(any(sqlite3.connect(db).execute("SELECT count(*) FROM [" + t[0] + "]").fetchone()[0] == 11 for t in sqlite3.connect(db).execute("SELECT name FROM sqlite_master WHERE type=? AND name NOT LIKE ?", ("table", "sqlite_%")).fetchall()) for db in dbs)\'' (fails before work, as required)
+07:40:59 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: db9b5513': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:40:59 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: db9b5513 (prev=None). Lease extended.
+07:41:17 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: eb2f3932': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+07:41:17 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: eb2f3932 (prev=258445c0). Lease extended.
+07:41:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4800.0s, completed milestones: 3)
+07:41:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:41:19 [WARNING] superstate_eval.extractor: Task terminal-bench/constraints-scheduling has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:41:31 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -f /app/meeting_scheduled.ics && ./run-in-container test -f /app/alice_calendar.ics && ./run-in-container test -f /app/bob_calendar.ics && ./run-in-container test -f /app/carol_calendar.ics && ./run-in-container python3 -c \'exec("import datetime, re\\nwith open(\\"/app/meeting_scheduled.ics\\") as f: txt = f.read().strip()\\nassert txt.startswith(\\"BEGIN:VCALENDAR\\") and txt.endswith(\\"END:VCALENDAR\\")\\nassert \\"VERSION:2.0\\" in txt and \\"PRODID:\\" in txt\\nassert \\"BEGIN:VEVENT\\" in txt and \\"END:VEVENT\\" in txt\\nassert \\"Team Planning Meeting\\" in txt\\nassert \\"alice@example.com\\" in txt and \\"bob@example.com\\" in txt and \\"carol@example.com\\" in txt\\nassert re.search(\\"DTSTART[^:\\\\n]*:[0-9]{8}T[0-9]{6}Z\\", txt) and re.search(\\"DTEND[^:\\\\n]*:[0-9]{8}T[0-9]{6}Z\\", txt)\\ndef parse_ics(p):\\n  evs = []\\n  with open(p) as f: raw = re.sub(\\"[\\\\r\\\\n]+[ \\\\t]\\", \\"\\", f.read())\\n  for b in re.findall(\\"BEGIN:VEVENT.*?END:VEVENT\\", raw, re.S):\\n    sm = re.search(\\"DTSTART[^:\\\\n]*:([0-9]{8}T[0-9]{6})\\", b)\\n    em = re.search(\\"DTEND[^:\\\\n]*:([0-9]{8}T[0-9]{6})\\", b)\\n    dm = re.search(\\"DURATION[^:\\\\n]*:PT(?:([0-9]+)H)?(?:([0-9]+)M)?\\", b)\\n    if sm and (em or dm):\\n      s = datetime.datetime.strptime(sm.group(1), \\"%Y%m%dT%H%M%S\\")\\n      e = datetime.datetime.strptime(em.group(1), \\"%Y%m%dT%H%M%S\\") if em else s + datetime.timedelta(hours=int(dm.group(1) or 0), minutes=int(dm.group(2) or 0))\\n      evs.append((s, e))\\n  return evs\\nmevs = parse_ics(\\"/app/meeting_scheduled.ics\\")\\nassert len(mevs) == 1\\nms, me = mevs[0]\\nassert (me - ms).total_seconds() == 3600\\nassert ms.year == 2024 and ms.month == 1 and 15 <= ms.day <= 19 and 0 <= ms.weekday() <= 4\\nassert ms.time() >= datetime.time(9, 0) and me.time() <= datetime.time(18, 0)\\nassert ms.time() >= datetime.time(9, 0) and me.time() <= datetime.time(14, 0)\\nassert ms.time() >= datetime.time(10, 0)\\nif ms.weekday() in (1, 3): assert me.time() <= datetime.time(16, 30)\\nassert ms.time() >= datetime.time(9, 0) and me.time() <= datetime.time(17, 0)\\nassert me.time() <= datetime.time(12, 0) or ms.time() >= datetime.time(12, 30)\\ncals = [\\"/app/alice_calendar.ics\\", \\"/app/bob_calendar.ics\\", \\"/app/carol_calendar.ics\\"]\\nfor cp in cals:\\n  for es, ee in parse_ics(cp):\\n    if cp == \\"/app/carol_calendar.ics\\" and ee.time() >= datetime.time(16, 45): ee = ee + datetime.timedelta(minutes=15)\\n    assert max(ms, es) >= min(me, ee)\\ndef is_free(s):\\n  e = s + datetime.timedelta(hours=1)\\n  if s.time() < datetime.time(10, 0) or e.time() > datetime.time(14, 0): return False\\n  if not (e.time() <= datetime.time(12, 0) or s.time() >= datetime.time(12, 30)): return False\\n  if s.weekday() in (1, 3) and e.time() > datetime.time(16, 30): return False\\n  for cp in cals:\\n    for es, ee in parse_ics(cp):\\n      if cp == \\"/app/carol_calendar.ics\\" and ee.time() >= datetime.time(16, 45): ee = ee + datetime.timedelta(minutes=15)\\n      if max(s, es) < min(e, ee): return False\\n  return True\\nopts = [datetime.datetime(2024, 1, d, m // 60, m % 60) for d in range(15, 20) for m in range(9 * 60, 18 * 60) if is_free(datetime.datetime(2024, 1, d, m // 60, m % 60))]\\nassert len(opts) > 0\\nnon_mon = [s for s in opts if s.weekday() != 0]\\nbest = min(non_mon) if non_mon else min(opts)\\nassert ms == best\\n")\'' (fails before work, as required)
+07:41:32 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 7e916b23': granted +1200.0s lease extension (Total budget: 2400.0s, completed milestones: 1)
+07:41:32 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 7e916b23 (prev=None). Lease extended.
+07:41:33 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/constraints-scheduling arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:41:33 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: fede8a8633f1
+07:41:33 [INFO] superstate_eval.runner: Finished task 'terminal-bench/constraints-scheduling' [Arm: superstate_daemon]: Passed=True, WallClock=341.28s, Cost=$0.28, TotalGrantedBudget=4800.0s
+07:41:33 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.2820 turns=1 341s  
+07:41:33 [INFO] superstate_eval.paired: -> dna-insert [superstate_daemon] [run 1/2] (budget: 1800s)
+07:41:33 [INFO] superstate_eval.runner: Starting task 'terminal-bench/dna-insert' [Arm: superstate_daemon] (Base budget: 1800.0s)
+07:41:33 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 5.9 GB reported available], Disk limit=5, User override=None)
+07:41:33 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_dna-insert-superstate_daemon-670492e0/workspace from alexgshaw/dna-insert:20251031:/app (1 entries)
+07:41:33 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1ad55258de3d (alexgshaw/dna-insert:20251031)
+07:41:33 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/dna-insert/tests for the agent phase
+07:41:33 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:41:33 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:42:05 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 242653af': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:42:05 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 242653af (prev=aa70a7cf). Lease extended.
+07:42:06 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+07:42:06 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:42:07 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:42:19 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:42:19 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1b81569cb0f9
+07:42:19 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=378.36s, Cost=$0.30, TotalGrantedBudget=4500.0s
+07:42:19 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.3001 turns=1 378s  
+07:42:19 [INFO] superstate_eval.paired: -> dna-insert [superstate_daemon] [run 2/2] (budget: 1800s)
+07:42:19 [INFO] superstate_eval.runner: Starting task 'terminal-bench/dna-insert' [Arm: superstate_daemon] (Base budget: 1800.0s)
+07:42:19 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 5.6 GB reported available], Disk limit=5, User override=None)
+07:42:19 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_dna-insert-superstate_daemon-7ba6d342/workspace from alexgshaw/dna-insert:20251031:/app (1 entries)
+07:42:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ed0ab0ccacb1 (alexgshaw/dna-insert:20251031)
+07:42:19 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:42:19 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:42:35 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3600.0s, completed milestones: 2)
+07:42:35 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:42:35 [WARNING] superstate_eval.extractor: Task terminal-bench/constraints-scheduling has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:42:49 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/constraints-scheduling arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:42:49 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e14a9dd376ab
+07:42:49 [INFO] superstate_eval.runner: Finished task 'terminal-bench/constraints-scheduling' [Arm: superstate_daemon]: Passed=True, WallClock=428.04s, Cost=$0.32, TotalGrantedBudget=3600.0s
+07:42:49 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.3190 turns=1 428s  
+07:42:49 [INFO] superstate_eval.paired: -> extract-elf [superstate_daemon] [run 1/2] (budget: 900s)
+07:42:49 [INFO] superstate_eval.runner: Starting task 'terminal-bench/extract-elf' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:42:49 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.0 GB reported available], Disk limit=5, User override=None)
+07:42:49 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_extract-elf-superstate_daemon-67ac36b9/workspace from alexgshaw/extract-elf:20251031:/app (2 entries)
+07:42:50 [INFO] superstate_eval.docker_manager: Spawned sandbox container: c3b1cb51664d (alexgshaw/extract-elf:20251031)
+07:42:50 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/extract-elf/tests for the agent phase
+07:42:50 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:42:50 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:43:47 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:44:13 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored 'test -s extract.js && ./run-in-container sh -c \'node extract.js /app/a.out > out.json && node -e \'\\\'\'const d = JSON.parse(require("fs").readFileSync("out.json")); const e = Object.entries(d); if (e.length === 0) process.exit(1); for (const [k, v] of e) { if (!/^[0-9]+$/.test(k) || typeof v !== "number" || !Number.isInteger(v)) process.exit(1); }\'\\\'\'\'' (fails before work, as required)
+07:44:13 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 662070e3': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:44:13 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 662070e3 (prev=None). Lease extended.
+07:44:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 8ec55246': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:44:30 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 8ec55246 (prev=db9b5513). Lease extended.
+07:44:31 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+07:44:31 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:44:31 [WARNING] superstate_eval.extractor: Task terminal-bench/db-wal-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:44:45 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/db-wal-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:44:45 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: a0525e5177e0
+07:44:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/db-wal-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=371.66s, Cost=$0.32, TotalGrantedBudget=4500.0s
+07:44:45 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.3218 turns=1 372s  
+07:44:45 [INFO] superstate_eval.paired: -> extract-elf [superstate_daemon] [run 2/2] (budget: 900s)
+07:44:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/extract-elf' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:44:45 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.1 GB reported available], Disk limit=5, User override=None)
+07:44:45 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_extract-elf-superstate_daemon-86a07722/workspace from alexgshaw/extract-elf:20251031:/app (2 entries)
+07:44:45 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0ed9ab485e07 (alexgshaw/extract-elf:20251031)
+07:44:45 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:44:45 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:44:52 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:45:50 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:46:27 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored 'test -f extract.js && ./run-in-container node extract.js /app/a.out > out.json && test -s out.json && ./run-in-container node -e \'const d = JSON.parse(require("fs").readFileSync("out.json", "utf8")); if (!d || typeof d !== "object" || Array.isArray(d) || Object.keys(d).length === 0) process.exit(1); for (const [k, v] of Object.entries(d)) { if (!/^\\d+$/.test(k) || !Number.isInteger(v)) process.exit(1); }\'' (fails before work, as required)
+07:46:27 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: f8cdd9f3': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:46:27 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: f8cdd9f3 (prev=None). Lease extended.
+07:46:42 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:47:18 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored 'test -s primers.fasta && ./run-in-container python3 -c \'exec("import subprocess, sys\\n\\ndef rf(p):\\n    e, cid, s = [], None, []\\n    for l in open(p):\\n        l = l.strip()\\n        if not l: continue\\n        if l.startswith(\\">\\"):\\n            if cid: e.append((cid, \\"\\".join(s).upper()))\\n            cid, s = l[1:], []\\n        else: s.append(l)\\n    if cid: e.append((cid, \\"\\".join(s).upper()))\\n    return e\\n\\ndef tm(seq):\\n    return float(subprocess.check_output([\\"oligotm\\", \\"-tp\\", \\"1\\", \\"-sc\\", \\"1\\", \\"-mv\\", \\"50\\", \\"-dv\\", \\"2\\", \\"-n\\", \\"0.8\\", \\"-d\\", \\"500\\", seq]).decode().strip())\\n\\ntr = str.maketrans(\\"ATCGatcg\\", \\"TAGCtagc\\")\\nrc = lambda s: s.translate(tr)[::-1]\\n\\nseqs = rf(\\"sequences.fasta\\")\\ninp = next((s for cid, s in seqs if \\"input\\" in cid.lower()), seqs[0][1])\\nout = next((s for cid, s in seqs if \\"output\\" in cid.lower() or \\"desired\\" in cid.lower()), seqs[1][1])\\n\\nprimers = rf(\\"primers.fasta\\")\\nassert len(primers) == 2, f\\"Expected 1 primer pair (2 primers), found {len(primers)}\\"\\nF_seq, R_seq = primers[0][1], primers[1][1]\\n\\nN = len(inp)\\nT2 = inp + inp\\nO2 = out + out\\nvalid = False\\n\\nfor LF in range(15, min(46, len(F_seq) + 1)):\\n    F_ann, F_over = F_seq[-LF:], F_seq[:-LF]\\n    pos_F = [i for i in range(N) if T2[i:i+LF] == F_ann]\\n    if not pos_F: continue\\n    for LR in range(15, min(46, len(R_seq) + 1)):\\n        R_ann, R_over = R_seq[-LR:], R_seq[:-LR]\\n        R_rc = rc(R_ann)\\n        pos_R = [(i + LR - 1) % N for i in range(N) if T2[i:i+LR] == R_rc]\\n        if not pos_R: continue\\n        for pF in pos_F:\\n            for pR in pos_R:\\n                clen = (pR - pF) % N + 1\\n                prod = T2[pF:pF+clen] + rc(R_over) + F_over\\n                if len(prod) == len(out) and (prod in O2 or rc(prod) in O2):\\n                    tmF, tmR = tm(F_ann), tm(R_ann)\\n                    if 58.0 <= tmF <= 72.0 and 58.0 <= tmR <= 72.0 and abs(tmF - tmR) <= 5.0:\\n                        valid = True\\n                        break\\n            if valid: break\\n        if valid: break\\n    if valid: break\\n\\nassert valid, \\"Primers do not satisfy all Q5 SDM requirements\\"\\n")\'' (fails before work, as required)
+07:47:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: a5f8f3d6': granted +1200.0s lease extension (Total budget: 3000.0s, completed milestones: 1)
+07:47:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: a5f8f3d6 (prev=None). Lease extended.
+07:47:24 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored 'test -f sequences.fasta && test -s primers.fasta && ./run-in-container python3 -c \'exec("import subprocess, sys\\ndef rf(p):\\n r, h, s = [], \\"\\", []\\n for line in open(p):\\n  line = line.strip()\\n  if not line: continue\\n  if line.startswith(\\">\\"):\\n   if h: r.append((h, \\"\\".join(s).upper()))\\n   h, s = line[1:], []\\n  else: s.append(line.replace(\\" \\", \\"\\"))\\n if h: r.append((h, \\"\\".join(s).upper()))\\n return r\\ntr = str.maketrans(\\"ACGTUWSMKRYBDHVN\\", \\"TGCAAWKMYSRVHDBN\\")\\ndef rc(s): return s.translate(tr)[::-1]\\ndef get_ann(p, t):\\n tt = t + t\\n for l in range(len(p), 0, -1):\\n  sub = p[-l:]\\n  if sub in tt: return sub\\n return \\"\\"\\ndef get_tm(s):\\n cmd = [\\"oligotm\\", \\"-tp\\", \\"1\\", \\"-sc\\", \\"1\\", \\"-mv\\", \\"50\\", \\"-dv\\", \\"2\\", \\"-n\\", \\"0.8\\", \\"-d\\", \\"500\\", s]\\n return float(subprocess.check_output(cmd).decode().strip())\\nseqs = rf(\\"sequences.fasta\\")\\nassert len(seqs) >= 2\\ninp = next((s for h, s in seqs if \\"input\\" in h.lower()), seqs[0][1] if len(seqs) >= 2 else \\"\\")\\nout = next((s for h, s in seqs if \\"output\\" in h.lower() or \\"desired\\" in h.lower()), seqs[1][1] if len(seqs) >= 2 else \\"\\")\\nassert inp and out\\nprs = rf(\\"primers.fasta\\")\\nassert len(prs) >= 2 and len(prs) % 2 == 0\\nP = inp\\nif len(get_ann(prs[0][1], P)) < 15 and len(get_ann(prs[0][1], rc(P))) >= 15: P, out = rc(P), rc(out)\\nfor i in range(0, len(prs), 2):\\n F_hdr, F = prs[i]\\n R_hdr, R = prs[i + 1]\\n assert not (\\"rev\\" in F_hdr.lower() and \\"fwd\\" in R_hdr.lower())\\n ann_F = get_ann(F, P)\\n ann_R = get_ann(R, rc(P))\\n assert 15 <= len(ann_F) <= 45\\n assert 15 <= len(ann_R) <= 45\\n ovh_F = F[:-len(ann_F)] if len(ann_F) < len(F) else \\"\\"\\n ovh_R = R[:-len(ann_R)] if len(ann_R) < len(R) else \\"\\"\\n tm_F = get_tm(ann_F)\\n tm_R = get_tm(ann_R)\\n assert 58.0 <= tm_F <= 72.0\\n assert 58.0 <= tm_R <= 72.0\\n assert abs(tm_F - tm_R) <= 5.0 + 1e-5\\n pos_F = (P + P).find(ann_F) % len(P)\\n rc_ann_R = rc(ann_R)\\n pos_R_start = (P + P).find(rc_ann_R) % len(P)\\n pos_R_5prime = (pos_R_start + len(ann_R)) % len(P)\\n end_idx = pos_R_5prime if pos_R_5prime > pos_F else (pos_R_5prime + len(P))\\n replicated = (P + P)[pos_F:end_idx]\\n P = replicated + rc(ovh_R) + ovh_F\\nassert len(P) == len(out) and (P in (out + out) or P in rc(out + out))")\'' (fails before work, as required)
+07:47:24 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 631dadbe': granted +1200.0s lease extension (Total budget: 3000.0s, completed milestones: 1)
+07:47:24 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 631dadbe (prev=None). Lease extended.
+07:53:16 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: ea95bb40': granted +1200.0s lease extension (Total budget: 4200.0s, completed milestones: 2)
+07:53:16 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: ea95bb40 (prev=631dadbe). Lease extended.
+07:53:17 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 5400.0s, completed milestones: 3)
+07:53:17 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:53:18 [WARNING] superstate_eval.extractor: Task terminal-bench/dna-insert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:53:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 46407fe1': granted +1200.0s lease extension (Total budget: 4200.0s, completed milestones: 2)
+07:53:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 46407fe1 (prev=a5f8f3d6). Lease extended.
+07:53:19 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 5400.0s, completed milestones: 3)
+07:53:19 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:53:20 [WARNING] superstate_eval.extractor: Task terminal-bench/dna-insert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:53:31 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/dna-insert arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+07:53:31 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ed0ab0ccacb1
+07:53:32 [INFO] superstate_eval.runner: Finished task 'terminal-bench/dna-insert' [Arm: superstate_daemon]: Passed=False, WallClock=672.73s, Cost=$0.41, TotalGrantedBudget=5400.0s
+07:53:32 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=False cost=$0.4144 turns=1 673s  Verification failed: Reward was 0.0 < 1.0
+Output:         )
+E       AssertionError: Tm of forward and reverse primers must be within 5 degrees C of each other.
+E       assert 5.44379099999999 <= 5
+E        +  where 5.44379099999999 = abs((68.194043 - 62.750252))
+
+/tests/test_outputs.py:100: AssertionError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_primers - AssertionError: Tm of forward...
+============================== 1 failed in 0.09s ===============================
+
+07:53:32 [INFO] superstate_eval.paired: -> gcode-to-text [superstate_daemon] [run 1/2] (budget: 900s)
+07:53:32 [INFO] superstate_eval.runner: Starting task 'terminal-bench/gcode-to-text' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:53:32 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.2 GB reported available], Disk limit=5, User override=None)
+07:53:32 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_gcode-to-text-superstate_daemon-68b8a7b2/workspace from alexgshaw/gcode-to-text:20251031:/app (1 entries)
+07:53:32 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f4df260972f7 (alexgshaw/gcode-to-text:20251031)
+07:53:32 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/gcode-to-text/tests for the agent phase
+07:53:32 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:53:32 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:53:54 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 921582a1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:53:54 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 921582a1 (prev=f8cdd9f3). Lease extended.
+07:53:54 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:53:55 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+07:53:55 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:53:56 [WARNING] superstate_eval.extractor: Task terminal-bench/extract-elf has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:54:05 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -f /app/out.txt && ./run-in-container test -s /app/out.txt && ./run-in-container grep -q '[^[:space:]]' /app/out.txt" (fails before work, as required)
+07:54:06 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: d6fa5311': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:54:06 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: d6fa5311 (prev=None). Lease extended.
+07:54:11 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/extract-elf arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:54:11 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0ed9ab485e07
+07:54:11 [INFO] superstate_eval.runner: Finished task 'terminal-bench/extract-elf' [Arm: superstate_daemon]: Passed=True, WallClock=566.50s, Cost=$0.45, TotalGrantedBudget=4500.0s
+07:54:11 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.4506 turns=1 567s  
+07:54:11 [INFO] superstate_eval.paired: -> gcode-to-text [superstate_daemon] [run 2/2] (budget: 900s)
+07:54:11 [INFO] superstate_eval.runner: Starting task 'terminal-bench/gcode-to-text' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:54:11 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.3 GB reported available], Disk limit=5, User override=None)
+07:54:11 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_gcode-to-text-superstate_daemon-c8cc55f3/workspace from alexgshaw/gcode-to-text:20251031:/app (1 entries)
+07:54:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d8209e3da90c (alexgshaw/gcode-to-text:20251031)
+07:54:12 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:54:12 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:54:31 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:54:38 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/dna-insert arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+07:54:38 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1ad55258de3d
+07:54:39 [INFO] superstate_eval.runner: Finished task 'terminal-bench/dna-insert' [Arm: superstate_daemon]: Passed=False, WallClock=785.77s, Cost=$0.55, TotalGrantedBudget=5400.0s
+07:54:39 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=False cost=$0.5521 turns=1 786s  Verification failed: Reward was 0.0 < 1.0
+Output:  rev_tm <= 72, (
+            "Reverse primer must have a Tm between 58 and 72 degrees C."
+        )
+E       AssertionError: Reverse primer must have a Tm between 58 and 72 degrees C.
+E       assert 58 <= 55.857347
+
+/tests/test_outputs.py:97: AssertionError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_primers - AssertionError: Reverse prime...
+============================== 1 failed in 0.20s ===============================
+
+07:54:39 [INFO] superstate_eval.paired: -> git-leak-recovery [superstate_daemon] [run 1/2] (budget: 900s)
+07:54:39 [INFO] superstate_eval.runner: Starting task 'terminal-bench/git-leak-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:54:39 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 6.1 GB reported available], Disk limit=5, User override=None)
+07:54:39 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_git-leak-recovery-superstate_daemon-ec565c63/workspace from alexgshaw/git-leak-recovery:20251031:/app (57 entries)
+07:54:39 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 339dfc3c33d8 (alexgshaw/git-leak-recovery:20251031)
+07:54:39 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/git-leak-recovery/tests for the agent phase
+07:54:39 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:54:39 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:54:44 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -s /app/out.txt && ./run-in-container grep -q '[^[:space:]]' /app/out.txt" (fails before work, as required)
+07:54:45 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: da5ff06b': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:54:45 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: da5ff06b (prev=None). Lease extended.
+07:57:29 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: c30c2f2e': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:57:29 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: c30c2f2e (prev=662070e3). Lease extended.
+07:57:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+07:57:30 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:57:31 [WARNING] superstate_eval.extractor: Task terminal-bench/extract-elf has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:57:32 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:57:32 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:57:32 [WARNING] superstate_eval.extractor: Task terminal-bench/gcode-to-text has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:57:42 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/gcode-to-text arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:57:42 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d8209e3da90c
+07:57:42 [INFO] superstate_eval.runner: Finished task 'terminal-bench/gcode-to-text' [Arm: superstate_daemon]: Passed=True, WallClock=210.91s, Cost=$0.20, TotalGrantedBudget=3300.0s
+07:57:42 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.1985 turns=1 211s  
+07:57:42 [INFO] superstate_eval.paired: -> git-leak-recovery [superstate_daemon] [run 2/2] (budget: 900s)
+07:57:42 [INFO] superstate_eval.runner: Starting task 'terminal-bench/git-leak-recovery' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:57:42 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 15.8 GB reported available], Disk limit=4, User override=None)
+07:57:42 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_git-leak-recovery-superstate_daemon-9a58251b/workspace from alexgshaw/git-leak-recovery:20251031:/app (57 entries)
+07:57:42 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0fe0e45f3a55 (alexgshaw/git-leak-recovery:20251031)
+07:57:43 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:57:43 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:57:45 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/extract-elf arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:57:45 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: c3b1cb51664d
+07:57:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/extract-elf' [Arm: superstate_daemon]: Passed=True, WallClock=895.75s, Cost=$0.70, TotalGrantedBudget=4500.0s
+07:57:45 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.7017 turns=1 896s  
+07:57:45 [INFO] superstate_eval.paired: -> kv-store-grpc [superstate_daemon] [run 1/2] (budget: 900s)
+07:57:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/kv-store-grpc' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:57:45 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 15.3 GB reported available], Disk limit=4, User override=None)
+07:57:45 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/kv-store-grpc:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_kv-store-grpc-superstate_daemon-c1640fb5/workspace
+07:57:45 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 379c128a4a21 (alexgshaw/kv-store-grpc:20251031)
+07:57:45 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/kv-store-grpc/tests for the agent phase
+07:57:45 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:57:45 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:57:48 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:58:27 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -s /app/secret.txt && ./run-in-container grep -qE \'^secret\\[.+\\]\' /app/secret.txt && ./run-in-container bash -c \'! grep -rqa "secret\\[" /app/repo\' && ./run-in-container bash -c \'! git -C /app/repo log --all --reflog -g -p 2>/dev/null | grep -qa "secret\\["\' && ./run-in-container bash -c \'! git -C /app/repo cat-file --batch-all-objects --batch 2>/dev/null | grep -qa "secret\\["\' && ./run-in-container bash -c \'git -C /app/repo rev-parse --verify HEAD >/dev/null 2>&1\' && ./run-in-container bash -c \'test -z "$(git -C /app/repo status --porcelain)"\'' (fails before work, as required)
+07:58:28 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 1be75f63': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+07:58:28 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 1be75f63 (prev=None). Lease extended.
+07:58:53 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:58:53 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:58:53 [WARNING] superstate_eval.extractor: Task terminal-bench/gcode-to-text has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:59:02 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/gcode-to-text arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:59:02 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f4df260972f7
+07:59:02 [INFO] superstate_eval.runner: Finished task 'terminal-bench/gcode-to-text' [Arm: superstate_daemon]: Passed=True, WallClock=330.52s, Cost=$0.25, TotalGrantedBudget=3300.0s
+07:59:02 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.2495 turns=1 331s  
+07:59:02 [INFO] superstate_eval.paired: -> kv-store-grpc [superstate_daemon] [run 2/2] (budget: 900s)
+07:59:02 [INFO] superstate_eval.runner: Starting task 'terminal-bench/kv-store-grpc' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:59:02 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 13.5 GB reported available], Disk limit=4, User override=None)
+07:59:02 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/kv-store-grpc:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_kv-store-grpc-superstate_daemon-ec56c7c3/workspace
+07:59:02 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1c74ee9ebd9d (alexgshaw/kv-store-grpc:20251031)
+07:59:02 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:59:02 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:59:10 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+07:59:27 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+07:59:27 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+07:59:27 [WARNING] superstate_eval.extractor: Task terminal-bench/git-leak-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+07:59:39 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/git-leak-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+07:59:39 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 339dfc3c33d8
+07:59:39 [INFO] superstate_eval.runner: Finished task 'terminal-bench/git-leak-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=300.17s, Cost=$0.21, TotalGrantedBudget=3300.0s
+07:59:39 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.2084 turns=1 300s  
+07:59:39 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] [run 1/2] (budget: 900s)
+07:59:39 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 900.0s)
+07:59:39 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 13.4 GB reported available], Disk limit=4, User override=None)
+07:59:39 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-d74f8371/workspace
+07:59:39 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 982dd3224010 (alexgshaw/openssl-selfsigned-cert:20251031)
+07:59:39 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/openssl-selfsigned-cert/tests for the agent phase
+07:59:39 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+07:59:39 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:00:18 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container python3 -c "import importlib.metadata as m; assert m.version(\'grpcio\') == \'1.73.0\' and m.version(\'grpcio-tools\') == \'1.73.0\'" && ./run-in-container test -f /app/kv-store.proto && ./run-in-container python3 -c "import re; c = open(\'/app/kv-store.proto\').read(); assert all(re.search(p, c) for p in [r\'service\\s+KVStore\', r\'rpc\\s+GetVal\', r\'rpc\\s+SetVal\', r\'message\\s+GetValRequest\', r\'message\\s+GetValResponse\', r\'message\\s+SetValRequest\', r\'message\\s+SetValResponse\'])" && ./run-in-container python3 -c "import os; fs = os.listdir(\'/app\'); assert any(f.endswith(\'_pb2.py\') and not f.endswith(\'_pb2_grpc.py\') for f in fs) and any(f.endswith(\'_pb2_grpc.py\') for f in fs)" && ./run-in-container test -f /app/server.py && ./run-in-container grep -q "5328" /app/server.py && ./run-in-container python3 -c "import sys; sys.path.insert(0, \'/app\'); import server; assert hasattr(server, \'Server\')" && ./run-in-container python3 -c "import os, sys, importlib, grpc; from pathlib import Path; assert any(p.name.isdigit() and \'server.py\' in p.joinpath(\'cmdline\').read_bytes().decode(errors=\'ignore\') for p in Path(\'/proc\').iterdir() if p.name.isdigit() and p.joinpath(\'cmdline\').exists()); sys.path.insert(0, \'/app\'); g_mod = next(m[:-3] for m in os.listdir(\'/app\') if m.endswith(\'_pb2_grpc.py\')); p_mod = next(m[:-3] for m in os.listdir(\'/app\') if m.endswith(\'_pb2.py\') and not m.endswith(\'_pb2_grpc.py\')); pb2_grpc = importlib.import_module(g_mod); pb2 = importlib.import_module(p_mod); stub = pb2_grpc.KVStoreStub(grpc.insecure_channel(\'localhost:5328\')); k_f = \'value\' if \'value\' in pb2.SetValRequest.DESCRIPTOR.fields_by_name else \'val\'; stub.SetVal(pb2.SetValRequest(key=\'test_key\', **{k_f: 123})); res = stub.GetVal(pb2.GetValRequest(key=\'test_key\')); assert res.val == 123"' (fails before work, as required)
+08:00:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 5a5ef9c6': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:00:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 5a5ef9c6 (prev=None). Lease extended.
+08:00:31 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:00:39 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:00:59 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container bash -c \'test -d /app/ssl && test -f /app/ssl/server.key && [ "$(stat -c %a /app/ssl/server.key)" = "600" ] && openssl rsa -in /app/ssl/server.key -check -noout && openssl rsa -in /app/ssl/server.key -text -noout | grep -q "2048 bit" && test -f /app/ssl/server.crt && openssl x509 -in /app/ssl/server.crt -noout -subject | grep -Eq "O\\s*=\\s*DevOps Team" && openssl x509 -in /app/ssl/server.crt -noout -subject | grep -Eq "CN\\s*=\\s*dev-internal.company.local" && [ "$(openssl x509 -in /app/ssl/server.crt -noout -subject)" = "$(openssl x509 -in /app/ssl/server.crt -noout -issuer)" ] && [ "$(openssl x509 -in /app/ssl/server.crt -noout -modulus)" = "$(openssl rsa -in /app/ssl/server.key -noout -modulus)" ] && openssl x509 -in /app/ssl/server.crt -noout -checkend 31104000 && test -f /app/ssl/server.pem && grep -q "BEGIN.*PRIVATE KEY" /app/ssl/server.pem && grep -q "BEGIN CERTIFICATE" /app/ssl/server.pem && test -f /app/ssl/verification.txt && grep -q "dev-internal.company.local" /app/ssl/verification.txt && grep -Eiq "notBefore|notAfter|[0-9]{4}-[0-9]{2}-[0-9]{2}|GMT|UTC" /app/ssl/verification.txt && grep -Eiq "sha-?256|fingerprint" /app/ssl/verification.txt && test -f /app/check_cert.py && out=$(python3 /app/check_cert.py) && echo "$out" | grep -Fq "Certificate verification successful" && echo "$out" | grep -Fq "dev-internal.company.local" && echo "$out" | grep -Eq "[0-9]{4}-[0-9]{2}-[0-9]{2}"\'' (fails before work, as required)
+08:01:00 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:01:00 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 6b99bade': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:01:00 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 6b99bade (prev=None). Lease extended.
+08:01:28 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container bash -c \'test -s /app/secret.txt && grep -qE "^secret\\[.+\\]" /app/secret.txt && ! grep -rFq "secret[" /app/repo && test -z "$(git -C /app/repo log -g --all -S "secret[" -1 --oneline 2>/dev/null)" && ! git -C /app/repo cat-file --batch-all-objects --batch 2>/dev/null | grep -Fq "secret[" && git -C /app/repo rev-parse --is-inside-work-tree && git -C /app/repo log -1 --oneline\'' (fails before work, as required)
+08:01:28 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 013a4a3b': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:01:28 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 013a4a3b (prev=None). Lease extended.
+08:01:45 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container sh -c \'python3 -m pip show grpcio | grep -q "Version: 1.73.0"\' && ./run-in-container sh -c \'python3 -m pip show grpcio-tools | grep -q "Version: 1.73.0"\' && ./run-in-container test -f /app/kv-store.proto && ./run-in-container grep -E \'service[[:space:]]+KVStore\' /app/kv-store.proto && ./run-in-container grep -E \'rpc[[:space:]]+GetVal\' /app/kv-store.proto && ./run-in-container grep -E \'rpc[[:space:]]+SetVal\' /app/kv-store.proto && ./run-in-container grep -E \'message[[:space:]]+GetValRequest\' /app/kv-store.proto && ./run-in-container grep -E \'message[[:space:]]+GetValResponse\' /app/kv-store.proto && ./run-in-container grep -E \'message[[:space:]]+SetValRequest\' /app/kv-store.proto && ./run-in-container grep -E \'message[[:space:]]+SetValResponse\' /app/kv-store.proto && ./run-in-container python3 -c "import glob; assert len([f for f in glob.glob(\'/app/*_pb2.py\') if not f.endswith(\'_grpc.py\')]) > 0 and len(glob.glob(\'/app/*_pb2_grpc.py\')) > 0" && ./run-in-container test -f /app/server.py && ./run-in-container grep -E \'class[[:space:]]+Server\' /app/server.py && ./run-in-container grep -q "5328" /app/server.py && ./run-in-container pgrep -f server.py && ./run-in-container python3 -c "import sys, glob, importlib, grpc; sys.path.insert(0, \'/app\'); pb2 = importlib.import_module([f for f in glob.glob(\'/app/*_pb2.py\') if not f.endswith(\'_grpc.py\')][0].split(\'/\')[-1][:-3]); pb2_grpc = importlib.import_module(glob.glob(\'/app/*_pb2_grpc.py\')[0].split(\'/\')[-1][:-3]); ch = grpc.insecure_channel(\'localhost:5328\'); grpc.channel_ready_future(ch).result(timeout=5); stub = pb2_grpc.KVStoreStub(ch); kf = \'value\' if \'value\' in pb2.SetValRequest.DESCRIPTOR.fields_by_name else \'val\'; stub.SetVal(pb2.SetValRequest(**{\'key\': \'k1\', kf: 42})); res = stub.GetVal(pb2.GetValRequest(key=\'k1\')); assert getattr(res, \'val\', getattr(res, \'value\', None)) == 42"' (fails before work, as required)
+08:01:46 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 91b7b917': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:01:46 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 91b7b917 (prev=None). Lease extended.
+08:03:18 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:03:18 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:03:19 [WARNING] superstate_eval.extractor: Task terminal-bench/git-leak-recovery has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:03:24 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 9e877f23': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:03:24 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 9e877f23 (prev=5a5ef9c6). Lease extended.
+08:03:25 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+08:03:25 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:03:26 [WARNING] superstate_eval.extractor: Task terminal-bench/kv-store-grpc has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:03:29 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/kv-store-grpc arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+08:03:29 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 379c128a4a21
+08:03:29 [INFO] superstate_eval.runner: Finished task 'terminal-bench/kv-store-grpc' [Arm: superstate_daemon]: Passed=True, WallClock=344.30s, Cost=$0.32, TotalGrantedBudget=4500.0s
+08:03:29 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.3179 turns=1 344s  
+08:03:29 [INFO] superstate_eval.paired: -> openssl-selfsigned-cert [superstate_daemon] [run 2/2] (budget: 900s)
+08:03:29 [INFO] superstate_eval.runner: Starting task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon] (Base budget: 900.0s)
+08:03:29 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 12.7 GB reported available], Disk limit=4, User override=None)
+08:03:29 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/openssl-selfsigned-cert:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-3902a79b/workspace
+08:03:30 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 65f089e828ac (alexgshaw/openssl-selfsigned-cert:20251031)
+08:03:30 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+08:03:30 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:03:32 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/git-leak-recovery arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+08:03:32 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0fe0e45f3a55
+08:03:32 [INFO] superstate_eval.runner: Finished task 'terminal-bench/git-leak-recovery' [Arm: superstate_daemon]: Passed=True, WallClock=349.42s, Cost=$0.26, TotalGrantedBudget=3300.0s
+08:03:32 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.2599 turns=1 349s  
+08:03:32 [INFO] superstate_eval.paired: -> regex-log [superstate_daemon] [run 1/2] (budget: 900s)
+08:03:32 [INFO] superstate_eval.runner: Starting task 'terminal-bench/regex-log' [Arm: superstate_daemon] (Base budget: 900.0s)
+08:03:32 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 12.4 GB reported available], Disk limit=4, User override=None)
+08:03:32 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/regex-log:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_regex-log-superstate_daemon-24d5bc9c/workspace
+08:03:32 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4e857912f37f (alexgshaw/regex-log:20251031)
+08:03:32 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/regex-log/tests for the agent phase
+08:03:32 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+08:03:32 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:03:53 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 16ec417c': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:03:53 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 16ec417c (prev=6b99bade). Lease extended.
+08:03:54 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+08:03:54 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:03:55 [WARNING] superstate_eval.extractor: Task terminal-bench/openssl-selfsigned-cert has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:04:04 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/openssl-selfsigned-cert arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+08:04:04 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 982dd3224010
+08:04:04 [INFO] superstate_eval.runner: Finished task 'terminal-bench/openssl-selfsigned-cert' [Arm: superstate_daemon]: Passed=True, WallClock=265.37s, Cost=$0.24, TotalGrantedBudget=4500.0s
+08:04:04 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.2411 turns=1 265s  
+08:04:04 [INFO] superstate_eval.paired: -> regex-log [superstate_daemon] [run 2/2] (budget: 900s)
+08:04:04 [INFO] superstate_eval.runner: Starting task 'terminal-bench/regex-log' [Arm: superstate_daemon] (Base budget: 900.0s)
+08:04:04 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 12.2 GB reported available], Disk limit=4, User override=None)
+08:04:04 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/regex-log:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_regex-log-superstate_daemon-f2f4182e/workspace
+08:04:04 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 009a3685704e (alexgshaw/regex-log:20251031)
+08:04:04 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+08:04:04 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:04:10 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:38:52 [WARNING] superstate_eval.drivers.agy_cli: agy process exited with code 1: error: There was a network issue connecting to the server, please try again.
+08:38:52 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:38:52 [WARNING] superstate_eval.drivers.agy_cli: agy process exited with code 1: error: There was a network issue connecting to the server, please try again.
+08:38:52 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:39:13 [WARNING] superstate_eval.drivers.agy_cli: agy process exited with code 1: error: There was a network issue connecting to the server, please try again.
+08:39:13 [INFO] superstate_eval.adapters.superstate_daemon: Gate widened by critique: '{"conversation_id":"52f61415-f04b-4d57-bdf4-f12f09200305","status":"ERROR","response":"","error":"There was a network issue connecting to the server, please try again.","duration_seconds":0,"num_turns":1,"usage":{"input_tokens":0,"output_tokens":0,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":0}}'
+08:39:13 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored '{"conversation_id":"52f61415-f04b-4d57-bdf4-f12f09200305","status":"ERROR","response":"","error":"There was a network issue connecting to the server, please try again.","duration_seconds":0,"num_turns":1,"usage":{"input_tokens":0,"output_tokens":0,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":0}}' (fails before work, as required)
+08:39:14 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 678d8718': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:39:14 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 678d8718 (prev=None). Lease extended.
+08:39:42 [INFO] superstate_eval.adapters.superstate_daemon: Gate widened by critique: './run-in-container test -f /app/regex.txt && ./run-in-container python3 -c "import re; p = open(\'/app/regex.txt\').read().strip(); t = \'10.0.0.1 2024-01-01\\n10.0.0.1 2024-01-01 2024-02-29\\n2024-03-01 10.0.0.1\\n2024-01-01\\n256.0.0.1 2024-01-01\\n01.0.0.1 2024-01-01\\na10.0.0.1 2024-01-01\\n10.0.0.1 a2024-01-01\\n10.0.0.1 2024-01-01b\\n10.0.0.1 2024-02-30\\n10.0.0.1 2024-04-31\'; assert re.findall(p, t, re.MULTILINE) == [\'2024-01-01\', \'2024-02-29\', \'2024-03-01\']"'
+08:39:42 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -f /app/regex.txt && ./run-in-container python3 -c "import re; p = open(\'/app/regex.txt\').read().strip(); t = \'10.0.0.1 2024-01-01\\n10.0.0.1 2024-01-01 2024-02-29\\n2024-03-01 10.0.0.1\\n2024-01-01\\n256.0.0.1 2024-01-01\\n01.0.0.1 2024-01-01\\na10.0.0.1 2024-01-01\\n10.0.0.1 a2024-01-01\\n10.0.0.1 2024-01-01b\\n10.0.0.1 2024-02-30\\n10.0.0.1 2024-04-31\'; assert re.findall(p, t, re.MULTILINE) == [\'2024-01-01\', \'2024-02-29\', \'2024-03-01\']"' (fails before work, as required)
+08:39:43 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 9fccb793': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:39:43 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 9fccb793 (prev=None). Lease extended.
+08:40:44 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 77b69484': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:40:44 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 77b69484 (prev=91b7b917). Lease extended.
+08:40:46 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+08:40:46 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:40:47 [WARNING] superstate_eval.extractor: Task terminal-bench/kv-store-grpc has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:40:50 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/kv-store-grpc arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+08:40:50 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1c74ee9ebd9d
+08:40:50 [INFO] superstate_eval.runner: Finished task 'terminal-bench/kv-store-grpc' [Arm: superstate_daemon]: Passed=True, WallClock=2508.11s, Cost=$0.41, TotalGrantedBudget=4500.0s
+08:40:50 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=True cost=$0.4100 turns=2 576s  
+08:40:50 [INFO] superstate_eval.paired: -> vulnerable-secret [superstate_daemon] [run 1/2] (budget: 900s)
+08:40:50 [INFO] superstate_eval.runner: Starting task 'terminal-bench/vulnerable-secret' [Arm: superstate_daemon] (Base budget: 900.0s)
+08:40:50 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 9.5 GB reported available], Disk limit=4, User override=None)
+08:40:50 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_vulnerable-secret-superstate_daemon-9850843c/workspace from alexgshaw/vulnerable-secret:20251031:/app (1 entries)
+08:40:50 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 74c5f31b09b0 (alexgshaw/vulnerable-secret:20251031)
+08:40:51 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/vulnerable-secret/tests for the agent phase
+08:40:51 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+08:40:51 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:41:13 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:41:17 [INFO] superstate_eval.adapters.superstate_daemon: Gate widened by critique: './run-in-container test -f /app/regex.txt && ./run-in-container python3 -c \'import re; p = open("/app/regex.txt").read().strip(); log = "192.168.1.1 2023-01-31\\n2023-12-31 10.0.0.1\\n2023-01-01 10.0.0.1 2023-01-02\\n172.16.0.1 2023-02-29\\n192.168.0.1 2023-04-30\\n0.0.0.0 2023-08-15\\n255.255.255.255 2023-09-09\\nno ip here 2023-01-01\\n192.168.1.1 2023-02-30\\n192.168.1.1 2023-04-31\\n192.168.1.1 2023-13-01\\n192.168.1.1 2023-00-01\\n192.168.1.1 2023-01-00\\n192.168.1.1 2023-01-32\\n192.168.01.1 2023-01-01\\n256.0.0.1 2023-01-01\\na192.168.1.1 2023-01-01\\n192.168.1.1z 2023-01-01\\n192.168.1.1 user 1134-12-1234\\n192.168.1.1 a2023-01-01\\n192.168.1.1 2023-01-01b"; expected = ["2023-01-31", "2023-12-31", "2023-01-02", "2023-02-29", "2023-04-30", "2023-08-15", "2023-09-09"]; assert re.findall(p, log, re.MULTILINE) == expected\''
+08:41:17 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored './run-in-container test -f /app/regex.txt && ./run-in-container python3 -c \'import re; p = open("/app/regex.txt").read().strip(); log = "192.168.1.1 2023-01-31\\n2023-12-31 10.0.0.1\\n2023-01-01 10.0.0.1 2023-01-02\\n172.16.0.1 2023-02-29\\n192.168.0.1 2023-04-30\\n0.0.0.0 2023-08-15\\n255.255.255.255 2023-09-09\\nno ip here 2023-01-01\\n192.168.1.1 2023-02-30\\n192.168.1.1 2023-04-31\\n192.168.1.1 2023-13-01\\n192.168.1.1 2023-00-01\\n192.168.1.1 2023-01-00\\n192.168.1.1 2023-01-32\\n192.168.01.1 2023-01-01\\n256.0.0.1 2023-01-01\\na192.168.1.1 2023-01-01\\n192.168.1.1z 2023-01-01\\n192.168.1.1 user 1134-12-1234\\n192.168.1.1 a2023-01-01\\n192.168.1.1 2023-01-01b"; expected = ["2023-01-31", "2023-12-31", "2023-01-02", "2023-02-29", "2023-04-30", "2023-08-15", "2023-09-09"]; assert re.findall(p, log, re.MULTILINE) == expected\'' (fails before work, as required)
+08:41:17 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b651dfae': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:41:17 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: b651dfae (prev=None). Lease extended.
+08:41:45 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -s /app/results.txt && ./run-in-container grep -q 'FLAG{..*}' /app/results.txt" (fails before work, as required)
+08:41:45 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 21ff138a': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:41:45 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 21ff138a (prev=None). Lease extended.
+08:43:25 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: e23bef98': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:43:25 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: e23bef98 (prev=21ff138a). Lease extended.
+08:43:26 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+08:43:26 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:43:26 [WARNING] superstate_eval.extractor: Task terminal-bench/vulnerable-secret has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:43:38 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/vulnerable-secret arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+08:43:38 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 74c5f31b09b0
+08:43:38 [INFO] superstate_eval.runner: Finished task 'terminal-bench/vulnerable-secret' [Arm: superstate_daemon]: Passed=True, WallClock=167.93s, Cost=$0.16, TotalGrantedBudget=4500.0s
+08:43:38 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.1557 turns=2 168s  
+08:43:38 [INFO] superstate_eval.paired: -> vulnerable-secret [superstate_daemon] [run 2/2] (budget: 900s)
+08:43:38 [INFO] superstate_eval.runner: Starting task 'terminal-bench/vulnerable-secret' [Arm: superstate_daemon] (Base budget: 900.0s)
+08:43:38 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 9.7 GB reported available], Disk limit=4, User override=None)
+08:43:38 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260917-072616/eval-terminal-bench_vulnerable-secret-superstate_daemon-2cddc770/workspace from alexgshaw/vulnerable-secret:20251031:/app (1 entries)
+08:43:38 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e4a21c6e57c1 (alexgshaw/vulnerable-secret:20251031)
+08:43:38 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/vulnerable-secret/tests for the agent phase
+08:43:38 [WARNING] superstate_eval.adapters.superstate_daemon: SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES=1: ignoring the hand-authored fixture so the driver must author the gate. This run measures gate authorship, not the execution model.
+08:43:38 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:44:18 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+08:44:33 [INFO] superstate_eval.adapters.superstate_daemon: Gate: driver authored "./run-in-container test -f /app/results.txt && ./run-in-container grep -q 'FLAG{.*}' /app/results.txt" (fails before work, as required)
+08:44:33 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 1981779a': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+08:44:33 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: 1981779a (prev=None). Lease extended.
+08:45:38 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b5b977a0': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:45:38 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] New git commit detected: b5b977a0 (prev=9fccb793). Lease extended.
+08:45:40 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 4500.0s, completed milestones: 3)
+08:45:40 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:45:40 [WARNING] superstate_eval.extractor: Task terminal-bench/regex-log has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:45:57 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/regex-log arm=superstate_daemon: passed=True, reward=1.0, exit_code=0
+08:45:57 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 4e857912f37f
+08:45:57 [INFO] superstate_eval.runner: Finished task 'terminal-bench/regex-log' [Arm: superstate_daemon]: Passed=True, WallClock=2545.69s, Cost=$0.34, TotalGrantedBudget=4500.0s
+08:45:57 [INFO] superstate_eval.paired:    superstate_daemon [run 1/2]: passed=True cost=$0.3417 turns=1 614s  
+08:46:00 [INFO] superstate_eval.budget_policy: Progress verified for 'Superstate task completion #1': granted +1200.0s lease extension (Total budget: 3300.0s, completed milestones: 2)
+08:46:00 [INFO] superstate_eval.progress_tracker: [SUPERSTATE_DAEMON] Superstate milestone completed (count=1). Lease extended.
+08:46:00 [WARNING] superstate_eval.extractor: Task terminal-bench/regex-log has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:46:02 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/regex-log arm=superstate_daemon: passed=False, reward=None, exit_code=1
+08:46:02 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 009a3685704e
+08:46:02 [INFO] superstate_eval.runner: Finished task 'terminal-bench/regex-log' [Arm: superstate_daemon]: Passed=False, WallClock=2518.32s, Cost=$0.36, TotalGrantedBudget=3300.0s
+08:46:02 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=False cost=$0.3609 turns=1 586s  Verification failed: Verification exit code 1, Missing or invalid verifier/reward.json or reward.txt
+Output: lease
+Hit:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Hit:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+Reading package lists...
+E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem. 
+/tests/test.sh: line 8: curl: command not found
+/tests/test.sh: line 10: /root/.local/bin/env: No such file or directory
+/tests/test.sh: line 19: uvx: command not found
+/tests/test.sh: line 28: /logs/verifier/reward.txt: No such file or directory
+
+08:46:53 [WARNING] superstate_eval.extractor: Task terminal-bench/vulnerable-secret has no base_commit; skipping patch extraction for arm superstate_daemon (set metadata.base_commit_hash in task.toml to capture patches).
+08:47:05 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/vulnerable-secret arm=superstate_daemon: passed=False, reward=0.0, exit_code=0
+08:47:05 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e4a21c6e57c1
+08:47:05 [INFO] superstate_eval.runner: Finished task 'terminal-bench/vulnerable-secret' [Arm: superstate_daemon]: Passed=False, WallClock=206.66s, Cost=$0.17, TotalGrantedBudget=2100.0s
+08:47:05 [INFO] superstate_eval.paired:    superstate_daemon [run 2/2]: passed=False cost=$0.1684 turns=3 207s  Agent run failed: Verification failed (exit code 1):  | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output: 2] No such file or directory: '/app/results.txt'
+
+/tests/test_outputs.py:29: FileNotFoundError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_results_file_exists - AssertionError: F...
+FAILED ../tests/test_outputs.py::test_results_file_contains_secret_flag - Fil...
+FAILED ../tests/test_outputs.py::test_results_file_format - FileNotFoundError...
+============================== 3 failed in 0.07s ===============================
+

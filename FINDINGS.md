@@ -219,6 +219,46 @@ terminal-bench to 17% on datacurve**, both written by us.
 file. It is directionally consistent with the 17% measured for hand-authored datacurve gates,
 but deserves a real measurement before being treated as established.*
 
+## 7. The gate is not an eval convention — it is ours
+
+No task in the corpus ships an agent-facing verification command. All 29 loadable tasks supply
+**only the sealed grader** (21 `bash /tests/test.sh`, 8 `pytest tests/`). The SWE-bench and
+terminal-bench convention is: instruct the agent, let it judge when it is done, grade with
+held-out tests.
+
+So the gate is superstate's own requirement, not a benchmark one, and the question "who writes
+it" has no established answer to borrow. It matters because **the gate is superstate's stopping
+rule** — without one it has no rule distinct from the agent's own judgement, which is vanilla.
+
+Whether replacing that judgement is the right design is genuinely open. Vanilla's own judgement
+is poor on terminal-bench (it quits at a third of the spend it uses on tasks it solves) and
+better than the gate on datacurve (43% against superstate's 23-27%).
+
+## 8. Decomposition may be the mechanism that does not need a gate
+
+Decomposition has run — 56 recorded runs at 2-5 milestones via the `plan.md` path, against 253
+single-milestone `direct_state_handoff` runs. On the 20 tasks run both ways it splits 8-8, and
+**they are the opposite 8**:
+
+| decomposition wins | decomposition loses |
+|---|---|
+| anko 100% vs 33%, httpx 100% vs 44%, arktype 50% vs 11% | chess 0% vs 89%, openssl 33% vs 100%, build-cython 0% vs 91% |
+| db-wal, dna-insert, extract-elf, gcode-to-text, git-leak-recovery | expr, fastapi, katex, kv-store-grpc |
+
+It wins on the hard repository tasks where gates score **17%** precision, and loses badly on the
+artefact tasks where gates score **92%**. That is the inverse of the gate result, and it suggests
+a complementary mechanism: where "done" cannot be stated up front, splitting the work so each
+step is validated by the next one attempting to build on it beats writing a gate you lack the
+information to write.
+
+**Not established.** Those runs pool different eras and configurations, some likely with prompt
+contracts on, and the overall means are 52% multi against 66% single. It is a hypothesis
+generator, not evidence — but it is the first mechanism identified that does not depend on
+somebody authoring a good gate.
+
+Testable: decomposition on datacurve with a deliberately weak gate. If it recovers what the gate
+destroyed, the answer to "who writes the gate" becomes "nobody needs to".
+
 ---
 
 ## Withdrawn
