@@ -34,10 +34,42 @@ The earlier positive figure came almost entirely from terminal-bench. On datacur
 tasks, and the tasks chosen *before* any superstate result existed, so immune to selection on
 the outcome — superstate is behind.
 
-**Hypothesis, not established:** the handoff prompt helps where "done" is a checkable artefact
-the worker produces (write a file, emit a value) and hurts where the task requires exploring an
-unfamiliar codebase, because *"HARD STOP UPON PASSING"* discourages the exploration such a task
-needs. Testable, and worth testing before any further investment.
+### Why: superstate swaps the agent's stopping judgement for the gate's
+
+The sign of the effect tracks **gate precision** — how often a passing gate agrees with the
+sealed grader:
+
+| family | gate precision | effect |
+|---|---|---|
+| terminal-bench | **92%** (12 of 13) | **+10pp** |
+| datacurve | **17%** (2 of 12) | **-11pp** |
+
+On datacurve the gate certifies work the grader rejects in 9 of 11 runs per arm. Superstate
+obeys *"HARD STOP UPON PASSING"* and stops; vanilla, having no gate, carries on. Every effort
+metric confirms it — superstate does about 20% less work:
+
+| | wall | cost | output tokens |
+|---|---|---|---|
+| vanilla | 33.9m | $1.81 | 156k |
+| superstate_mcp | 28.1m | $1.45 | 129k |
+| superstate_daemon | 28.2m | $1.42 | 120k |
+
+And on every task vanilla won, superstate had stopped earlier: 26.3m vs 30.9m, 28.4m vs 35.1m,
+16.1m vs 22.5m.
+
+This is the exact inverse of the terminal-bench result, where *vanilla* quit too early — at
+$0.069 against the $0.187 it spends on tasks it solves — and the gate kept superstate working.
+
+**So the mechanism is one thing, not two: superstate replaces the agent's own judgement about
+when it is done with the gate's.** That is a gain when the gate is the better judge and a loss
+when it is not. Gate quality is not a detail of the evaluation; it is the product.
+
+The datacurve gates are not vacuous — all six testable ones fail on a pristine container — but
+they assert necessary conditions rather than sufficient ones, the same defect fixed for the
+terminal-bench gates on 2026-09-16 and never audited here.
+
+*Arm parity was verified clean for this run: identical model, memory limit and CPU across all
+three arms.*
 
 Read `scripts/effect.py` output, not a p-value. A p-value asks whether the effect differs from
 *exactly* zero, which is not a live hypothesis — the mechanism is identified and visible in

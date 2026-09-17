@@ -241,6 +241,26 @@ every arm -- spurious passes and spurious failures from one defect.
 `UNMEASURABLE_TASKS`. **Before quoting any pass rate, check how many of its tasks were
 gradeable** -- `TaskSpec.tests_dir is None` means no.
 
+## A bad gate is worse than no gate
+
+Superstate replaces the agent's own judgement about when it is done with the gate's. That is a
+gain only when the gate is the better judge. Measured 2026-09-17, the sign of the effect tracks
+gate precision:
+
+| family | gate precision | effect vs vanilla |
+|---|---|---|
+| terminal-bench | 92% | **+10pp** |
+| datacurve | 17% | **-11pp** |
+
+At 17% the gate says "done" on work the sealed grader rejects, superstate stops, and vanilla --
+which has no gate to mislead it -- keeps working and wins. Superstate did ~20% less work on
+every effort metric.
+
+So **audit a family's gates before running it**, with `scripts/gate_precision.py` on any prior
+run and `scripts/validate_gates.py` for discrimination. A gate that is merely non-vacuous is not
+enough: these all fail on a pristine container and still only reach 17%, because they assert
+necessary conditions rather than sufficient ones.
+
 ## Gate precision — read it after every run
 
 The gate tells the worker it is done. When it passes on work the sealed grader rejects, the
