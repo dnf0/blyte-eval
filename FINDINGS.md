@@ -310,6 +310,39 @@ subset rather than of superstate.
 that should have been the first thing done, and was prompted by the user asking three times
 whether functionality had been lost.*
 
+## 10. The product is the routing decision, and nothing implements it
+
+superstate's 2026-09-11 design spec says single-milestone for atomic tasks, multi-milestone for
+complex ones. That choice — not either policy — is where the value is. Pooling every recorded
+run by task and comparing fixed policies against choosing correctly per task:
+
+| family | vanilla | always-single | always-multi | **routed** |
+|---|---|---|---|---|
+| terminal-bench (artefact) | 80% | 89% | **65%** | **95%** |
+| datacurve (repo) | 26% | 31% | 31% | **51%** |
+
+**Always-multi is worse than always-single on artefact tasks** (65% vs 89%), and on repo tasks
+the two fixed policies **tie** at 31%. Choosing per task is worth **+6pp** and **+20pp** over the
+better fixed policy — larger than any effect measured anywhere else in this document.
+
+**The routing signal is not the task family.** On datacurve, `anko`, `arktype` and `httpx` want
+multi while `expr`, `fastapi` and `katex` want single. On terminal-bench, `dna-insert`,
+`extract-elf` and `gcode-to-text` want multi while `build-cython-ext`, `openssl` and
+`chess-best-move` want single. Finding what does predict it is the open research question.
+
+**Nothing makes the choice.** `superstate_mcp` always uses one milestone; `superstate_mcp_planned`
+always asks the planner. The planner is told *"for atomic, single-objective tasks create at most
+1 to 2 milestones"* and decomposes regardless — it gave `chess-best-move`, which writes one move
+to one file, two milestones. The one place adaptivity was meant to live is inert.
+
+**Caveats.** This is *oracle* routing: it picks the winner with hindsight, so 95% and 51% are a
+ceiling rather than an achievable score. It establishes that the decision is worth a great deal,
+not that the decision can be made in advance. Runs are pooled across eras and configurations with
+small n per cell.
+
+This supersedes the framing of every earlier section. A fixed-policy comparison — which is what
+every experiment here has been — cannot measure a system whose design is to choose.
+
 ---
 
 ## Withdrawn
