@@ -191,7 +191,11 @@ class SuperstateAdapter(AgentAdapter):
         no_worktree: bool = False,
         zero_turn_planning: bool = False,
         worktree: bool = False,
+        name: str = "superstate",
     ) -> None:
+        # A planned (multi-milestone) configuration must not report the same name as a
+        # zero-turn one, or the results JSON pools two different conditions silently.
+        self._name = name
         if superstate_bin is not None and engine == DEFAULT_ENGINE:
             bin_path = Path(superstate_bin)
             if "superstate/target" in str(bin_path) or bin_path in ENGINE_PATHS.get(ENGINE_RUST, ()):
@@ -238,7 +242,7 @@ class SuperstateAdapter(AgentAdapter):
 
     @property
     def name(self) -> str:
-        return "superstate"
+        return self._name
 
     def get_provenance(self) -> Dict[str, Any]:
         """Report which state engine actually drove this run."""

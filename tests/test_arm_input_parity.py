@@ -86,3 +86,28 @@ def test_daemon_reports_driver_turns_not_state_steps() -> None:
     assert '"daemon_steps": self.step_count' in src, (
         "step count is still worth recording -- under its own name, in provenance"
     )
+
+
+def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
+    """Two configurations must never report the same name, or results pool them silently.
+
+    `superstate_mcp_planned` is the multi-milestone configuration and `superstate_mcp` the
+    zero-turn one. Both returned harness_name="superstate_mcp" until 2026-09-17, so running
+    them together would have written one indistinguishable set of rows and the comparison
+    the run existed to make would have been invisible.
+    """
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner.__new__(AblationRunner)
+    pairs = [
+        ("superstate_mcp", "superstate_mcp_planned"),
+        ("superstate_rust", "superstate_rust_planned"),
+    ]
+    for zero_turn, planned in pairs:
+        a = runner._get_adapter(zero_turn)  # noqa: SLF001
+        b = runner._get_adapter(planned)  # noqa: SLF001
+        assert a.name != b.name, (
+            f"{zero_turn!r} and {planned!r} both report {a.name!r}; "
+            "results from the two would be pooled"
+        )
+        assert "planned" in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"

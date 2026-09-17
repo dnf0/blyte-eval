@@ -111,7 +111,9 @@ class AblationRunner:
         elif arm in ("superstate_rust", "superstate-rust", "rust", "arm_d", "arm-d"):
             return SuperstateAdapter(engine=ENGINE_RUST, zero_turn_planning=True)
         elif arm in ("superstate_rust_planned", "superstate_rust_2phase"):
-            return SuperstateAdapter(engine=ENGINE_RUST, zero_turn_planning=False)
+            return SuperstateAdapter(
+                engine=ENGINE_RUST, zero_turn_planning=False, name="superstate_rust_planned"
+            )
         # These names are ALIASES of one configuration, not distinct conditions. Benchmarking
         # two of them against each other compares a config with itself. `superstate_solo` is
         # included here: it is the interactive turn-based baseline (Python turn loop driving
@@ -129,7 +131,12 @@ class AblationRunner:
         elif arm in ("superstate_mcp_worktree", "superstate-mcp-worktree", "mcp_worktree"):
             return SuperstateMcpAdapter(no_worktree=False, worktree=True, zero_turn_planning=True)
         elif arm in ("superstate_mcp_planned", "superstate-mcp-planned"):
-            return SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=False)
+            # The name MUST differ from superstate_mcp: TaskRunResult.harness_name is what
+            # lands in the results JSON, so sharing a name would pool a multi-milestone arm
+            # with a single-milestone one and make the comparison invisible.
+            return SuperstateMcpAdapter(
+                no_worktree=True, zero_turn_planning=False, name="superstate_mcp_planned"
+            )
         elif arm in ("superstate_agent_mcp", "superstate-agent-mcp", "agent_mcp", "agent-mcp"):
             return SuperstateAgentMcpAdapter()
         elif arm in ("superstate_agent_mcp_worktree", "superstate-agent-mcp-worktree", "agent_mcp_worktree"):
