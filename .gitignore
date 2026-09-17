@@ -12,6 +12,7 @@ htmlcov/
 runs/
 .eval_runs/
 results/harvested_*
+results/offline_review_cache/
 
 # Ephemeral agent execution state
 .agent-state/

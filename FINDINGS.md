@@ -297,7 +297,31 @@ Used: `init`, `prompt`, `next`, `ready`, `exec`, `status`, `note`, `doctor`, `da
 **`review` matters most**, because it is a determination of "done" that is *not* a gate. Every
 result in this document concerns a mechanism where the success criterion must be written before
 the work exists — which is why it scores 92% where the instruction states that criterion and 17%
-where it does not. Reviewing the diff has no such requirement. It has never been run.
+where it does not. Reviewing the diff has no such requirement.
+
+An offline evaluation of adversarial code review (`scripts/eval_offline_review.py`) against the
+67 harvested run diffs from 2026-09-17 (29 false passes where gate passed but sealed grader failed,
+and 38 true-pass controls) measures this directly:
+
+| family | false passes caught (recall) | true passes blocked (false alarm) | base gate prec | gate+review prec |
+|---|---|---|---|---|
+| datacurve | **16/18 (88.9%)** | 5/5 (100.0%) | 21.7% | 0.0% |
+| terminal-bench | **6/11 (54.5%)** | 18/33 (54.5%) | 75.0% | 75.0% |
+| **overall** | **22/29 (75.9%)** | **23/38 (60.5%)** | **56.7%** | **68.2%** |
+
+*Findings from the offline review measurement:*
+1. **Review solves the 17%-gate blind spot:** On datacurve, adversarial review caught **16 of the 18 (88.9%)**
+   runs where the vacuous/weak gate passed but the sealed grader failed (e.g. spotting unhandled edge cases
+   in `expr-try-catch-errors`, broken scoping in `anko-typed-variable-bindings`, and incorrect syntax
+   rules in `meriyah`).
+2. **Review as a hard gate over-blocks:** Because the reviewer evaluates against general production
+   standards rather than minimal synthetic benchmark test suites, it flagged 60.5% of genuine passing
+   runs (e.g. noticing that `build-cython-ext` only committed a dirty submodule pointer, that `regex-log`
+   captures internal subgroups, or that `katex-multicolumn-array-spans` left intermediate spanned indices
+   undefined). Gating completion strictly on `ReviewReport::has_blocking_issues` would trap workers in
+   rejection loops.
+3. **Design implication:** Review is effective as an **advisory feedback channel** that feeds actionable
+   findings back to the implementer subagent during retry loops, not as an uncalibrated binary pass/fail gate.
 
 **`state sync` is the second.** It is what would let the plan change as the work reveals what the
 work actually is, rather than committing to a decomposition made in ignorance.
@@ -306,9 +330,7 @@ So every number here describes `init` + `prompt` + a gate, over a single-node gr
 smallest usable subset of the product, and the +3pp should be read as a measurement of that
 subset rather than of superstate.
 
-*Found on 2026-09-17 by diffing `superstate --help` against the adapters' call sites — a check
-that should have been the first thing done, and was prompted by the user asking three times
-whether functionality had been lost.*
+*Section 9 updated on 2026-09-17 with the offline review evaluation across 67 harvested run diffs.*
 
 ## 10. The +20pp routing lift was an in-sample artifact
 
