@@ -85,6 +85,21 @@ GATE_TURN_TIMEOUT_SEC = 900.0
 # Gate derivation is OFF by default. The daemon executes against a contract it is handed;
 # authoring its own inverts the handoff and makes the contract vary per run.
 GATE_DERIVATION_ENV_FLAG = "SUPERSTATE_EVAL_DERIVE_GATES"
+IGNORE_FIXTURES_ENV_FLAG = "SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES"
+
+
+def ignore_gate_fixtures() -> bool:
+    """Whether to skip the hand-authored fixture so the driver must author the gate.
+
+    Exists for one measurement: can an agent write a gate better than its own judgement
+    about when it is done? That is the mechanism handoff-first rests on, and without this
+    flag it cannot be tested -- a fixture exists for all 30 tasks and short-circuits
+    _derive_gate before derivation is ever reached, whatever DERIVE_GATES is set to.
+
+    Default OFF. A run with it on measures gate authorship, not the execution model, and
+    its pass rates are not comparable with any other run.
+    """
+    return os.environ.get(IGNORE_FIXTURES_ENV_FLAG, "0").strip().lower() in ("1", "true", "yes", "on")
 
 
 def gate_derivation_enabled() -> bool:
@@ -336,7 +351,13 @@ class SuperstateDaemonAdapter(AgentAdapter):
         # A hand-authored fixture is the contract of record. Deriving the gate per run made
         # it a random variable on top of a constant spec, so no two runs measured the same
         # task; see lab/benchmarks/gate_fixtures.py.
-        fixture = agent_gate_for(getattr(task, "name", "") or "")
+        fixture = None if ignore_gate_fixtures() else agent_gate_for(getattr(task, "name", "") or "")
+        if ignore_gate_fixtures():
+            logger.warning(
+                "%s=1: ignoring the hand-authored fixture so the driver must author the "
+                "gate. This run measures gate authorship, not the execution model.",
+                IGNORE_FIXTURES_ENV_FLAG,
+            )
         if fixture:
             # A fixture that already passes cannot discriminate, so the daemon would
             # complete on its first turn having done nothing. That is a defect in the

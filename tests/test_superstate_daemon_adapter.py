@@ -424,3 +424,32 @@ def test_daemon_records_its_gate_verdict(tmp_path: Path) -> None:
     recorder.write_run_record(telemetry=None)
     run_record = json.loads((logs / "run.json").read_text(encoding="utf-8"))
     assert run_record["gates_failed"], "a failing gate must show up in run.json"
+
+
+def test_fixture_short_circuits_derivation_unless_explicitly_ignored(tmp_path: Path) -> None:
+    """Gate authorship cannot be measured while a fixture exists for every task.
+
+    _derive_gate returns the hand-authored fixture before reaching the derivation path, so
+    SUPERSTATE_EVAL_DERIVE_GATES=1 alone measures nothing -- GATE_FIXTURES covers all 30
+    tasks. The bypass flag is what makes the question testable: can an agent write a gate
+    better than its own judgement about when it is done?
+    """
+    import os
+
+    from lab.engine.adapters.superstate_daemon import (
+        IGNORE_FIXTURES_ENV_FLAG,
+        ignore_gate_fixtures,
+    )
+    from lab.benchmarks.gate_fixtures import agent_gate_for
+
+    assert agent_gate_for("db-wal-recovery"), "precondition: this task has a fixture"
+    assert not ignore_gate_fixtures(), "the bypass must default OFF"
+
+    src = (
+        Path(__file__).resolve().parents[1] / "lab/engine/adapters/superstate_daemon.py"
+    ).read_text(encoding="utf-8")
+    assert "None if ignore_gate_fixtures() else agent_gate_for" in src, (
+        "the fixture lookup must be skippable, or derivation is unreachable"
+    )
+    assert IGNORE_FIXTURES_ENV_FLAG == "SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES"
+    assert os.environ.get(IGNORE_FIXTURES_ENV_FLAG) is None or ignore_gate_fixtures()
