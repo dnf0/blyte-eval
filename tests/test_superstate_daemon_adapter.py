@@ -453,3 +453,34 @@ def test_fixture_short_circuits_derivation_unless_explicitly_ignored(tmp_path: P
     )
     assert IGNORE_FIXTURES_ENV_FLAG == "SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES"
     assert os.environ.get(IGNORE_FIXTURES_ENV_FLAG) is None or ignore_gate_fixtures()
+
+
+def test_daemon_adapter_passes_review_blocking_flags(tmp_path: Path) -> None:
+    """When advisory review is enabled, both --advisory-review and --review-blocking must be passed."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy", advisory_review=True)
+    assert adapter.advisory_review is True
+    assert adapter.review_blocking is True
+    assert adapter.get_provenance()["advisory_review"] is True
+    assert adapter.get_provenance()["review_blocking"] is True
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = SimpleNamespace(returncode=0)
+        adapter._spawn_daemon(tmp_path)  # noqa: SLF001
+        called_cmd = mock_run.call_args[0][0]
+        assert "--advisory-review" in called_cmd
+        assert "--review-blocking" in called_cmd
+
+
+def test_daemon_adapter_can_disable_review_blocking(tmp_path: Path) -> None:
+    """When review_blocking is explicitly False, only --advisory-review is passed."""
+    adapter = SuperstateDaemonAdapter(driver_preset="agy", advisory_review=True, review_blocking=False)
+    assert adapter.advisory_review is True
+    assert adapter.review_blocking is False
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = SimpleNamespace(returncode=0)
+        adapter._spawn_daemon(tmp_path)  # noqa: SLF001
+        called_cmd = mock_run.call_args[0][0]
+        assert "--advisory-review" in called_cmd
+        assert "--review-blocking" not in called_cmd
+
