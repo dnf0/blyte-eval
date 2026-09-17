@@ -11,6 +11,7 @@ htmlcov/
 # Local benchmark and evaluation runs
 runs/
 .eval_runs/
+results/harvested_*
 
 # Ephemeral agent execution state
 .agent-state/
