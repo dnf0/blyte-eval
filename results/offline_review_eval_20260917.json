@@ -1,443 +1,12 @@
 {
   "model": "gemini-3.8-flash-low",
   "total_evaluated": 67,
+  "valid_evaluated": 67,
   "bug_recall": 0.7586206896551724,
   "false_alarm_rate": 0.6052631578947368,
   "baseline_precision": 0.5671641791044776,
   "gate_review_precision": 0.6818181818181818,
   "results": [
-    {
-      "run_id": "eval-terminal-bench_constraints-scheduling-superstate_mcp-bd7232df",
-      "task_id": "terminal-bench/constraints-scheduling",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The scheduled meeting iCalendar file adheres to all specified formatting requirements, metadata headers, and attendees, scheduling a 1-hour slot on Wednesday, January 17, 2024, from 11:00 to 12:00 UTC within all hard availability constraints.",
-      "findings": [],
-      "duration_seconds": 4.027316833147779
-    },
-    {
-      "run_id": "eval-terminal-bench_build-cython-ext-superstate_mcp-d021312f",
-      "task_id": "terminal-bench/build-cython-ext",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The candidate diff merely adds an uninitialized git submodule/subproject commit for pyknotid rather than including the necessary source code changes, build fixes, or Cython/NumPy 2.x compatibility updates required by the task.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "pyknotid",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "The repository was added as a git submodule (mode 160000) commit reference rather than committing the actual source files and required patches to fix Cython/NumPy 2.0+ compatibility and extension compilation.",
-          "suggested_fix": "Add the actual cloned source tree or commit the modifications made to pyknotid directly (e.g., updating Cython definitions, setup.py, and NumPy C-API usage for NumPy 2.x compatibility) rather than committing a git submodule link."
-        }
-      ],
-      "duration_seconds": 4.341454333160073
-    },
-    {
-      "run_id": "eval-terminal-bench_code-from-image-superstate_mcp-e8d1aa20",
-      "task_id": "terminal-bench/code-from-image",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The diff writes the expected hash output to output.txt conforming to the specified requirement and hint.",
-      "findings": [],
-      "duration_seconds": 4.399068790953606
-    },
-    {
-      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_mcp-90ca124e",
-      "task_id": "terminal-bench/db-wal-recovery",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The diff fixes the binary WAL file and produces recovered.json containing all 11 recovered records formatted and sorted by id according to specifications.",
-      "findings": [],
-      "duration_seconds": 3.238393957959488
-    },
-    {
-      "run_id": "eval-terminal-bench_chess-best-move-superstate_mcp-210d556c",
-      "task_id": "terminal-bench/chess-best-move",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The candidate diff hardcodes two standard opening pawn moves (e2e4, g2g4) which are inconsistent with solving an actual position from chess_board.png and include an objectively weakening/losing move (g2g4).",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "move.txt",
-          "line_range": [
-            1,
-            2
-          ],
-          "problem": "The moves listed ('e2e4' and 'g2g4') appear to be arbitrary placeholders rather than calculated best or winning moves for the specific board state depicted in 'chess_board.png'. Furthermore, playing both 'e2e4' and 'g2g4' as candidate winning moves is contradictory, as 'g2g4' severely weakens the king's wing and is rarely a winning move alongside 'e2e4'.",
-          "suggested_fix": "Analyze 'chess_board.png' to identify the exact board position and record only the genuine winning move(s) for White in [src][dst] UCI format, one per line."
-        }
-      ],
-      "duration_seconds": 7.446284791920334
-    },
-    {
-      "run_id": "eval-terminal-bench_dna-insert-superstate_mcp-134d1408",
-      "task_id": "terminal-bench/dna-insert",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The candidate primers violate melting temperature constraints when evaluated using primer3's oligotm parameter specifications.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "primers.fasta",
-          "line_range": [
-            1,
-            4
-          ],
-          "problem": "The forward primer 'AGCAAGGGCGAGGAG' (15 nt, GC content ~66.7%) has a calculated oligotm melting temperature around 52-54 \u00b0C under the specified parameters (-tp 1 -sc 1 -mv 50 -dv 2 -n 0.8 -d 500), which falls below the mandatory minimum threshold of 58 \u00b0C and creates a Tm discrepancy greater than 5 \u00b0C relative to the reverse primer.",
-          "suggested_fix": "Extend the annealing region of the forward primer to at least 18-20 nucleotides along the template sequence so that its oligotm melting temperature reaches between 58 and 72 \u00b0C and remains within 5 \u00b0C of the reverse primer."
-        }
-      ],
-      "duration_seconds": 4.520847292151302
-    },
-    {
-      "run_id": "eval-terminal-bench_git-leak-recovery-superstate_mcp-45a872aa",
-      "task_id": "terminal-bench/git-leak-recovery",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The secret was recovered and written to secret.txt, but requirement 2 to clean up the secret from the repository history and objects was completely omitted.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "repo",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "Requirement 2 ('clean up the secret in that repo to make sure it cannot be found anywhere in that repo') was not performed; dangling git objects, reflogs, or git history containing the secret were not purged from /app/repo.",
-          "suggested_fix": "Purge the dangling commits/blobs containing the secret from /app/repo (e.g., expire reflogs and run `git prune` / `git gc --prune=now`)."
-        }
-      ],
-      "duration_seconds": 3.847734082955867
-    },
-    {
-      "run_id": "eval-terminal-bench_extract-elf-superstate_mcp-07965aa9",
-      "task_id": "terminal-bench/extract-elf",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 2,
-      "total_findings_count": 3,
-      "summary": "Implementation fails to handle standard program load headers and other sections, parses 64-bit ELF section header fields at incorrect offsets, and hardcodes 32-bit little-endian reading for symbols and memory.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "extract.js",
-          "line_range": [
-            206,
-            230
-          ],
-          "problem": "Incorrect struct layout offsets when parsing 64-bit ELF section headers (Elf64_Shdr). In Elf64_Shdr, sh_type is 4 bytes followed by a 4-byte padding/alignment, making sh_flags at offset +8 (8 bytes), sh_addr at offset +16 (8 bytes), sh_offset at offset +24 (8 bytes), sh_size at offset +32 (8 bytes), sh_link at offset +40 (4 bytes), sh_info at offset +44 (4 bytes), sh_addralign at offset +48 (8 bytes), and sh_entsize at offset +56 (8 bytes). However, for 32-bit ELF (Elf32_Shdr), sh_addr is at offset +12, sh_offset is at +16, sh_size is at +20, sh_link is at +24, sh_info is at +28, sh_addralign is at +32, and sh_entsize is at +36. While some ternary checks exist, the code incorrectly mixes types and offsets (e.g., in Elf64, sh_link and sh_info are 4-byte words at 40 and 44, but entsize/addralign are read as xword).",
-          "suggested_fix": "Separate Elf32_Shdr and Elf64_Shdr parsers or use a properly verified offset lookup table according to the ELF specification."
-        },
-        {
-          "severity": "High",
-          "file": "extract.js",
-          "line_range": [
-            64,
-            80
-          ],
-          "problem": "The memory extraction logic strictly filters for only ['.text', '.data', '.rodata'] sections, missing other allocated sections (such as .bss, .got, .plt, or read-only data variants like .rodata.*), which risks failing the requirement to extract at least 75% of memory values present in reference solutions, or failing on binaries where program headers (PT_LOAD segments) define the loaded memory image.",
-          "suggested_fix": "Iterate over all sections with the SHF_ALLOC flag (flags & 0x2) or parse program headers (PT_LOAD) to map all loadable memory segments."
-        },
-        {
-          "severity": "Medium",
-          "file": "extract.js",
-          "line_range": [
-            76,
-            78
-          ],
-          "problem": "Endianness is hardcoded to little-endian when reading memory words (`data.readUInt32LE`) and symbol tables (`parseSymbol`), ignoring `elfHeader.isLittleEndian` and `elfHeader.data` detected in the ELF header.",
-          "suggested_fix": "Use endian-aware read methods (e.g., `isLittleEndian ? data.readUInt32LE(i) : data.readUInt32BE(i)`) based on `elfHeader.isLittleEndian`."
-        }
-      ],
-      "duration_seconds": 7.673559417016804
-    },
-    {
-      "run_id": "eval-terminal-bench_kv-store-grpc-superstate_mcp-62957072",
-      "task_id": "terminal-bench/kv-store-grpc",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The implementation correctly creates the protobuf definitions, generated gRPC code, and implements the gRPC KVStore server listening on port 5328.",
-      "findings": [],
-      "duration_seconds": 3.328087375033647
-    },
-    {
-      "run_id": "eval-terminal-bench_gcode-to-text-superstate_mcp-59bc65de",
-      "task_id": "terminal-bench/gcode-to-text",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The candidate diff creates out.txt with the decoded text content from the G-code file according to task requirements.",
-      "findings": [],
-      "duration_seconds": 5.486890665953979
-    },
-    {
-      "run_id": "eval-terminal-bench_log-summary-date-ranges-superstate_mcp-830568de",
-      "task_id": "terminal-bench/log-summary-date-ranges",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The diff directly creates summary.csv with the required schema, periods, severities, and structure.",
-      "findings": [],
-      "duration_seconds": 3.6975162499584258
-    },
-    {
-      "run_id": "eval-terminal-bench_modernize-scientific-stack-superstate_mcp-a30d8e9d",
-      "task_id": "terminal-bench/modernize-scientific-stack",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The candidate diff correctly creates the modernized climate analysis script and requirements file adhering to all specified requirements without blocking defects.",
-      "findings": [],
-      "duration_seconds": 3.6305617089383304
-    },
-    {
-      "run_id": "eval-terminal-bench_merge-diff-arc-agi-task-superstate_mcp-b2130acc",
-      "task_id": "terminal-bench/merge-diff-arc-agi-task",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The diff records `/app/repo` as an uncommitted git submodule reference (mode 160000) rather than including the required repository files such as `algo.py`.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "repo",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "The repository at `/app/repo` is committed as a git submodule pointer (mode 160000) instead of committing the actual files, leaving `/app/repo/algo.py` missing from the tree and unable to be verified.",
-          "suggested_fix": "Ensure `/app/repo` contains the actual resolved files including `algo.py` containing the `map` function, and remove any submodule entry from the parent git repository index if files are expected to be directly accessible."
-        }
-      ],
-      "duration_seconds": 4.338067707838491
-    },
-    {
-      "run_id": "eval-terminal-bench_largest-eigenval-superstate_mcp-1d259dc5",
-      "task_id": "terminal-bench/largest-eigenval",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 2,
-      "summary": "The implementation introduces a high-severity bug where real dominant eigenpairs are returned as complex if any other eigenvalue in the spectrum has a non-zero imaginary component, and includes build/cache artifacts in git tracking.",
-      "findings": [
-        {
-          "severity": "High",
-          "file": "_eigen_core.cpp",
-          "line_range": [
-            19,
-            46
-          ],
-          "problem": "The branch condition `if (all_real)` checks whether ALL eigenvalues of the matrix have zero imaginary parts rather than checking whether the selected dominant eigenvalue `evals(best_idx)` is real. If the dominant eigenvalue is real but there exist other complex conjugate eigenvalue pairs in the spectrum, the function incorrectly returns a complex eigenvalue and complex eigenvector array instead of real double types.",
-          "suggested_fix": "Check `evals(best_idx).imag() == 0.0` (or `std::abs(evals(best_idx).imag()) < tolerance`) instead of checking whether all eigenvalues across the spectrum are real."
-        },
-        {
-          "severity": "Low",
-          "file": "__pycache__/eigen.cpython-313.pyc",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "Compiled Python bytecode (`.pyc`) and compiled shared object (`.so`) files are tracked in git instead of being excluded via `.gitignore`.",
-          "suggested_fix": "Remove `__pycache__/eigen.cpython-313.pyc` and `_eigen_core.cpython-313-x86_64-linux-gnu.so` from version control and add them to `.gitignore`."
-        }
-      ],
-      "duration_seconds": 5.789743667002767
-    },
-    {
-      "run_id": "eval-terminal-bench_polyglot-c-py-superstate_mcp-9541d27f",
-      "task_id": "terminal-bench/polyglot-c-py",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The polyglot file implementation successfully parses and executes under both Python 3.12 and GCC 13.2 to calculate and print Fibonacci numbers.",
-      "findings": [],
-      "duration_seconds": 3.107592833926901
-    },
-    {
-      "run_id": "eval-terminal-bench_multi-source-data-merger-superstate_mcp-c2bdbbb3",
-      "task_id": "terminal-bench/multi-source-data-merger",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 1,
-      "summary": "The merge script handles field mapping, prioritized conflict resolution, and output file generation, but pandas DataFrame conversion can produce NaN values that trigger type mismatches or schema issues.",
-      "findings": [
-        {
-          "severity": "Medium",
-          "file": "merge.py",
-          "line_range": [
-            117,
-            120
-          ],
-          "problem": "When string fields (such as 'status', 'name', 'email', or 'created_date') are None for a user, pandas DataFrame populates them with NaN (float) objects, which may cause string column typing errors or preserve unexpected null representation when writing to parquet.",
-          "suggested_fix": "Explicitly set string columns to nullable string dtype (e.g. using `df_merged[col] = df_merged[col].astype('string')` or `'object'`) before exporting to parquet."
-        }
-      ],
-      "duration_seconds": 5.4679890419356525
-    },
-    {
-      "run_id": "eval-terminal-bench_openssl-selfsigned-cert-superstate_mcp-55715b5c",
-      "task_id": "terminal-bench/openssl-selfsigned-cert",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The candidate diff creates the required TLS certificate, key, combined PEM, verification text, and Python validation script, but fails to set the mandated 600 file permissions on the private key file.",
-      "findings": [
-        {
-          "severity": "High",
-          "file": "ssl/server.key",
-          "line_range": [
-            1,
-            28
-          ],
-          "problem": "The private key file 'ssl/server.key' was created with file mode 100644 (world-readable) instead of the required 600 (read/write by owner only) permissions.",
-          "suggested_fix": "Change the file permissions of /app/ssl/server.key to 600 (e.g., run `chmod 600 /app/ssl/server.key` or set file mode 100600 in git)."
-        }
-      ],
-      "duration_seconds": 7.442082790890709
-    },
-    {
-      "run_id": "eval-terminal-bench_regex-log-superstate_mcp-d87fdac6",
-      "task_id": "terminal-bench/regex-log",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 2,
-      "total_findings_count": 2,
-      "summary": "The regex fails to guarantee matching only the last date in a line when a date is followed by another date or trailing non-date text, and re.findall returns tuples of capturing groups instead of the full date string.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "/app/regex.txt",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "Using multiple capturing groups inside the date pattern causes `re.findall` to return a tuple of group matches (e.g., `('2023-01-01', '01-01', '01')`) rather than the matched date string or single target group, because `re.findall` returns tuples of all capture groups when two or more capturing groups exist in the regex.",
-          "suggested_fix": "Change inner capturing groups within the date expression to non-capturing groups `(?:...)` so that either only a single capturing group captures the full date, or all groups are non-capturing and the overall match represents the date."
-        },
-        {
-          "severity": "Critical",
-          "file": "/app/regex.txt",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "The pattern does not ensure that the matched date is the last date on the line. Because `.*` is greedy, it attempts to match the latest date possible, but if the last date on a line cannot match (or if backtracking allows), or if text follows, the regex does not assert that no subsequent valid date exists before the end of the line (e.g. using `(?!.*(?<![a-zA-Z0-9])\\d{4}-...)` or consuming the remainder of the line without any date).",
-          "suggested_fix": "Ensure that after the date match, the line contains no subsequent valid dates by asserting `(?![^\\r\\n]*(?<![a-zA-Z0-9])[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|[12][0-9]))(?![a-zA-Z0-9]))` or matching `[^\\r\\n]*$` where intermediate content is forbidden from containing dates."
-        }
-      ],
-      "duration_seconds": 7.55353945819661
-    },
-    {
-      "run_id": "eval-terminal-bench_sanitize-git-repo-superstate_mcp-4276b547",
-      "task_id": "terminal-bench/sanitize-git-repo",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The diff merely records an uncommitted dirty subproject state rather than committing sanitized changes to files within the repository.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "dclm",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "Modifications to sanitize sensitive keys were left uncommitted inside the 'dclm' submodule (indicated by the '-dirty' suffix), resulting in no actual file sanitization being committed to the repository.",
-          "suggested_fix": "Commit the sanitization changes inside the 'dclm' repository/submodule, and then update the parent repository's submodule commit reference to the new clean commit hash."
-        }
-      ],
-      "duration_seconds": 7.231287207920104
-    },
-    {
-      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_daemon-b18f8689",
-      "task_id": "datacurve/arktype-json-schema-refs-dependencies",
-      "arm": "superstate_daemon",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The candidate diff contains multiple issues where the git diff was truncated before critical implementations or file definitions could be evaluated.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "ark/docs/components/dts/schema.ts",
-          "line_range": [
-            1,
-            3
-          ],
-          "problem": "The provided git candidate diff is truncated mid-file ([... truncated 177199 characters ...]), omitting the actual implementation diffs for dependencies/dependentRequired, dependentSchemas, $ref resolution and error formatting, enum deep equality, and if/then/else conditional schemas.",
-          "suggested_fix": "Provide the full, untruncated git diff containing the parser, semantic transformations, and schema runtime changes so that the code can be statically reviewed against the task requirements."
-        }
-      ],
-      "duration_seconds": 4.527002125047147
-    },
     {
       "run_id": "eval-datacurve_anko-typed-variable-bindings-superstate_daemon-c4bf6ac6",
       "task_id": "datacurve/anko-typed-variable-bindings",
@@ -503,15 +72,15 @@
       "duration_seconds": 10.672465916955844
     },
     {
-      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_mcp-8cb72b26",
+      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_daemon-b18f8689",
       "task_id": "datacurve/arktype-json-schema-refs-dependencies",
-      "arm": "superstate_mcp",
+      "arm": "superstate_daemon",
       "gate_passed": true,
       "grader_passed": false,
       "has_blocking_issues": true,
       "blocking_findings_count": 1,
       "total_findings_count": 1,
-      "summary": "The candidate git diff was truncated before any of the implementation changes corresponding to dependencies, $ref, enum deep equality, and if/then/else conditional schemas could be included.",
+      "summary": "The candidate diff contains multiple issues where the git diff was truncated before critical implementations or file definitions could be evaluated.",
       "findings": [
         {
           "severity": "Critical",
@@ -520,11 +89,11 @@
             1,
             3
           ],
-          "problem": "The provided git diff was truncated after modifying only auto-generated type declarations (`ark/docs/components/dts/schema.ts`), omitting all substantive implementations for dependencies/dependentRequired/dependentSchemas, recursive local $ref resolution, error message enforcement, deep-equality enum checking, and if/then/else conditionals.",
-          "suggested_fix": "Provide the complete git diff containing the schema parser, validation, and reference resolution logic implementing the required keywords and error messages."
+          "problem": "The provided git candidate diff is truncated mid-file ([... truncated 177199 characters ...]), omitting the actual implementation diffs for dependencies/dependentRequired, dependentSchemas, $ref resolution and error formatting, enum deep equality, and if/then/else conditional schemas.",
+          "suggested_fix": "Provide the full, untruncated git diff containing the parser, semantic transformations, and schema runtime changes so that the code can be statically reviewed against the task requirements."
         }
       ],
-      "duration_seconds": 5.550683667184785
+      "duration_seconds": 4.527002125047147
     },
     {
       "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_daemon-b5ac6f9a",
@@ -591,17 +160,28 @@
       "duration_seconds": 8.683893708046526
     },
     {
-      "run_id": "eval-terminal-bench_vulnerable-secret-superstate_mcp-57db06d5",
-      "task_id": "terminal-bench/vulnerable-secret",
+      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_mcp-8cb72b26",
+      "task_id": "datacurve/arktype-json-schema-refs-dependencies",
       "arm": "superstate_mcp",
       "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The diff successfully adds the required results.txt file containing the extracted flag in the specified format.",
-      "findings": [],
-      "duration_seconds": 16.764160624938086
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate git diff was truncated before any of the implementation changes corresponding to dependencies, $ref, enum deep equality, and if/then/else conditional schemas could be included.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "ark/docs/components/dts/schema.ts",
+          "line_range": [
+            1,
+            3
+          ],
+          "problem": "The provided git diff was truncated after modifying only auto-generated type declarations (`ark/docs/components/dts/schema.ts`), omitting all substantive implementations for dependencies/dependentRequired/dependentSchemas, recursive local $ref resolution, error message enforcement, deep-equality enum checking, and if/then/else conditionals.",
+          "suggested_fix": "Provide the complete git diff containing the schema parser, validation, and reference resolution logic implementing the required keywords and error messages."
+        }
+      ],
+      "duration_seconds": 5.550683667184785
     },
     {
       "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_mcp-f017fd98",
@@ -1076,53 +656,6 @@
       "duration_seconds": 9.558975042076781
     },
     {
-      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_daemon-966e40a2",
-      "task_id": "datacurve/httpx-multipart-response-parsing",
-      "arm": "superstate_daemon",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "Implementation correctly satisfies the multipart response parsing specifications across sync and async streams, framing rules, and header validation, with no blocking issues.",
-      "findings": [],
-      "duration_seconds": 4.176684458972886
-    },
-    {
-      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_daemon-bd09a600",
-      "task_id": "datacurve/httpx-multipart-response-parsing",
-      "arm": "superstate_daemon",
-      "gate_passed": true,
-      "grader_passed": false,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 2,
-      "summary": "Implementation introduces multipart parsing for Response with minor issues in header continuation rstripping and trailing line terminator handling at EOF.",
-      "findings": [
-        {
-          "severity": "Medium",
-          "file": "httpx/_multipart.py",
-          "line_range": [
-            579,
-            584
-          ],
-          "problem": "Header continuation lines are rstripped of spaces/tabs (`line.rstrip(b\" \\t\")`), which unintentionally strips valid trailing whitespace from folded header values instead of appending the full continuation line as required.",
-          "suggested_fix": "Append `line` directly without `.rstrip(b\" \\t\")` after validating that `line.strip(b\" \\t\")` is non-empty."
-        },
-        {
-          "severity": "Low",
-          "file": "httpx/_multipart.py",
-          "line_range": [
-            440,
-            461
-          ],
-          "problem": "In `_split_lines_sync` and `_split_lines_async`, when the stream ends with a trailing CR or LF, the final iteration over remaining `buf` can yield an empty line with an empty terminator after the final newline instead of stopping, which may affect boundary parsing if content terminates exactly on a line boundary.",
-          "suggested_fix": "Ensure `buf` handling at EOF terminates once any final empty trailing segment following a terminator is handled, or only yield non-empty trailing bytes when no terminator remains."
-        }
-      ],
-      "duration_seconds": 5.84164374996908
-    },
-    {
       "run_id": "eval-datacurve_fastapi-deprecation-response-headers-superstate_mcp-663cde42",
       "task_id": "datacurve/fastapi-deprecation-response-headers",
       "arm": "superstate_mcp",
@@ -1187,6 +720,53 @@
       "duration_seconds": 8.961810667067766
     },
     {
+      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_daemon-966e40a2",
+      "task_id": "datacurve/httpx-multipart-response-parsing",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "Implementation correctly satisfies the multipart response parsing specifications across sync and async streams, framing rules, and header validation, with no blocking issues.",
+      "findings": [],
+      "duration_seconds": 4.176684458972886
+    },
+    {
+      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_daemon-bd09a600",
+      "task_id": "datacurve/httpx-multipart-response-parsing",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 2,
+      "summary": "Implementation introduces multipart parsing for Response with minor issues in header continuation rstripping and trailing line terminator handling at EOF.",
+      "findings": [
+        {
+          "severity": "Medium",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            579,
+            584
+          ],
+          "problem": "Header continuation lines are rstripped of spaces/tabs (`line.rstrip(b\" \\t\")`), which unintentionally strips valid trailing whitespace from folded header values instead of appending the full continuation line as required.",
+          "suggested_fix": "Append `line` directly without `.rstrip(b\" \\t\")` after validating that `line.strip(b\" \\t\")` is non-empty."
+        },
+        {
+          "severity": "Low",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            440,
+            461
+          ],
+          "problem": "In `_split_lines_sync` and `_split_lines_async`, when the stream ends with a trailing CR or LF, the final iteration over remaining `buf` can yield an empty line with an empty terminator after the final newline instead of stopping, which may affect boundary parsing if content terminates exactly on a line boundary.",
+          "suggested_fix": "Ensure `buf` handling at EOF terminates once any final empty trailing segment following a terminator is handled, or only yield non-empty trailing bytes when no terminator remains."
+        }
+      ],
+      "duration_seconds": 5.84164374996908
+    },
+    {
       "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_mcp-00b521a8",
       "task_id": "datacurve/httpx-multipart-response-parsing",
       "arm": "superstate_mcp",
@@ -1229,114 +809,6 @@
         }
       ],
       "duration_seconds": 10.74222020804882
-    },
-    {
-      "run_id": "eval-datacurve_katex-multicolumn-array-spans-superstate_mcp-d519c2af",
-      "task_id": "datacurve/katex-multicolumn-array-spans",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 3,
-      "total_findings_count": 4,
-      "summary": "The diff introduces \\multicolumn parsing and rendering support, but suffers from severe layout misalignment in HTML output where spanned cells leave trailing columns unpopulated and misalignment across rows, along with unrendered column rules specified in \\multicolumn.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            418,
-            431
-          ],
-          "problem": "In `htmlBuilder`, `outrow[col] = elt` places the multicolumn cell only in column index `col` and advances by `col += span`, leaving `outrow` undefined for intermediate spanned indices. When iterating each column index `c` later (line 613: `const elem = row[c]`), `elem` is undefined for all spanned slots, causing `TypeError: Cannot read properties of undefined (reading 'depth')` on any row containing a multi-row array or any row evaluated against that column index.",
-          "suggested_fix": "Populate empty placeholder elements (or an empty span) for all spanned indices `col + 1` through `col + span - 1` in `outrow` so column iterations do not encounter undefined elements, or adjust HTML table construction to properly represent multi-column cell spans across columns."
-        },
-        {
-          "severity": "Critical",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            629,
-            634
-          ],
-          "problem": "The HTML vertical column generator (`makeVList`) renders columns independently as vertical lists. Setting `textAlign` on the multicolumn element and its wrapper inside column `c` does not span the physical visual width across the adjacent `span - 1` columns; adjacent columns still render normally with their own contents/spacers, causing overlapping or misaligned content rather than genuine multi-column spanning in HTML.",
-          "suggested_fix": "Implement proper column width aggregation across spanned columns (including intervening `arraycolsep` spacers) or structure the row/cell layout to span across multiple vertical column lists."
-        },
-        {
-          "severity": "High",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            1354,
-            1370
-          ],
-          "problem": "The requirement specifies supporting optional vertical bars in the alignment spec (e.g. `|c|`), and the parser computes `beforeRules` and `afterRules`, but neither `htmlBuilder` nor `mathmlBuilder` renders these vertical rules for the multicolumn cell.",
-          "suggested_fix": "In `htmlBuilder` and `mathmlBuilder`, inspect `mc.beforeRules` and `mc.afterRules` to render the appropriate vertical borders or rule elements on the cell."
-        },
-        {
-          "severity": "Medium",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            1324,
-            1332
-          ],
-          "problem": "The validation check for `exceeds remaining columns in current row` only checks `currentArray.declaredCols > 0`. For matrix environments (`matrix`, `pmatrix`, etc.) and `aligned`, `declaredCols` is initialized to 0, which bypasses validation when `n` exceeds the number of columns in rows of those environments.",
-          "suggested_fix": "Track declared/maximum columns for matrix/aligned environments where column counts are bounded or established by row lengths, and validate that `n` does not exceed the remaining columns."
-        }
-      ],
-      "duration_seconds": 8.243071832926944
-    },
-    {
-      "run_id": "eval-datacurve_katex-multicolumn-array-spans-superstate_mcp-8ced679f",
-      "task_id": "datacurve/katex-multicolumn-array-spans",
-      "arm": "superstate_mcp",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 2,
-      "total_findings_count": 4,
-      "summary": "The implementation introduces \\multicolumn with MathML attributes and validation, but fails to check column limits in environments without pre-declared column counts, incorrectly builds multi-column cells across rows in the HTML vertical-list builder, and does not render vertical rules defined in \\multicolumn alignment specs.",
-      "findings": [
-        {
-          "severity": "High",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            1332,
-            1340
-          ],
-          "problem": "In environments where totalCols is undefined during parsing (e.g. matrix, cases, smallmatrix, aligned), exceeding remaining columns in a row is not validated because state.totalCols is undefined, violating the requirement to throw ParseError when n exceeds remaining columns in the current row.",
-          "suggested_fix": "Track or validate column limits across rows consistently in matrix/aligned environments, or infer row widths when validating columns against the environment structure."
-        },
-        {
-          "severity": "Critical",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            397,
-            424
-          ],
-          "problem": "In htmlBuilder, cells spanning multiple columns (span > 1) place content in outrow[colIdx] and leave intermediate indices undefined, but KaTeX arrays assemble vertical columns column-by-column (for c = 0 to nc - 1). Any row with undefined entries causes row[c] to be undefined or incorrectly offset against other rows, causing runtime errors or misaligned table layouts.",
-          "suggested_fix": "Fill intermediate spanned columns in outrow with empty placeholder DOM nodes or adjust the column-wise vlist construction and width calculations to properly account for multi-column horizontal spans."
-        },
-        {
-          "severity": "Medium",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            1325,
-            1330
-          ],
-          "problem": "The task specifies optional '|' for vertical rules in \\multicolumn alignment, but any vertical rules specified in rawAlign (e.g., '|c|') are ignored and never rendered in the HTML/MathML builders.",
-          "suggested_fix": "Parse leading and trailing vertical rules from rawAlign and incorporate them into the vertical separator rendering for the cell's row."
-        },
-        {
-          "severity": "Medium",
-          "file": "src/environments/array.ts",
-          "line_range": [
-            636,
-            639
-          ],
-          "problem": "colAlign calculation checks 'colElems.length === 1 && singleCustomAlign', which only applies custom alignment if the entire column consists of a single row. Multi-row tables with \\multicolumn will fall back to default column alignment instead of overriding it for the cell.",
-          "suggested_fix": "Apply alignment styles directly to individual cell elements or cell wrappers rather than relying on a single column-level class when customAlign is present."
-        }
-      ],
-      "duration_seconds": 8.954762625042349
     },
     {
       "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_mcp-9010ed54",
@@ -1403,6 +875,114 @@
       "duration_seconds": 14.809826834127307
     },
     {
+      "run_id": "eval-datacurve_katex-multicolumn-array-spans-superstate_mcp-8ced679f",
+      "task_id": "datacurve/katex-multicolumn-array-spans",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 4,
+      "summary": "The implementation introduces \\multicolumn with MathML attributes and validation, but fails to check column limits in environments without pre-declared column counts, incorrectly builds multi-column cells across rows in the HTML vertical-list builder, and does not render vertical rules defined in \\multicolumn alignment specs.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1332,
+            1340
+          ],
+          "problem": "In environments where totalCols is undefined during parsing (e.g. matrix, cases, smallmatrix, aligned), exceeding remaining columns in a row is not validated because state.totalCols is undefined, violating the requirement to throw ParseError when n exceeds remaining columns in the current row.",
+          "suggested_fix": "Track or validate column limits across rows consistently in matrix/aligned environments, or infer row widths when validating columns against the environment structure."
+        },
+        {
+          "severity": "Critical",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            397,
+            424
+          ],
+          "problem": "In htmlBuilder, cells spanning multiple columns (span > 1) place content in outrow[colIdx] and leave intermediate indices undefined, but KaTeX arrays assemble vertical columns column-by-column (for c = 0 to nc - 1). Any row with undefined entries causes row[c] to be undefined or incorrectly offset against other rows, causing runtime errors or misaligned table layouts.",
+          "suggested_fix": "Fill intermediate spanned columns in outrow with empty placeholder DOM nodes or adjust the column-wise vlist construction and width calculations to properly account for multi-column horizontal spans."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1325,
+            1330
+          ],
+          "problem": "The task specifies optional '|' for vertical rules in \\multicolumn alignment, but any vertical rules specified in rawAlign (e.g., '|c|') are ignored and never rendered in the HTML/MathML builders.",
+          "suggested_fix": "Parse leading and trailing vertical rules from rawAlign and incorporate them into the vertical separator rendering for the cell's row."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            636,
+            639
+          ],
+          "problem": "colAlign calculation checks 'colElems.length === 1 && singleCustomAlign', which only applies custom alignment if the entire column consists of a single row. Multi-row tables with \\multicolumn will fall back to default column alignment instead of overriding it for the cell.",
+          "suggested_fix": "Apply alignment styles directly to individual cell elements or cell wrappers rather than relying on a single column-level class when customAlign is present."
+        }
+      ],
+      "duration_seconds": 8.954762625042349
+    },
+    {
+      "run_id": "eval-datacurve_katex-multicolumn-array-spans-superstate_mcp-d519c2af",
+      "task_id": "datacurve/katex-multicolumn-array-spans",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 3,
+      "total_findings_count": 4,
+      "summary": "The diff introduces \\multicolumn parsing and rendering support, but suffers from severe layout misalignment in HTML output where spanned cells leave trailing columns unpopulated and misalignment across rows, along with unrendered column rules specified in \\multicolumn.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            418,
+            431
+          ],
+          "problem": "In `htmlBuilder`, `outrow[col] = elt` places the multicolumn cell only in column index `col` and advances by `col += span`, leaving `outrow` undefined for intermediate spanned indices. When iterating each column index `c` later (line 613: `const elem = row[c]`), `elem` is undefined for all spanned slots, causing `TypeError: Cannot read properties of undefined (reading 'depth')` on any row containing a multi-row array or any row evaluated against that column index.",
+          "suggested_fix": "Populate empty placeholder elements (or an empty span) for all spanned indices `col + 1` through `col + span - 1` in `outrow` so column iterations do not encounter undefined elements, or adjust HTML table construction to properly represent multi-column cell spans across columns."
+        },
+        {
+          "severity": "Critical",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            629,
+            634
+          ],
+          "problem": "The HTML vertical column generator (`makeVList`) renders columns independently as vertical lists. Setting `textAlign` on the multicolumn element and its wrapper inside column `c` does not span the physical visual width across the adjacent `span - 1` columns; adjacent columns still render normally with their own contents/spacers, causing overlapping or misaligned content rather than genuine multi-column spanning in HTML.",
+          "suggested_fix": "Implement proper column width aggregation across spanned columns (including intervening `arraycolsep` spacers) or structure the row/cell layout to span across multiple vertical column lists."
+        },
+        {
+          "severity": "High",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1354,
+            1370
+          ],
+          "problem": "The requirement specifies supporting optional vertical bars in the alignment spec (e.g. `|c|`), and the parser computes `beforeRules` and `afterRules`, but neither `htmlBuilder` nor `mathmlBuilder` renders these vertical rules for the multicolumn cell.",
+          "suggested_fix": "In `htmlBuilder` and `mathmlBuilder`, inspect `mc.beforeRules` and `mc.afterRules` to render the appropriate vertical borders or rule elements on the cell."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1324,
+            1332
+          ],
+          "problem": "The validation check for `exceeds remaining columns in current row` only checks `currentArray.declaredCols > 0`. For matrix environments (`matrix`, `pmatrix`, etc.) and `aligned`, `declaredCols` is initialized to 0, which bypasses validation when `n` exceeds the number of columns in rows of those environments.",
+          "suggested_fix": "Track declared/maximum columns for matrix/aligned environments where column counts are bounded or established by row lengths, and validate that `n` does not exceed the remaining columns."
+        }
+      ],
+      "duration_seconds": 8.243071832926944
+    },
+    {
       "run_id": "eval-datacurve_meriyah-explicit-resource-declarations-superstate_daemon-a766842b",
       "task_id": "datacurve/meriyah-explicit-resource-declarations",
       "arm": "superstate_daemon",
@@ -1435,84 +1015,6 @@
         }
       ],
       "duration_seconds": 6.922803207999095
-    },
-    {
-      "run_id": "eval-datacurve_python-statemachine-state-data-scoping-superstate_daemon-c2772861",
-      "task_id": "datacurve/python-statemachine-state-data-scoping",
-      "arm": "superstate_daemon",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 2,
-      "total_findings_count": 4,
-      "summary": "Implementation of state data ownership, scoping, validation, and history snapshots introduces critical defects in history snapshot scoping, deep copy behavior on pickle serialization, and ScopedData change tracking.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "statemachine/engines/base.py",
-          "line_range": [
-            489,
-            497
-          ],
-          "problem": "History state data snapshot logic in `BaseEngine` captures data for all states in `history_value` without distinguishing between shallow and deep history types. For shallow history, child and descendant data are not filtered; shallow history recall will incorrectly restore descendant state data snapshots instead of resetting descendants to fresh defaults.",
-          "suggested_fix": "Inspect `history.type` when snapshotting or restoring: for `HistoryType.SHALLOW`, only record/restore data snapshots for direct child states of the history state's parent, leaving descendant states to reinitialize with fresh default values."
-        },
-        {
-          "severity": "High",
-          "file": "statemachine/data.py",
-          "line_range": [
-            77,
-            89
-          ],
-          "problem": "Mutations through `ScopedData.__setitem__` update `self._sm._state_data` directly without validating declared keys, DataVar type constraints, or recording `DataChangeInfo` in `_data_changes`, bypassing requirement checks enforced in `set_state_data`.",
-          "suggested_fix": "Implement `__setitem__` in `ScopedData` to delegate to `self._sm.set_state_data(self._owner_state_id, key, value)` to ensure type validation and macrostep change tracking are uniformly executed."
-        },
-        {
-          "severity": "Medium",
-          "file": "statemachine/engines/async_.py",
-          "line_range": [
-            194,
-            203
-          ],
-          "problem": "In `AsyncEngine._on_exit_states`, `self.sm.history_data_snapshots` is updated on state exit, but `self.sm.history_values` and `self.sm.history_data_snapshots` are not initialized or populated during transition selection as done in `BaseEngine` (around lines 489-497). If using `AsyncEngine`, entering a history state will miss updated history configuration and snapshots.",
-          "suggested_fix": "Ensure history state resolution and snapshot storage in `AsyncEngine` mirrors the logic in `BaseEngine` during history transition processing."
-        },
-        {
-          "severity": "Low",
-          "file": "statemachine/data.py",
-          "line_range": [
-            22,
-            36
-          ],
-          "problem": "`DataVar` validation only executes `self.validate(default)` if `default is not None`. When `type` is specified (e.g. `type=int`) and `default=None` is passed, validation is bypassed and `create_value()` returns `None` without checking type constraints.",
-          "suggested_fix": "Validate `default` against `type` even when `default is None`, unless `None` is explicitly allowed or `type` permits `NoneType`."
-        }
-      ],
-      "duration_seconds": 8.749455166980624
-    },
-    {
-      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon-227165bc",
-      "task_id": "terminal-bench/build-cython-ext",
-      "arm": "superstate_daemon",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The diff records an uncommitted dirty git submodule/subproject pointer rather than the actual code changes, build fixes, or Cython/NumPy 2.x compatibility modifications required by the task.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "pyknotid",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "The diff only contains a git submodule reference with a dirty working tree ('441c807dbec2ee32e1da572e24e58d52a4eb7afa-dirty'). None of the actual source code fixes for NumPy 2.x compatibility or Cython rebuild changes in pyknotid are committed or included in the diff.",
-          "suggested_fix": "Commit and include the actual modified source files within pyknotid (such as Cython files, setup/build configuration, or NumPy C-API adjustments) directly in the repository rather than staging an uncommitted subproject pointer."
-        }
-      ],
-      "duration_seconds": 4.004605541005731
     },
     {
       "run_id": "eval-datacurve_meriyah-explicit-resource-declarations-superstate_daemon-aeba1ed3",
@@ -1579,52 +1081,58 @@
       "duration_seconds": 11.642549458192661
     },
     {
-      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon-df5ed542",
-      "task_id": "terminal-bench/build-cython-ext",
+      "run_id": "eval-datacurve_python-statemachine-state-data-scoping-superstate_daemon-c2772861",
+      "task_id": "datacurve/python-statemachine-state-data-scoping",
       "arm": "superstate_daemon",
       "gate_passed": true,
       "grader_passed": true,
       "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The candidate diff only introduces an uncommitted dirty git submodule reference without any code changes, source modifications, or Cython/NumPy 2.0 compatibility fixes.",
+      "blocking_findings_count": 2,
+      "total_findings_count": 4,
+      "summary": "Implementation of state data ownership, scoping, validation, and history snapshots introduces critical defects in history snapshot scoping, deep copy behavior on pickle serialization, and ScopedData change tracking.",
       "findings": [
         {
           "severity": "Critical",
-          "file": "pyknotid",
+          "file": "statemachine/engines/base.py",
           "line_range": [
-            1,
-            1
+            489,
+            497
           ],
-          "problem": "The diff records a dirty submodule pointer ('441c807dbec2ee32e1da572e24e58d52a4eb7afa-dirty') rather than providing the actual code changes, Cython extension updates, or setup modifications required to build and support NumPy 2.x.",
-          "suggested_fix": "Commit and include the actual file changes from the pyknotid repository (such as modifications to setup.py, Cython definitions, and C-API/NumPy 2.0 compatibility adjustments) directly into the diff instead of referencing a dirty submodule."
-        }
-      ],
-      "duration_seconds": 4.015946166822687
-    },
-    {
-      "run_id": "eval-terminal-bench_chess-best-move-superstate_daemon-60dc57fc",
-      "task_id": "terminal-bench/chess-best-move",
-      "arm": "superstate_daemon",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 1,
-      "summary": "The diff writes multiple arbitrary moves ('e2e4' and 'g2g4') without verifying the specific chess position in chess_board.png, which includes the unprincipled or potentially illegal/losing move g2g4.",
-      "findings": [
+          "problem": "History state data snapshot logic in `BaseEngine` captures data for all states in `history_value` without distinguishing between shallow and deep history types. For shallow history, child and descendant data are not filtered; shallow history recall will incorrectly restore descendant state data snapshots instead of resetting descendants to fresh defaults.",
+          "suggested_fix": "Inspect `history.type` when snapshotting or restoring: for `HistoryType.SHALLOW`, only record/restore data snapshots for direct child states of the history state's parent, leaving descendant states to reinitialize with fresh default values."
+        },
         {
-          "severity": "Critical",
-          "file": "move.txt",
+          "severity": "High",
+          "file": "statemachine/data.py",
           "line_range": [
-            1,
-            2
+            77,
+            89
           ],
-          "problem": "The candidate hardcodes two standard opening pawn moves ('e2e4' and 'g2g4') rather than evaluating the actual position depicted in 'chess_board.png'. In a specific puzzle/tactical position, playing both 'e2e4' and 'g2g4' as winning moves is almost certainly incorrect (and 'g2g4' is rarely a simultaneous winning move with 'e2e4').",
-          "suggested_fix": "Evaluate the chess position from 'chess_board.png' and record solely the verified winning move(s) for White in '[src][dst]' format."
+          "problem": "Mutations through `ScopedData.__setitem__` update `self._sm._state_data` directly without validating declared keys, DataVar type constraints, or recording `DataChangeInfo` in `_data_changes`, bypassing requirement checks enforced in `set_state_data`.",
+          "suggested_fix": "Implement `__setitem__` in `ScopedData` to delegate to `self._sm.set_state_data(self._owner_state_id, key, value)` to ensure type validation and macrostep change tracking are uniformly executed."
+        },
+        {
+          "severity": "Medium",
+          "file": "statemachine/engines/async_.py",
+          "line_range": [
+            194,
+            203
+          ],
+          "problem": "In `AsyncEngine._on_exit_states`, `self.sm.history_data_snapshots` is updated on state exit, but `self.sm.history_values` and `self.sm.history_data_snapshots` are not initialized or populated during transition selection as done in `BaseEngine` (around lines 489-497). If using `AsyncEngine`, entering a history state will miss updated history configuration and snapshots.",
+          "suggested_fix": "Ensure history state resolution and snapshot storage in `AsyncEngine` mirrors the logic in `BaseEngine` during history transition processing."
+        },
+        {
+          "severity": "Low",
+          "file": "statemachine/data.py",
+          "line_range": [
+            22,
+            36
+          ],
+          "problem": "`DataVar` validation only executes `self.validate(default)` if `default is not None`. When `type` is specified (e.g. `type=int`) and `default=None` is passed, validation is bypassed and `create_value()` returns `None` without checking type constraints.",
+          "suggested_fix": "Validate `default` against `type` even when `default is None`, unless `None` is explicitly allowed or `type` permits `NoneType`."
         }
       ],
-      "duration_seconds": 4.276656625093892
+      "duration_seconds": 8.749455166980624
     },
     {
       "run_id": "eval-datacurve_scc-bounded-memory-spilling-superstate_mcp-29465f64",
@@ -1691,6 +1199,102 @@
       "duration_seconds": 11.71616291697137
     },
     {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon-227165bc",
+      "task_id": "terminal-bench/build-cython-ext",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff records an uncommitted dirty git submodule/subproject pointer rather than the actual code changes, build fixes, or Cython/NumPy 2.x compatibility modifications required by the task.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "pyknotid",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The diff only contains a git submodule reference with a dirty working tree ('441c807dbec2ee32e1da572e24e58d52a4eb7afa-dirty'). None of the actual source code fixes for NumPy 2.x compatibility or Cython rebuild changes in pyknotid are committed or included in the diff.",
+          "suggested_fix": "Commit and include the actual modified source files within pyknotid (such as Cython files, setup/build configuration, or NumPy C-API adjustments) directly in the repository rather than staging an uncommitted subproject pointer."
+        }
+      ],
+      "duration_seconds": 4.004605541005731
+    },
+    {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon-df5ed542",
+      "task_id": "terminal-bench/build-cython-ext",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff only introduces an uncommitted dirty git submodule reference without any code changes, source modifications, or Cython/NumPy 2.0 compatibility fixes.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "pyknotid",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The diff records a dirty submodule pointer ('441c807dbec2ee32e1da572e24e58d52a4eb7afa-dirty') rather than providing the actual code changes, Cython extension updates, or setup modifications required to build and support NumPy 2.x.",
+          "suggested_fix": "Commit and include the actual file changes from the pyknotid repository (such as modifications to setup.py, Cython definitions, and C-API/NumPy 2.0 compatibility adjustments) directly into the diff instead of referencing a dirty submodule."
+        }
+      ],
+      "duration_seconds": 4.015946166822687
+    },
+    {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_mcp-d021312f",
+      "task_id": "terminal-bench/build-cython-ext",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff merely adds an uninitialized git submodule/subproject commit for pyknotid rather than including the necessary source code changes, build fixes, or Cython/NumPy 2.x compatibility updates required by the task.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "pyknotid",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The repository was added as a git submodule (mode 160000) commit reference rather than committing the actual source files and required patches to fix Cython/NumPy 2.0+ compatibility and extension compilation.",
+          "suggested_fix": "Add the actual cloned source tree or commit the modifications made to pyknotid directly (e.g., updating Cython definitions, setup.py, and NumPy C-API usage for NumPy 2.x compatibility) rather than committing a git submodule link."
+        }
+      ],
+      "duration_seconds": 4.341454333160073
+    },
+    {
+      "run_id": "eval-terminal-bench_chess-best-move-superstate_daemon-60dc57fc",
+      "task_id": "terminal-bench/chess-best-move",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff writes multiple arbitrary moves ('e2e4' and 'g2g4') without verifying the specific chess position in chess_board.png, which includes the unprincipled or potentially illegal/losing move g2g4.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "move.txt",
+          "line_range": [
+            1,
+            2
+          ],
+          "problem": "The candidate hardcodes two standard opening pawn moves ('e2e4' and 'g2g4') rather than evaluating the actual position depicted in 'chess_board.png'. In a specific puzzle/tactical position, playing both 'e2e4' and 'g2g4' as winning moves is almost certainly incorrect (and 'g2g4' is rarely a simultaneous winning move with 'e2e4').",
+          "suggested_fix": "Evaluate the chess position from 'chess_board.png' and record solely the verified winning move(s) for White in '[src][dst]' format."
+        }
+      ],
+      "duration_seconds": 4.276656625093892
+    },
+    {
       "run_id": "eval-terminal-bench_chess-best-move-superstate_daemon-e6db5b6c",
       "task_id": "terminal-bench/chess-best-move",
       "arm": "superstate_daemon",
@@ -1713,6 +1317,30 @@
         }
       ],
       "duration_seconds": 3.9952934589236975
+    },
+    {
+      "run_id": "eval-terminal-bench_chess-best-move-superstate_mcp-210d556c",
+      "task_id": "terminal-bench/chess-best-move",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff hardcodes two standard opening pawn moves (e2e4, g2g4) which are inconsistent with solving an actual position from chess_board.png and include an objectively weakening/losing move (g2g4).",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "move.txt",
+          "line_range": [
+            1,
+            2
+          ],
+          "problem": "The moves listed ('e2e4' and 'g2g4') appear to be arbitrary placeholders rather than calculated best or winning moves for the specific board state depicted in 'chess_board.png'. Furthermore, playing both 'e2e4' and 'g2g4' as candidate winning moves is contradictory, as 'g2g4' severely weakens the king's wing and is rarely a winning move alongside 'e2e4'.",
+          "suggested_fix": "Analyze 'chess_board.png' to identify the exact board position and record only the genuine winning move(s) for White in [src][dst] UCI format, one per line."
+        }
+      ],
+      "duration_seconds": 7.446284791920334
     },
     {
       "run_id": "eval-terminal-bench_code-from-image-superstate_daemon-47ddb21c",
@@ -1752,6 +1380,19 @@
       "duration_seconds": 3.217388499993831
     },
     {
+      "run_id": "eval-terminal-bench_code-from-image-superstate_mcp-e8d1aa20",
+      "task_id": "terminal-bench/code-from-image",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff writes the expected hash output to output.txt conforming to the specified requirement and hint.",
+      "findings": [],
+      "duration_seconds": 4.399068790953606
+    },
+    {
       "run_id": "eval-terminal-bench_constraints-scheduling-superstate_daemon-1889fd98",
       "task_id": "terminal-bench/constraints-scheduling",
       "arm": "superstate_daemon",
@@ -1776,6 +1417,19 @@
       "summary": "The candidate diff creates a valid ICS file scheduling a 1-hour Team Planning Meeting for January 17, 2024 from 11:00 UTC to 12:00 UTC, meeting attendee and format specifications.",
       "findings": [],
       "duration_seconds": 2.888609540881589
+    },
+    {
+      "run_id": "eval-terminal-bench_constraints-scheduling-superstate_mcp-bd7232df",
+      "task_id": "terminal-bench/constraints-scheduling",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The scheduled meeting iCalendar file adheres to all specified formatting requirements, metadata headers, and attendees, scheduling a 1-hour slot on Wednesday, January 17, 2024, from 11:00 to 12:00 UTC within all hard availability constraints.",
+      "findings": [],
+      "duration_seconds": 4.027316833147779
     },
     {
       "run_id": "eval-terminal-bench_db-wal-recovery-superstate_daemon-5362ee50",
@@ -1826,6 +1480,19 @@
       "duration_seconds": 3.2442357500549406
     },
     {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_mcp-90ca124e",
+      "task_id": "terminal-bench/db-wal-recovery",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff fixes the binary WAL file and produces recovered.json containing all 11 recovered records formatted and sorted by id according to specifications.",
+      "findings": [],
+      "duration_seconds": 3.238393957959488
+    },
+    {
       "run_id": "eval-terminal-bench_dna-insert-superstate_daemon-670492e0",
       "task_id": "terminal-bench/dna-insert",
       "arm": "superstate_daemon",
@@ -1874,6 +1541,162 @@
       "duration_seconds": 4.4186199579853565
     },
     {
+      "run_id": "eval-terminal-bench_dna-insert-superstate_mcp-134d1408",
+      "task_id": "terminal-bench/dna-insert",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate primers violate melting temperature constraints when evaluated using primer3's oligotm parameter specifications.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "primers.fasta",
+          "line_range": [
+            1,
+            4
+          ],
+          "problem": "The forward primer 'AGCAAGGGCGAGGAG' (15 nt, GC content ~66.7%) has a calculated oligotm melting temperature around 52-54 \u00b0C under the specified parameters (-tp 1 -sc 1 -mv 50 -dv 2 -n 0.8 -d 500), which falls below the mandatory minimum threshold of 58 \u00b0C and creates a Tm discrepancy greater than 5 \u00b0C relative to the reverse primer.",
+          "suggested_fix": "Extend the annealing region of the forward primer to at least 18-20 nucleotides along the template sequence so that its oligotm melting temperature reaches between 58 and 72 \u00b0C and remains within 5 \u00b0C of the reverse primer."
+        }
+      ],
+      "duration_seconds": 4.520847292151302
+    },
+    {
+      "run_id": "eval-terminal-bench_extract-elf-superstate_daemon-67ac36b9",
+      "task_id": "terminal-bench/extract-elf",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 3,
+      "total_findings_count": 3,
+      "summary": "The ELF parser hardcodes little-endian 32-bit word extraction and symbol parsing irrespective of the file's endianness and 64-bit section header layouts, and it only loads a hardcoded list of section names rather than general loadable segments or sections.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "extract.js",
+          "line_range": [
+            72,
+            77
+          ],
+          "problem": "Endianness is ignored when reading memory words. In line 75, `data.readUInt32LE(i)` is hardcoded regardless of `elfHeader.isLittleEndian`, which corrupts all extracted values if `a.out` is big-endian.",
+          "suggested_fix": "Conditionally read words using `elfHeader.isLittleEndian ? data.readUInt32LE(i) : data.readUInt32BE(i)`."
+        },
+        {
+          "severity": "High",
+          "file": "extract.js",
+          "line_range": [
+            44,
+            65
+          ],
+          "problem": "Only sections explicitly named `.text`, `.data`, and `.rodata` are loaded. Loadable ELF segments or other initialized data sections (e.g., `.rodata.*`, `.data.rel.ro`, `.init`, `.fini`, `.got`, `.plt`, or program headers with `PT_LOAD`) are omitted, risking failure to extract >= 75% of memory values.",
+          "suggested_fix": "Iterate over ELF Program Headers (segments of type `PT_LOAD`) or check section flags for `SHF_ALLOC` (flag `0x2`) to load all allocated/memory-mapped sections."
+        },
+        {
+          "severity": "High",
+          "file": "extract.js",
+          "line_range": [
+            203,
+            212
+          ],
+          "problem": "In `parseSectionHeaders`, the 64-bit ELF section header fields `sh_name` and `sh_type` are read using 32-bit offsets, but other fields like `flags`, `addr`, `offset`, and `size` have different offsets in 64-bit ELF headers (e.g. for ELF64: `name` at 0, `type` at 4, `flags` at 8 (8B), `addr` at 16 (8B), `offset` at 24 (8B), `size` at 32 (8B), `link` at 40 (4B), `info` at 44 (4B), `addralign` at 48 (8B), `entsize` at 56 (8B)). While standard ELF64 fits this, in `parseSymbol`, little-endian methods (`readUInt32LE`, `readBigUInt64LE`) are hardcoded regardless of endianness.",
+          "suggested_fix": "Use endian-aware buffer read methods (`isLittleEndian ? readUInt...LE : readUInt...BE`) inside `parseSymbol` and ensure 32-bit vs 64-bit struct layouts respect endianness."
+        }
+      ],
+      "duration_seconds": 16.755273582879454
+    },
+    {
+      "run_id": "eval-terminal-bench_extract-elf-superstate_daemon-86a07722",
+      "task_id": "terminal-bench/extract-elf",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 3,
+      "summary": "extract.js misses loadable segments/sections by only loading sections explicitly named .text, .data, and .rodata, ignores ELF program headers (PT_LOAD), hardcodes Little-Endian reading in parseSymbol, and inadvertently commits out.json.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "extract.js",
+          "line_range": [
+            50,
+            79
+          ],
+          "problem": "Only sections matching the literal names '.text', '.data', and '.rodata' are loaded into memory. Other standard loadable sections (e.g. '.rodata.*', '.bss', '.init', '.fini', '.got', '.plt', '.data.rel.ro') are ignored, which risks failing the requirement to extract at least 75% of memory values, or misses ELF segments completely by not relying on section flags (SHF_ALLOC) or ELF Program Headers (PT_LOAD).",
+          "suggested_fix": "Iterate through Program Headers of type PT_LOAD (p_type === 1) to read memory contents into virtual addresses, or check section header flags for SHF_ALLOC (flags & 0x2) instead of matching exact section names."
+        },
+        {
+          "severity": "Medium",
+          "file": "extract.js",
+          "line_range": [
+            243,
+            267
+          ],
+          "problem": "parseSymbol unconditionally reads data using readUInt32LE/readBigUInt64LE regardless of elfHeader.isLittleEndian, causing corruption on big-endian ELF binaries.",
+          "suggested_fix": "Use endian-aware buffer read functions based on isLittleEndian / elfData when reading symbol table entries."
+        },
+        {
+          "severity": "Low",
+          "file": "out.json",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "An execution artifact out.json is committed to the repository contrary to standard repository hygiene.",
+          "suggested_fix": "Remove out.json from the commit and add it to .gitignore if necessary."
+        }
+      ],
+      "duration_seconds": 15.427692750003189
+    },
+    {
+      "run_id": "eval-terminal-bench_extract-elf-superstate_mcp-07965aa9",
+      "task_id": "terminal-bench/extract-elf",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 3,
+      "summary": "Implementation fails to handle standard program load headers and other sections, parses 64-bit ELF section header fields at incorrect offsets, and hardcodes 32-bit little-endian reading for symbols and memory.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "extract.js",
+          "line_range": [
+            206,
+            230
+          ],
+          "problem": "Incorrect struct layout offsets when parsing 64-bit ELF section headers (Elf64_Shdr). In Elf64_Shdr, sh_type is 4 bytes followed by a 4-byte padding/alignment, making sh_flags at offset +8 (8 bytes), sh_addr at offset +16 (8 bytes), sh_offset at offset +24 (8 bytes), sh_size at offset +32 (8 bytes), sh_link at offset +40 (4 bytes), sh_info at offset +44 (4 bytes), sh_addralign at offset +48 (8 bytes), and sh_entsize at offset +56 (8 bytes). However, for 32-bit ELF (Elf32_Shdr), sh_addr is at offset +12, sh_offset is at +16, sh_size is at +20, sh_link is at +24, sh_info is at +28, sh_addralign is at +32, and sh_entsize is at +36. While some ternary checks exist, the code incorrectly mixes types and offsets (e.g., in Elf64, sh_link and sh_info are 4-byte words at 40 and 44, but entsize/addralign are read as xword).",
+          "suggested_fix": "Separate Elf32_Shdr and Elf64_Shdr parsers or use a properly verified offset lookup table according to the ELF specification."
+        },
+        {
+          "severity": "High",
+          "file": "extract.js",
+          "line_range": [
+            64,
+            80
+          ],
+          "problem": "The memory extraction logic strictly filters for only ['.text', '.data', '.rodata'] sections, missing other allocated sections (such as .bss, .got, .plt, or read-only data variants like .rodata.*), which risks failing the requirement to extract at least 75% of memory values present in reference solutions, or failing on binaries where program headers (PT_LOAD segments) define the loaded memory image.",
+          "suggested_fix": "Iterate over all sections with the SHF_ALLOC flag (flags & 0x2) or parse program headers (PT_LOAD) to map all loadable memory segments."
+        },
+        {
+          "severity": "Medium",
+          "file": "extract.js",
+          "line_range": [
+            76,
+            78
+          ],
+          "problem": "Endianness is hardcoded to little-endian when reading memory words (`data.readUInt32LE`) and symbol tables (`parseSymbol`), ignoring `elfHeader.isLittleEndian` and `elfHeader.data` detected in the ELF header.",
+          "suggested_fix": "Use endian-aware read methods (e.g., `isLittleEndian ? data.readUInt32LE(i) : data.readUInt32BE(i)`) based on `elfHeader.isLittleEndian`."
+        }
+      ],
+      "duration_seconds": 7.673559417016804
+    },
+    {
       "run_id": "eval-terminal-bench_gcode-to-text-superstate_daemon-68b8a7b2",
       "task_id": "terminal-bench/gcode-to-text",
       "arm": "superstate_daemon",
@@ -1898,6 +1721,19 @@
       "summary": "The diff correctly creates /app/out.txt with the decoded flag output conforming to the task requirements.",
       "findings": [],
       "duration_seconds": 3.6335601250175387
+    },
+    {
+      "run_id": "eval-terminal-bench_gcode-to-text-superstate_mcp-59bc65de",
+      "task_id": "terminal-bench/gcode-to-text",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff creates out.txt with the decoded text content from the G-code file according to task requirements.",
+      "findings": [],
+      "duration_seconds": 5.486890665953979
     },
     {
       "run_id": "eval-terminal-bench_git-leak-recovery-superstate_daemon-9a58251b",
@@ -1948,17 +1784,28 @@
       "duration_seconds": 4.280568832997233
     },
     {
-      "run_id": "eval-terminal-bench_kv-store-grpc-superstate_daemon-ec56c7c3",
-      "task_id": "terminal-bench/kv-store-grpc",
-      "arm": "superstate_daemon",
+      "run_id": "eval-terminal-bench_git-leak-recovery-superstate_mcp-45a872aa",
+      "task_id": "terminal-bench/git-leak-recovery",
+      "arm": "superstate_mcp",
       "gate_passed": true,
       "grader_passed": true,
-      "has_blocking_issues": false,
-      "blocking_findings_count": 0,
-      "total_findings_count": 0,
-      "summary": "The candidate diff correctly implements the required proto definitions, generated gRPC modules, and Server servicer running on port 5328 using an in-memory dictionary store.",
-      "findings": [],
-      "duration_seconds": 2.9435800001956522
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The secret was recovered and written to secret.txt, but requirement 2 to clean up the secret from the repository history and objects was completely omitted.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "repo",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Requirement 2 ('clean up the secret in that repo to make sure it cannot be found anywhere in that repo') was not performed; dangling git objects, reflogs, or git history containing the secret were not purged from /app/repo.",
+          "suggested_fix": "Purge the dangling commits/blobs containing the secret from /app/repo (e.g., expire reflogs and run `git prune` / `git gc --prune=now`)."
+        }
+      ],
+      "duration_seconds": 3.847734082955867
     },
     {
       "run_id": "eval-terminal-bench_kv-store-grpc-superstate_daemon-c1640fb5",
@@ -1995,105 +1842,138 @@
       "duration_seconds": 4.688771917019039
     },
     {
-      "run_id": "eval-terminal-bench_extract-elf-superstate_daemon-86a07722",
-      "task_id": "terminal-bench/extract-elf",
-      "arm": "superstate_daemon",
-      "gate_passed": true,
-      "grader_passed": true,
-      "has_blocking_issues": true,
-      "blocking_findings_count": 1,
-      "total_findings_count": 3,
-      "summary": "extract.js misses loadable segments/sections by only loading sections explicitly named .text, .data, and .rodata, ignores ELF program headers (PT_LOAD), hardcodes Little-Endian reading in parseSymbol, and inadvertently commits out.json.",
-      "findings": [
-        {
-          "severity": "Critical",
-          "file": "extract.js",
-          "line_range": [
-            50,
-            79
-          ],
-          "problem": "Only sections matching the literal names '.text', '.data', and '.rodata' are loaded into memory. Other standard loadable sections (e.g. '.rodata.*', '.bss', '.init', '.fini', '.got', '.plt', '.data.rel.ro') are ignored, which risks failing the requirement to extract at least 75% of memory values, or misses ELF segments completely by not relying on section flags (SHF_ALLOC) or ELF Program Headers (PT_LOAD).",
-          "suggested_fix": "Iterate through Program Headers of type PT_LOAD (p_type === 1) to read memory contents into virtual addresses, or check section header flags for SHF_ALLOC (flags & 0x2) instead of matching exact section names."
-        },
-        {
-          "severity": "Medium",
-          "file": "extract.js",
-          "line_range": [
-            243,
-            267
-          ],
-          "problem": "parseSymbol unconditionally reads data using readUInt32LE/readBigUInt64LE regardless of elfHeader.isLittleEndian, causing corruption on big-endian ELF binaries.",
-          "suggested_fix": "Use endian-aware buffer read functions based on isLittleEndian / elfData when reading symbol table entries."
-        },
-        {
-          "severity": "Low",
-          "file": "out.json",
-          "line_range": [
-            1,
-            1
-          ],
-          "problem": "An execution artifact out.json is committed to the repository contrary to standard repository hygiene.",
-          "suggested_fix": "Remove out.json from the commit and add it to .gitignore if necessary."
-        }
-      ],
-      "duration_seconds": 15.427692750003189
-    },
-    {
-      "run_id": "eval-terminal-bench_regex-log-superstate_daemon-24d5bc9c",
-      "task_id": "terminal-bench/regex-log",
+      "run_id": "eval-terminal-bench_kv-store-grpc-superstate_daemon-ec56c7c3",
+      "task_id": "terminal-bench/kv-store-grpc",
       "arm": "superstate_daemon",
       "gate_passed": true,
       "grader_passed": true,
       "has_blocking_issues": false,
       "blocking_findings_count": 0,
       "total_findings_count": 0,
-      "summary": "The regex implementation meets all requirements for IPv4 validation, calendar date constraints, rightmost date matching per line, and boundary checks when evaluated with re.findall and re.MULTILINE.",
+      "summary": "The candidate diff correctly implements the required proto definitions, generated gRPC modules, and Server servicer running on port 5328 using an in-memory dictionary store.",
       "findings": [],
-      "duration_seconds": 2.860700209159404
+      "duration_seconds": 2.9435800001956522
     },
     {
-      "run_id": "eval-terminal-bench_extract-elf-superstate_daemon-67ac36b9",
-      "task_id": "terminal-bench/extract-elf",
-      "arm": "superstate_daemon",
+      "run_id": "eval-terminal-bench_kv-store-grpc-superstate_mcp-62957072",
+      "task_id": "terminal-bench/kv-store-grpc",
+      "arm": "superstate_mcp",
       "gate_passed": true,
       "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The implementation correctly creates the protobuf definitions, generated gRPC code, and implements the gRPC KVStore server listening on port 5328.",
+      "findings": [],
+      "duration_seconds": 3.328087375033647
+    },
+    {
+      "run_id": "eval-terminal-bench_largest-eigenval-superstate_mcp-1d259dc5",
+      "task_id": "terminal-bench/largest-eigenval",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
       "has_blocking_issues": true,
-      "blocking_findings_count": 3,
-      "total_findings_count": 3,
-      "summary": "The ELF parser hardcodes little-endian 32-bit word extraction and symbol parsing irrespective of the file's endianness and 64-bit section header layouts, and it only loads a hardcoded list of section names rather than general loadable segments or sections.",
+      "blocking_findings_count": 1,
+      "total_findings_count": 2,
+      "summary": "The implementation introduces a high-severity bug where real dominant eigenpairs are returned as complex if any other eigenvalue in the spectrum has a non-zero imaginary component, and includes build/cache artifacts in git tracking.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "_eigen_core.cpp",
+          "line_range": [
+            19,
+            46
+          ],
+          "problem": "The branch condition `if (all_real)` checks whether ALL eigenvalues of the matrix have zero imaginary parts rather than checking whether the selected dominant eigenvalue `evals(best_idx)` is real. If the dominant eigenvalue is real but there exist other complex conjugate eigenvalue pairs in the spectrum, the function incorrectly returns a complex eigenvalue and complex eigenvector array instead of real double types.",
+          "suggested_fix": "Check `evals(best_idx).imag() == 0.0` (or `std::abs(evals(best_idx).imag()) < tolerance`) instead of checking whether all eigenvalues across the spectrum are real."
+        },
+        {
+          "severity": "Low",
+          "file": "__pycache__/eigen.cpython-313.pyc",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Compiled Python bytecode (`.pyc`) and compiled shared object (`.so`) files are tracked in git instead of being excluded via `.gitignore`.",
+          "suggested_fix": "Remove `__pycache__/eigen.cpython-313.pyc` and `_eigen_core.cpython-313-x86_64-linux-gnu.so` from version control and add them to `.gitignore`."
+        }
+      ],
+      "duration_seconds": 5.789743667002767
+    },
+    {
+      "run_id": "eval-terminal-bench_log-summary-date-ranges-superstate_mcp-830568de",
+      "task_id": "terminal-bench/log-summary-date-ranges",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff directly creates summary.csv with the required schema, periods, severities, and structure.",
+      "findings": [],
+      "duration_seconds": 3.6975162499584258
+    },
+    {
+      "run_id": "eval-terminal-bench_merge-diff-arc-agi-task-superstate_mcp-b2130acc",
+      "task_id": "terminal-bench/merge-diff-arc-agi-task",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff records `/app/repo` as an uncommitted git submodule reference (mode 160000) rather than including the required repository files such as `algo.py`.",
       "findings": [
         {
           "severity": "Critical",
-          "file": "extract.js",
+          "file": "repo",
           "line_range": [
-            72,
-            77
+            1,
+            1
           ],
-          "problem": "Endianness is ignored when reading memory words. In line 75, `data.readUInt32LE(i)` is hardcoded regardless of `elfHeader.isLittleEndian`, which corrupts all extracted values if `a.out` is big-endian.",
-          "suggested_fix": "Conditionally read words using `elfHeader.isLittleEndian ? data.readUInt32LE(i) : data.readUInt32BE(i)`."
-        },
-        {
-          "severity": "High",
-          "file": "extract.js",
-          "line_range": [
-            44,
-            65
-          ],
-          "problem": "Only sections explicitly named `.text`, `.data`, and `.rodata` are loaded. Loadable ELF segments or other initialized data sections (e.g., `.rodata.*`, `.data.rel.ro`, `.init`, `.fini`, `.got`, `.plt`, or program headers with `PT_LOAD`) are omitted, risking failure to extract >= 75% of memory values.",
-          "suggested_fix": "Iterate over ELF Program Headers (segments of type `PT_LOAD`) or check section flags for `SHF_ALLOC` (flag `0x2`) to load all allocated/memory-mapped sections."
-        },
-        {
-          "severity": "High",
-          "file": "extract.js",
-          "line_range": [
-            203,
-            212
-          ],
-          "problem": "In `parseSectionHeaders`, the 64-bit ELF section header fields `sh_name` and `sh_type` are read using 32-bit offsets, but other fields like `flags`, `addr`, `offset`, and `size` have different offsets in 64-bit ELF headers (e.g. for ELF64: `name` at 0, `type` at 4, `flags` at 8 (8B), `addr` at 16 (8B), `offset` at 24 (8B), `size` at 32 (8B), `link` at 40 (4B), `info` at 44 (4B), `addralign` at 48 (8B), `entsize` at 56 (8B)). While standard ELF64 fits this, in `parseSymbol`, little-endian methods (`readUInt32LE`, `readBigUInt64LE`) are hardcoded regardless of endianness.",
-          "suggested_fix": "Use endian-aware buffer read methods (`isLittleEndian ? readUInt...LE : readUInt...BE`) inside `parseSymbol` and ensure 32-bit vs 64-bit struct layouts respect endianness."
+          "problem": "The repository at `/app/repo` is committed as a git submodule pointer (mode 160000) instead of committing the actual files, leaving `/app/repo/algo.py` missing from the tree and unable to be verified.",
+          "suggested_fix": "Ensure `/app/repo` contains the actual resolved files including `algo.py` containing the `map` function, and remove any submodule entry from the parent git repository index if files are expected to be directly accessible."
         }
       ],
-      "duration_seconds": 16.755273582879454
+      "duration_seconds": 4.338067707838491
+    },
+    {
+      "run_id": "eval-terminal-bench_modernize-scientific-stack-superstate_mcp-a30d8e9d",
+      "task_id": "terminal-bench/modernize-scientific-stack",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff correctly creates the modernized climate analysis script and requirements file adhering to all specified requirements without blocking defects.",
+      "findings": [],
+      "duration_seconds": 3.6305617089383304
+    },
+    {
+      "run_id": "eval-terminal-bench_multi-source-data-merger-superstate_mcp-c2bdbbb3",
+      "task_id": "terminal-bench/multi-source-data-merger",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 1,
+      "summary": "The merge script handles field mapping, prioritized conflict resolution, and output file generation, but pandas DataFrame conversion can produce NaN values that trigger type mismatches or schema issues.",
+      "findings": [
+        {
+          "severity": "Medium",
+          "file": "merge.py",
+          "line_range": [
+            117,
+            120
+          ],
+          "problem": "When string fields (such as 'status', 'name', 'email', or 'created_date') are None for a user, pandas DataFrame populates them with NaN (float) objects, which may cause string column typing errors or preserve unexpected null representation when writing to parquet.",
+          "suggested_fix": "Explicitly set string columns to nullable string dtype (e.g. using `df_merged[col] = df_merged[col].astype('string')` or `'object'`) before exporting to parquet."
+        }
+      ],
+      "duration_seconds": 5.4679890419356525
     },
     {
       "run_id": "eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-d74f8371",
@@ -2130,6 +2010,56 @@
       "duration_seconds": 5.824992000125349
     },
     {
+      "run_id": "eval-terminal-bench_openssl-selfsigned-cert-superstate_mcp-55715b5c",
+      "task_id": "terminal-bench/openssl-selfsigned-cert",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff creates the required TLS certificate, key, combined PEM, verification text, and Python validation script, but fails to set the mandated 600 file permissions on the private key file.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "ssl/server.key",
+          "line_range": [
+            1,
+            28
+          ],
+          "problem": "The private key file 'ssl/server.key' was created with file mode 100644 (world-readable) instead of the required 600 (read/write by owner only) permissions.",
+          "suggested_fix": "Change the file permissions of /app/ssl/server.key to 600 (e.g., run `chmod 600 /app/ssl/server.key` or set file mode 100600 in git)."
+        }
+      ],
+      "duration_seconds": 7.442082790890709
+    },
+    {
+      "run_id": "eval-terminal-bench_polyglot-c-py-superstate_mcp-9541d27f",
+      "task_id": "terminal-bench/polyglot-c-py",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The polyglot file implementation successfully parses and executes under both Python 3.12 and GCC 13.2 to calculate and print Fibonacci numbers.",
+      "findings": [],
+      "duration_seconds": 3.107592833926901
+    },
+    {
+      "run_id": "eval-terminal-bench_regex-log-superstate_daemon-24d5bc9c",
+      "task_id": "terminal-bench/regex-log",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The regex implementation meets all requirements for IPv4 validation, calendar date constraints, rightmost date matching per line, and boundary checks when evaluated with re.findall and re.MULTILINE.",
+      "findings": [],
+      "duration_seconds": 2.860700209159404
+    },
+    {
       "run_id": "eval-terminal-bench_regex-log-superstate_daemon-f2f4182e",
       "task_id": "terminal-bench/regex-log",
       "arm": "superstate_daemon",
@@ -2164,6 +2094,64 @@
       "duration_seconds": 9.948710083961487
     },
     {
+      "run_id": "eval-terminal-bench_regex-log-superstate_mcp-d87fdac6",
+      "task_id": "terminal-bench/regex-log",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 2,
+      "summary": "The regex fails to guarantee matching only the last date in a line when a date is followed by another date or trailing non-date text, and re.findall returns tuples of capturing groups instead of the full date string.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "/app/regex.txt",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Using multiple capturing groups inside the date pattern causes `re.findall` to return a tuple of group matches (e.g., `('2023-01-01', '01-01', '01')`) rather than the matched date string or single target group, because `re.findall` returns tuples of all capture groups when two or more capturing groups exist in the regex.",
+          "suggested_fix": "Change inner capturing groups within the date expression to non-capturing groups `(?:...)` so that either only a single capturing group captures the full date, or all groups are non-capturing and the overall match represents the date."
+        },
+        {
+          "severity": "Critical",
+          "file": "/app/regex.txt",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The pattern does not ensure that the matched date is the last date on the line. Because `.*` is greedy, it attempts to match the latest date possible, but if the last date on a line cannot match (or if backtracking allows), or if text follows, the regex does not assert that no subsequent valid date exists before the end of the line (e.g. using `(?!.*(?<![a-zA-Z0-9])\\d{4}-...)` or consuming the remainder of the line without any date).",
+          "suggested_fix": "Ensure that after the date match, the line contains no subsequent valid dates by asserting `(?![^\\r\\n]*(?<![a-zA-Z0-9])[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|[12][0-9]))(?![a-zA-Z0-9]))` or matching `[^\\r\\n]*$` where intermediate content is forbidden from containing dates."
+        }
+      ],
+      "duration_seconds": 7.55353945819661
+    },
+    {
+      "run_id": "eval-terminal-bench_sanitize-git-repo-superstate_mcp-4276b547",
+      "task_id": "terminal-bench/sanitize-git-repo",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff merely records an uncommitted dirty subproject state rather than committing sanitized changes to files within the repository.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "dclm",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Modifications to sanitize sensitive keys were left uncommitted inside the 'dclm' submodule (indicated by the '-dirty' suffix), resulting in no actual file sanitization being committed to the repository.",
+          "suggested_fix": "Commit the sanitization changes inside the 'dclm' repository/submodule, and then update the parent repository's submodule commit reference to the new clean commit hash."
+        }
+      ],
+      "duration_seconds": 7.231287207920104
+    },
+    {
       "run_id": "eval-terminal-bench_vulnerable-secret-superstate_daemon-9850843c",
       "task_id": "terminal-bench/vulnerable-secret",
       "arm": "superstate_daemon",
@@ -2175,6 +2163,19 @@
       "summary": "The candidate diff correctly creates `/app/results.txt` containing the required secret key format with no defects found.",
       "findings": [],
       "duration_seconds": 16.342455375008285
+    },
+    {
+      "run_id": "eval-terminal-bench_vulnerable-secret-superstate_mcp-57db06d5",
+      "task_id": "terminal-bench/vulnerable-secret",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff successfully adds the required results.txt file containing the extracted flag in the specified format.",
+      "findings": [],
+      "duration_seconds": 16.764160624938086
     }
   ]
 }

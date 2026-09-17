@@ -15,6 +15,7 @@ import argparse
 import concurrent.futures
 import json
 import logging
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -28,6 +29,7 @@ logger = logging.getLogger("eval_offline_review")
 CACHE_DIR = Path("results/offline_review_cache")
 DIFFS_FILE = Path("results/harvested_run_diffs_20260917.json")
 TASKS_DIR = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
+AGY_BIN = shutil.which("agy") or str(Path.home() / ".local/bin/agy")
 
 REVIEW_SYSTEM_PROMPT = """You are an adversarial zero-noise code reviewer.
 CRITICAL CONSTRAINT: Do NOT invoke any tools, shell commands, or external file searches. You are in offline static review mode. Rely SOLELY on the provided task requirements and git diff text.
@@ -93,6 +95,10 @@ def run_review_single(
             pass
 
     task_id = run_record["task_id"]
+    arm = run_record.get("arm")
+    gate_passed = run_record.get("gate_passed")
+    grader_passed = run_record.get("grader_passed")
+
     instruction = get_task_instruction(task_id)
     diff = run_record.get("git_diff", "")
 
@@ -115,7 +121,7 @@ def run_review_single(
     start_time = time.monotonic()
     with tempfile.TemporaryDirectory() as tmpdir:
         cmd = [
-            "/Users/danielfisher/.local/bin/agy",
+            AGY_BIN,
             "--model",
             model,
             "--output-format",
@@ -137,6 +143,9 @@ def run_review_single(
             return {
                 "run_id": run_id,
                 "task_id": task_id,
+                "arm": arm,
+                "gate_passed": gate_passed,
+                "grader_passed": grader_passed,
                 "error": f"Review timed out after {timeout_sec}s",
                 "duration_seconds": time.monotonic() - start_time,
                 "has_blocking_issues": False,
@@ -146,6 +155,9 @@ def run_review_single(
             return {
                 "run_id": run_id,
                 "task_id": task_id,
+                "arm": arm,
+                "gate_passed": gate_passed,
+                "grader_passed": grader_passed,
                 "error": f"Invocation error: {exc}",
                 "duration_seconds": time.monotonic() - start_time,
                 "has_blocking_issues": False,
@@ -157,6 +169,9 @@ def run_review_single(
         return {
             "run_id": run_id,
             "task_id": task_id,
+            "arm": arm,
+            "gate_passed": gate_passed,
+            "grader_passed": grader_passed,
             "error": f"agy exited with {proc.returncode}: {proc.stderr[:300]}",
             "duration_seconds": duration,
             "has_blocking_issues": False,
@@ -172,6 +187,9 @@ def run_review_single(
         return {
             "run_id": run_id,
             "task_id": task_id,
+            "arm": arm,
+            "gate_passed": gate_passed,
+            "grader_passed": grader_passed,
             "error": f"JSON parse error: {exc}",
             "raw_response": proc.stdout[:500],
             "duration_seconds": duration,
@@ -179,11 +197,21 @@ def run_review_single(
             "findings": [],
         }
 
-    findings = report.get("findings", [])
-    has_blocking = report.get("has_blocking_issues", False)
+    if not isinstance(report, dict):
+        report = {"findings": [], "has_blocking_issues": False, "summary": str(report)}
+
+    raw_findings = report.get("findings")
+    findings = [f for f in raw_findings if isinstance(f, dict)] if isinstance(raw_findings, list) else []
+
+    raw_blocking = report.get("has_blocking_issues", False)
+    if isinstance(raw_blocking, str):
+        has_blocking = raw_blocking.strip().lower() == "true"
+    else:
+        has_blocking = bool(raw_blocking)
+
     # Check if any finding has Critical or High severity
     crit_or_high = [
-        f for f in findings if isinstance(f, dict) and str(f.get("severity", "")).lower() in ("critical", "high", "blocker")
+        f for f in findings if str(f.get("severity", "")).lower() in ("critical", "high", "blocker")
     ]
     if crit_or_high:
         has_blocking = True
@@ -191,13 +219,13 @@ def run_review_single(
     result = {
         "run_id": run_id,
         "task_id": task_id,
-        "arm": run_record.get("arm"),
-        "gate_passed": run_record.get("gate_passed"),
-        "grader_passed": run_record.get("grader_passed"),
+        "arm": arm,
+        "gate_passed": gate_passed,
+        "grader_passed": grader_passed,
         "has_blocking_issues": has_blocking,
         "blocking_findings_count": len(crit_or_high),
         "total_findings_count": len(findings),
-        "summary": report.get("summary", ""),
+        "summary": str(report.get("summary", "")),
         "findings": findings,
         "duration_seconds": duration,
     }
@@ -216,6 +244,7 @@ def main() -> None:
     parser.add_argument("--concurrency", type=int, default=4, help="Parallel reviews")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of runs evaluated")
     parser.add_argument("--family", default=None, choices=["terminal-bench", "datacurve"], help="Filter family")
+    parser.add_argument("--output", type=Path, default=Path("results/offline_review_eval_20260917.json"), help="Output path")
     args = parser.parse_args()
 
     if not DIFFS_FILE.is_file():
@@ -258,49 +287,52 @@ def main() -> None:
             err = f" [ERROR: {res['error']}]" if "error" in res else ""
             logger.info("Reviewed %s -> %s (%d findings)%s", res["task_id"], status, res.get("total_findings_count", 0), err)
 
-    # Compute Metrics
-    # 1. False passes: how many were blocked (True Positives for review)?
-    fp_runs = [res for res in results if res.get("grader_passed") is False]
-    tp_review = [res for res in fp_runs if res.get("has_blocking_issues") is True]
+    # Sort deterministically
+    results.sort(key=lambda r: str(r.get("run_id", "")))
 
-    # 2. True passes: how many were blocked (False Positives for review)?
-    tp_runs = [res for res in results if res.get("grader_passed") is True]
-    fp_review = [res for res in tp_runs if res.get("has_blocking_issues") is True]
-    tn_review = [res for res in tp_runs if res.get("has_blocking_issues") is False]
+    # Compute Metrics
+    # Filter valid evaluations (excluding fatal invocation errors if any)
+    valid_results = [res for res in results if "error" not in res]
+    fp_runs = [res for res in valid_results if res.get("grader_passed") is False]
+    tp_review = [res for res in fp_runs if bool(res.get("has_blocking_issues")) is True]
+
+    tp_runs = [res for res in valid_results if res.get("grader_passed") is True]
+    fp_review = [res for res in tp_runs if bool(res.get("has_blocking_issues")) is True]
+    tn_review = [res for res in tp_runs if bool(res.get("has_blocking_issues")) is False]
 
     bug_recall = len(tp_review) / len(fp_runs) if fp_runs else 0.0
     false_alarm_rate = len(fp_review) / len(tp_runs) if tp_runs else 0.0
 
     # Gate precision: baseline vs post-review
-    baseline_prec = len(tp_runs) / len(results) if results else 0.0
-    unblocked_runs = [res for res in results if res.get("has_blocking_issues") is False]
+    baseline_prec = len(tp_runs) / len(valid_results) if valid_results else 0.0
+    unblocked_runs = [res for res in valid_results if bool(res.get("has_blocking_issues")) is False]
     post_review_prec = len(tn_review) / len(unblocked_runs) if unblocked_runs else 0.0
 
     print("\n" + "=" * 80)
     print("OFFLINE REVIEW EVALUATION RESULTS")
     print("=" * 80)
     print(f"Model: {args.model}")
-    print(f"Total Runs Evaluated: {len(results)}")
+    print(f"Total Runs Evaluated: {len(results)} (Valid: {len(valid_results)})")
     print(f"  - False Passes (Gate=True, Grader=False): {len(fp_runs)}")
     print(f"  - True Passes (Gate=True, Grader=True):   {len(tp_runs)}")
     print("-" * 80)
     print("PERFORMANCE METRICS:")
     print(f"  Bug Recall (False Passes Caught / Total False Passes): {len(tp_review)}/{len(fp_runs)} ({bug_recall:.1%})")
     print(f"  False Alarm Rate (True Passes Blocked / Total True Passes): {len(fp_review)}/{len(tp_runs)} ({false_alarm_rate:.1%})")
-    print(f"  Gate Precision (Baseline):    {len(tp_runs)}/{len(results)} ({baseline_prec:.1%})")
+    print(f"  Gate Precision (Baseline):    {len(tp_runs)}/{len(valid_results)} ({baseline_prec:.1%})")
     print(f"  Gate+Review Precision:        {len(tn_review)}/{len(unblocked_runs)} ({post_review_prec:.1%})")
     print("-" * 80)
 
     # Breakdown by family
     for fam in ("terminal-bench", "datacurve"):
-        fam_results = [r for r in results if fam in r.get("task_id", "")]
+        fam_results = [r for r in valid_results if fam in r.get("task_id", "")]
         if not fam_results:
             continue
         fam_fp = [r for r in fam_results if r.get("grader_passed") is False]
         fam_tp = [r for r in fam_results if r.get("grader_passed") is True]
-        fam_caught = [r for r in fam_fp if r.get("has_blocking_issues") is True]
-        fam_false_alarms = [r for r in fam_tp if r.get("has_blocking_issues") is True]
-        fam_unblocked = [r for r in fam_results if r.get("has_blocking_issues") is False]
+        fam_caught = [r for r in fam_fp if bool(r.get("has_blocking_issues")) is True]
+        fam_false_alarms = [r for r in fam_tp if bool(r.get("has_blocking_issues")) is True]
+        fam_unblocked = [r for r in fam_results if bool(r.get("has_blocking_issues")) is False]
         fam_unblocked_tp = [r for r in fam_unblocked if r.get("grader_passed") is True]
 
         fam_recall = len(fam_caught) / len(fam_fp) if fam_fp else 0.0
@@ -318,12 +350,13 @@ def main() -> None:
     print("=" * 80)
 
     # Save summary artifact
-    out_file = Path("results/offline_review_eval_20260917.json")
-    with open(out_file, "w", encoding="utf-8") as f:
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.output, "w", encoding="utf-8") as f:
         json.dump(
             {
                 "model": args.model,
                 "total_evaluated": len(results),
+                "valid_evaluated": len(valid_results),
                 "bug_recall": bug_recall,
                 "false_alarm_rate": false_alarm_rate,
                 "baseline_precision": baseline_prec,
@@ -333,7 +366,7 @@ def main() -> None:
             f,
             indent=2,
         )
-    logger.info("Saved full evaluation results to %s", out_file)
+    logger.info("Saved full evaluation results to %s", args.output)
 
 
 if __name__ == "__main__":
