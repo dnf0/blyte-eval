@@ -278,6 +278,38 @@ somebody authoring a good gate.
 Testable: decomposition on datacurve with a deliberately weak gate. If it recovers what the gate
 destroyed, the answer to "who writes the gate" becomes "nobody needs to".
 
+## 9. The evaluation exercises a small fraction of superstate
+
+`superstate --help` lists a control plane with a dependency graph, checkpointing, rollback,
+replanning, decomposition and adversarial review. The eval calls four of those verbs.
+
+| never exercised in 309 runs | what it does |
+|---|---|
+| `review` | **adversarial code review over git diff** — judges the work by inspecting it, not by a command written before the work existed |
+| `state sync` | **reconcile state with a revised plan, preserving completed tasks** — the process adapting as work proceeds |
+| `state checkpoint` / `rollback` | undo a bad milestone and recover |
+| `state decompose` | split coarse tasks into atomic child micro-tasks |
+| `state resume` | executive briefing after context loss |
+| `state metrics`, `validate`, `apply`, `list` | telemetry and state management |
+
+Used: `init`, `prompt`, `next`, `ready`, `exec`, `status`, `note`, `doctor`, `daemon`, `handoff`.
+
+**`review` matters most**, because it is a determination of "done" that is *not* a gate. Every
+result in this document concerns a mechanism where the success criterion must be written before
+the work exists — which is why it scores 92% where the instruction states that criterion and 17%
+where it does not. Reviewing the diff has no such requirement. It has never been run.
+
+**`state sync` is the second.** It is what would let the plan change as the work reveals what the
+work actually is, rather than committing to a decomposition made in ignorance.
+
+So every number here describes `init` + `prompt` + a gate, over a single-node graph. That is the
+smallest usable subset of the product, and the +3pp should be read as a measurement of that
+subset rather than of superstate.
+
+*Found on 2026-09-17 by diffing `superstate --help` against the adapters' call sites — a check
+that should have been the first thing done, and was prompted by the user asking three times
+whether functionality had been lost.*
+
 ---
 
 ## Withdrawn

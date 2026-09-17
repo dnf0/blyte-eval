@@ -241,6 +241,20 @@ every arm -- spurious passes and spurious failures from one defect.
 `UNMEASURABLE_TASKS`. **Before quoting any pass rate, check how many of its tasks were
 gradeable** -- `TaskSpec.tests_dir is None` means no.
 
+## The eval exercises a fraction of superstate
+
+`superstate --help` lists checkpointing, rollback, replanning (`state sync`), decomposition
+(`state decompose`) and adversarial review (`review`). **None of those have ever run** in 309
+recorded runs. The adapters call `init`, `prompt`, `next`, `ready`, `exec`, `status`, `note`,
+`doctor`, `daemon` and `handoff`.
+
+Before attributing a result to "superstate", check which verbs the arm actually invokes. Every
+number in FINDINGS.md describes `init` + `prompt` + a gate over a single-node graph.
+
+`review` is the notable omission: a determination of "done" that inspects the diff rather than
+running a command someone wrote before the work existed. That is a different mechanism from
+everything measured so far, and it is unevaluated.
+
 ## A bad gate is worse than no gate
 
 Superstate replaces the agent's own judgement about when it is done with the gate's. That is a
