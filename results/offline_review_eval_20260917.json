@@ -1,0 +1,2187 @@
+{
+  "model": "gemini-3.8-flash-low",
+  "total_evaluated": 67,
+  "valid_evaluated": 67,
+  "false_passes_total": 29,
+  "false_passes_caught": 22,
+  "true_passes_total": 38,
+  "true_passes_blocked": 23,
+  "true_passes_unblocked": 15,
+  "unblocked_total": 22,
+  "bug_recall": 0.7586206896551724,
+  "false_alarm_rate": 0.6052631578947368,
+  "baseline_precision": 0.5671641791044776,
+  "gate_review_precision": 0.6818181818181818,
+  "results": [
+    {
+      "run_id": "eval-datacurve_anko-typed-variable-bindings-superstate_daemon-c4bf6ac6",
+      "task_id": "datacurve/anko-typed-variable-bindings",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 4,
+      "total_findings_count": 5,
+      "summary": "Implementation of typed variable bindings has critical defects where type constraints are enforced during declaration even when TypedBindings is disabled, and assignments via LetsStmt or operator assignments are completely unconstrained.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "vm/vmStmt.go",
+          "line_range": [
+            108,
+            122
+          ],
+          "problem": "When declaring typed variables without initial values (e.g. `var x: int64`), `SetTypeConstraint` is called regardless of `runInfo.options.TypedBindings`. If `TypedBindings` is disabled, the variable still retains a type constraint, causing subsequent assignments to be constrained when they should behave dynamically.",
+          "suggested_fix": "Only register the type constraint with `SetTypeConstraint` if `runInfo.options.TypedBindings` is enabled (or skip setting constraints when `!runInfo.options.TypedBindings`)."
+        },
+        {
+          "severity": "Critical",
+          "file": "vm/vmStmt.go",
+          "line_range": [
+            161,
+            163
+          ],
+          "problem": "In `*ast.VarStmt` execution with initial expressions, `runInfo.env.SetTypeConstraint(stmt.Names[i], targetType)` is called unconditionally even when `runInfo.options.TypedBindings` is false. This causes constraints to persist and be enforced later if `TypedBindings` is toggled or checked.",
+          "suggested_fix": "Guard `SetTypeConstraint` calls in `*ast.VarStmt` with `if runInfo.options.TypedBindings`."
+        },
+        {
+          "severity": "Critical",
+          "file": "vm/vmLetExpr.go",
+          "line_range": [
+            15,
+            26
+          ],
+          "problem": "Type constraint enforcement is only implemented inside `invokeLetExpr()` for `ast.IdentExpr` in `LetsExpr`, but variable assignment statements in Anko are represented by `ast.LetsStmt` (handled in `vmStmt.go` under `case *ast.LetsStmt:`). Assignments like `x = 20` or multi-assignments `a, b = 1, 2` bypass `invokeLetExpr()` and therefore completely bypass type constraint checking.",
+          "suggested_fix": "Add type constraint validation inside the `*ast.LetsStmt` execution logic in `vmStmt.go` where `IdentExpr` targets are assigned, ensuring both single and multi-variable assignments enforce declared constraints."
+        },
+        {
+          "severity": "High",
+          "file": "vm/vmStmt.go",
+          "line_range": [
+            151,
+            154
+          ],
+          "problem": "When decomposing a slice or array in a typed `var` declaration (e.g., `var a, b: int64 = [1, \"str\"]`), `runInfo.err` is set on type mismatch, but the loop does not immediately return or break execution, leading to partial environment definition before returning.",
+          "suggested_fix": "Immediately return from `runSingleStmt()` upon encountering a type checking error during slice/array unpacking."
+        },
+        {
+          "severity": "Medium",
+          "file": "vm/vm.go",
+          "line_range": [
+            480,
+            497
+          ],
+          "problem": "In `checkTypeMatch`, checking whether a value satisfies an interface does not handle types that implement the interface via pointer receivers when the reflected value is already a pointer or when checking interface values directly, and unwrapping `val.Elem()` from an interface can cause nil interface checks or concrete type mismatches.",
+          "suggested_fix": "Ensure interface implementation checking correctly inspects the underlying concrete value and its pointer/value methods without erroneously stripping interface types or mishandling addressability."
+        }
+      ],
+      "duration_seconds": 10.672465916955844
+    },
+    {
+      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_daemon-b18f8689",
+      "task_id": "datacurve/arktype-json-schema-refs-dependencies",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff contains multiple issues where the git diff was truncated before critical implementations or file definitions could be evaluated.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "ark/docs/components/dts/schema.ts",
+          "line_range": [
+            1,
+            3
+          ],
+          "problem": "The provided git candidate diff is truncated mid-file ([... truncated 177199 characters ...]), omitting the actual implementation diffs for dependencies/dependentRequired, dependentSchemas, $ref resolution and error formatting, enum deep equality, and if/then/else conditional schemas.",
+          "suggested_fix": "Provide the full, untruncated git diff containing the parser, semantic transformations, and schema runtime changes so that the code can be statically reviewed against the task requirements."
+        }
+      ],
+      "duration_seconds": 4.527002125047147
+    },
+    {
+      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_daemon-b5ac6f9a",
+      "task_id": "datacurve/arktype-json-schema-refs-dependencies",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 4,
+      "total_findings_count": 5,
+      "summary": "The implementation introduces $ref, dependencies, conditional (if/then/else) schemas, and deep equality for enums, but contains critical flaws in runtime schema compilation, $defs lookup scope, and circular reference handling.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "ark/json-schema/object.ts",
+          "line_range": [
+            121,
+            126
+          ],
+          "problem": "Calling `jsonSchemaToType(schema)` inside the validation predicate recompiles the dependent JSON schema on every single traversal/validation call rather than compiling it once ahead of time, causing severe performance degradation and potential parse context errors if $defs are resolved during validation.",
+          "suggested_fix": "Compile dependent schemas outside the returned predicate during schema parsing: compute `const compiled = Object.entries(depSchemas).map(([trigger, schema]) => [trigger, jsonSchemaToType(schema)])` and invoke `(schemaType as any).traverseAllows(data, ctx)` inside the predicate."
+        },
+        {
+          "severity": "Critical",
+          "file": "ark/json-schema/object.ts",
+          "line_range": [
+            168,
+            173
+          ],
+          "problem": "In `dependencies`, `jsonSchemaToType(schema)` is repeatedly called inside the validation predicate at runtime for each validation traversal instead of being precompiled during schema parsing.",
+          "suggested_fix": "Precompile `schemaDeps` before constructing the predicate closure: `const compiledSchemaDeps = schemaDeps.map(([trigger, schema]) => [trigger, jsonSchemaToType(schema)])` and use `compiledSchemaDeps` within the predicate."
+        },
+        {
+          "severity": "High",
+          "file": "ark/json-schema/json.ts",
+          "line_range": [
+            215,
+            243
+          ],
+          "problem": "`activeContext` is only initialized at the root `jsonSchemaToType` invocation and cleared in the `finally` block. Because `jsonSchemaToType` is called at validation runtime inside `parseDependencies` and `createLazyRef`, `activeContext` is overwritten or reset, breaking resolution of $ref in nested or dependent schemas.",
+          "suggested_fix": "Thread the parse context through the parsing pipeline explicitly (or preserve existing context when already set during nested/lazy calls) and ensure precompilation of all schemas so `jsonSchemaToType` is not invoked during data validation."
+        },
+        {
+          "severity": "High",
+          "file": "ark/json-schema/json.ts",
+          "line_range": [
+            41,
+            65
+          ],
+          "problem": "In `createLazyRef`, cyclic object graph traversal unconditionally returns `true` (`if (traversal.seenRefs.has(data)) return true`), which erroneously passes invalid recursive data structures instead of continuing proper structural/co-inductive validation.",
+          "suggested_fix": "Use ArkType's native alias/thunk resolution mechanism or recursion-aware cycle tracking rather than short-circuiting cycle detection to `true` on the data instance."
+        },
+        {
+          "severity": "Medium",
+          "file": "ark/json-schema/object.ts",
+          "line_range": [
+            118,
+            131
+          ],
+          "problem": "`dependencies` and `dependentSchemas` are applied via object predicates in `parseObjectJsonSchema`, which are only evaluated if data is an object. However, if implicit object detection or non-object handling is bypassed, non-object data or dependent schema validation failures might not report expected property error paths properly or may misbehave on non-plain objects.",
+          "suggested_fix": "Ensure non-object data gracefully ignores dependency keywords according to JSON Schema specification and verify error formatting conforms to standard validation traversal."
+        }
+      ],
+      "duration_seconds": 8.683893708046526
+    },
+    {
+      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_mcp-8cb72b26",
+      "task_id": "datacurve/arktype-json-schema-refs-dependencies",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate git diff was truncated before any of the implementation changes corresponding to dependencies, $ref, enum deep equality, and if/then/else conditional schemas could be included.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "ark/docs/components/dts/schema.ts",
+          "line_range": [
+            1,
+            3
+          ],
+          "problem": "The provided git diff was truncated after modifying only auto-generated type declarations (`ark/docs/components/dts/schema.ts`), omitting all substantive implementations for dependencies/dependentRequired/dependentSchemas, recursive local $ref resolution, error message enforcement, deep-equality enum checking, and if/then/else conditionals.",
+          "suggested_fix": "Provide the complete git diff containing the schema parser, validation, and reference resolution logic implementing the required keywords and error messages."
+        }
+      ],
+      "duration_seconds": 5.550683667184785
+    },
+    {
+      "run_id": "eval-datacurve_arktype-json-schema-refs-dependencies-superstate_mcp-f017fd98",
+      "task_id": "datacurve/arktype-json-schema-refs-dependencies",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 4,
+      "summary": "The implementation introduces $ref, dependencies, dependentRequired/dependentSchemas, enum deep equality, and if/then/else, but contains issues with $defs resolution, error reporting, mutation of global scopes, and conditional schema handling for boolean schemas.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "ark/json-schema/json.ts",
+          "line_range": [
+            72,
+            84
+          ],
+          "problem": "parseConditionalJsonSchema uses jsonSchemaToType((jsonSchema as any).then) and allows() to validate conditions, but if/then/else validation errors in 'then' or 'else' are converted to generic custom rejection messages rather than propagating the inner schema validation errors, and it fails to properly evaluate boolean schemas (e.g., if: false, then: false) or report expected schema failures when nested.",
+          "suggested_fix": "Compose conditional schemas using arktype schema operators or when narrowing, ensure rejection messages appropriately reflect failures from child schemas and support boolean schema cases."
+        },
+        {
+          "severity": "High",
+          "file": "ark/json-schema/json.ts",
+          "line_range": [
+            50,
+            71
+          ],
+          "problem": "resolveRef mutates global state (rootSchemaScope.resolutions and (type.$ as any).resolutions) directly using un-prefixed defName while aliasNode references `$${defName}`. In addition, global scope monkey-patching of finalize leaks or causes race conditions and does not clean up entries added to rootSchemaScope.resolutions.",
+          "suggested_fix": "Manage def resolutions within an isolated scope or ensure alias references match the resolution key (e.g. `$${defName}` vs defName) and avoid monkey-patching rootSchemaScope.finalize globally."
+        },
+        {
+          "severity": "Medium",
+          "file": "ark/json-schema/json.ts",
+          "line_range": [
+            63,
+            67
+          ],
+          "problem": "The task requirement states 'if alone (no then/else): valid no-op, imposes no constraints', but when 'if' is present without 'then' or 'else', parseConditionalJsonSchema returns undefined (no-op), yet when 'then' or 'else' exist without 'if', they should be ignored as no-ops per requirement 'then/else without if: no-op (ignored)'. While !('if' in jsonSchema) early returns undefined, if a schema contains { if: ..., then: ... } where if matches, thenValidator is checked, but when thenValidator is undefined and elseValidator is defined, if matching does nothing. Ensure 'then/else without if' is explicitly ignored even if implicit object conversion or other passes touch it.",
+          "suggested_fix": "Confirm that schemas with then/else but no if are never evaluated as constraints."
+        },
+        {
+          "severity": "Low",
+          "file": "ark/json-schema/errors.ts",
+          "line_range": [
+            95,
+            107
+          ],
+          "problem": "writeJsonSchemaNonExistentRefMessage accepts a ref string, and resolveRef passes the entire ref string (e.g. \"#/$defs/NonExistentDef\"), producing 'Unable to resolve $ref \"#/$defs/NonExistentDef\" from root $defs', which satisfies the exact requirement; however, type signature writeJsonSchemaInvalidRefFormatMessage function returns string while having return type defined with the same name as the function.",
+          "suggested_fix": "Rename type writeJsonSchemaInvalidRefFormatMessage or use separate type and function identifier to avoid type/value naming collisions in strict TypeScript settings."
+        }
+      ],
+      "duration_seconds": 8.46930650016293
+    },
+    {
+      "run_id": "eval-datacurve_expr-try-catch-errors-superstate_daemon-a4edf08f",
+      "task_id": "datacurve/expr-try-catch-errors",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 3,
+      "total_findings_count": 5,
+      "summary": "Implementation of try/catch/finally and error handling features introduces severe control-flow defects in finally handling, broken lazy evaluation for try(expr, fallback), and scope memory corruptions.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "compiler/compiler.go",
+          "line_range": [
+            1399,
+            1409
+          ],
+          "problem": "When a try or catch block finishes normally and a finally block exists, OpTryEnd / OpCatchEnd pops the result, but execution jumps past the finally block (via tryEndJump / catchEndJumps patched to len(c.bytecode) before finallyStart), skipping normal execution of finally completely.",
+          "suggested_fix": "Emit jumps to finallyStart instead of patching tryEndJump and catchEndJumps to bypass finally when finallyStart >= 0, or structure the normal path to enter finally before jumping to the exit of the try statement."
+        },
+        {
+          "severity": "High",
+          "file": "parser/parser.go",
+          "line_range": [
+            397,
+            406
+          ],
+          "problem": "Desugaring `try(expr, fallback)` into a TryNode where `fallback` is parsed directly as an expression AST node breaks the requirement that fallback is lazily-evaluated if the compiler/VM does not isolate it, but worse, it treats `try(...)` as statement-level try/catch without validating that `try(expr, fallback)` operates correctly as an expression with operand stack invariants.",
+          "suggested_fix": "Ensure `try(expr, fallback)` wraps or compiles the fallback into a guarded catch block that only evaluates and pushes `fallback` when an error occurs, verifying that if `expr` succeeds, `fallback` is not evaluated."
+        },
+        {
+          "severity": "High",
+          "file": "vm/vm.go",
+          "line_range": [
+            725,
+            747
+          ],
+          "problem": "In OpRetry, `h.inCatch` is set to false, but if the retried body succeeds, `OpTryEnd` or later handler cleanup relies on `h.retryCount` without resetting or correctly managing the handler state if nested. Furthermore, if retry occurs, previously bound catch variables in `vm.Variables` and any scope mutations are not properly cleaned up across retries.",
+          "suggested_fix": "Reset handler state cleanly upon retry, ensuring catch variable bindings are cleared or reset before jumping back to `h.tryBlock.TryStart`."
+        },
+        {
+          "severity": "Medium",
+          "file": "vm/vm.go",
+          "line_range": [
+            302,
+            305
+          ],
+          "problem": "OpDivide now checks `math.IsInf(res, 0) || math.IsNaN(res)` and panics with 'division by zero', but `runtime.ClassifyPanic` will classify 'division by zero' as 'custom' instead of preserving standard arithmetic error behavior or specific expected error classification.",
+          "suggested_fix": "Classify division by zero explicitly in `ClassifyMessage` or raise a typed `RuntimeError`."
+        },
+        {
+          "severity": "Low",
+          "file": "checker/checker.go",
+          "line_range": [
+            1387,
+            1389
+          ],
+          "problem": "Type checker returns an empty `Nature{}` when catch types do not match `tryNature`, which can cause spurious checker panics or silent type inference failure instead of registering an error on the checker context.",
+          "suggested_fix": "Add a proper type mismatch error to `v.errors` in the type checker when catch handler types are incompatible with the try block type."
+        }
+      ],
+      "duration_seconds": 8.834486000007018
+    },
+    {
+      "run_id": "eval-datacurve_expr-try-catch-errors-superstate_daemon-a9365ebf",
+      "task_id": "datacurve/expr-try-catch-errors",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 4,
+      "total_findings_count": 6,
+      "summary": "The error handling implementation introduces several critical bugs in VM state restoration, division by zero handling, OpCatchEnd jumping, and catch variable scoping.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "vm/vm.go",
+          "line_range": [
+            399,
+            401
+          ],
+          "problem": "OpDivide selectively panics on division by zero only when len(vm.handlers) > 0. When not in a try block, or in nested calls, it preserves normal behavior, causing inconsistent execution semantics.",
+          "suggested_fix": "Panic on division by zero unconditionally in runtime.Divide or in OpDivide regardless of whether active try handlers exist."
+        },
+        {
+          "severity": "Critical",
+          "file": "compiler/compiler.go",
+          "line_range": [
+            1390,
+            1400
+          ],
+          "problem": "Catch block variables allocate variable storage slots via c.addVariable and c.beginScope, but c.beginScope creates a scope that is closed with c.endScope() without emitting OpBegin/OpEnd or properly tracking runtime scope cleanup when an error panics mid-try.",
+          "suggested_fix": "Ensure VM scope frames and variable storage indices used by catch blocks are properly aligned and cleaned up, or manage catch block variable environments without leaking into parent scopes."
+        },
+        {
+          "severity": "High",
+          "file": "vm/vm.go",
+          "line_range": [
+            807,
+            810
+          ],
+          "problem": "In OpFinallyEnd, popping the finally block result (`if len(vm.Stack) > h.stackLen { vm.pop() }`) assumes exactly one value was produced by the finally block. If the finally block evaluated multiple expressions or left more items on the stack, vm.restoreState(h.stackLen, h.scopeLen) is not performed, potentially leaving dirty stack entries before pushing h.result.",
+          "suggested_fix": "Explicitly restore the stack length to h.stackLen using `vm.restoreState(h.stackLen, h.scopeLen)` before pushing `h.result`."
+        },
+        {
+          "severity": "High",
+          "file": "compiler/compiler.go",
+          "line_range": [
+            1401,
+            1406
+          ],
+          "problem": "When node.Finally != nil, OpCatchEnd is emitted with no arguments (len(c.bytecode) does not advance with a jump argument), but OpCatchEnd handling in vm.go does not branch on argument presence or jump to FinallyIP; it requires FinallyIP execution by falling through or jumping, yet without Finally it expects an argument (`vm.ip += arg`). For nodes with Finally, OpCatchEnd falls through to the next catch block instead of jumping to FinallyIP.",
+          "suggested_fix": "Emit a jump to info.FinallyIP or patch a jump to the finally block at the end of each catch clause when Finally is present."
+        },
+        {
+          "severity": "Medium",
+          "file": "vm/vm.go",
+          "line_range": [
+            171,
+            191
+          ],
+          "problem": "If a panic occurs and vm.handlePanic catches it, the loop continues `vm.exec(program, env)` with the updated `vm.ip`. However, local variables inside `vm.exec` such as `fnArgsBuf` are reset on each re-entry, and if vm.ip exceeds bytecode length due to bad jump offsets, the loop terminates without proper cleanup.",
+          "suggested_fix": "Add boundary checks on `vm.ip` before continuing execution, and verify bytecode instruction boundaries when resuming after panic."
+        },
+        {
+          "severity": "Medium",
+          "file": "checker/checker.go",
+          "line_range": [
+            1376,
+            1378
+          ],
+          "problem": "retryNode returns anyType in type-checking, but the checker does not validate whether RetryNode is located inside a catch block, allowing expressions like `retry` to pass static checking and fail only at runtime.",
+          "suggested_fix": "Track catch block context in Checker and emit a compile/type-check error if RetryNode appears outside of a catch clause."
+        }
+      ],
+      "duration_seconds": 10.421792041044682
+    },
+    {
+      "run_id": "eval-datacurve_expr-try-catch-errors-superstate_mcp-5383c9f0",
+      "task_id": "datacurve/expr-try-catch-errors",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 3,
+      "total_findings_count": 5,
+      "summary": "Implements try/catch/finally, retry, throw, and errtype, but has fatal control flow bugs in VM panic handling and finally-without-catch compilation.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "vm/vm.go",
+          "line_range": [
+            111,
+            119
+          ],
+          "problem": "When a panic occurs outside any try block (or escapes an unhandled catch/finally), handlePanic returns false and Run executes `panic(err)`. Because Run previously caught panics and returned `(_, err error)`, re-panicking breaks expr's top-level execution contract and causes unhandled process panics instead of returning an error.",
+          "suggested_fix": "In vm.Run, recover unhandled panics and convert them to `err` return value (e.g. using `return nil, fmt.Errorf(\"%v\", err)` or preserving the existing runner recover behavior) instead of re-raising `panic(err)`."
+        },
+        {
+          "severity": "Critical",
+          "file": "compiler/compiler.go",
+          "line_range": [
+            1372,
+            1445
+          ],
+          "problem": "For `try ... finally` without any `catch` clause (`len(node.Catches) == 0`), `catchJump` points directly to the unhandled block, but `OpSetFinally` was emitted after `OpTry`. On panic during `node.Body`, `handlePanic` jumps to `catchJump` with `frame.inCatch = true`. Because `hasUnhandled` is true and `node.Finally != nil`, it executes `OpCatchUnhandled` and jumps to finally. However, if `node.Finally` is present without catches, `finallyJump` was never patched to before trySuccess, causing mismatched jump offsets and invalid instruction offsets.",
+          "suggested_fix": "When compiling `try ... finally` with zero catches, emit an explicit bypass/forward jump or structure the try block so `catchJump` correctly vectors to finally setup and patch `finallyJump` to the actual finally block start."
+        },
+        {
+          "severity": "High",
+          "file": "checker/checker.go",
+          "line_range": [
+            1350,
+            1373
+          ],
+          "problem": "In `tryNode`, when `node.Catches` is non-empty, type check returns `Nature{}` if `!bodyNature.AssignableTo(catchNature)`. In expr's checker, returning an empty `Nature{}` without proper type unification causes subsequent expressions or parent operators to fail type assertions or incorrectly report unknown types, and `catchNature` only retains the nature of the last catch block instead of unifying across all catch handlers.",
+          "suggested_fix": "Unify natures across all catch handlers and the try body (e.g., using `anyType` or union/assignability checks across all clauses) rather than only checking `bodyNature.AssignableTo(catchNature)` for the last catch handler."
+        },
+        {
+          "severity": "Medium",
+          "file": "vm/vm.go",
+          "line_range": [
+            768,
+            778
+          ],
+          "problem": "In `OpFinallyEnd`, `vm.pop()` pops the result of the `node.Finally` expression, but if `node.Finally` is empty or didn't leave a value on the stack, it pops an underflowed stack item or the prior try/catch result. Furthermore, if `frame.pendingErr != nil`, `vm.pop()` still executes before panic.",
+          "suggested_fix": "Ensure `node.Finally` always leaves a value on the stack or only pop if `node.Finally` evaluated to an expression value, and ensure `vm.pop()` does not pop below the expected frame stack length."
+        },
+        {
+          "severity": "Medium",
+          "file": "compiler/compiler.go",
+          "line_range": [
+            1154,
+            1160
+          ],
+          "problem": "`throw` and `errtype` argument count checks in `BuiltinNode` invoke Go `panic(...)` directly inside the compiler rather than generating a compile error or letting `p.error` / `checker` report errors gracefully.",
+          "suggested_fix": "Report a proper compiler/diagnostic error via `c.error(...)` or rely on parser/checker validation instead of raw panics."
+        }
+      ],
+      "duration_seconds": 10.100446250056848
+    },
+    {
+      "run_id": "eval-datacurve_expr-try-catch-errors-superstate_mcp-b9a01518",
+      "task_id": "datacurve/expr-try-catch-errors",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 4,
+      "total_findings_count": 5,
+      "summary": "Implements try-catch-finally, retry, throw, and errtype, but has critical flaws in parser operator precedence/lexing, error classification edge cases, VM function closure execution overhead/context handling, and variable scope compilation.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "parser/lexer/state.go",
+          "line_range": [
+            137,
+            142
+          ],
+          "problem": "Adding 'try', 'catch', 'finally', and 'retry' directly to operator emitting in the lexer prevents them from being used or lexed properly as identifiers or keywords in expressions and unconditionally turns them into Operator tokens, which causes parsePrimary and binary operator parsing conflicts.",
+          "suggested_fix": "Introduce dedicated token kinds or handle keywords specifically in the lexer and parser rather than treating control-flow keywords solely as general operators."
+        },
+        {
+          "severity": "Critical",
+          "file": "compiler/compiler.go",
+          "line_range": [
+            1329,
+            1339
+          ],
+          "problem": "In compiler.TryNode, when catch has a variable, `c.addVariable` and `c.beginScope` are called, but `c.endScope()` is called immediately after compiling the catch body without generating variable assignment or scope cleanup bytecodes matching the VM's expectations for scope-backed variables.",
+          "suggested_fix": "Align catch variable compilation with how `let` or local variables are declared, scoped, and initialized in the compiler and VM so that variable index lookup and runtime scoping do not leak or misalign indexes."
+        },
+        {
+          "severity": "High",
+          "file": "builtin/error.go",
+          "line_range": [
+            108,
+            114
+          ],
+          "problem": "In ClassifyErrorMessage, checking if message contains 'retry limit' or 'retry exhaustion' can misclassify custom errors or strings containing those words if thrown via throw(\"retry limit reached\"), while the prompt specifies that errtype classifies custom errors from throw as 'custom' and retry-exhaustion errors as 'retry'.",
+          "suggested_fix": "Ensure that errors originating from CustomError/throw preserve their classification or are distinguished prior to checking raw substring messages."
+        },
+        {
+          "severity": "High",
+          "file": "vm/vm.go",
+          "line_range": [
+            158,
+            172
+          ],
+          "problem": "Allocating an anonymous closure `func() { ... }()` with a deferred recovery on each iteration of the outer VM execution loop introduces massive per-instruction or per-run allocation and calling overhead, and breaks debug step channel handling across iterations.",
+          "suggested_fix": "Enclose the main VM instruction execution loop in a single recovery handler or manage try/catch blocks within the existing loop without wrapping every re-entry in an extra closure."
+        },
+        {
+          "severity": "Medium",
+          "file": "optimizer/fold.go",
+          "line_range": [
+            146,
+            179
+          ],
+          "problem": "Constant folding was suppressed when divisor is 0, but optimizer constant folding should either preserve division by zero runtime panics or report them consistently rather than silently skipping float/integer folding only.",
+          "suggested_fix": "Ensure division by zero behavior during constant folding consistently defers to runtime evaluation or emits a compiler diagnostic if intended."
+        }
+      ],
+      "duration_seconds": 9.289583333069459
+    },
+    {
+      "run_id": "eval-datacurve_fastapi-deprecation-response-headers-superstate_daemon-5cf0321b",
+      "task_id": "datacurve/fastapi-deprecation-response-headers",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 4,
+      "summary": "The PR implements deprecation, sunset, and link headers along with tracking middleware and OpenAPI metadata, but violates several precedence and inheritance rules and contains a logic bug where explicit deprecation cannot be disabled.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            138,
+            150
+          ],
+          "problem": "In `resolve_inheritance`, if `route_has_explicit` is False and `include_val` is None, it checks `if route_val is not None: return route_val, False` before checking `included_router_val`. This causes `route_val` (which could have been inherited from the included router or defaulted) to take precedence over `included_router_val`, or in nested router inclusions, breaks the rule 'nearest-wins precedence applies (inner router over outer router when both specify a value and the route omits it)' as `outer_router_val` is passed as `self.deprecated` and checked last, but `include_router` parameters must override the included router's defaults.",
+          "suggested_fix": "Align precedence order according to the requirements: (1) explicit route value (`if route_has_explicit: return route_val, True`), (2) `include_val` if not None, (3) `included_router_val` (inner router) if not None, (4) `outer_router_val` if not None."
+        },
+        {
+          "severity": "High",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            1522,
+            1530
+          ],
+          "problem": "When adding a route via `add_api_route`, if `deprecated=False` is explicitly passed, `explicit_deprecated = deprecated is not None` evaluates to `True`, but in `APIRoute.__init__`, `self.deprecated` is initialized to `False`. However, when inspecting or cloning via `resolve_inheritance` or boolean checks like `route.deprecated or self.deprecated`, explicit `deprecated=False` cannot override a parent router's `deprecated=True` due to falsy fallback logic across routing helpers.",
+          "suggested_fix": "Ensure `deprecated` inheritance explicitly differentiates between `None` (omitted) and `False` (explicitly not deprecated), and avoid truthiness checks (`or`) when resolving inheritance for `deprecated`."
+        },
+        {
+          "severity": "Medium",
+          "file": "fastapi/applications.py",
+          "line_range": [
+            1020,
+            1030
+          ],
+          "problem": "`FastAPI(...)` parameters are passed to `self.router = APIRouter(...)`, but routes added directly to `FastAPI` via decorators like `@app.get` pass `deprecated=deprecated`, `sunset=sunset`, etc. If those arguments are omitted, they pass `None` into `self.router.add_api_route(...)`, which then falls back to `self.router`'s defaults, which works. However, for routes added to separate routers that are later included into `app` without explicit `include_router` parameters, the `FastAPI(...)` outer defaults are never inherited because `app.include_router` does not pass `self.router.deprecated/sunset/deprecation_date/successor_url` as fallbacks into `include_router`.",
+          "suggested_fix": "In `FastAPI.include_router`, forward `self.deprecated`, `self.sunset`, `self.deprecation_date`, and `self.successor_url` (or `self.router.*`) as default fallback arguments when not explicitly provided in `include_router`."
+        },
+        {
+          "severity": "Medium",
+          "file": "fastapi/middleware/deprecation.py",
+          "line_range": [
+            19,
+            26
+          ],
+          "problem": "Scope lookup `scope.get('route')` relies on Starlette's endpoint matching setting `scope['route']`. If an exception occurs in an earlier middleware or before routing completes (or if an endpoint matches via a mounting/sub-app mechanism where `scope['route']` is a Starlette `Route` or not set), `scope.get('route')` may not be the `APIRoute` instance. More importantly, checking `scope.get('path', '')` when `getattr(route, 'path', None)` is missing may record raw request paths with path parameters instead of parameterized route paths, leading to unbounded cardinality in `_stats`.",
+          "suggested_fix": "Ensure the route is validated as an `APIRoute` and record `route.path_format` or `route.path` rather than unparameterized request paths to avoid memory leaks from high-cardinality dynamic paths."
+        }
+      ],
+      "duration_seconds": 10.713273915927857
+    },
+    {
+      "run_id": "eval-datacurve_fastapi-deprecation-response-headers-superstate_daemon-b0136856",
+      "task_id": "datacurve/fastapi-deprecation-response-headers",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 3,
+      "summary": "Implementation introduces deprecation headers, OpenAPI extensions, and tracking middleware, but violates nested router precedence, omits required parameters from several routing APIs, and has a subtle bug with explicit False for deprecated.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            394,
+            405
+          ],
+          "problem": "In `_resolve_inherited`, when `route_val` is not None (such as when an inner router defined a default and populated `route_val` on its route), `inc_val` from the outer router's `include_router(..., val)` takes precedence over `route_val`. The requirement states: 'In nested routers, nearest-wins precedence applies (inner router over outer router when both specify a value and the route omits it)'. Because `has_route_*` is false for a route that inherited from its inner router, `inc_val` from the enclosing outer router incorrectly overrides the inner router's default.",
+          "suggested_fix": "Distinguish between route-explicit, inner-router-default, and outer-include overrides so that an inner router's default is preserved over an outer router's `include_router` parameters unless the outer router specifically overrides it per the hierarchy, or track inheritance scopes so nearest-ancestor wins."
+        },
+        {
+          "severity": "Medium",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            394,
+            404
+          ],
+          "problem": "Boolean `deprecated=False` at route level is not handled cleanly when inherited or checked via truthiness: `route_has_explicit` is set to `deprecated is not None`, but downstream handling in `_apply_deprecation_headers` checks `elif deprecated:` and `DeprecationTrackingMiddleware` does `bool(getattr(route, 'deprecated', False)...)`. If a parent router sets `deprecated=True` and a route sets `deprecated=False`, `_resolve_inherited` returns `False`, but `route.has_route_deprecated` is True while `final_deprecated` is False. If `include_router` has `deprecated=True`, `_resolve_inherited` will see `route_has_explicit=True` and keep `False`, which works, but `deprecated or self.deprecated` was previously used. Ensure explicit `deprecated=False` explicitly disables deprecation and does not emit `Deprecation: true` or increment tracking hits.",
+          "suggested_fix": "Ensure explicit `deprecated=False` is properly tested and respected across all middleware, openapi, and header emission paths without being clobbered or treated as omitted."
+        },
+        {
+          "severity": "Medium",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            1470,
+            1490
+          ],
+          "problem": "`APIRouter.add_api_route` and `FastAPI.add_api_route` accept the new parameters, but convenience wrapper decorators/methods on `APIRouter` or `FastAPI` (such as `websocket`, `add_api_websocket_route` if applicable, or sub-routing helpers) might not expose them, and `include_router` does not forward `deprecated`, `sunset`, `deprecation_date`, `successor_url` when `route` is not an `APIRoute` (e.g. nested sub-applications or custom routes mounted in a router).",
+          "suggested_fix": "Verify that all routing registration methods and route types consistently handle the new deprecation attributes."
+        }
+      ],
+      "duration_seconds": 8.871208375087008
+    },
+    {
+      "run_id": "eval-datacurve_fastapi-deprecation-response-headers-superstate_mcp-1c4740c1",
+      "task_id": "datacurve/fastapi-deprecation-response-headers",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 4,
+      "summary": "Implementation introduces deprecation and sunset metadata to routing and OpenAPI but has critical defects in router inheritance resolution, scope route extraction in routing handlers, and missing parameters on APIRouter.websocket/add_api_websocket.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            764,
+            784
+          ],
+          "problem": "In `get_request_handler`, `request.scope.get('route')` is used to look up route deprecation properties, but Starlette HTTP endpoints do not universally set `scope['route']` (or `scope['endpoint']` is used instead). When `scope.get('route')` is None, `eff_deprecated`, `eff_sunset`, `eff_deprecation_date`, and `eff_successor_url` fall back to the parameters captured at handler generation time, but for routes added through `include_router`, the route's updated attributes (`route.deprecated`, `route.sunset`, etc.) will not be reflected at runtime if `scope.get('route')` is absent.",
+          "suggested_fix": "Ensure `route` is passed directly into the request handler closure or bound when creating the endpoint handler rather than relying solely on `request.scope.get('route')`."
+        },
+        {
+          "severity": "High",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            1920,
+            1963
+          ],
+          "problem": "In `APIRouter.include_router`, `resolve_inherited` passes `route.deprecated` as `inner_val`. However, `route.deprecated` on an included route may have already been defaulted from its parent router, causing `inner_val` to mask `inc_val` (the values passed to `include_router(...)`). According to the requirement: 'For included routers, `include_router(...)` parameters apply to omitted route values and override the included router\\'s own defaults'. When `route._route_deprecated` is None, `r_dep` is None, but passing `route.deprecated` as `inner_val` before `inc_val` in the fallback logic causes the included router's default to be used if not carefully separated from route-level overrides.",
+          "suggested_fix": "Check `r_val` first (route-level explicit value). If None, check `inc_val` (`include_router` argument). If `inc_val` is None, check the included router's default (`inner_val`), and finally fallback to `self_val` (`self.deprecated`). Make sure `inner_val` represents the included router's configured default, not the already-defaulted route value."
+        },
+        {
+          "severity": "Medium",
+          "file": "fastapi/middleware/deprecation.py",
+          "line_range": [
+            21,
+            38
+          ],
+          "problem": "In `DeprecationTrackingMiddleware`, `scope.get('route')` is checked in the `finally` block. If `scope.get('route')` is None (or if routing fails with 404/405 or middleware runs outside router scope where `scope['route']` is not populated), hits are never recorded even for deprecated endpoints.",
+          "suggested_fix": "Resolve matching routes using the router or inspect `scope.get('endpoint')` / app routing table if `scope.get('route')` is not set by default."
+        },
+        {
+          "severity": "Low",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            349,
+            356
+          ],
+          "problem": "In `format_rfc7231`, naive `datetime` instances (`d.tzinfo is None`) are assumed to be UTC via `replace(tzinfo=timezone.utc)`. If a naive datetime representing local time is passed, it is not converted properly to GMT/UTC.",
+          "suggested_fix": "Document naive datetime UTC assumption or enforce timezone awareness / use `.astimezone(timezone.utc)` consistently."
+        }
+      ],
+      "duration_seconds": 9.558975042076781
+    },
+    {
+      "run_id": "eval-datacurve_fastapi-deprecation-response-headers-superstate_mcp-663cde42",
+      "task_id": "datacurve/fastapi-deprecation-response-headers",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 5,
+      "summary": "The candidate diff implements routing and header deprecation parameters, but fails to update APIRoute's request handler when modifying routes during router inclusion, contains flawed nested router precedence logic, omits websocket route updates, and fails to export or add the tracking middleware.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            2034,
+            2037
+          ],
+          "problem": "In APIRouter.include_router, route metadata attributes (deprecated, sunset, deprecation_date, successor_url) on newly added APIRoute instances are updated after route creation, but route.app (the ASGI endpoint returned by get_request_handler) was already generated during add_api_route with closed-over stale parameter values. As a result, the runtime response headers generated by _apply_deprecation_headers in get_request_handler ignore values resolved during include_router.",
+          "suggested_fix": "Regenerate route.app via route.app = route.get_route_handler() (or pass the resolved deprecation/sunset values directly into add_api_route) so that the handler closure binds the fully resolved parameters."
+        },
+        {
+          "severity": "High",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            390,
+            415
+          ],
+          "problem": "_resolve_inherited_value prioritizes include_param_val over route_nearest_ancestor_val (inner router). If an inner router explicitly specifies a deprecation/sunset value and an outer router includes it with include_router(..., sunset=...), the requirement states 'In nested routers, nearest-wins precedence applies (inner router over outer router when both specify a value and the route omits it)'. The current precedence rule violates this constraint.",
+          "suggested_fix": "Update _resolve_inherited_value to evaluate nearest ancestor router defaults (inner router) before outer include_router overrides, or properly distinguish between direct include_router parameters on a route versus nested router definitions according to specification precedence."
+        },
+        {
+          "severity": "Medium",
+          "file": "fastapi/routing.py",
+          "line_range": [
+            1470,
+            1555
+          ],
+          "problem": "APIRouter.add_api_route resolves defaults using self.deprecated/self.sunset, but when include_router includes an APIRouter, routes added directly to the included router prior to inclusion do not have their request handlers updated with include_router parameter overrides if include_router doesn't rebuild or recreate them properly.",
+          "suggested_fix": "Ensure that add_api_route and include_router work consistently by passing resolved inherited values when calling add_api_route during include_router."
+        },
+        {
+          "severity": "Medium",
+          "file": "fastapi/applications.py",
+          "line_range": [
+            1019,
+            1035
+          ],
+          "problem": "FastAPI constructor sets self.deprecated, self.sunset, self.deprecation_date, and self.successor_url, but router.include_router calls on app.router do not inherit FastAPI's outermost defaults unless explicitly forwarded, causing routes included via app.include_router to miss root FastAPI defaults.",
+          "suggested_fix": "Ensure FastAPI.include_router passes its own instance defaults (self.deprecated, self.sunset, etc.) down to router.include_router when values are omitted."
+        },
+        {
+          "severity": "Low",
+          "file": "fastapi/middleware/deprecation.py",
+          "line_range": [
+            1,
+            38
+          ],
+          "problem": "DeprecationTrackingMiddleware is defined in fastapi/middleware/deprecation.py but is not exported in fastapi/middleware/__init__.py or fastapi/__init__.py.",
+          "suggested_fix": "Export DeprecationTrackingMiddleware in fastapi/middleware/__init__.py and/or fastapi/__init__.py."
+        }
+      ],
+      "duration_seconds": 8.961810667067766
+    },
+    {
+      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_daemon-966e40a2",
+      "task_id": "datacurve/httpx-multipart-response-parsing",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "Implementation correctly satisfies the multipart response parsing specifications across sync and async streams, framing rules, and header validation, with no blocking issues.",
+      "findings": [],
+      "duration_seconds": 4.176684458972886
+    },
+    {
+      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_daemon-bd09a600",
+      "task_id": "datacurve/httpx-multipart-response-parsing",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 2,
+      "summary": "Implementation introduces multipart parsing for Response with minor issues in header continuation rstripping and trailing line terminator handling at EOF.",
+      "findings": [
+        {
+          "severity": "Medium",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            579,
+            584
+          ],
+          "problem": "Header continuation lines are rstripped of spaces/tabs (`line.rstrip(b\" \\t\")`), which unintentionally strips valid trailing whitespace from folded header values instead of appending the full continuation line as required.",
+          "suggested_fix": "Append `line` directly without `.rstrip(b\" \\t\")` after validating that `line.strip(b\" \\t\")` is non-empty."
+        },
+        {
+          "severity": "Low",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            440,
+            461
+          ],
+          "problem": "In `_split_lines_sync` and `_split_lines_async`, when the stream ends with a trailing CR or LF, the final iteration over remaining `buf` can yield an empty line with an empty terminator after the final newline instead of stopping, which may affect boundary parsing if content terminates exactly on a line boundary.",
+          "suggested_fix": "Ensure `buf` handling at EOF terminates once any final empty trailing segment following a terminator is handled, or only yield non-empty trailing bytes when no terminator remains."
+        }
+      ],
+      "duration_seconds": 5.84164374996908
+    },
+    {
+      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_mcp-00b521a8",
+      "task_id": "datacurve/httpx-multipart-response-parsing",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 3,
+      "summary": "Implementation correctly supports sync and async multipart response parsing according to specifications, but fails to check for boundary-like malformed initial lines when non-delimiter lines precede the boundary, and mishandles continuations when duplicate headers are folded or stripped.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            507,
+            523
+          ],
+          "problem": "The requirement states: 'If the message starts with a line beginning `--boundary` that is not an exact delimiter line, raise `httpx.DecodingError`; elsewhere, boundary-like non-delimiter lines are regular content.' If the very first line starts with `--boundary` but is split across chunks, or if `_process_line` is invoked, `self.is_first_line` is set to False after the first line. However, if the first line is empty or whitespace-only before CRLF, or if a line starting with `--boundary` that is not an exact delimiter appears at the very start of the stream, it is only checked if it's the exact first line. More critically, if the first chunk fed does not contain a full line terminator (e.g. b'--BB-bad'), `_extract_lines(buffer, is_eof=False)` returns empty lines, and `finish()` processes it with `is_eof=True`, but if content was buffered before or empty preamble lines occurred, `self.is_first_line` behavior is fragile. Furthermore, if the message begins with a non-delimiter line starting with `--boundary` followed by EOF with no line break (e.g. `b'--boundary-invalid'`), `finish()` processes it, but because `is_first_line` is handled properly only when lines are yielded, any leading chunk without line terminator might delay detection.",
+          "suggested_fix": "Ensure `self.is_first_line` specifically flags the very first physical line of the stream regardless of chunking, and ensure the condition properly verifies whether line 1 starts with `b'--' + boundary` without trailing delimiter syntax."
+        },
+        {
+          "severity": "Medium",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            542,
+            550
+          ],
+          "problem": "When parsing header continuation lines, `new_val = (prev_val + b' ' + stripped) if prev_val else stripped` and `name = name.strip(b' \\t')` strip leading/trailing whitespace, but standard RFC 822/7230 header continuation folds with a single space or preserves whitespace structure as required: 'Continuations (SP/TAB + non-whitespace) append to the previous header value; duplicates are preserved.' If a continuation line has internal whitespace or ends with whitespace, `line.strip(b' \\t')` strips trailing whitespace from the continuation, and if `prev_val` was empty, it replaces it rather than appending. Also, `stripped = line.strip(b' \\t')` only rejects if `not stripped`, but continuation is defined as `SP/TAB + non-whitespace`, which means `line.lstrip(b' \\t')` should be appended with a space or prefix.",
+          "suggested_fix": "Only strip leading SP/HTAB from continuation lines when appending to previous header value, preserving trailing spaces unless required, and verify that continuation line starts with SP/HTAB followed by non-whitespace."
+        },
+        {
+          "severity": "Low",
+          "file": "httpx/__init__.py",
+          "line_range": [
+            62,
+            66
+          ],
+          "problem": "`MultipartPart` is added to `httpx.__all__` in `httpx/__init__.py`, but it is not imported into the package namespace in `httpx/__init__.py`.",
+          "suggested_fix": "Add `MultipartPart` to the imports from `._models` (or `._multipart`) in `httpx/__init__.py` so that `httpx.MultipartPart` can actually be accessed via the top-level package."
+        }
+      ],
+      "duration_seconds": 10.74222020804882
+    },
+    {
+      "run_id": "eval-datacurve_httpx-multipart-response-parsing-superstate_mcp-9010ed54",
+      "task_id": "datacurve/httpx-multipart-response-parsing",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 3,
+      "total_findings_count": 5,
+      "summary": "The PR implements multipart response parsing, but has critical bugs in message-start validation, header continuation parsing, and public export exposure.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            584,
+            597
+          ],
+          "problem": "In `_process()`, when `self.state == \"START\"`, calling `self._read_line()` strips the first line of the body. If that first line is preamble text, `self.state` transitions to `PREAMBLE`, but the first line has already been permanently discarded from `self.buffer`. More critically, if the response starts with a line beginning with `--boundary` that is NOT an exact delimiter (e.g. `--boundaryextra`), the requirement specifies: 'If the message starts with a line beginning `--boundary` that is not an exact delimiter line, raise `httpx.DecodingError`; elsewhere, boundary-like non-delimiter lines are regular content.' If a chunked stream delivers data where the first line isn't complete, `_read_line()` might return None or only read partial data; but worse, when a message starts with a preamble line that does not start with `--boundary`, and later has `--boundaryextra`, `PREAMBLE` state incorrectly ignores `--boundaryextra`, which is correct for later lines, but `START` line checking fails if leading empty lines or any line terminator occurs first before the boundary check.",
+          "suggested_fix": "Ensure that the initial line check strictly evaluates whether the very first line of the raw message starts with `--boundary` before discarding or transitioning to preamble parsing, and raise `DecodingError` if it starts with `--boundary` but is not an exact delimiter line."
+        },
+        {
+          "severity": "Critical",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            640,
+            650
+          ],
+          "problem": "When parsing header continuation lines, `line` is decoded / handled as `bytes`. `self.current_headers[-1] = (prev_k, prev_v + line)` appends `line` (which includes leading whitespace) to `prev_v` directly without stripping or normalisation, and then when blank line terminates headers: `clean_headers = [(k, v.strip(b\" \\t\")) for k, v in self.current_headers]`. However, `self.headers_class(clean_headers)` expects strings or tuples compatible with `Headers` (which decodes bytes or accepts str/bytes), but if `prev_v` was stripped of leading/trailing whitespace upon creation in `val.strip(b\" \\t\")`, appending `line` (e.g. `b\" val2\"`) directly produces `val1 val2`. However, if `clean_headers` only strips leading/trailing of the combined value, any subsequent continuation line retains its raw prefix without space normalization per RFC folding rules (or space separator). Even more critically, `self.headers_class` in `Headers([(name, val)])` converts bytes to str or requires bytes, but `Headers` in `_models.py` expects `typing.Mapping[str, str] | typing.Iterable[tuple[str | bytes, str | bytes]]`. If continuation line has CRLF or CR/LF preserved, note that `_read_line()` strips line terminators, so `line` contains the raw continuation line with leading SP/TAB. However, RFC 7230 / MIME folding replaces CRLF + WSP with either a single SP or appends the folded content. Here it appends `line` directly as `prev_v + line`. If `prev_v` had trailing spaces before being stripped, notice line 655 strips `val = val.strip(b\" \\t\")` on the first line, so `prev_v + line` becomes `b\"val1\" + b\" val2\" = b\"val1 val2\"`. But if continuation line had trailing spaces, they are only stripped at the very end. However, if there are multiple continuation lines, `prev_v + line` could concatenate without appropriate spacing if continuation line had only `\\t`.",
+          "suggested_fix": "Verify that header continuation lines follow RFC/task specifications: continuations (SP/TAB + non-whitespace) append to the previous header value, and ensure leading/trailing whitespace semantics match expectations."
+        },
+        {
+          "severity": "High",
+          "file": "httpx/__init__.py",
+          "line_range": [
+            62,
+            67
+          ],
+          "problem": "`MultipartPart` is added to `__all__` in `httpx/__init__.py`, but it is not imported into the namespace of `httpx/__init__.py` (there is no `from ._multipart import MultipartPart` in `httpx/__init__.py`), causing an `AttributeError` when accessing `httpx.MultipartPart`.",
+          "suggested_fix": "Import `MultipartPart` in `httpx/__init__.py`: `from ._multipart import MultipartPart`."
+        },
+        {
+          "severity": "Medium",
+          "file": "httpx/_models.py",
+          "line_range": [
+            989,
+            994
+          ],
+          "problem": "In `Response.iter_multipart()` and `Response.aiter_multipart()`, when iterating over an already consumed/closed stream, checking `if self.is_stream_consumed: raise StreamConsumed()` and `if self.is_closed: raise StreamClosed()` references `StreamClosed`, which is not imported in `_models.py` (only `StreamConsumed` is imported from `._exceptions` on line 30). This will raise a `NameError: name 'StreamClosed' is not defined` if `is_closed` is true and `is_stream_consumed` is false.",
+          "suggested_fix": "Import `StreamClosed` from `._exceptions` in `httpx/_models.py`."
+        },
+        {
+          "severity": "Medium",
+          "file": "httpx/_multipart.py",
+          "line_range": [
+            483,
+            520
+          ],
+          "problem": "In `_find_body_delimiter`, when checking preceding line terminator before delimiter: `pos >= 2 and buf[pos - 2 : pos] == b\"\\r\\n\"`, `buf[pos - 1] == 10`, `buf[pos - 1] == 13`. If a chunk boundary cuts between `\\r` and `\\n` immediately preceding a delimiter (e.g. `...body\\r` in chunk 1 and `\\n--boundary` in chunk 2), `pos` will be at index 1 in chunk 2 buffer (`buf[0] == 10`), so `buf[pos-1] == 10` evaluates to true and `preceding_eol_start = pos - 1 = 0`. However, the preceding `\\r` was left at the end of the previous buffer/yielded chunk or could be split across chunks during body streaming if the parser buffers raw bytes without accounting for split CRLF preceding delimiters.",
+          "suggested_fix": "Handle chunk boundary splits for the delimiter's preceding line terminator (CRLF split across chunks before the boundary delimiter) so `\\r` is not mistakenly treated as part of the body when followed by `\\n--boundary` across chunk boundaries."
+        }
+      ],
+      "duration_seconds": 14.809826834127307
+    },
+    {
+      "run_id": "eval-datacurve_katex-multicolumn-array-spans-superstate_mcp-8ced679f",
+      "task_id": "datacurve/katex-multicolumn-array-spans",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 4,
+      "summary": "The implementation introduces \\multicolumn with MathML attributes and validation, but fails to check column limits in environments without pre-declared column counts, incorrectly builds multi-column cells across rows in the HTML vertical-list builder, and does not render vertical rules defined in \\multicolumn alignment specs.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1332,
+            1340
+          ],
+          "problem": "In environments where totalCols is undefined during parsing (e.g. matrix, cases, smallmatrix, aligned), exceeding remaining columns in a row is not validated because state.totalCols is undefined, violating the requirement to throw ParseError when n exceeds remaining columns in the current row.",
+          "suggested_fix": "Track or validate column limits across rows consistently in matrix/aligned environments, or infer row widths when validating columns against the environment structure."
+        },
+        {
+          "severity": "Critical",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            397,
+            424
+          ],
+          "problem": "In htmlBuilder, cells spanning multiple columns (span > 1) place content in outrow[colIdx] and leave intermediate indices undefined, but KaTeX arrays assemble vertical columns column-by-column (for c = 0 to nc - 1). Any row with undefined entries causes row[c] to be undefined or incorrectly offset against other rows, causing runtime errors or misaligned table layouts.",
+          "suggested_fix": "Fill intermediate spanned columns in outrow with empty placeholder DOM nodes or adjust the column-wise vlist construction and width calculations to properly account for multi-column horizontal spans."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1325,
+            1330
+          ],
+          "problem": "The task specifies optional '|' for vertical rules in \\multicolumn alignment, but any vertical rules specified in rawAlign (e.g., '|c|') are ignored and never rendered in the HTML/MathML builders.",
+          "suggested_fix": "Parse leading and trailing vertical rules from rawAlign and incorporate them into the vertical separator rendering for the cell's row."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            636,
+            639
+          ],
+          "problem": "colAlign calculation checks 'colElems.length === 1 && singleCustomAlign', which only applies custom alignment if the entire column consists of a single row. Multi-row tables with \\multicolumn will fall back to default column alignment instead of overriding it for the cell.",
+          "suggested_fix": "Apply alignment styles directly to individual cell elements or cell wrappers rather than relying on a single column-level class when customAlign is present."
+        }
+      ],
+      "duration_seconds": 8.954762625042349
+    },
+    {
+      "run_id": "eval-datacurve_katex-multicolumn-array-spans-superstate_mcp-d519c2af",
+      "task_id": "datacurve/katex-multicolumn-array-spans",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 3,
+      "total_findings_count": 4,
+      "summary": "The diff introduces \\multicolumn parsing and rendering support, but suffers from severe layout misalignment in HTML output where spanned cells leave trailing columns unpopulated and misalignment across rows, along with unrendered column rules specified in \\multicolumn.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            418,
+            431
+          ],
+          "problem": "In `htmlBuilder`, `outrow[col] = elt` places the multicolumn cell only in column index `col` and advances by `col += span`, leaving `outrow` undefined for intermediate spanned indices. When iterating each column index `c` later (line 613: `const elem = row[c]`), `elem` is undefined for all spanned slots, causing `TypeError: Cannot read properties of undefined (reading 'depth')` on any row containing a multi-row array or any row evaluated against that column index.",
+          "suggested_fix": "Populate empty placeholder elements (or an empty span) for all spanned indices `col + 1` through `col + span - 1` in `outrow` so column iterations do not encounter undefined elements, or adjust HTML table construction to properly represent multi-column cell spans across columns."
+        },
+        {
+          "severity": "Critical",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            629,
+            634
+          ],
+          "problem": "The HTML vertical column generator (`makeVList`) renders columns independently as vertical lists. Setting `textAlign` on the multicolumn element and its wrapper inside column `c` does not span the physical visual width across the adjacent `span - 1` columns; adjacent columns still render normally with their own contents/spacers, causing overlapping or misaligned content rather than genuine multi-column spanning in HTML.",
+          "suggested_fix": "Implement proper column width aggregation across spanned columns (including intervening `arraycolsep` spacers) or structure the row/cell layout to span across multiple vertical column lists."
+        },
+        {
+          "severity": "High",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1354,
+            1370
+          ],
+          "problem": "The requirement specifies supporting optional vertical bars in the alignment spec (e.g. `|c|`), and the parser computes `beforeRules` and `afterRules`, but neither `htmlBuilder` nor `mathmlBuilder` renders these vertical rules for the multicolumn cell.",
+          "suggested_fix": "In `htmlBuilder` and `mathmlBuilder`, inspect `mc.beforeRules` and `mc.afterRules` to render the appropriate vertical borders or rule elements on the cell."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/environments/array.ts",
+          "line_range": [
+            1324,
+            1332
+          ],
+          "problem": "The validation check for `exceeds remaining columns in current row` only checks `currentArray.declaredCols > 0`. For matrix environments (`matrix`, `pmatrix`, etc.) and `aligned`, `declaredCols` is initialized to 0, which bypasses validation when `n` exceeds the number of columns in rows of those environments.",
+          "suggested_fix": "Track declared/maximum columns for matrix/aligned environments where column counts are bounded or established by row lengths, and validate that `n` does not exceed the remaining columns."
+        }
+      ],
+      "duration_seconds": 8.243071832926944
+    },
+    {
+      "run_id": "eval-datacurve_meriyah-explicit-resource-declarations-superstate_daemon-a766842b",
+      "task_id": "datacurve/meriyah-explicit-resource-declarations",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 2,
+      "summary": "Implementation of `using` and `await using` declarations generally covers requirements and snapshot updates, but improperly allows `using` declarations when `parser.options.next` is false.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "src/parser.ts",
+          "line_range": [
+            278,
+            280
+          ],
+          "problem": "In `parseStatementListItem`, encountering `Token.UsingKeyword` unconditionally routes to `parseUsingStatement`. Inside `parseUsingStatement`, the declaration branch checks `parser.options.next`, but when `next` is false, it falls back to parsing as an expression/label rather than maintaining standard ES behavior (where `using` is a regular contextual identifier or keyword depending on flags/mode, and `using x = null;` would produce a SyntaxError). Moreover, `parseForStatement` also distinguishes `using` solely when `parser.options.next` is true, creating inconsistent keyword handling when `next: false`.",
+          "suggested_fix": "In `parseStatementListItem`, check `if (parser.options.next)` before delegating `Token.UsingKeyword` to `parseUsingStatement`, or ensure `parseUsingStatement` falls back to `parseStatement(parser, context, scope, privateScope, origin, labels, 1)` when `!parser.options.next`."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/parser.ts",
+          "line_range": [
+            1671,
+            1709
+          ],
+          "problem": "`isFollowedByUsing` only scans whitespace and multiline block comments (`/* ... */`). It does not account for single-line comments (`// ...\n`), where `using` on the next line could be erroneously matched, or skip other valid trivia. Furthermore, checking raw characters in `isFollowedByUsing` bypasses Unicode identifier characters or escape sequences if encountered.",
+          "suggested_fix": "Handle single-line comments (rejecting if a newline is encountered or skipping comments properly) in `isFollowedByUsing`, and ensure line terminators within comments correctly prevent recognizing `await using`."
+        }
+      ],
+      "duration_seconds": 6.922803207999095
+    },
+    {
+      "run_id": "eval-datacurve_meriyah-explicit-resource-declarations-superstate_daemon-aeba1ed3",
+      "task_id": "datacurve/meriyah-explicit-resource-declarations",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 4,
+      "total_findings_count": 5,
+      "summary": "Implementation of `using` and `await using` declarations introduces bugs in keyword contextual tokenization and for-of/for-in loop head variable declaration tracking.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "src/token.ts",
+          "line_range": [
+            199,
+            199
+          ],
+          "problem": "Token.UsingKeyword assigns numeric base 138 with bitflags (`Contextual | IsExpressionStart | IsIdentifier`), but KeywordDescTable uses `parser.getToken() & Token.Type` for indexing. Because `Token.Type` masks the lower 8 bits (up to 255) and previous indices only reached 137, indexing KeywordDescTable with `138` results in undefined or out-of-sync keyword mappings, breaking error formatting and token classification when `Token.UsingKeyword` is looked up.",
+          "suggested_fix": "Verify enum numbering consistency with the existing table structure and ensure `Token.UsingKeyword` base value correctly matches its slot in `KeywordDescTable`."
+        },
+        {
+          "severity": "Critical",
+          "file": "src/parser.ts",
+          "line_range": [
+            263,
+            266
+          ],
+          "problem": "When `parser.options.next` is false, `Token.UsingKeyword` is tokenized unconditionally via `descKeywordTable['using']`. In `parseStatementListItem`, non-next mode falls back to `parseExpressionOrLabelledStatement`, but in other positions (such as object properties, parameters, or expressions), recognizing `using` as a contextual keyword instead of a normal identifier or without checking `parser.options.next` can break code when `next` is false.",
+          "suggested_fix": "Only treat `using` as `Token.UsingKeyword` in the scanner if `parser.options.next` is enabled, or ensure all expression/identifier/binding parsing paths properly handle `Token.UsingKeyword` as a contextual identifier when `!parser.options.next`."
+        },
+        {
+          "severity": "High",
+          "file": "src/parser.ts",
+          "line_range": [
+            2177,
+            2185
+          ],
+          "problem": "In `parseForStatement`, after parsing `init` as a `using` declaration, `isVarDecl` remains `true` but `isUsingDecl` is not retained or checked when determining for-in versus for-of/for-await-of. Specifically, line 2336 checks `if (isUsingDecl)` inside the for-in branch, but if multiple declarators or loop head conditions alter state, or if `for (using x in y)` is encountered, `isUsingDeclaration` consumes the variable list with `Context.DisallowIn`, which will throw an unexpected token or missing initializer error inside `parseVariableDeclarationList` before reaching the `UsingInForIn` check at line 2336.",
+          "suggested_fix": "Detect `Token.InKeyword` after the declarator identifier or pattern before parsing initializers, or catch `in` to report `Errors.UsingInForIn` with priority rather than failing on initializer or syntax errors."
+        },
+        {
+          "severity": "High",
+          "file": "src/parser.ts",
+          "line_range": [
+            2127,
+            2135
+          ],
+          "problem": "In `parseForStatement`, the check for `await using` validates `isAsyncOrModule` using `(context & Context.InAwaitContext) || ((context & Context.Module) && (context & Context.InGlobal))`. However, inside a `for await (await using x of y)` loop or an async function scope nested within non-global contexts, checking `(context & Context.InAwaitContext)` may be false if `for await` sets a specific context flag (e.g. `Context.InAwaitContext` or async iterator context) that hasn't been propagated to the head of a standard `for` statement before `await` is consumed.",
+          "suggested_fix": "Ensure the async check properly accounts for `for await (...)` heads where `for await` establishes an async iteration context."
+        },
+        {
+          "severity": "Medium",
+          "file": "src/parser.ts",
+          "line_range": [
+            549,
+            549
+          ],
+          "problem": "In `parseBlock` and `parseSwitchStatement`, resetting `Context.InGlobal` via `(context | Context.InGlobal) ^ Context.InGlobal` only masks the flag in direct blocks and switch statements, but other nested non-global block scopes (e.g., `if (...) using x = ...`, `while (...) using x = ...`, class static blocks, or concise body arrow functions) may not clear `Context.InGlobal`, incorrectly causing `using` to report `UsingInGlobal`.",
+          "suggested_fix": "Ensure `Context.InGlobal` is properly cleared at every lexical boundary and non-global statement level."
+        }
+      ],
+      "duration_seconds": 11.642549458192661
+    },
+    {
+      "run_id": "eval-datacurve_python-statemachine-state-data-scoping-superstate_daemon-c2772861",
+      "task_id": "datacurve/python-statemachine-state-data-scoping",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 4,
+      "summary": "Implementation of state data ownership, scoping, validation, and history snapshots introduces critical defects in history snapshot scoping, deep copy behavior on pickle serialization, and ScopedData change tracking.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "statemachine/engines/base.py",
+          "line_range": [
+            489,
+            497
+          ],
+          "problem": "History state data snapshot logic in `BaseEngine` captures data for all states in `history_value` without distinguishing between shallow and deep history types. For shallow history, child and descendant data are not filtered; shallow history recall will incorrectly restore descendant state data snapshots instead of resetting descendants to fresh defaults.",
+          "suggested_fix": "Inspect `history.type` when snapshotting or restoring: for `HistoryType.SHALLOW`, only record/restore data snapshots for direct child states of the history state's parent, leaving descendant states to reinitialize with fresh default values."
+        },
+        {
+          "severity": "High",
+          "file": "statemachine/data.py",
+          "line_range": [
+            77,
+            89
+          ],
+          "problem": "Mutations through `ScopedData.__setitem__` update `self._sm._state_data` directly without validating declared keys, DataVar type constraints, or recording `DataChangeInfo` in `_data_changes`, bypassing requirement checks enforced in `set_state_data`.",
+          "suggested_fix": "Implement `__setitem__` in `ScopedData` to delegate to `self._sm.set_state_data(self._owner_state_id, key, value)` to ensure type validation and macrostep change tracking are uniformly executed."
+        },
+        {
+          "severity": "Medium",
+          "file": "statemachine/engines/async_.py",
+          "line_range": [
+            194,
+            203
+          ],
+          "problem": "In `AsyncEngine._on_exit_states`, `self.sm.history_data_snapshots` is updated on state exit, but `self.sm.history_values` and `self.sm.history_data_snapshots` are not initialized or populated during transition selection as done in `BaseEngine` (around lines 489-497). If using `AsyncEngine`, entering a history state will miss updated history configuration and snapshots.",
+          "suggested_fix": "Ensure history state resolution and snapshot storage in `AsyncEngine` mirrors the logic in `BaseEngine` during history transition processing."
+        },
+        {
+          "severity": "Low",
+          "file": "statemachine/data.py",
+          "line_range": [
+            22,
+            36
+          ],
+          "problem": "`DataVar` validation only executes `self.validate(default)` if `default is not None`. When `type` is specified (e.g. `type=int`) and `default=None` is passed, validation is bypassed and `create_value()` returns `None` without checking type constraints.",
+          "suggested_fix": "Validate `default` against `type` even when `default is None`, unless `None` is explicitly allowed or `type` permits `NoneType`."
+        }
+      ],
+      "duration_seconds": 8.749455166980624
+    },
+    {
+      "run_id": "eval-datacurve_scc-bounded-memory-spilling-superstate_mcp-29465f64",
+      "task_id": "datacurve/scc-bounded-memory-spilling",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 4,
+      "total_findings_count": 5,
+      "summary": "The candidate implementation attempts to bound memory for multi-format processing by spilling to JSONL files, but it violates byte-for-byte fidelity requirements, ignores sorting on standard formats, leaks or drops records when intermediate spills occur, and fails to persist disk files when no spills are triggered.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "processor/bounded_memory.go",
+          "line_range": [
+            36,
+            60
+          ],
+          "problem": "When the total number of files exceeds maxInMemory and a spill occurs, `state.spills` is incremented and `state.writeSpillBatch` writes the batch, but if no further batch completes (`len(state.currentBatch) < maxInMemory` when input finishes and spills > 0), the remaining jobs in `currentBatch` are spilled to `spill_N.jsonl`. However, if `state.spills == 0` (input files <= maxInMemory), no spill file is ever written to disk, violating the requirement: 'When this mode needs to persist intermediate results to disk, write at least one non-empty regular file directly in the configured spill directory, and do not delete it before process exit.'",
+          "suggested_fix": "Ensure that whenever bounded-memory mode runs and processes records (or needs to persist intermediate results), at least one non-empty regular file is written directly to BoundedMemoryDir, even if count <= maxInMemory, or spill initial batch unconditionally if disk persistence is required."
+        },
+        {
+          "severity": "Critical",
+          "file": "processor/bounded_memory.go",
+          "line_range": [
+            97,
+            101
+          ],
+          "problem": "For non-csv-stream formats (e.g., json, json2, csv), `files` is only set to `state.sortedSpillFile` if `Files && SortBy != \"\"`. If `Files` is false or default, `files` defaults to `state.spillFiles` (unsorted across batches) even when `SortBy` is set, or if `SortBy` is not set, streaming through `state.streamJobs` across multiple batches calls formatters that expect complete global inputs (such as JSON arrays, CSV headers, YAML root keys). Calling `streamJobs` runs standard formatters (like `toJSON`, `toCSV`) which re-emit headers/enclosing arrays per invocation or fail to reproduce byte-for-byte identical output to unbounded --format-multi.",
+          "suggested_fix": "Ensure formatters for json, json2, csv, etc., format the combined dataset across spilled batches identically to unbounded mode, maintaining byte-for-byte compatibility and respecting SortBy regardless of the `Files` flag."
+        },
+        {
+          "severity": "High",
+          "file": "processor/bounded_memory.go",
+          "line_range": [
+            343,
+            375
+          ],
+          "problem": "In `streamJobs`, if `b.spills == 0`, `b.currentBatch` is sent over `ch` for the first format in `FormatMulti`. If `FormatMulti` has multiple formats (e.g. `tabular:stdout,json:stdout`), `streamJobs` iterates over `b.currentBatch` again, but `FileJob` structs are reused. More critically, if `b.spills > 0`, each format re-reads `files` from disk, but `b.spillFiles` were unmerged/unsorted if `SortBy == \"\"`, emitting jobs in chunked order rather than maintaining the exact ordering/concatenation contract.",
+          "suggested_fix": "Ensure batch iteration or spill reading preserves identical record ordering across all formats specified in `FormatMulti`."
+        },
+        {
+          "severity": "High",
+          "file": "processor/bounded_memory.go",
+          "line_range": [
+            326,
+            332
+          ],
+          "problem": "In `extractSortKey`, `bytes.IndexByte(line, '{')` is used, and it extracts `line[:idx-1]`. If `SortBy == \"\"` or no tab exists before '{', `idx-1` could index negatively or slice unintended data if '{' is at index 0, causing a slice bounds out of range panic or invalid keys.",
+          "suggested_fix": "Check that `idx > 0` and slice cleanly using `bytes.SplitN` on tab `\\t`, verifying boundaries before indexing."
+        },
+        {
+          "severity": "Medium",
+          "file": "processor/formatters.go",
+          "line_range": [
+            584,
+            586
+          ],
+          "problem": "In `toHtmlTable`, `fileSummarizeLong`, `fileSummarizeShort`, and `aggregateLanguageSummary`, checking `if Files && !BoundedMemory` skips appending `res` to `files` when `BoundedMemory` is true. However, if `--files` is explicitly requested alongside `--bounded-memory`, per-file breakdown rows will be omitted entirely instead of being boundedly processed or formatted, producing incomplete tabular/wide/html outputs.",
+          "suggested_fix": "Process per-file entries in bounded chunks or stream them through the summaries rather than dropping `Files` reporting completely when `BoundedMemory` is active."
+        }
+      ],
+      "duration_seconds": 11.71616291697137
+    },
+    {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon-227165bc",
+      "task_id": "terminal-bench/build-cython-ext",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff records an uncommitted dirty git submodule/subproject pointer rather than the actual code changes, build fixes, or Cython/NumPy 2.x compatibility modifications required by the task.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "pyknotid",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The diff only contains a git submodule reference with a dirty working tree ('441c807dbec2ee32e1da572e24e58d52a4eb7afa-dirty'). None of the actual source code fixes for NumPy 2.x compatibility or Cython rebuild changes in pyknotid are committed or included in the diff.",
+          "suggested_fix": "Commit and include the actual modified source files within pyknotid (such as Cython files, setup/build configuration, or NumPy C-API adjustments) directly in the repository rather than staging an uncommitted subproject pointer."
+        }
+      ],
+      "duration_seconds": 4.004605541005731
+    },
+    {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon-df5ed542",
+      "task_id": "terminal-bench/build-cython-ext",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff only introduces an uncommitted dirty git submodule reference without any code changes, source modifications, or Cython/NumPy 2.0 compatibility fixes.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "pyknotid",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The diff records a dirty submodule pointer ('441c807dbec2ee32e1da572e24e58d52a4eb7afa-dirty') rather than providing the actual code changes, Cython extension updates, or setup modifications required to build and support NumPy 2.x.",
+          "suggested_fix": "Commit and include the actual file changes from the pyknotid repository (such as modifications to setup.py, Cython definitions, and C-API/NumPy 2.0 compatibility adjustments) directly into the diff instead of referencing a dirty submodule."
+        }
+      ],
+      "duration_seconds": 4.015946166822687
+    },
+    {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_mcp-d021312f",
+      "task_id": "terminal-bench/build-cython-ext",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff merely adds an uninitialized git submodule/subproject commit for pyknotid rather than including the necessary source code changes, build fixes, or Cython/NumPy 2.x compatibility updates required by the task.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "pyknotid",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The repository was added as a git submodule (mode 160000) commit reference rather than committing the actual source files and required patches to fix Cython/NumPy 2.0+ compatibility and extension compilation.",
+          "suggested_fix": "Add the actual cloned source tree or commit the modifications made to pyknotid directly (e.g., updating Cython definitions, setup.py, and NumPy C-API usage for NumPy 2.x compatibility) rather than committing a git submodule link."
+        }
+      ],
+      "duration_seconds": 4.341454333160073
+    },
+    {
+      "run_id": "eval-terminal-bench_chess-best-move-superstate_daemon-60dc57fc",
+      "task_id": "terminal-bench/chess-best-move",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff writes multiple arbitrary moves ('e2e4' and 'g2g4') without verifying the specific chess position in chess_board.png, which includes the unprincipled or potentially illegal/losing move g2g4.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "move.txt",
+          "line_range": [
+            1,
+            2
+          ],
+          "problem": "The candidate hardcodes two standard opening pawn moves ('e2e4' and 'g2g4') rather than evaluating the actual position depicted in 'chess_board.png'. In a specific puzzle/tactical position, playing both 'e2e4' and 'g2g4' as winning moves is almost certainly incorrect (and 'g2g4' is rarely a simultaneous winning move with 'e2e4').",
+          "suggested_fix": "Evaluate the chess position from 'chess_board.png' and record solely the verified winning move(s) for White in '[src][dst]' format."
+        }
+      ],
+      "duration_seconds": 4.276656625093892
+    },
+    {
+      "run_id": "eval-terminal-bench_chess-best-move-superstate_daemon-e6db5b6c",
+      "task_id": "terminal-bench/chess-best-move",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff writes multiple placeholder opening moves (e2e4, g2g4) to move.txt without evaluating the actual board position from chess_board.png.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "move.txt",
+          "line_range": [
+            1,
+            2
+          ],
+          "problem": "The candidate hardcodes generic first moves (e2e4, g2g4) rather than analyzing the specific chess board state in chess_board.png to determine the actual best/winning move(s) for White.",
+          "suggested_fix": "Analyze chess_board.png to determine the exact position and write only the verified best or winning move(s) in UCI format ([src][dst]) to /app/move.txt."
+        }
+      ],
+      "duration_seconds": 3.9952934589236975
+    },
+    {
+      "run_id": "eval-terminal-bench_chess-best-move-superstate_mcp-210d556c",
+      "task_id": "terminal-bench/chess-best-move",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff hardcodes two standard opening pawn moves (e2e4, g2g4) which are inconsistent with solving an actual position from chess_board.png and include an objectively weakening/losing move (g2g4).",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "move.txt",
+          "line_range": [
+            1,
+            2
+          ],
+          "problem": "The moves listed ('e2e4' and 'g2g4') appear to be arbitrary placeholders rather than calculated best or winning moves for the specific board state depicted in 'chess_board.png'. Furthermore, playing both 'e2e4' and 'g2g4' as candidate winning moves is contradictory, as 'g2g4' severely weakens the king's wing and is rarely a winning move alongside 'e2e4'.",
+          "suggested_fix": "Analyze 'chess_board.png' to identify the exact board position and record only the genuine winning move(s) for White in [src][dst] UCI format, one per line."
+        }
+      ],
+      "duration_seconds": 7.446284791920334
+    },
+    {
+      "run_id": "eval-terminal-bench_code-from-image-superstate_daemon-47ddb21c",
+      "task_id": "terminal-bench/code-from-image",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The implementation in solution.py hashes the image file itself instead of implementing the pseudocode logic depicted in /app/code.png, though output.txt matches the provided prefix hint.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "solution.py",
+          "line_range": [
+            5,
+            9
+          ],
+          "problem": "The solution reads the raw binary data of '/app/code.png' and hashes it with a salt rather than parsing and implementing the pseudocode logic shown inside the image as required by the task specifications.",
+          "suggested_fix": "Transcribe and implement the algorithm depicted in the pseudocode image '/app/code.png' instead of performing cryptographic hashing on the raw image file bytes."
+        }
+      ],
+      "duration_seconds": 3.913163916906342
+    },
+    {
+      "run_id": "eval-terminal-bench_code-from-image-superstate_daemon-a54a156f",
+      "task_id": "terminal-bench/code-from-image",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff correctly implements the logic producing the expected hash starting with 'bee26a' and writes the result to /app/output.txt matching all task requirements.",
+      "findings": [],
+      "duration_seconds": 3.217388499993831
+    },
+    {
+      "run_id": "eval-terminal-bench_code-from-image-superstate_mcp-e8d1aa20",
+      "task_id": "terminal-bench/code-from-image",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff writes the expected hash output to output.txt conforming to the specified requirement and hint.",
+      "findings": [],
+      "duration_seconds": 4.399068790953606
+    },
+    {
+      "run_id": "eval-terminal-bench_constraints-scheduling-superstate_daemon-1889fd98",
+      "task_id": "terminal-bench/constraints-scheduling",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The git diff adds a valid ICS file scheduling the Team Planning Meeting on January 17, 2024 from 11:00 to 12:00 UTC, meeting all constraints, headers, and attendee requirements.",
+      "findings": [],
+      "duration_seconds": 2.9089147499762475
+    },
+    {
+      "run_id": "eval-terminal-bench_constraints-scheduling-superstate_daemon-867c8345",
+      "task_id": "terminal-bench/constraints-scheduling",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff creates a valid ICS file scheduling a 1-hour Team Planning Meeting for January 17, 2024 from 11:00 UTC to 12:00 UTC, meeting attendee and format specifications.",
+      "findings": [],
+      "duration_seconds": 2.888609540881589
+    },
+    {
+      "run_id": "eval-terminal-bench_constraints-scheduling-superstate_mcp-bd7232df",
+      "task_id": "terminal-bench/constraints-scheduling",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The scheduled meeting iCalendar file adheres to all specified formatting requirements, metadata headers, and attendees, scheduling a 1-hour slot on Wednesday, January 17, 2024, from 11:00 to 12:00 UTC within all hard availability constraints.",
+      "findings": [],
+      "duration_seconds": 4.027316833147779
+    },
+    {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_daemon-5362ee50",
+      "task_id": "terminal-bench/db-wal-recovery",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The WAL file was deleted instead of repaired as required by step 1, leaving the database WAL file missing from the repository state.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "main.db-wal",
+          "line_range": [
+            1,
+            5
+          ],
+          "problem": "Requirement 1 states 'Fix the WAL file so SQLite can read it', but 'main.db-wal' was deleted rather than fixed.",
+          "suggested_fix": "Restore and repair 'main.db-wal' with valid SQLite WAL header/frames so SQLite can access the database in WAL mode directly, or ensure the fixed WAL file is retained alongside the database."
+        }
+      ],
+      "duration_seconds": 3.5363709160592407
+    },
+    {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_daemon-eff4d0ea",
+      "task_id": "terminal-bench/db-wal-recovery",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate deleted the WAL file instead of repairing it, directly modified the binary database file, and produced the required recovered JSON data.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "main.db-wal",
+          "line_range": [
+            1,
+            5
+          ],
+          "problem": "Requirement 1 ('Fix the WAL file so SQLite can read it') is violated because main.db-wal was deleted rather than repaired/fixed for SQLite to read.",
+          "suggested_fix": "Restore main.db-wal, repair its corrupt or encrypted header/frames so SQLite can parse and replay it against main.db, rather than removing the WAL file."
+        }
+      ],
+      "duration_seconds": 3.2442357500549406
+    },
+    {
+      "run_id": "eval-terminal-bench_db-wal-recovery-superstate_mcp-90ca124e",
+      "task_id": "terminal-bench/db-wal-recovery",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff fixes the binary WAL file and produces recovered.json containing all 11 recovered records formatted and sorted by id according to specifications.",
+      "findings": [],
+      "duration_seconds": 3.238393957959488
+    },
+    {
+      "run_id": "eval-terminal-bench_dna-insert-superstate_daemon-670492e0",
+      "task_id": "terminal-bench/dna-insert",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 1,
+      "summary": "Primer sequences were generated in primers.fasta with lengths exceeding standard annealing requirements, and cannot be statically verified against input/output sequences without template context.",
+      "findings": [
+        {
+          "severity": "Medium",
+          "file": "primers.fasta",
+          "line_range": [
+            3,
+            4
+          ],
+          "problem": "The reverse primer has a total length of 47 nucleotides, which exceeds the maximum allowable annealing length of 45 nucleotides if the entire primer anneals to the template.",
+          "suggested_fix": "Ensure the template-annealing portion of the reverse primer does not exceed 45 nucleotides and satisfies the Tm constraints calculated via oligotm."
+        }
+      ],
+      "duration_seconds": 3.7552344580180943
+    },
+    {
+      "run_id": "eval-terminal-bench_dna-insert-superstate_daemon-7ba6d342",
+      "task_id": "terminal-bench/dna-insert",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The reverse primer length exceeds the maximum allowed annealing length constraint of 45 nucleotides.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "primers.fasta",
+          "line_range": [
+            3,
+            4
+          ],
+          "problem": "The reverse primer is 85 nucleotides long, violating the requirement that the annealing region must have a length between 15 and 45 nucleotides (or failing NEB Q5 SDM primer design constraints where the binding region or overall primer length must conform to standard mutagenic primer specifications).",
+          "suggested_fix": "Redesign the reverse primer so that the annealing region to the input plasmid is between 15 and 45 nucleotides, with a melting temperature between 58 and 72 \u00b0C and within 5 \u00b0C of the forward primer's Tm as calculated by primer3 oligotm (-tp 1 -sc 1 -mv 50 -dv 2 -n 0.8 -d 500)."
+        }
+      ],
+      "duration_seconds": 4.4186199579853565
+    },
+    {
+      "run_id": "eval-terminal-bench_dna-insert-superstate_mcp-134d1408",
+      "task_id": "terminal-bench/dna-insert",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate primers violate melting temperature constraints when evaluated using primer3's oligotm parameter specifications.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "primers.fasta",
+          "line_range": [
+            1,
+            4
+          ],
+          "problem": "The forward primer 'AGCAAGGGCGAGGAG' (15 nt, GC content ~66.7%) has a calculated oligotm melting temperature around 52-54 \u00b0C under the specified parameters (-tp 1 -sc 1 -mv 50 -dv 2 -n 0.8 -d 500), which falls below the mandatory minimum threshold of 58 \u00b0C and creates a Tm discrepancy greater than 5 \u00b0C relative to the reverse primer.",
+          "suggested_fix": "Extend the annealing region of the forward primer to at least 18-20 nucleotides along the template sequence so that its oligotm melting temperature reaches between 58 and 72 \u00b0C and remains within 5 \u00b0C of the reverse primer."
+        }
+      ],
+      "duration_seconds": 4.520847292151302
+    },
+    {
+      "run_id": "eval-terminal-bench_extract-elf-superstate_daemon-67ac36b9",
+      "task_id": "terminal-bench/extract-elf",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 3,
+      "total_findings_count": 3,
+      "summary": "The ELF parser hardcodes little-endian 32-bit word extraction and symbol parsing irrespective of the file's endianness and 64-bit section header layouts, and it only loads a hardcoded list of section names rather than general loadable segments or sections.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "extract.js",
+          "line_range": [
+            72,
+            77
+          ],
+          "problem": "Endianness is ignored when reading memory words. In line 75, `data.readUInt32LE(i)` is hardcoded regardless of `elfHeader.isLittleEndian`, which corrupts all extracted values if `a.out` is big-endian.",
+          "suggested_fix": "Conditionally read words using `elfHeader.isLittleEndian ? data.readUInt32LE(i) : data.readUInt32BE(i)`."
+        },
+        {
+          "severity": "High",
+          "file": "extract.js",
+          "line_range": [
+            44,
+            65
+          ],
+          "problem": "Only sections explicitly named `.text`, `.data`, and `.rodata` are loaded. Loadable ELF segments or other initialized data sections (e.g., `.rodata.*`, `.data.rel.ro`, `.init`, `.fini`, `.got`, `.plt`, or program headers with `PT_LOAD`) are omitted, risking failure to extract >= 75% of memory values.",
+          "suggested_fix": "Iterate over ELF Program Headers (segments of type `PT_LOAD`) or check section flags for `SHF_ALLOC` (flag `0x2`) to load all allocated/memory-mapped sections."
+        },
+        {
+          "severity": "High",
+          "file": "extract.js",
+          "line_range": [
+            203,
+            212
+          ],
+          "problem": "In `parseSectionHeaders`, the 64-bit ELF section header fields `sh_name` and `sh_type` are read using 32-bit offsets, but other fields like `flags`, `addr`, `offset`, and `size` have different offsets in 64-bit ELF headers (e.g. for ELF64: `name` at 0, `type` at 4, `flags` at 8 (8B), `addr` at 16 (8B), `offset` at 24 (8B), `size` at 32 (8B), `link` at 40 (4B), `info` at 44 (4B), `addralign` at 48 (8B), `entsize` at 56 (8B)). While standard ELF64 fits this, in `parseSymbol`, little-endian methods (`readUInt32LE`, `readBigUInt64LE`) are hardcoded regardless of endianness.",
+          "suggested_fix": "Use endian-aware buffer read methods (`isLittleEndian ? readUInt...LE : readUInt...BE`) inside `parseSymbol` and ensure 32-bit vs 64-bit struct layouts respect endianness."
+        }
+      ],
+      "duration_seconds": 16.755273582879454
+    },
+    {
+      "run_id": "eval-terminal-bench_extract-elf-superstate_daemon-86a07722",
+      "task_id": "terminal-bench/extract-elf",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 3,
+      "summary": "extract.js misses loadable segments/sections by only loading sections explicitly named .text, .data, and .rodata, ignores ELF program headers (PT_LOAD), hardcodes Little-Endian reading in parseSymbol, and inadvertently commits out.json.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "extract.js",
+          "line_range": [
+            50,
+            79
+          ],
+          "problem": "Only sections matching the literal names '.text', '.data', and '.rodata' are loaded into memory. Other standard loadable sections (e.g. '.rodata.*', '.bss', '.init', '.fini', '.got', '.plt', '.data.rel.ro') are ignored, which risks failing the requirement to extract at least 75% of memory values, or misses ELF segments completely by not relying on section flags (SHF_ALLOC) or ELF Program Headers (PT_LOAD).",
+          "suggested_fix": "Iterate through Program Headers of type PT_LOAD (p_type === 1) to read memory contents into virtual addresses, or check section header flags for SHF_ALLOC (flags & 0x2) instead of matching exact section names."
+        },
+        {
+          "severity": "Medium",
+          "file": "extract.js",
+          "line_range": [
+            243,
+            267
+          ],
+          "problem": "parseSymbol unconditionally reads data using readUInt32LE/readBigUInt64LE regardless of elfHeader.isLittleEndian, causing corruption on big-endian ELF binaries.",
+          "suggested_fix": "Use endian-aware buffer read functions based on isLittleEndian / elfData when reading symbol table entries."
+        },
+        {
+          "severity": "Low",
+          "file": "out.json",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "An execution artifact out.json is committed to the repository contrary to standard repository hygiene.",
+          "suggested_fix": "Remove out.json from the commit and add it to .gitignore if necessary."
+        }
+      ],
+      "duration_seconds": 15.427692750003189
+    },
+    {
+      "run_id": "eval-terminal-bench_extract-elf-superstate_mcp-07965aa9",
+      "task_id": "terminal-bench/extract-elf",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 3,
+      "summary": "Implementation fails to handle standard program load headers and other sections, parses 64-bit ELF section header fields at incorrect offsets, and hardcodes 32-bit little-endian reading for symbols and memory.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "extract.js",
+          "line_range": [
+            206,
+            230
+          ],
+          "problem": "Incorrect struct layout offsets when parsing 64-bit ELF section headers (Elf64_Shdr). In Elf64_Shdr, sh_type is 4 bytes followed by a 4-byte padding/alignment, making sh_flags at offset +8 (8 bytes), sh_addr at offset +16 (8 bytes), sh_offset at offset +24 (8 bytes), sh_size at offset +32 (8 bytes), sh_link at offset +40 (4 bytes), sh_info at offset +44 (4 bytes), sh_addralign at offset +48 (8 bytes), and sh_entsize at offset +56 (8 bytes). However, for 32-bit ELF (Elf32_Shdr), sh_addr is at offset +12, sh_offset is at +16, sh_size is at +20, sh_link is at +24, sh_info is at +28, sh_addralign is at +32, and sh_entsize is at +36. While some ternary checks exist, the code incorrectly mixes types and offsets (e.g., in Elf64, sh_link and sh_info are 4-byte words at 40 and 44, but entsize/addralign are read as xword).",
+          "suggested_fix": "Separate Elf32_Shdr and Elf64_Shdr parsers or use a properly verified offset lookup table according to the ELF specification."
+        },
+        {
+          "severity": "High",
+          "file": "extract.js",
+          "line_range": [
+            64,
+            80
+          ],
+          "problem": "The memory extraction logic strictly filters for only ['.text', '.data', '.rodata'] sections, missing other allocated sections (such as .bss, .got, .plt, or read-only data variants like .rodata.*), which risks failing the requirement to extract at least 75% of memory values present in reference solutions, or failing on binaries where program headers (PT_LOAD segments) define the loaded memory image.",
+          "suggested_fix": "Iterate over all sections with the SHF_ALLOC flag (flags & 0x2) or parse program headers (PT_LOAD) to map all loadable memory segments."
+        },
+        {
+          "severity": "Medium",
+          "file": "extract.js",
+          "line_range": [
+            76,
+            78
+          ],
+          "problem": "Endianness is hardcoded to little-endian when reading memory words (`data.readUInt32LE`) and symbol tables (`parseSymbol`), ignoring `elfHeader.isLittleEndian` and `elfHeader.data` detected in the ELF header.",
+          "suggested_fix": "Use endian-aware read methods (e.g., `isLittleEndian ? data.readUInt32LE(i) : data.readUInt32BE(i)`) based on `elfHeader.isLittleEndian`."
+        }
+      ],
+      "duration_seconds": 7.673559417016804
+    },
+    {
+      "run_id": "eval-terminal-bench_gcode-to-text-superstate_daemon-68b8a7b2",
+      "task_id": "terminal-bench/gcode-to-text",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff creates /app/out.txt with the identified text output, fulfilling the task requirement.",
+      "findings": [],
+      "duration_seconds": 2.739204791840166
+    },
+    {
+      "run_id": "eval-terminal-bench_gcode-to-text-superstate_daemon-c8cc55f3",
+      "task_id": "terminal-bench/gcode-to-text",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff correctly creates /app/out.txt with the decoded flag output conforming to the task requirements.",
+      "findings": [],
+      "duration_seconds": 3.6335601250175387
+    },
+    {
+      "run_id": "eval-terminal-bench_gcode-to-text-superstate_mcp-59bc65de",
+      "task_id": "terminal-bench/gcode-to-text",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff creates out.txt with the decoded text content from the G-code file according to task requirements.",
+      "findings": [],
+      "duration_seconds": 5.486890665953979
+    },
+    {
+      "run_id": "eval-terminal-bench_git-leak-recovery-superstate_daemon-9a58251b",
+      "task_id": "terminal-bench/git-leak-recovery",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The secret was recovered into /app/secret.txt, but requirement 2 to purge and clean up the secret from /app/repo was completely omitted.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "repo",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Requirement 2 specifies to 'clean up the secret in that repo to make sure it cannot be found anywhere in that repo'. The git diff only adds /app/secret.txt and includes no operations or changes cleaning up dangling objects, reflogs, or git cache in /app/repo (e.g., via git reflog expire, git prune, or git gc), leaving the secret recoverable in git history.",
+          "suggested_fix": "Clean up the repository by purging reflogs and unreachable git objects containing the secret in /app/repo (e.g., running `git reflog expire --expire=now --all && git gc --prune=now --aggressive` or deleting the dangling commit/blob)."
+        }
+      ],
+      "duration_seconds": 4.2554982078727335
+    },
+    {
+      "run_id": "eval-terminal-bench_git-leak-recovery-superstate_daemon-ec565c63",
+      "task_id": "terminal-bench/git-leak-recovery",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The secret was recovered and written to secret.txt, but requirement 2 was completely omitted as the secret was not purged from the git repository.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "secret.txt",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The task requires cleaning up the secret in /app/repo to ensure it cannot be found anywhere in that repository (e.g., reflog, dangling blobs/commits, git cache via prune/gc), but the diff only creates secret.txt and contains no cleanup in /app/repo.",
+          "suggested_fix": "Purge dangling git objects and reflogs containing the secret in /app/repo (e.g. running `git reflog expire --expire=now --all` and `git prune` / `git gc --prune=now --aggressive` in /app/repo) so the secret cannot be found anywhere in the repository."
+        }
+      ],
+      "duration_seconds": 4.280568832997233
+    },
+    {
+      "run_id": "eval-terminal-bench_git-leak-recovery-superstate_mcp-45a872aa",
+      "task_id": "terminal-bench/git-leak-recovery",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The secret was recovered and written to secret.txt, but requirement 2 to clean up the secret from the repository history and objects was completely omitted.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "repo",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Requirement 2 ('clean up the secret in that repo to make sure it cannot be found anywhere in that repo') was not performed; dangling git objects, reflogs, or git history containing the secret were not purged from /app/repo.",
+          "suggested_fix": "Purge the dangling commits/blobs containing the secret from /app/repo (e.g., expire reflogs and run `git prune` / `git gc --prune=now`)."
+        }
+      ],
+      "duration_seconds": 3.847734082955867
+    },
+    {
+      "run_id": "eval-terminal-bench_kv-store-grpc-superstate_daemon-c1640fb5",
+      "task_id": "terminal-bench/kv-store-grpc",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 2,
+      "summary": "The candidate implementation correctly defines the protobuf schema, generates stubs, and implements the required KVStore gRPC server on port 5328, but attempts to bind to the same port twice and commits compiled python bytecode.",
+      "findings": [
+        {
+          "severity": "Medium",
+          "file": "server.py",
+          "line_range": [
+            28,
+            29
+          ],
+          "problem": "Calling add_insecure_port for both '0.0.0.0:{port}' and '[::]:{port}' on the same port can fail or raise an address-already-in-use / bind error on dual-stack IPv4/IPv6 networking environments where IPv6 wildcards bind to IPv4.",
+          "suggested_fix": "Bind only to '[::]:{port}' (which handles dual-stack connections) or '0.0.0.0:{port}', or verify port binding return values instead of calling add_insecure_port twice."
+        },
+        {
+          "severity": "Low",
+          "file": "__pycache__/kv_store_pb2.cpython-313.pyc",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Compiled Python bytecode files (*.pyc) in __pycache__ are tracked in version control, which clutters repository history and can cause environment conflicts.",
+          "suggested_fix": "Remove __pycache__/ from git and add __pycache__/ and *.pyc to .gitignore."
+        }
+      ],
+      "duration_seconds": 4.688771917019039
+    },
+    {
+      "run_id": "eval-terminal-bench_kv-store-grpc-superstate_daemon-ec56c7c3",
+      "task_id": "terminal-bench/kv-store-grpc",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff correctly implements the required proto definitions, generated gRPC modules, and Server servicer running on port 5328 using an in-memory dictionary store.",
+      "findings": [],
+      "duration_seconds": 2.9435800001956522
+    },
+    {
+      "run_id": "eval-terminal-bench_kv-store-grpc-superstate_mcp-62957072",
+      "task_id": "terminal-bench/kv-store-grpc",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The implementation correctly creates the protobuf definitions, generated gRPC code, and implements the gRPC KVStore server listening on port 5328.",
+      "findings": [],
+      "duration_seconds": 3.328087375033647
+    },
+    {
+      "run_id": "eval-terminal-bench_largest-eigenval-superstate_mcp-1d259dc5",
+      "task_id": "terminal-bench/largest-eigenval",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 2,
+      "summary": "The implementation introduces a high-severity bug where real dominant eigenpairs are returned as complex if any other eigenvalue in the spectrum has a non-zero imaginary component, and includes build/cache artifacts in git tracking.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "_eigen_core.cpp",
+          "line_range": [
+            19,
+            46
+          ],
+          "problem": "The branch condition `if (all_real)` checks whether ALL eigenvalues of the matrix have zero imaginary parts rather than checking whether the selected dominant eigenvalue `evals(best_idx)` is real. If the dominant eigenvalue is real but there exist other complex conjugate eigenvalue pairs in the spectrum, the function incorrectly returns a complex eigenvalue and complex eigenvector array instead of real double types.",
+          "suggested_fix": "Check `evals(best_idx).imag() == 0.0` (or `std::abs(evals(best_idx).imag()) < tolerance`) instead of checking whether all eigenvalues across the spectrum are real."
+        },
+        {
+          "severity": "Low",
+          "file": "__pycache__/eigen.cpython-313.pyc",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Compiled Python bytecode (`.pyc`) and compiled shared object (`.so`) files are tracked in git instead of being excluded via `.gitignore`.",
+          "suggested_fix": "Remove `__pycache__/eigen.cpython-313.pyc` and `_eigen_core.cpython-313-x86_64-linux-gnu.so` from version control and add them to `.gitignore`."
+        }
+      ],
+      "duration_seconds": 5.789743667002767
+    },
+    {
+      "run_id": "eval-terminal-bench_log-summary-date-ranges-superstate_mcp-830568de",
+      "task_id": "terminal-bench/log-summary-date-ranges",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff directly creates summary.csv with the required schema, periods, severities, and structure.",
+      "findings": [],
+      "duration_seconds": 3.6975162499584258
+    },
+    {
+      "run_id": "eval-terminal-bench_merge-diff-arc-agi-task-superstate_mcp-b2130acc",
+      "task_id": "terminal-bench/merge-diff-arc-agi-task",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff records `/app/repo` as an uncommitted git submodule reference (mode 160000) rather than including the required repository files such as `algo.py`.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "repo",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The repository at `/app/repo` is committed as a git submodule pointer (mode 160000) instead of committing the actual files, leaving `/app/repo/algo.py` missing from the tree and unable to be verified.",
+          "suggested_fix": "Ensure `/app/repo` contains the actual resolved files including `algo.py` containing the `map` function, and remove any submodule entry from the parent git repository index if files are expected to be directly accessible."
+        }
+      ],
+      "duration_seconds": 4.338067707838491
+    },
+    {
+      "run_id": "eval-terminal-bench_modernize-scientific-stack-superstate_mcp-a30d8e9d",
+      "task_id": "terminal-bench/modernize-scientific-stack",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff correctly creates the modernized climate analysis script and requirements file adhering to all specified requirements without blocking defects.",
+      "findings": [],
+      "duration_seconds": 3.6305617089383304
+    },
+    {
+      "run_id": "eval-terminal-bench_multi-source-data-merger-superstate_mcp-c2bdbbb3",
+      "task_id": "terminal-bench/multi-source-data-merger",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 1,
+      "summary": "The merge script handles field mapping, prioritized conflict resolution, and output file generation, but pandas DataFrame conversion can produce NaN values that trigger type mismatches or schema issues.",
+      "findings": [
+        {
+          "severity": "Medium",
+          "file": "merge.py",
+          "line_range": [
+            117,
+            120
+          ],
+          "problem": "When string fields (such as 'status', 'name', 'email', or 'created_date') are None for a user, pandas DataFrame populates them with NaN (float) objects, which may cause string column typing errors or preserve unexpected null representation when writing to parquet.",
+          "suggested_fix": "Explicitly set string columns to nullable string dtype (e.g. using `df_merged[col] = df_merged[col].astype('string')` or `'object'`) before exporting to parquet."
+        }
+      ],
+      "duration_seconds": 5.4679890419356525
+    },
+    {
+      "run_id": "eval-terminal-bench_openssl-selfsigned-cert-superstate_daemon-d74f8371",
+      "task_id": "terminal-bench/openssl-selfsigned-cert",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 2,
+      "summary": "The candidate implementation generates and verifies the TLS assets, but stores the private key with overly permissive file modes (0644 instead of 0600) and uses a private internal Python SSL function.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "ssl/server.key",
+          "line_range": [
+            1,
+            28
+          ],
+          "problem": "The private key file is created with file mode 100644 (world-readable) instead of the required 600 permissions.",
+          "suggested_fix": "Set permissions on `/app/ssl/server.key` to 600 (`chmod 600 /app/ssl/server.key`) so git records or filesystem permissions enforce restricted read/write access."
+        },
+        {
+          "severity": "Medium",
+          "file": "check_cert.py",
+          "line_range": [
+            17,
+            17
+          ],
+          "problem": "The script uses an undocumented private CPython internal function `ssl._ssl._test_decode_cert(CERT_PATH)` which is unstable and not part of the public API.",
+          "suggested_fix": "Use standard library or public APIs (such as `ssl.create_default_context().load_verify_locations(CERT_PATH)` combined with `cryptography.x509` or standard socket/OpenSSL inspection) or inspect the certificate via public methods."
+        }
+      ],
+      "duration_seconds": 5.824992000125349
+    },
+    {
+      "run_id": "eval-terminal-bench_openssl-selfsigned-cert-superstate_mcp-55715b5c",
+      "task_id": "terminal-bench/openssl-selfsigned-cert",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The candidate diff creates the required TLS certificate, key, combined PEM, verification text, and Python validation script, but fails to set the mandated 600 file permissions on the private key file.",
+      "findings": [
+        {
+          "severity": "High",
+          "file": "ssl/server.key",
+          "line_range": [
+            1,
+            28
+          ],
+          "problem": "The private key file 'ssl/server.key' was created with file mode 100644 (world-readable) instead of the required 600 (read/write by owner only) permissions.",
+          "suggested_fix": "Change the file permissions of /app/ssl/server.key to 600 (e.g., run `chmod 600 /app/ssl/server.key` or set file mode 100600 in git)."
+        }
+      ],
+      "duration_seconds": 7.442082790890709
+    },
+    {
+      "run_id": "eval-terminal-bench_polyglot-c-py-superstate_mcp-9541d27f",
+      "task_id": "terminal-bench/polyglot-c-py",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The polyglot file implementation successfully parses and executes under both Python 3.12 and GCC 13.2 to calculate and print Fibonacci numbers.",
+      "findings": [],
+      "duration_seconds": 3.107592833926901
+    },
+    {
+      "run_id": "eval-terminal-bench_regex-log-superstate_daemon-24d5bc9c",
+      "task_id": "terminal-bench/regex-log",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The regex implementation meets all requirements for IPv4 validation, calendar date constraints, rightmost date matching per line, and boundary checks when evaluated with re.findall and re.MULTILINE.",
+      "findings": [],
+      "duration_seconds": 2.860700209159404
+    },
+    {
+      "run_id": "eval-terminal-bench_regex-log-superstate_daemon-f2f4182e",
+      "task_id": "terminal-bench/regex-log",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 2,
+      "summary": "The regex contains multiple capturing groups which causes re.findall to return tuples of sub-patterns instead of just the date string or full match, and the greedy wildcard after the lookahead fails to account for trailing text or lines without trailing newlines properly.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "regex.txt",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Python's re.findall behavior with capturing groups returns a list of tuples containing all capturing groups (or the single captured group if only one exists). The regex introduces multiple nested capturing groups inside the date pattern (`((?<![a-zA-Z0-9])[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|[12][0-9]))(?![a-zA-Z0-9]))` has outer capturing group 1, plus any nested groups if non-capturing syntax wasn't used or if re.findall returns tuples). Furthermore, the date pattern is preceded by `.*` without anchoring to the end of the line (or asserting no further dates occur after it), which means `.*` followed by the date will greedily match up to the last date, but because there is no `(?![^\\n]*<date>)` or `(?=[^\\n]*$)`, if capturing groups are used, re.findall returns tuples of strings instead of the matched dates.",
+          "suggested_fix": "Ensure all internal groups are non-capturing `(?:...)` except optionally a single outer group around the date (or make the entire pattern match only the date using lookarounds for the line structure and IPv4 check, e.g. `(?<=^)(?=.*(?<![a-zA-Z0-9])...)` or ensure re.findall returns only the date by having exactly one capturing group around the date and converting all other subgroups to `(?:...)`). Specifically, verify nested groups in the date are all `(?:...)` and make sure it asserts no subsequent dates appear on the line before `$`."
+        },
+        {
+          "severity": "High",
+          "file": "regex.txt",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The regex does not assert that no other date occurs later in the line after the matched date; while `.*` is greedy, without asserting that the remaining text on the line does not contain a date or anchoring to the line end (e.g. `(?![^\\r\\n]*(?<![a-zA-Z0-9])[0-9]{4}-...)`), catastrophic backtracking or partial matches can occur, or trailing characters after the date are not constrained to the current line if matching interacts across multiple lines.",
+          "suggested_fix": "Add an assertion that no subsequent valid date exists on the same line before the end of the line `$`."
+        }
+      ],
+      "duration_seconds": 9.948710083961487
+    },
+    {
+      "run_id": "eval-terminal-bench_regex-log-superstate_mcp-d87fdac6",
+      "task_id": "terminal-bench/regex-log",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 2,
+      "total_findings_count": 2,
+      "summary": "The regex fails to guarantee matching only the last date in a line when a date is followed by another date or trailing non-date text, and re.findall returns tuples of capturing groups instead of the full date string.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "/app/regex.txt",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Using multiple capturing groups inside the date pattern causes `re.findall` to return a tuple of group matches (e.g., `('2023-01-01', '01-01', '01')`) rather than the matched date string or single target group, because `re.findall` returns tuples of all capture groups when two or more capturing groups exist in the regex.",
+          "suggested_fix": "Change inner capturing groups within the date expression to non-capturing groups `(?:...)` so that either only a single capturing group captures the full date, or all groups are non-capturing and the overall match represents the date."
+        },
+        {
+          "severity": "Critical",
+          "file": "/app/regex.txt",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "The pattern does not ensure that the matched date is the last date on the line. Because `.*` is greedy, it attempts to match the latest date possible, but if the last date on a line cannot match (or if backtracking allows), or if text follows, the regex does not assert that no subsequent valid date exists before the end of the line (e.g. using `(?!.*(?<![a-zA-Z0-9])\\d{4}-...)` or consuming the remainder of the line without any date).",
+          "suggested_fix": "Ensure that after the date match, the line contains no subsequent valid dates by asserting `(?![^\\r\\n]*(?<![a-zA-Z0-9])[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|[12][0-9]))(?![a-zA-Z0-9]))` or matching `[^\\r\\n]*$` where intermediate content is forbidden from containing dates."
+        }
+      ],
+      "duration_seconds": 7.55353945819661
+    },
+    {
+      "run_id": "eval-terminal-bench_sanitize-git-repo-superstate_mcp-4276b547",
+      "task_id": "terminal-bench/sanitize-git-repo",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": false,
+      "has_blocking_issues": true,
+      "blocking_findings_count": 1,
+      "total_findings_count": 1,
+      "summary": "The diff merely records an uncommitted dirty subproject state rather than committing sanitized changes to files within the repository.",
+      "findings": [
+        {
+          "severity": "Critical",
+          "file": "dclm",
+          "line_range": [
+            1,
+            1
+          ],
+          "problem": "Modifications to sanitize sensitive keys were left uncommitted inside the 'dclm' submodule (indicated by the '-dirty' suffix), resulting in no actual file sanitization being committed to the repository.",
+          "suggested_fix": "Commit the sanitization changes inside the 'dclm' repository/submodule, and then update the parent repository's submodule commit reference to the new clean commit hash."
+        }
+      ],
+      "duration_seconds": 7.231287207920104
+    },
+    {
+      "run_id": "eval-terminal-bench_vulnerable-secret-superstate_daemon-9850843c",
+      "task_id": "terminal-bench/vulnerable-secret",
+      "arm": "superstate_daemon",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The candidate diff correctly creates `/app/results.txt` containing the required secret key format with no defects found.",
+      "findings": [],
+      "duration_seconds": 16.342455375008285
+    },
+    {
+      "run_id": "eval-terminal-bench_vulnerable-secret-superstate_mcp-57db06d5",
+      "task_id": "terminal-bench/vulnerable-secret",
+      "arm": "superstate_mcp",
+      "gate_passed": true,
+      "grader_passed": true,
+      "has_blocking_issues": false,
+      "blocking_findings_count": 0,
+      "total_findings_count": 0,
+      "summary": "The diff successfully adds the required results.txt file containing the extracted flag in the specified format.",
+      "findings": [],
+      "duration_seconds": 16.764160624938086
+    }
+  ]
+}
