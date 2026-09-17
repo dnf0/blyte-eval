@@ -102,6 +102,7 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
     pairs = [
         ("superstate_mcp", "superstate_mcp_planned"),
         ("superstate_rust", "superstate_rust_planned"),
+        ("superstate_daemon", "superstate_daemon_review"),
     ]
     for zero_turn, planned in pairs:
         a = runner._get_adapter(zero_turn)  # noqa: SLF001
@@ -110,4 +111,5 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
             f"{zero_turn!r} and {planned!r} both report {a.name!r}; "
             "results from the two would be pooled"
         )
-        assert "planned" in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"
+        suffix = "review" if "review" in planned else "planned"
+        assert suffix in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"

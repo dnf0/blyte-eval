@@ -86,6 +86,12 @@ GATE_TURN_TIMEOUT_SEC = 900.0
 # authoring its own inverts the handoff and makes the contract vary per run.
 GATE_DERIVATION_ENV_FLAG = "SUPERSTATE_EVAL_DERIVE_GATES"
 IGNORE_FIXTURES_ENV_FLAG = "SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES"
+ADVISORY_REVIEW_ENV_FLAG = "SUPERSTATE_EVAL_ADVISORY_REVIEW"
+
+
+def advisory_review_enabled() -> bool:
+    """Whether advisory code review is enabled for the daemon."""
+    return os.environ.get(ADVISORY_REVIEW_ENV_FLAG, "0").strip().lower() in ("1", "true", "yes", "on")
 
 
 def ignore_gate_fixtures() -> bool:
@@ -144,6 +150,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         timeout: float = 300.0,
         no_worktree: bool = True,
         worktree: bool = False,
+        advisory_review: bool = False,
     ) -> None:
         """Initialize SuperstateDaemonAdapter with driver preset and polling configuration."""
         # `state daemon` exists ONLY in the Rust engine -- agent-rules (the Python
@@ -161,6 +168,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         self.timeout = timeout
         self.no_worktree = no_worktree
         self.worktree = worktree
+        self.advisory_review = advisory_review or advisory_review_enabled()
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
 
@@ -182,6 +190,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "daemon_steps": self.step_count,
             "no_worktree": self.no_worktree,
             "worktree": self.worktree,
+            "advisory_review": self.advisory_review,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -293,6 +302,8 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "--timeout",
             str(int(self.timeout)),
         ]
+        if self.advisory_review:
+            cmd.append("--advisory-review")
         try:
             res = subprocess.run(cmd, cwd=str(workspace_path), capture_output=True, text=True, timeout=30.0)
             return res.returncode == 0
