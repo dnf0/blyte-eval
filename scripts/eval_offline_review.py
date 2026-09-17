@@ -197,8 +197,20 @@ def run_review_single(
             "findings": [],
         }
 
-    if not isinstance(report, dict):
-        report = {"findings": [], "has_blocking_issues": False, "summary": str(report)}
+    if isinstance(report, list):
+        report = {"findings": report, "has_blocking_issues": False, "summary": ""}
+    elif not isinstance(report, dict):
+        return {
+            "run_id": run_id,
+            "task_id": task_id,
+            "arm": arm,
+            "gate_passed": gate_passed,
+            "grader_passed": grader_passed,
+            "error": f"Invalid JSON structure (expected dict or list): {type(report).__name__}",
+            "duration_seconds": duration,
+            "has_blocking_issues": False,
+            "findings": [],
+        }
 
     raw_findings = report.get("findings")
     findings = [f for f in raw_findings if isinstance(f, dict)] if isinstance(raw_findings, list) else []
@@ -238,13 +250,46 @@ def run_review_single(
     return result
 
 
+def compute_review_metrics(results: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compute aggregate precision, recall, and false alarm rate from review results."""
+    valid_results = [res for res in results if "error" not in res]
+    fp_runs = [res for res in valid_results if res.get("grader_passed") is False]
+    tp_review = [res for res in fp_runs if bool(res.get("has_blocking_issues")) is True]
+
+    tp_runs = [res for res in valid_results if res.get("grader_passed") is True]
+    fp_review = [res for res in tp_runs if bool(res.get("has_blocking_issues")) is True]
+    tn_review = [res for res in tp_runs if bool(res.get("has_blocking_issues")) is False]
+
+    bug_recall = len(tp_review) / len(fp_runs) if fp_runs else 0.0
+    false_alarm_rate = len(fp_review) / len(tp_runs) if tp_runs else 0.0
+
+    baseline_prec = len(tp_runs) / len(valid_results) if valid_results else 0.0
+    unblocked_runs = [res for res in valid_results if bool(res.get("has_blocking_issues")) is False]
+    post_review_prec = len(tn_review) / len(unblocked_runs) if unblocked_runs else 0.0
+
+    return {
+        "total_evaluated": len(results),
+        "valid_evaluated": len(valid_results),
+        "false_passes_total": len(fp_runs),
+        "false_passes_caught": len(tp_review),
+        "true_passes_total": len(tp_runs),
+        "true_passes_blocked": len(fp_review),
+        "true_passes_unblocked": len(tn_review),
+        "unblocked_total": len(unblocked_runs),
+        "bug_recall": bug_recall,
+        "false_alarm_rate": false_alarm_rate,
+        "baseline_precision": baseline_prec,
+        "gate_review_precision": post_review_prec,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate offline review on false and true passes.")
     parser.add_argument("--model", default="gemini-3.8-flash-low", help="Model to evaluate")
     parser.add_argument("--concurrency", type=int, default=4, help="Parallel reviews")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of runs evaluated")
     parser.add_argument("--family", default=None, choices=["terminal-bench", "datacurve"], help="Filter family")
-    parser.add_argument("--output", type=Path, default=Path("results/offline_review_eval_20260917.json"), help="Output path")
+    parser.add_argument("--output", type=Path, default=None, help="Output path (defaults to baseline path for full runs)")
     args = parser.parse_args()
 
     if not DIFFS_FILE.is_file():
@@ -290,83 +335,58 @@ def main() -> None:
     # Sort deterministically
     results.sort(key=lambda r: str(r.get("run_id", "")))
 
-    # Compute Metrics
-    # Filter valid evaluations (excluding fatal invocation errors if any)
-    valid_results = [res for res in results if "error" not in res]
-    fp_runs = [res for res in valid_results if res.get("grader_passed") is False]
-    tp_review = [res for res in fp_runs if bool(res.get("has_blocking_issues")) is True]
-
-    tp_runs = [res for res in valid_results if res.get("grader_passed") is True]
-    fp_review = [res for res in tp_runs if bool(res.get("has_blocking_issues")) is True]
-    tn_review = [res for res in tp_runs if bool(res.get("has_blocking_issues")) is False]
-
-    bug_recall = len(tp_review) / len(fp_runs) if fp_runs else 0.0
-    false_alarm_rate = len(fp_review) / len(tp_runs) if tp_runs else 0.0
-
-    # Gate precision: baseline vs post-review
-    baseline_prec = len(tp_runs) / len(valid_results) if valid_results else 0.0
-    unblocked_runs = [res for res in valid_results if bool(res.get("has_blocking_issues")) is False]
-    post_review_prec = len(tn_review) / len(unblocked_runs) if unblocked_runs else 0.0
+    # Compute Metrics via shared helper
+    metrics = compute_review_metrics(results)
 
     print("\n" + "=" * 80)
     print("OFFLINE REVIEW EVALUATION RESULTS")
     print("=" * 80)
     print(f"Model: {args.model}")
-    print(f"Total Runs Evaluated: {len(results)} (Valid: {len(valid_results)})")
-    print(f"  - False Passes (Gate=True, Grader=False): {len(fp_runs)}")
-    print(f"  - True Passes (Gate=True, Grader=True):   {len(tp_runs)}")
+    print(f"Total Runs Evaluated: {metrics['total_evaluated']} (Valid: {metrics['valid_evaluated']})")
+    print(f"  - False Passes (Gate=True, Grader=False): {metrics['false_passes_total']}")
+    print(f"  - True Passes (Gate=True, Grader=True):   {metrics['true_passes_total']}")
     print("-" * 80)
     print("PERFORMANCE METRICS:")
-    print(f"  Bug Recall (False Passes Caught / Total False Passes): {len(tp_review)}/{len(fp_runs)} ({bug_recall:.1%})")
-    print(f"  False Alarm Rate (True Passes Blocked / Total True Passes): {len(fp_review)}/{len(tp_runs)} ({false_alarm_rate:.1%})")
-    print(f"  Gate Precision (Baseline):    {len(tp_runs)}/{len(valid_results)} ({baseline_prec:.1%})")
-    print(f"  Gate+Review Precision:        {len(tn_review)}/{len(unblocked_runs)} ({post_review_prec:.1%})")
+    print(f"  Bug Recall (False Passes Caught / Total False Passes): {metrics['false_passes_caught']}/{metrics['false_passes_total']} ({metrics['bug_recall']:.1%})")
+    print(f"  False Alarm Rate (True Passes Blocked / Total True Passes): {metrics['true_passes_blocked']}/{metrics['true_passes_total']} ({metrics['false_alarm_rate']:.1%})")
+    print(f"  Gate Precision (Baseline):    {metrics['true_passes_total']}/{metrics['valid_evaluated']} ({metrics['baseline_precision']:.1%})")
+    print(f"  Gate+Review Precision:        {metrics['true_passes_unblocked']}/{metrics['unblocked_total']} ({metrics['gate_review_precision']:.1%})")
     print("-" * 80)
 
     # Breakdown by family
+    valid_results = [res for res in results if "error" not in res]
     for fam in ("terminal-bench", "datacurve"):
         fam_results = [r for r in valid_results if fam in r.get("task_id", "")]
         if not fam_results:
             continue
-        fam_fp = [r for r in fam_results if r.get("grader_passed") is False]
-        fam_tp = [r for r in fam_results if r.get("grader_passed") is True]
-        fam_caught = [r for r in fam_fp if bool(r.get("has_blocking_issues")) is True]
-        fam_false_alarms = [r for r in fam_tp if bool(r.get("has_blocking_issues")) is True]
-        fam_unblocked = [r for r in fam_results if bool(r.get("has_blocking_issues")) is False]
-        fam_unblocked_tp = [r for r in fam_unblocked if r.get("grader_passed") is True]
+        fam_metrics = compute_review_metrics(fam_results)
 
-        fam_recall = len(fam_caught) / len(fam_fp) if fam_fp else 0.0
-        fam_fa = len(fam_false_alarms) / len(fam_tp) if fam_tp else 0.0
-        fam_base_p = len(fam_tp) / len(fam_results) if fam_results else 0.0
-        fam_post_p = len(fam_unblocked_tp) / len(fam_unblocked) if fam_unblocked else 0.0
-
-        print(f"\nFAMILY BREAKDOWN: {fam.upper()} (n={len(fam_results)})")
-        print(f"  False Passes: {len(fam_fp)} | True Passes: {len(fam_tp)}")
-        print(f"  Bug Recall:             {len(fam_caught)}/{len(fam_fp)} ({fam_recall:.1%})")
-        print(f"  False Alarm Rate:       {len(fam_false_alarms)}/{len(fam_tp)} ({fam_fa:.1%})")
-        print(f"  Base Gate Precision:    {len(fam_tp)}/{len(fam_results)} ({fam_base_p:.1%})")
-        print(f"  Gate+Review Precision:  {len(fam_unblocked_tp)}/{len(fam_unblocked)} ({fam_post_p:.1%})")
+        print(f"\nFAMILY BREAKDOWN: {fam.upper()} (n={fam_metrics['valid_evaluated']})")
+        print(f"  False Passes: {fam_metrics['false_passes_total']} | True Passes: {fam_metrics['true_passes_total']}")
+        print(f"  Bug Recall:             {fam_metrics['false_passes_caught']}/{fam_metrics['false_passes_total']} ({fam_metrics['bug_recall']:.1%})")
+        print(f"  False Alarm Rate:       {fam_metrics['true_passes_blocked']}/{fam_metrics['true_passes_total']} ({fam_metrics['false_alarm_rate']:.1%})")
+        print(f"  Base Gate Precision:    {fam_metrics['true_passes_total']}/{fam_metrics['valid_evaluated']} ({fam_metrics['baseline_precision']:.1%})")
+        print(f"  Gate+Review Precision:  {fam_metrics['true_passes_unblocked']}/{fam_metrics['unblocked_total']} ({fam_metrics['gate_review_precision']:.1%})")
 
     print("=" * 80)
 
-    # Save summary artifact
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    with open(args.output, "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "model": args.model,
-                "total_evaluated": len(results),
-                "valid_evaluated": len(valid_results),
-                "bug_recall": bug_recall,
-                "false_alarm_rate": false_alarm_rate,
-                "baseline_precision": baseline_prec,
-                "gate_review_precision": post_review_prec,
-                "results": results,
-            },
-            f,
-            indent=2,
-        )
-    logger.info("Saved full evaluation results to %s", args.output)
+    # Resolve output path safely
+    out_file = args.output
+    if out_file is None:
+        if args.limit or args.family:
+            out_file = Path(f"results/offline_review_eval_filtered_{args.family or 'limit'}.json")
+        else:
+            out_file = Path("results/offline_review_eval_20260917.json")
+
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "model": args.model,
+        **metrics,
+        "results": results,
+    }
+    with open(out_file, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    logger.info("Saved full evaluation results to %s", out_file)
 
 
 if __name__ == "__main__":
