@@ -192,6 +192,33 @@ superstate result at all**, since they cannot have been chosen for their outcome
 nine datacurve tasks qualify. Run a whole family, not a pick from within it, and register the
 list before the run.
 
+## 6. Nothing in superstate builds the gate
+
+The gate is the active ingredient — the sign of the effect tracks its precision — and it is
+supplied entirely by the caller:
+
+| where | who authors the gate |
+|---|---|
+| the Rust binary | **nobody.** `--verify-cmd` is an *input* to `state init` |
+| this evaluation | us, by hand — `GATE_FIXTURES`, 30 gates read off the task instructions |
+| `_derive_gate` (LLM-authored) | exists, **default OFF**, never enabled in any recorded run |
+
+Derivation was disabled for cause. Asked to write a gate for the same task twice, an LLM
+produced a full functional check on one run and, on the other,
+`test -f fastapi/middleware/deprecation.py && [ branch != main ]` — **satisfiable by `touch`**.
+
+**This is the central tension in the handoff-first posture.** If an agent hands work to
+superstate, that agent writes the `verify_cmd`. The architecture would then replace the agent's
+judgement about when it is done with a gate written by the same agent — and the only
+observation of that path produced a gate `touch` satisfies.
+
+Meanwhile even careful, container-validated, hand-authored gates ranged from **92% precision on
+terminal-bench to 17% on datacurve**, both written by us.
+
+*Caveat: the LLM-gate evidence is two runs of one task recorded in a docstring, not a results
+file. It is directionally consistent with the 17% measured for hand-authored datacurve gates,
+but deserves a real measurement before being treated as established.*
+
 ---
 
 ## Withdrawn
@@ -222,6 +249,12 @@ instruction. `extractor.py` now refuses to grade such a task.
   8-2 to roughly 14-16 task-pairs — enough to reach p<0.05 if the effect is real at the
   apparent size, and enough to show it is not if it is not. *Only worth running if a claim is
   going to be published.*
+* **Gate authorship, measured.** Run `SUPERSTATE_EVAL_DERIVE_GATES=1` against the tasks whose
+  hand-authored gate precision we already know, and compare. This is the question the product
+  rests on: if an agent cannot write a gate better than its own stopping judgement, handoff-first
+  has no mechanism. Currently rests on two runs of one task.
+* **Repair the datacurve gates** to assert sufficient conditions, then re-run at concurrency 2.
+  Separates "superstate is not effective" from "we wrote bad gates for this family".
 * **EXP-050** — vanilla plus the state prompt, no engine. Sizes how much of the effect is the
   text. Changes the framing of the claim, not what gets built.
 * **daemon vs mcp where the loop fires.** The one genuinely untested architectural question.
