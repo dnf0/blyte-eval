@@ -161,8 +161,9 @@ class AblationRunner:
             "superstate-daemon-full",
             "daemon_full",
         ):
+            arm_name = "superstate_daemon_full" if "full" in arm else "superstate_daemon_rollback"
             return SuperstateDaemonAdapter(
-                advisory_review=True, auto_rollback=True, name="superstate_daemon_rollback"
+                advisory_review=True, auto_rollback=True, name=arm_name
             )
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
