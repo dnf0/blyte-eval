@@ -117,3 +117,19 @@ def is_discriminating(task_name: str) -> bool:
 def excluded_reason(task_name: str) -> str | None:
     """Why a gradeable task is kept out of the core set, or None if it is in."""
     return EXCLUDED_TASKS.get(task_name)
+
+
+# Fast 3-task Canary slice (~12-15 min total) for rapid iteration on state management.
+# Balanced across 2 terminal-bench tasks and 1 tier-1 repo task; all 3 are discriminating
+# and gradeable.
+CANARY_TASKS: tuple[str, ...] = (
+    "build-cython-ext",
+    "chess-best-move",
+    "httpx-multipart-response-parsing",
+)
+
+
+def is_canary(task_name: str) -> bool:
+    """Whether a task belongs to the fast 3-task Canary slice."""
+    return task_name in CANARY_TASKS
+
