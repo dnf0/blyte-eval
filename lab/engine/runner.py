@@ -150,7 +150,13 @@ class AblationRunner:
         elif arm in ("superstate_daemon", "superstate-daemon", "daemon"):
             return SuperstateDaemonAdapter()
         elif arm in ("superstate_daemon_review", "superstate-daemon-review", "daemon_review"):
-            return SuperstateDaemonAdapter(advisory_review=True, name="superstate_daemon_review")
+            return SuperstateDaemonAdapter(
+                advisory_review=True, auto_rollback=False, name="superstate_daemon_review"
+            )
+        elif arm in ("superstate_daemon_rollback", "superstate-daemon-rollback", "daemon_rollback"):
+            return SuperstateDaemonAdapter(
+                advisory_review=True, auto_rollback=True, name="superstate_daemon_rollback"
+            )
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(

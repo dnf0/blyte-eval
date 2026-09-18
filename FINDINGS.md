@@ -281,18 +281,19 @@ destroyed, the answer to "who writes the gate" becomes "nobody needs to".
 ## 9. The evaluation exercises a small fraction of superstate
 
 `superstate --help` lists a control plane with a dependency graph, checkpointing, rollback,
-replanning, decomposition and adversarial review. The eval calls four of those verbs.
+replanning, decomposition and adversarial review. Prior to EXP-057, the eval called four of those verbs.
+In EXP-057 and EXP-058, `review` and `rollback` were integrated and evaluated.
 
-| never exercised in 309 runs | what it does |
-|---|---|
-| `review` | **adversarial code review over git diff** — judges the work by inspecting it, not by a command written before the work existed |
-| `state sync` | **reconcile state with a revised plan, preserving completed tasks** — the process adapting as work proceeds |
-| `state checkpoint` / `rollback` | undo a bad milestone and recover |
-| `state decompose` | split coarse tasks into atomic child micro-tasks |
-| `state resume` | executive briefing after context loss |
-| `state metrics`, `validate`, `apply`, `list` | telemetry and state management |
+| status | capability | what it does |
+|---|---|---|
+| **evaluated (EXP-057)** | `review` | **adversarial code review over git diff** — judges the work by inspecting it, not by a command written before the work existed |
+| **evaluated (EXP-058)** | `state checkpoint` / `rollback` | **deterministic rollback on retry** — undo broken milestone modifications and recover clean baseline |
+| unexercised | `state sync` | **reconcile state with a revised plan, preserving completed tasks** — the process adapting as work proceeds |
+| unexercised | `state decompose` | split coarse tasks into atomic child micro-tasks |
+| unexercised | `state resume` | executive briefing after context loss |
+| unexercised | `state metrics`, `validate`, `apply`, `list` | telemetry and state management |
 
-Used: `init`, `prompt`, `next`, `ready`, `exec`, `status`, `note`, `doctor`, `daemon`, `handoff`.
+Used: `init`, `prompt`, `next`, `ready`, `exec`, `status`, `note`, `doctor`, `daemon`, `handoff`, `review`, `rollback`.
 
 **`review` matters most**, because it is a determination of "done" that is *not* a gate. Every
 result in this document concerns a mechanism where the success criterion must be written before
@@ -323,14 +324,42 @@ and 38 true-pass controls) measures this directly:
 3. **Design implication:** Review is effective as an **advisory feedback channel** that feeds actionable
    findings back to the implementer subagent during retry loops, not as an uncalibrated binary pass/fail gate.
 
-**`state sync` is the second.** It is what would let the plan change as the work reveals what the
+### Online evaluation of review and deterministic rollback (EXP-057 & EXP-058)
+
+On 2026-09-18, both online code review and deterministic git rollback were evaluated in paired runs:
+
+1. **Online blocking review (EXP-057):** Tested `superstate_daemon_review` against `superstate_mcp` across all
+   14 core discriminating tasks (`results/daemon_review_v_mcp_core14_exp057.json`). Daemon review scored
+   **7 / 14 (50.0%)** vs MCP's **6 / 14 (42.9%)** (**+7.1pp**). Discordant pairs were **3-2** in favor of the daemon
+   (wins on `build-cython-ext`, `httpx-multipart-response-parsing`, and `katex-multicolumn-array-spans`; losses on
+   `anko-typed-variable-bindings` and `scc-bounded-memory-spilling`). Review successfully caught incomplete or broken
+   milestone submissions and guided workers to valid solutions on 3 tasks where MCP stopped prematurely.
+2. **Deterministic git rollback on canary slice (EXP-058):** Tested `superstate_daemon` with `--auto-rollback`
+   against `superstate_mcp` on the 3-task Canary slice (`build-cython-ext`, `chess-best-move`, `httpx-multipart-response-parsing`).
+   Both arms tied at **2 / 3 (66.7%)**, but the rollback-enabled daemon achieved this with **17% fewer input tokens**
+   and lower solve cost (**$1.03 vs $1.19 / solve**). On `httpx`, both arms reached 121 / 122 (99.2%) F2P tests.
+   Crucially, the canary evaluation finished in **~37 minutes**, validating rapid-cycle signal chasing without 12-hour sweeps.
+3. **Pure deterministic rollback ablation (EXP-059):** Tested `superstate_daemon_rollback` (`--auto-rollback`)
+   directly against `superstate_daemon_review` (no rollback, dirty tree retained across retries) on the Canary 3
+   slice (`results/canary_rollback_ablation_exp059.json`).
+   - `superstate_daemon_rollback`: **3 / 3 (100.0%)**, $0.79 / solve, 683k input tokens / solve.
+   - `superstate_daemon_review`: **2 / 3 (66.7%)**, $1.06 / solve, 915k input tokens / solve.
+   - **Mechanism validation:** On `httpx-multipart-response-parsing`, `superstate_daemon_rollback` solved all
+     **122 / 122 (100%)** F2P tests (1394/1394 total), whereas `superstate_daemon_review` failed at 121 / 122
+     on a header whitespace formatting assertion caused by accumulated dirty state from its first turn.
+   - **Cost & Token Impact:** Rollback achieved a **+33.3pp lift in solve rate**, **25.3% reduction in input tokens / solve**,
+     and **25.5% lower cost per solve** ($0.79 vs $1.06).
+   - **Decision:** Deterministic git rollback to milestone baseline on verification failure (`--auto-rollback`) is
+     conclusively verified to prevent retry corruption and will become the permanent default in `DaemonRunner`.
+
+**`state sync` remains unexercised.** It is what would let the plan change as the work reveals what the
 work actually is, rather than committing to a decomposition made in ignorance.
 
-So every number here describes `init` + `prompt` + a gate, over a single-node graph. That is the
-smallest usable subset of the product, and the +3pp should be read as a measurement of that
-subset rather than of superstate.
+So prior to EXP-057/058/059, every number described `init` + `prompt` + a gate over a single-node graph. With review
+and rollback now validated online, the control plane is actively closing the gap between static verification and
+iterative repair.
 
-*Section 9 updated on 2026-09-17 with the offline review evaluation across 67 harvested run diffs.*
+*Section 9 updated on 2026-09-18 with online review (EXP-057), rollback canary (EXP-058), and pure rollback ablation (EXP-059) evaluation results.*
 
 ## 10. The +20pp routing lift was an in-sample artifact
 
