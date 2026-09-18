@@ -103,7 +103,10 @@ def review_blocking_enabled() -> bool:
 
 def auto_rollback_enabled() -> bool:
     """Whether automatic rollback on milestone failure is enabled for the daemon."""
-    return os.environ.get(AUTO_ROLLBACK_ENV_FLAG, "").strip().lower() in ("1", "true", "yes")
+    val = os.environ.get(AUTO_ROLLBACK_ENV_FLAG)
+    if val is not None:
+        return val.strip().lower() in ("1", "true", "yes", "on")
+    return True
 
 
 def ignore_gate_fixtures() -> bool:
@@ -339,6 +342,8 @@ class SuperstateDaemonAdapter(AgentAdapter):
             cmd.append("--review-blocking")
         if self.auto_rollback:
             cmd.append("--auto-rollback")
+        else:
+            cmd.append("--no-auto-rollback")
         return cmd
 
     def _spawn_daemon(self, workspace_path: Path) -> bool:
