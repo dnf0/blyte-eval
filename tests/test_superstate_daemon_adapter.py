@@ -4,8 +4,15 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from typing import Any, Optional
+
 from lab.benchmarks.task_loader import TaskSpec
-from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
+from lab.engine.adapters.base import AgentDriver, DriverTelemetry
+from lab.engine.adapters.superstate_daemon import (
+    AUTO_ROLLBACK_ENV_FLAG,
+    SuperstateDaemonAdapter,
+    auto_rollback_enabled,
+)
 
 import pytest
 
@@ -483,4 +490,73 @@ def test_daemon_adapter_can_disable_review_blocking(tmp_path: Path) -> None:
         called_cmd = mock_run.call_args[0][0]
         assert "--advisory-review" in called_cmd
         assert "--review-blocking" not in called_cmd
+
+
+class MockDriver(AgentDriver):
+    """Mock agent driver for testing."""
+
+    def run(
+        self,
+        task: TaskSpec,
+        workspace_path: Path,
+        prompt_override: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+        timeout_sec: float = 3600.0,
+        container: Any = None,
+    ) -> DriverTelemetry:
+        return DriverTelemetry(success=True, raw_response="done", duration_seconds=1.0)
+
+
+def test_daemon_adapter_passes_auto_rollback_flag() -> None:
+    """When auto_rollback is True, --auto-rollback is appended to the daemon spawn command."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), auto_rollback=True)
+    assert adapter.auto_rollback is True
+    assert adapter.get_provenance()["auto_rollback"] is True
+
+    cmd = adapter._build_daemon_spawn_cmd()  # noqa: SLF001
+    assert "--auto-rollback" in cmd
+
+
+def test_daemon_adapter_can_disable_auto_rollback() -> None:
+    """When auto_rollback is False, --auto-rollback is not in the daemon spawn command."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), auto_rollback=False)
+    assert adapter.auto_rollback is False
+    assert adapter.get_provenance()["auto_rollback"] is False
+
+    cmd = adapter._build_daemon_spawn_cmd()  # noqa: SLF001
+    assert "--auto-rollback" not in cmd
+
+
+def test_daemon_adapter_auto_rollback_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    """AUTO_ROLLBACK_ENV_FLAG enables auto_rollback by default when set."""
+    monkeypatch.delenv(AUTO_ROLLBACK_ENV_FLAG, raising=False)
+    assert not auto_rollback_enabled()
+    adapter_default = SuperstateDaemonAdapter(driver=MockDriver())
+    assert adapter_default.auto_rollback is False
+    assert "--auto-rollback" not in adapter_default._build_daemon_spawn_cmd()  # noqa: SLF001
+
+    for val in ("1", "true", "yes", "True", "YES"):
+        monkeypatch.setenv(AUTO_ROLLBACK_ENV_FLAG, val)
+        assert auto_rollback_enabled()
+        adapter_enabled = SuperstateDaemonAdapter(driver=MockDriver())
+        assert adapter_enabled.auto_rollback is True
+        assert "--auto-rollback" in adapter_enabled._build_daemon_spawn_cmd()  # noqa: SLF001
+
+    for val in ("0", "false", "no", "anything_else"):
+        monkeypatch.setenv(AUTO_ROLLBACK_ENV_FLAG, val)
+        assert not auto_rollback_enabled()
+        adapter_disabled = SuperstateDaemonAdapter(driver=MockDriver())
+        assert adapter_disabled.auto_rollback is False
+        assert "--auto-rollback" not in adapter_disabled._build_daemon_spawn_cmd()  # noqa: SLF001
+
+
+def test_daemon_adapter_spawn_daemon_forwards_auto_rollback(tmp_path: Path) -> None:
+    """_spawn_daemon includes --auto-rollback in subprocess.run command when enabled."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), auto_rollback=True)
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = SimpleNamespace(returncode=0)
+        adapter._spawn_daemon(tmp_path)  # noqa: SLF001
+        called_cmd = mock_run.call_args[0][0]
+        assert "--auto-rollback" in called_cmd
+
 
