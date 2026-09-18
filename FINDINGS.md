@@ -339,15 +339,27 @@ On 2026-09-18, both online code review and deterministic git rollback were evalu
    Both arms tied at **2 / 3 (66.7%)**, but the rollback-enabled daemon achieved this with **17% fewer input tokens**
    and lower solve cost (**$1.03 vs $1.19 / solve**). On `httpx`, both arms reached 121 / 122 (99.2%) F2P tests.
    Crucially, the canary evaluation finished in **~37 minutes**, validating rapid-cycle signal chasing without 12-hour sweeps.
+3. **Pure deterministic rollback ablation (EXP-059):** Tested `superstate_daemon_rollback` (`--auto-rollback`)
+   directly against `superstate_daemon_review` (no rollback, dirty tree retained across retries) on the Canary 3
+   slice (`results/canary_rollback_ablation_exp059.json`).
+   - `superstate_daemon_rollback`: **3 / 3 (100.0%)**, $0.79 / solve, 683k input tokens / solve.
+   - `superstate_daemon_review`: **2 / 3 (66.7%)**, $1.06 / solve, 915k input tokens / solve.
+   - **Mechanism validation:** On `httpx-multipart-response-parsing`, `superstate_daemon_rollback` solved all
+     **122 / 122 (100%)** F2P tests (1394/1394 total), whereas `superstate_daemon_review` failed at 121 / 122
+     on a header whitespace formatting assertion caused by accumulated dirty state from its first turn.
+   - **Cost & Token Impact:** Rollback achieved a **+33.3pp lift in solve rate**, **25.3% reduction in input tokens / solve**,
+     and **25.5% lower cost per solve** ($0.79 vs $1.06).
+   - **Decision:** Deterministic git rollback to milestone baseline on verification failure (`--auto-rollback`) is
+     conclusively verified to prevent retry corruption and will become the permanent default in `DaemonRunner`.
 
 **`state sync` remains unexercised.** It is what would let the plan change as the work reveals what the
 work actually is, rather than committing to a decomposition made in ignorance.
 
-So prior to EXP-057/058, every number described `init` + `prompt` + a gate over a single-node graph. With review
+So prior to EXP-057/058/059, every number described `init` + `prompt` + a gate over a single-node graph. With review
 and rollback now validated online, the control plane is actively closing the gap between static verification and
 iterative repair.
 
-*Section 9 updated on 2026-09-18 with online review (EXP-057) and rollback canary (EXP-058) evaluation results.*
+*Section 9 updated on 2026-09-18 with online review (EXP-057), rollback canary (EXP-058), and pure rollback ablation (EXP-059) evaluation results.*
 
 ## 10. The +20pp routing lift was an in-sample artifact
 
