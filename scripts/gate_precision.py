@@ -59,7 +59,7 @@ def main() -> int:
         fn, tn = cell[(False, True)], cell[(False, False)]
         total = tp + fp + fn + tn
         print(f"\n{arm}  ({total} runs with a recorded gate verdict)")
-        print(f"                    grader PASS   grader FAIL")
+        print("                    grader PASS   grader FAIL")
         print(f"  gate says PASS {tp:12d} {fp:13d}")
         print(f"  gate says FAIL {fn:12d} {tn:13d}")
         if tp + fp:

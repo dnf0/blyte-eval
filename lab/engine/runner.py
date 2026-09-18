@@ -149,6 +149,8 @@ class AblationRunner:
         # Detached Autonomous Daemon: hands off task execution entirely to native Rust DaemonRunner
         elif arm in ("superstate_daemon", "superstate-daemon", "daemon"):
             return SuperstateDaemonAdapter()
+        elif arm in ("superstate_daemon_review", "superstate-daemon-review", "daemon_review"):
+            return SuperstateDaemonAdapter(advisory_review=True, name="superstate_daemon_review")
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(

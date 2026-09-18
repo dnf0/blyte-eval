@@ -86,6 +86,24 @@ GATE_TURN_TIMEOUT_SEC = 900.0
 # authoring its own inverts the handoff and makes the contract vary per run.
 GATE_DERIVATION_ENV_FLAG = "SUPERSTATE_EVAL_DERIVE_GATES"
 IGNORE_FIXTURES_ENV_FLAG = "SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES"
+ADVISORY_REVIEW_ENV_FLAG = "SUPERSTATE_EVAL_ADVISORY_REVIEW"
+REVIEW_BLOCKING_ENV_FLAG = "SUPERSTATE_EVAL_REVIEW_BLOCKING"
+AUTO_ROLLBACK_ENV_FLAG = "SUPERSTATE_EVAL_AUTO_ROLLBACK"
+
+
+def advisory_review_enabled() -> bool:
+    """Whether advisory code review is enabled for the daemon."""
+    return os.environ.get(ADVISORY_REVIEW_ENV_FLAG, "0").strip().lower() in ("1", "true", "yes", "on")
+
+
+def review_blocking_enabled() -> bool:
+    """Whether code review blocks advancement when Critical/High issues are found."""
+    return os.environ.get(REVIEW_BLOCKING_ENV_FLAG, "1").strip().lower() in ("1", "true", "yes", "on")
+
+
+def auto_rollback_enabled() -> bool:
+    """Whether automatic rollback on milestone failure is enabled for the daemon."""
+    return os.environ.get(AUTO_ROLLBACK_ENV_FLAG, "").strip().lower() in ("1", "true", "yes")
 
 
 def ignore_gate_fixtures() -> bool:
@@ -144,6 +162,10 @@ class SuperstateDaemonAdapter(AgentAdapter):
         timeout: float = 300.0,
         no_worktree: bool = True,
         worktree: bool = False,
+        advisory_review: bool = False,
+        review_blocking: Optional[bool] = None,
+        auto_rollback: Optional[bool] = None,
+        driver: Any = None,
     ) -> None:
         """Initialize SuperstateDaemonAdapter with driver preset and polling configuration."""
         # `state daemon` exists ONLY in the Rust engine -- agent-rules (the Python
@@ -155,12 +177,19 @@ class SuperstateDaemonAdapter(AgentAdapter):
             Path(superstate_bin) if superstate_bin is not None else find_superstate_binary(ENGINE_RUST)
         )
         self.driver_preset = driver_preset
+        self.driver = driver
         self.poll_interval_sec = poll_interval_sec
         self._name = name
         self.max_retries = max_retries
         self.timeout = timeout
         self.no_worktree = no_worktree
         self.worktree = worktree
+        self.advisory_review = advisory_review or advisory_review_enabled()
+        if review_blocking is not None:
+            self.review_blocking = review_blocking
+        else:
+            self.review_blocking = self.advisory_review and review_blocking_enabled()
+        self.auto_rollback: bool = auto_rollback if auto_rollback is not None else auto_rollback_enabled()
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
 
@@ -182,6 +211,9 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "daemon_steps": self.step_count,
             "no_worktree": self.no_worktree,
             "worktree": self.worktree,
+            "advisory_review": self.advisory_review,
+            "review_blocking": self.review_blocking,
+            "auto_rollback": self.auto_rollback,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -272,15 +304,23 @@ class SuperstateDaemonAdapter(AgentAdapter):
         state_file.write_text(json.dumps(direct_state, indent=2), encoding="utf-8")
         return True
 
-    def _spawn_daemon(self, workspace_path: Path) -> bool:
-        """Spawn the autonomous background daemon process."""
-        state_file = workspace_path / ".agent-state" / "state.json"
-        if not self.superstate_bin:
-            logger.warning("No superstate binary resolved to spawn daemon")
-            return False
+    def _build_daemon_spawn_cmd(self, workspace_path: Optional[Path] = None) -> list[str]:
+        """Construct the daemon spawn command arguments.
 
+        Parameters:
+            workspace_path: Workspace root directory containing .agent-state/.
+
+        Returns:
+            Command list to spawn the detached daemon process.
+        """
+        # Resolve state file location relative to workspace
+        state_file = (
+            (workspace_path / ".agent-state" / "state.json")
+            if workspace_path is not None
+            else Path(".agent-state/state.json")
+        )
         cmd = [
-            str(self.superstate_bin),
+            str(self.superstate_bin or "superstate"),
             "state",
             "daemon",
             "--state",
@@ -293,6 +333,30 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "--timeout",
             str(int(self.timeout)),
         ]
+        if self.advisory_review:
+            cmd.append("--advisory-review")
+        if self.review_blocking:
+            cmd.append("--review-blocking")
+        if self.auto_rollback:
+            cmd.append("--auto-rollback")
+        return cmd
+
+    def _spawn_daemon(self, workspace_path: Path) -> bool:
+        """Spawn the autonomous background daemon process.
+
+        Parameters:
+            workspace_path: Target workspace directory.
+
+        Returns:
+            True if daemon was spawned successfully, False otherwise.
+        """
+        # Ensure a valid superstate binary is resolved before executing
+        if not self.superstate_bin:
+            logger.warning("No superstate binary resolved to spawn daemon")
+            return False
+
+        # Build command with all configured flags and execute detached daemon
+        cmd = self._build_daemon_spawn_cmd(workspace_path)
         try:
             res = subprocess.run(cmd, cwd=str(workspace_path), capture_output=True, text=True, timeout=30.0)
             return res.returncode == 0

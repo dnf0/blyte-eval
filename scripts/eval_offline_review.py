@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("eval_offline_review")
 
 CACHE_DIR = Path("results/offline_review_cache")
-DIFFS_FILE = Path("results/harvested_run_diffs_20260917.json")
+DIFFS_FILE = Path("data/harvested_run_diffs_20260917.json")
 TASKS_DIR = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
 AGY_BIN = shutil.which("agy") or str(Path.home() / ".local/bin/agy")
 

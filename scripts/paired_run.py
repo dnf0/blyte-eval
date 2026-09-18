@@ -20,7 +20,7 @@ from typing import Any
 
 from lab.benchmarks.gate_fixtures import is_unmeasurable
 from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
-from lab.benchmarks.task_sets import is_discriminating
+from lab.benchmarks.task_sets import is_canary, is_discriminating
 from lab.engine.drivers.agy_cli import AgyCliDriver
 from lab.engine.drivers.claude_cli import ClaudeCliDriver
 from lab.engine.governor import ConcurrencyGovernor
@@ -38,7 +38,7 @@ logger = logging.getLogger("superstate_eval.paired")
 DEFAULT_TASKS = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Paired control-plane evaluation")
     ap.add_argument("--task", type=Path, help="Single task directory")
     ap.add_argument("--tasks-root", type=Path, default=DEFAULT_TASKS)
@@ -59,7 +59,14 @@ def main() -> int:
     ap.add_argument("--core", action="store_true",
                     help="Run only tasks that can contribute signal: gradeable, and not at a "
                          "ceiling or floor. 14 of the 30-task corpus. See lab/benchmarks/task_sets.py")
+    ap.add_argument("--canary", action="store_true",
+                    help="Run the fast 3-task Canary slice (~15 min total)")
     ap.add_argument("--out", type=Path, help="Write results JSON here")
+    return ap
+
+
+def main() -> int:
+    ap = build_parser()
     args = ap.parse_args()
 
     tier1_names = {
@@ -104,6 +111,13 @@ def main() -> int:
             "Core set: %d of %d tasks. Excluded are ungradeable (no held-out tests/) or at a "
             "ceiling or floor, so they cannot move an arm-vs-arm result.",
             len(tasks), before,
+        )
+    if args.canary:
+        before = len(tasks)
+        tasks = [t for t in tasks if is_canary(t.name)]
+        logger.info(
+            "Canary slice: %d of %d tasks (%s).",
+            len(tasks), before, ", ".join(t.name for t in tasks),
         )
     if args.only_with_verifier:
         tasks = [t for t in tasks if t.tests_dir]

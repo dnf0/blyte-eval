@@ -13,7 +13,6 @@ This script tests whether that lift holds out-of-sample or collapses to noise/co
 
 from __future__ import annotations
 
-import glob
 import json
 import random
 from collections import Counter, defaultdict
@@ -98,9 +97,9 @@ def evaluate() -> None:
         print(f"  {cnt:3d} runs: {src}")
 
     for name, task_set in [("DATACURVE (9 tasks)", DATACURVE_TASKS), ("TERMINAL-BENCH (13 gradeable tasks)", GRADEABLE_TB)]:
-        print(f"\n==========================================")
+        print("\n==========================================")
         print(f"  {name}")
-        print(f"==========================================")
+        print("==========================================")
 
         # In-sample summary per task
         print(f"{'Task':<45} | {'Single':<10} | {'Multi':<10} | {'In-Sample Oracle'}")
@@ -126,7 +125,7 @@ def evaluate() -> None:
         in_sample_lift = macro_oracle - best_fixed
 
         print("-" * 80)
-        print(f"Macro In-Sample Average:")
+        print("Macro In-Sample Average:")
         print(f"  Single:          {macro_single*100:5.1f}%")
         print(f"  Multi:           {macro_multi*100:5.1f}%")
         print(f"  In-Sample Oracle:{macro_oracle*100:5.1f}% (+{in_sample_lift*100:.1f}pp over better fixed policy)")
@@ -190,15 +189,15 @@ def evaluate() -> None:
             test_routed_scores.append(mean_routed)
 
         oos_lift = sum(out_of_sample_lifts) / len(out_of_sample_lifts)
-        print(f"\nHeld-Out Split-Half Cross-Validation (1000 trials):")
+        print("\nHeld-Out Split-Half Cross-Validation (1000 trials):")
         print(f"  Test Set Single:  {sum(test_single_scores)/len(test_single_scores)*100:5.1f}%")
         print(f"  Test Set Multi:   {sum(test_multi_scores)/len(test_multi_scores)*100:5.1f}%")
         print(f"  Test Set Routed:  {sum(test_routed_scores)/len(test_routed_scores)*100:5.1f}%")
         print(f"  Held-Out Lift:    {oos_lift*100:+5.1f}pp")
         if oos_lift <= 0:
-            print(f"  --> VERDICT: Routing advantage collapses to ZERO or NEGATIVE out-of-sample. Claim falsified.")
+            print("  --> VERDICT: Routing advantage collapses to ZERO or NEGATIVE out-of-sample. Claim falsified.")
         else:
-            print(f"  --> VERDICT: Modest held-out lift observed, but note that Multi consists entirely of pre-09-15 confounded arms.")
+            print("  --> VERDICT: Modest held-out lift observed, but note that Multi consists entirely of pre-09-15 confounded arms.")
 
 
 if __name__ == "__main__":
