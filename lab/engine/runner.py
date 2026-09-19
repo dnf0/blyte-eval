@@ -151,7 +151,7 @@ class AblationRunner:
             return SuperstateDaemonAdapter()
         elif arm in ("superstate_daemon_review", "superstate-daemon-review", "daemon_review"):
             return SuperstateDaemonAdapter(
-                advisory_review=True, auto_rollback=False, name="superstate_daemon_review"
+                advisory_review=True, review_blocking=True, auto_rollback=False, name="superstate_daemon_review"
             )
         elif arm in (
             "superstate_daemon_rollback",

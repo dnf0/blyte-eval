@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import pathlib
 
+import pytest
+
 ADAPTERS = pathlib.Path("lab/engine/adapters")
 
 # Arms whose results are compared against each other in reports.
@@ -122,3 +124,22 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
         else:
             suffix = "planned"
         assert suffix in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"
+
+
+def test_daemon_review_arm_wires_review_blocking_and_no_rollback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """superstate_daemon_review must run with review blocking and without auto-rollback.
+
+    Advisory review with auto_rollback=True rolls back on review failure, destroying
+    the worker's edits. Full review blocking must be wired explicitly so the arm behaves
+    deterministically regardless of environment variable fallbacks.
+    """
+    from lab.engine.adapters.superstate_daemon import REVIEW_BLOCKING_ENV_FLAG
+    from lab.engine.runner import AblationRunner
+
+    monkeypatch.setenv(REVIEW_BLOCKING_ENV_FLAG, "0")
+    runner = AblationRunner.__new__(AblationRunner)
+    adapter = runner._get_adapter("superstate_daemon_review")  # noqa: SLF001
+    assert getattr(adapter, "advisory_review", None) is True
+    assert getattr(adapter, "review_blocking", None) is True
+    assert getattr(adapter, "auto_rollback", None) is False
+

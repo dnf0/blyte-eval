@@ -628,4 +628,36 @@ def test_daemon_adapter_init_daemon_state_passes_milestones(tmp_path: Path) -> N
         assert call_kwargs["milestones"][1]["id"] == "fix-implementation"
 
 
+def test_daemon_spawn_cmd_review_blocking_flags(monkeypatch: pytest.MonkeyPatch) -> None:
+    """When review_blocking is True and auto_rollback is False, verify daemon flags.
+
+    Asserts that --advisory-review, --review-blocking, and --no-auto-rollback are
+    properly appended to the daemon spawn command, and that the runner explicitly
+    configures superstate_daemon_review with review_blocking=True and auto_rollback=False.
+    """
+    adapter = SuperstateDaemonAdapter(
+        advisory_review=True,
+        review_blocking=True,
+        auto_rollback=False,
+        name="superstate_daemon_review",
+    )
+    cmd = adapter._build_daemon_spawn_cmd(Path("/fake/workspace"))  # noqa: SLF001
+    assert "--advisory-review" in cmd
+    assert "--review-blocking" in cmd
+    assert "--no-auto-rollback" in cmd
+    assert adapter.review_blocking is True
+    assert adapter.auto_rollback is False
+
+    from lab.engine.adapters.superstate_daemon import REVIEW_BLOCKING_ENV_FLAG
+    from lab.engine.runner import AblationRunner
+
+    # Ensure runner explicitly wires review_blocking=True regardless of environment flag
+    monkeypatch.setenv(REVIEW_BLOCKING_ENV_FLAG, "0")
+    runner = AblationRunner.__new__(AblationRunner)
+    resolved = runner._get_adapter("superstate_daemon_review")  # noqa: SLF001
+    assert resolved.review_blocking is True
+    assert resolved.auto_rollback is False
+
+
+
 
