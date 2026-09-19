@@ -568,3 +568,64 @@ def test_daemon_adapter_spawn_daemon_forwards_auto_rollback(tmp_path: Path) -> N
         assert "--no-auto-rollback" in called_cmd
 
 
+def test_daemon_adapter_tdd_dag_initialization() -> None:
+    """tdd_dag flag initializes correctly and appears in provenance."""
+    adapter_default = SuperstateDaemonAdapter(driver=MockDriver())
+    assert adapter_default.tdd_dag is False
+    assert adapter_default.get_provenance()["tdd_dag"] is False
+
+    adapter_dag = SuperstateDaemonAdapter(driver=MockDriver(), tdd_dag=True)
+    assert adapter_dag.tdd_dag is True
+    assert adapter_dag.get_provenance()["tdd_dag"] is True
+
+
+def test_daemon_adapter_build_tdd_milestones() -> None:
+    """_build_tdd_milestones creates a valid 2-node TDD dependency graph."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), tdd_dag=True)
+    task = TaskSpec(
+        id="test-task",
+        name="test-task",
+        instruction="Fix the bug in parser.py",
+        docker_image="test:latest",
+    )
+    milestones = adapter._build_tdd_milestones(task)  # noqa: SLF001
+    assert len(milestones) == 2
+
+    # Milestone 1: TDD Acceptance Test
+    m1 = milestones[0]
+    assert m1["id"] == "tdd-acceptance-test"
+    assert "test_task_spec.py" in m1["verify_cmd"]
+    assert m1.get("depends_on") in (None, [])
+    assert "tests/test_task_spec.py" in m1.get("files", [])
+
+    # Milestone 2: Fix Implementation
+    m2 = milestones[1]
+    assert m2["id"] == "fix-implementation"
+    assert m2["depends_on"] == ["tdd-acceptance-test"]
+    assert "./run-in-container pytest tests/test_task_spec.py" in m2["verify_cmd"]
+
+
+def test_daemon_adapter_init_daemon_state_passes_milestones(tmp_path: Path) -> None:
+    """When tdd_dag is active, _init_daemon_state passes milestones array to superstate_handoff."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), tdd_dag=True)
+    task = TaskSpec(
+        id="test-task",
+        name="test-task",
+        instruction="Fix the bug in parser.py",
+        docker_image="test:latest",
+    )
+    with patch("lab.engine.mcp.client.SuperstateMcpClient.start"), \
+         patch("lab.engine.mcp.client.SuperstateMcpClient.superstate_handoff") as mock_handoff, \
+         patch("lab.engine.mcp.client.SuperstateMcpClient.tools", {"superstate_handoff": {}}):
+        mock_handoff.return_value = {"status": "ready"}
+        success = adapter._init_daemon_state(tmp_path, task, "fallback_cmd")  # noqa: SLF001
+        assert success is True
+        mock_handoff.assert_called_once()
+        call_kwargs = mock_handoff.call_args.kwargs
+        assert "milestones" in call_kwargs
+        assert len(call_kwargs["milestones"]) == 2
+        assert call_kwargs["milestones"][0]["id"] == "tdd-acceptance-test"
+        assert call_kwargs["milestones"][1]["id"] == "fix-implementation"
+
+
+
