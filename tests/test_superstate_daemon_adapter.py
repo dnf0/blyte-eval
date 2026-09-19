@@ -655,9 +655,6 @@ def test_daemon_spawn_cmd_review_blocking_flags(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv(REVIEW_BLOCKING_ENV_FLAG, "0")
     runner = AblationRunner.__new__(AblationRunner)
     resolved = runner._get_adapter("superstate_daemon_review")  # noqa: SLF001
+    assert isinstance(resolved, SuperstateDaemonAdapter)
     assert resolved.review_blocking is True
     assert resolved.auto_rollback is False
-
-
-
-
