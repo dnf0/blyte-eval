@@ -1,0 +1,52 @@
+[
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "superstate_mcp",
+    "passed": true,
+    "wall_clock_sec": 877.23,
+    "cost_usd": 0.7909665,
+    "input_tokens": 755877,
+    "output_tokens": 59749,
+    "milestones_completed": 3,
+    "lease_extensions_earned_sec": 3600.0,
+    "total_granted_budget_sec": 4500.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_mcp-7f90bc8d",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 3,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 11
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260919-180116/eval-terminal-bench_build-cython-ext-superstate_mcp-7f90bc8d/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests"
+      ],
+      "engine": "superstate_rust_mcp",
+      "transport": "mcp_stdio",
+      "mcp_tools_discovered": 4,
+      "superstate_bin": "/Users/danielfisher/.cargo/bin/superstate",
+      "no_worktree": true,
+      "worktree": false,
+      "zero_turn_planning": true,
+      "plan_source": "direct_state_handoff",
+      "milestones_planned": 1,
+      "decomposed": true
+    }
+  }
+]
