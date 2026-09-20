@@ -104,6 +104,7 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
         ("superstate_rust", "superstate_rust_planned"),
         ("superstate_daemon", "superstate_daemon_review"),
         ("superstate_daemon_review", "superstate_daemon_rollback"),
+        ("superstate_daemon_rollback", "superstate_daemon_full"),
     ]
     for zero_turn, planned in pairs:
         a = runner._get_adapter(zero_turn)  # noqa: SLF001
@@ -112,10 +113,54 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
             f"{zero_turn!r} and {planned!r} both report {a.name!r}; "
             "results from the two would be pooled"
         )
-        if "rollback" in planned:
+        if "full" in planned:
+            suffix = "full"
+            assert getattr(b, "impact_slicing", False) is True, f"{planned!r} must have impact_slicing=True"
+            assert getattr(b, "auto_rollback", False) is True, f"{planned!r} must have auto_rollback=True"
+        elif "rollback" in planned:
             suffix = "rollback"
         elif "review" in planned:
             suffix = "review"
         else:
             suffix = "planned"
         assert suffix in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"
+
+
+def test_no_adapter_synthesizes_milestones_or_harness_prompts() -> None:
+    """Adapters are passive translation shims. They must NEVER synthesize task milestones or prompt engineering.
+
+    In September 2026, an adapter synthesized a 2-node TDD milestone DAG with hardcoded
+    Python files (tests/test_reproduce_issue.py) and pytest commands in the evaluation harness.
+    This was harness-level prompt engineering: it broke cross-language tasks (TypeScript/Go),
+    forced artificial turns on simple tasks, and violated arm input parity.
+
+    All task decomposition and milestone planning must originate either from the benchmark
+    specification itself or autonomously from Superstate inside the target binary, never
+    from synthetic adapter code in superstate-eval.
+    """
+    for name in COMPARED_ARMS:
+        text = (ADAPTERS / name).read_text()
+        assert "def _build_tdd_milestones" not in text, (
+            f"{name} contains synthetic milestone generation. Adapters must not decompose tasks."
+        )
+        assert "tdd_dag" not in text, (
+            f"{name} contains synthetic DAG flags. Adapters must not script execution DAGs."
+        )
+        assert "test_reproduce_issue.py" not in text, (
+            f"{name} contains hardcoded test file injections. Adapters must not prompt-engineer."
+        )
+
+
+def test_no_adapter_uses_raw_substring_matching_for_sealed_grader() -> None:
+    """Adapters must use `references_sealed_grader()` rather than raw `"/tests/" in cmd`.
+
+    A raw substring match on `"/tests/"` rejects or falsely passes in-repo test suites like
+    `/app/pyknotid/tests/`, treating legitimate package tests as if they were the container-root
+    sealed grader at `/tests/`.
+    """
+    for name in COMPARED_ARMS:
+        text = (ADAPTERS / name).read_text()
+        assert '"/tests/" in' not in text, (
+            f"{name} uses raw `\"/tests/\" in` substring matching. Use `references_sealed_grader()`."
+        )
+

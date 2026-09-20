@@ -18,6 +18,11 @@ import sys
 import time
 from typing import Any
 
+# Ensure current repository/worktree root takes precedence over editable installs in site-packages
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from lab.benchmarks.gate_fixtures import is_unmeasurable
 from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
 from lab.benchmarks.task_sets import is_canary, is_discriminating
@@ -58,9 +63,9 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--tier1", action="store_true", help="Run the 9 Tier-1 Frontier software engineering tasks")
     ap.add_argument("--core", action="store_true",
                     help="Run only tasks that can contribute signal: gradeable, and not at a "
-                         "ceiling or floor. 14 of the 30-task corpus. See lab/benchmarks/task_sets.py")
+                         "ceiling, floor, or toy puzzle. 9 canonical software engineering repositories. See lab/benchmarks/task_sets.py")
     ap.add_argument("--canary", action="store_true",
-                    help="Run the fast 3-task Canary slice (~15 min total)")
+                    help="Run the fast 3-task Tri-Language SWE-Canary slice (build-cython-ext, scc, katex; ~15-20 min total)")
     ap.add_argument("--out", type=Path, help="Write results JSON here")
     return ap
 

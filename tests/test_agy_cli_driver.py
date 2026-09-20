@@ -155,7 +155,7 @@ def test_container_mode_creates_bridge_script_and_steers_prompt(tmp_path: Path) 
     assert script.is_file()
     assert bool(script.stat().st_mode & stat.S_IXUSR)
     content = script.read_text(encoding="utf-8")
-    assert "exec docker exec -i -w /app cnt-test-999" in content
+    assert 'exec docker exec -i -w /app "cnt-test-999"' in content
 
     # Check prompt steering
     argv = _read_argv(tmp_path)

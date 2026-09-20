@@ -142,14 +142,28 @@ class AgyCliDriver(AgentDriver):
         self.container_exec = container_exec
 
     def _setup_container_bridge(self, workspace_path: Path, container: Any) -> None:
-        """Create a `./run-in-container` wrapper script in workspace pointing to container."""
+        """Create a `./run-in-container` wrapper script in workspace pointing to container.
+
+        Generates a transparent bridge script that routes commands through
+        `superstate shunt` when available to bound token context growth while
+        preserving exit codes and fallback semantics.
+        """
+        # Determine container identifier from container object or string representation
         container_id = getattr(container, "id", None) or getattr(container, "name", str(container))
         script_path = workspace_path / "run-in-container"
+
+        # Build wrapper script checking for superstate availability and shunting toggle
         script_content = (
             "#!/usr/bin/env bash\n"
-            f'exec docker exec -i -w /app {container_id} "$@"\n'
+            "set -o pipefail\n\n"
+            'if [ "${SUPERSTATE_SHUNT_ENABLED:-1}" = "1" ] && command -v superstate >/dev/null 2>&1; then\n'
+            f'    exec superstate shunt --threshold-lines 50 -- docker exec -i -w /app "{container_id}" "$@"\n'
+            "else\n"
+            f'    exec docker exec -i -w /app "{container_id}" "$@"\n'
+            "fi\n"
         )
         script_path.write_text(script_content, encoding="utf-8")
+
         # Ensure executable permissions: rwxr-xr-x (0o755)
         current_mode = script_path.stat().st_mode
         script_path.chmod(current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)

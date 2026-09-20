@@ -16,6 +16,7 @@ import shlex
 import subprocess
 from typing import Any, Dict, Optional
 
+from lab.benchmarks.gate_fixtures import references_sealed_grader
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.prompt_contracts import apply_contract
 from lab.engine.adapters.base import (
@@ -181,7 +182,7 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
         if container is not None:
             container_workdir = "/app"
             # Sealed held-out test paths must not fail the run during agent evaluation
-            if "/tests/" in verify_cmd or verify_cmd.startswith("bash /tests"):
+            if references_sealed_grader(verify_cmd):
                 try:
                     chk = container.exec_run(["test", "-d", "/tests"])
                     chk_code = chk[0] if isinstance(chk, tuple) else getattr(chk, "exit_code", 0)
@@ -346,7 +347,7 @@ class SuperstateAgentMcpAdapter(AgentAdapter):
                 )
             else:
                 vcmd = getattr(task, "verification_cmd", None)
-                if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
+                if vcmd and references_sealed_grader(vcmd):
                     vcmd = None
                 effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
                 client.state_init(

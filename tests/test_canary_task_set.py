@@ -15,11 +15,11 @@ from lab.benchmarks.task_sets import (
 
 
 def test_canary_tasks_definition() -> None:
-    """Canary set must contain exactly the 3 designated fast discriminating tasks."""
+    """Canary set must contain exactly the 3 designated fast tri-language repository tasks."""
     expected = (
         "build-cython-ext",
-        "chess-best-move",
-        "httpx-multipart-response-parsing",
+        "scc-bounded-memory-spilling",
+        "katex-multicolumn-array-spans",
     )
     assert CANARY_TASKS == expected
     assert len(CANARY_TASKS) == 3
@@ -30,7 +30,7 @@ def test_is_canary() -> None:
     for task_name in CANARY_TASKS:
         assert is_canary(task_name) is True
 
-    assert is_canary("scc-bounded-memory-spilling") is False
+    assert is_canary("httpx-multipart-response-parsing") is False
     assert is_canary("openssl-selfsigned-cert") is False
     assert is_canary("nonexistent-task") is False
 

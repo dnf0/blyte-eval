@@ -77,6 +77,17 @@ untouched checkout, so an agent cannot influence its own score by editing tests
 or leaving artefacts in the workspace. The verifier image is deleted after
 grading, because a cached one is the answer key sitting on the host.
 
+## Autonomous TDD & The Anti-Cheating Invariant
+
+See [docs/EVALUATION-PHILOSOPHY.md](docs/EVALUATION-PHILOSOPHY.md) for the complete manifesto.
+
+* **No Leaked Answer Keys:** Pre-seeding maintainer reproduction tests into the workspace is cheating in SWE benchmarking. The maintainer's test suite remains sealed at `/tests/` until post-run grading.
+* **No Synthetic Fixtures:** Hand-authored string fixtures (`GATE_FIXTURES`) are banned. They caused a 17% gate precision collapse by certifying partial work.
+* **Autonomous TDD State DAG:** When a repo is clean on Turn 0, the daemon executes a deterministic 2-node graph:
+  1. **Milestone 1 (`tdd-reproduction-test`):** Worker authors reproduction test in `tests/test_reproduce_issue.py` (gate: test fails cleanly RED). Git checkpoint recorded.
+  2. **Milestone 2 (`fix-implementation`):** Worker implements fix (gate: reproduction test + suite pass GREEN). Accelerated by Tree-sitter Test Impact Slicing, bounded by Tool Output Shunting, and protected by Scoped Rollback.
+* **Post-Run Grader:** Held-out maintainer tests score the final git patch.
+
 ## Quick start
 
 ```bash
@@ -109,14 +120,15 @@ uv run python scripts/paired_run.py \
 Add `--only-with-verifier` to restrict a cohort to tasks that ship a held-out
 verifier.
 
-## Tasks
+## Tasks & Repository-First Suites
 
-Tasks come from [FrontierHarness Eval](https://github.com/frontier-harness-eval/eval),
-which is a task corpus and a published result set rather than a runner. Of its
-thirty tasks, nine originate from DeepSWE and ship a `tests/` directory with a
-Dockerfile and grader; those are the ones that can be graded honestly here. The
-remaining twenty-one come from terminal-bench, which keeps its grading logic in
-its own harness.
+Evaluation is conducted exclusively on **genuine software engineering repositories** (`SWE_CORE_TASKS`). All toy command-line puzzles and single-file scripts (such as visual chess puzzles or regex filters) are permanently excluded because they fail to test multi-file software engineering control planes.
+
+* **`SWE-Canary` (`scripts/run_canary.sh`):** A fast (~15–20 min) tri-language slice for continuous development and PR verification:
+  1. `build-cython-ext` (Python/C: `SPOCKnots/pyknotid` — C extension upgrades, build, pytest)
+  2. `scc-bounded-memory-spilling` (Go: `boyter/scc` — systems architecture, disk spilling)
+  3. `katex-multicolumn-array-spans` (TypeScript: `KaTeX/KaTeX` — AST parsing, math array layout)
+* **`SWE-Core` (`--core`):** The 9 canonical open-source repositories (8 DataCurve repositories + `build-cython-ext`) used for full releases and publishing benchmark lifts. All ship held-out maintainer test suites sealed at `/tests/`.
 
 ## Differential parity
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 import io
 import logging
+import os
 from pathlib import Path
 import shutil
 import tarfile
@@ -30,6 +31,38 @@ class WorkspaceSeedError(RuntimeError):
 
 class ImageBuildError(RuntimeError):
     """Raised when an image (typically the held-out verifier) cannot be built."""
+
+
+def find_static_superstate_binary() -> Path | None:
+    """Locate pre-compiled static Linux superstate binary if available on host.
+
+    Checks the SUPERSTATE_LINUX_BIN environment variable first, then standard candidate
+    paths within the repository or user cache directory.
+
+    Returns:
+        Path to the static Linux superstate binary if found on the host, otherwise None.
+    """
+    env_path = os.environ.get("SUPERSTATE_LINUX_BIN")
+    # If explicitly configured in environment, verify it points to an existing file
+    if env_path:
+        p = Path(env_path)
+        if p.is_file():
+            return p
+
+    # Fall back to known candidate paths relative to repository root and home cache
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    candidates = [
+        repo_root / "bin" / "superstate-linux-x86_64",
+        repo_root / "bin" / "superstate-linux",
+    ]
+    try:
+        candidates.append(Path.home() / ".cache" / "superstate" / "superstate-linux-x86_64")
+    except RuntimeError:
+        pass
+    for c in candidates:
+        if c.is_file():
+            return c
+    return None
 
 
 class DockerManager:
@@ -69,6 +102,18 @@ class DockerManager:
             logs_path.mkdir(parents=True, exist_ok=True)
             combined_volumes[str(logs_path)] = {"bind": "/logs", "mode": "rw"}
 
+        # Mount pre-compiled static Linux superstate binary into container when available
+        has_superstate_mount = any(
+            isinstance(cfg, Mapping) and cfg.get("bind") == "/usr/local/bin/superstate"
+            for cfg in combined_volumes.values()
+        )
+        static_bin = find_static_superstate_binary()
+        if static_bin is not None and not has_superstate_mount:
+            combined_volumes[str(static_bin.resolve())] = {
+                "bind": "/usr/local/bin/superstate",
+                "mode": "ro",
+            }
+
         run_kwargs: dict[str, Any] = {
             "image": image,
             "command": command,
@@ -96,6 +141,9 @@ class DockerManager:
                 container.remove(force=True)
             except Exception as e:
                 logger.warning(f"Error removing container {container.id[:12]}: {e}")
+
+    # Convenience alias for run_sandbox
+    spawn_sandbox = run_sandbox
 
     def seed_workspace_from_image(
         self,

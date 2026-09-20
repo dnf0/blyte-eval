@@ -74,8 +74,8 @@ runs carried the prompt-contract confound. Do not quote them as lift.
 
 from __future__ import annotations
 
-# Gradeable, and at least one arm varies. Ordered by how sharply they separated the arms
-# in pooled history -- see the caveat above before reading anything into that order.
+# Gradeable, discriminating repository software engineering tasks.
+# Excludes toy scripts and command-line puzzles.
 DISCRIMINATING_TASKS: tuple[str, ...] = (
     # datacurve / tier-1 repository tasks: 8 of 9 usable, and the hardest in the corpus
     "scc-bounded-memory-spilling",
@@ -86,18 +86,17 @@ DISCRIMINATING_TASKS: tuple[str, ...] = (
     "arktype-json-schema-refs-dependencies",
     "katex-multicolumn-array-spans",
     "anko-typed-variable-bindings",
-    # terminal-bench: only 6 of 21 survive, the rest being ungradeable or at ceiling
-    "regex-log",
-    "vulnerable-secret",
-    "dna-insert",
-    "extract-elf",
+    # terminal-bench repository task (real C/Cython repo with build & pytest):
     "build-cython-ext",
-    "chess-best-move",
 )
 
+# Canonical 9-repository software engineering suite
+SWE_CORE_TASKS: tuple[str, ...] = DISCRIMINATING_TASKS
+
 # Kept out, with the reason, so a task is never silently dropped and can be reinstated if a
-# stronger driver moves it off its ceiling or floor.
+# stronger driver moves it off its ceiling or floor, or if task design changes.
 EXCLUDED_TASKS: dict[str, str] = {
+    # Tasks at ceiling / floor:
     "db-wal-recovery": "ceiling: 95% vanilla, 97% superstate",
     "openssl-selfsigned-cert": "ceiling: 100% vanilla over 22 runs",
     "git-leak-recovery": "ceiling: 100% vanilla over 11 runs",
@@ -106,6 +105,12 @@ EXCLUDED_TASKS: dict[str, str] = {
     "gcode-to-text": "ceiling: 100% vanilla over 10 runs",
     "kv-store-grpc": "ceiling: 100% vanilla over 9 runs",
     "fastapi-deprecation-response-headers": "floor: 0% vanilla, 6% superstate",
+    # Toy scripts and command-line puzzles (not repository software engineering tasks):
+    "chess-best-move": "toy: visual image puzzle / not a repository software engineering task",
+    "regex-log": "toy: single-file log regex script / not a repository software engineering task",
+    "vulnerable-secret": "toy: single-file secret removal / not a repository software engineering task",
+    "extract-elf": "toy: binary extraction reverse-engineering script / not a repository software engineering task",
+    "dna-insert": "toy: bio-sequence string script / not a repository software engineering task",
 }
 
 
@@ -119,14 +124,14 @@ def excluded_reason(task_name: str) -> str | None:
     return EXCLUDED_TASKS.get(task_name)
 
 
-# Fast 3-task Canary slice (~12-15 min total) for rapid iteration on state management.
-# Balanced across 2 terminal-bench tasks and 1 tier-1 repo task; all 3 are discriminating
-# and gradeable.
+# Fast 3-task Tri-Language SWE-Canary slice (~15-20 min total) for rapid iteration on state management.
+# Balanced across 3 real repositories representing Python/C, Go, and TypeScript.
 CANARY_TASKS: tuple[str, ...] = (
     "build-cython-ext",
-    "chess-best-move",
-    "httpx-multipart-response-parsing",
+    "scc-bounded-memory-spilling",
+    "katex-multicolumn-array-spans",
 )
+SWE_CANARY_TASKS: tuple[str, ...] = CANARY_TASKS
 
 
 def is_canary(task_name: str) -> bool:

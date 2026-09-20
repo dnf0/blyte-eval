@@ -130,7 +130,7 @@ the result rests on. See `lab/engine/condition_b.py`.
 
 ## Arm input parity — the single most common source of false findings
 
-**Five times** an apparent architectural difference between arms turned out to be one arm
+**Six times** an apparent architectural difference between arms turned out to be one arm
 receiving something another did not:
 
 | What differed | What it looked like |
@@ -140,8 +140,18 @@ receiving something another did not:
 | container guidance missing | the daemon "failing build tasks" — its worker edited the host while its gate ran in the container |
 | `--print-timeout` missing | the daemon "unable to do long tasks" — every turn truncated at agy's 5-minute default |
 | `agent_gate_for` missing | the daemon "losing 5-0" — it had a strict gate while `superstate_mcp` ran on `true` |
+| synthetic DAG milestones (`tdd_dag`) | the daemon "losing on cost/turns" and "failing TypeScript/Go" — adapter hardcoded a 2-node Python TDD scaffold |
 
 Every one produced a plausible finding that dissolved on inspection, and each cost a run.
+
+### The Referee Rule: Zero Policy in Evaluation Adapters
+The benchmark harness (`superstate-eval`) is strictly an impartial referee.
+Adapters are passive translation shims between the runner and the agent binary/daemon.
+**No adapter may ever alter, decompose, template, or prompt-engineer the task input.**
+All milestone decomposition, task planning, and TDD execution must originate either from
+the benchmark task specification itself or autonomously from Superstate inside the target
+binary (`superstate state decompose` or `DaemonRunner`), NEVER from Python adapter code in
+the evaluation harness.
 
 **Before trusting any arm-vs-arm number, diff what the arms actually receive.**
 `tests/test_arm_input_parity.py` enforces the known cases; it will not catch a new one.
@@ -203,44 +213,37 @@ wrong interpreter.
 which does **not** word-split unquoted variables, so `--tasks $TASKS` passes the whole list
 as one filename.
 
-## Run `--core`, not the whole corpus
+## Run `--canary` or `--core`, not toy puzzles or the whole corpus
 
-The 30-task corpus holds **14 usable tasks**. The rest cannot move an arm-vs-arm result:
+The 30-task corpus holds **9 genuine software engineering repositories** (`SWE_CORE_TASKS`). The rest cannot move an arm-vs-arm result or fail to test repository software engineering:
 
-| | | |
+| Count | Classification | Detail |
 |---|---|---|
-| 8 | ungradeable | ship no held-out `tests/` — see below |
-| 7 | at ceiling | every arm solves them every time (`openssl-selfsigned-cert` is 22/22 for vanilla alone) |
-| 1 | at floor | no arm has ever solved it (`fastapi-deprecation-response-headers`) |
+| **9** | **Real Repositories (`SWE_CORE_TASKS`)** | 8 DataCurve open-source codebases + `build-cython-ext` (Python/C, Go, TypeScript) |
+| 5 | Toy command-line puzzles | Excluded: single-file puzzles (`chess-best-move`, `regex-log`, `vulnerable-secret`, `extract-elf`, `dna-insert`) that do not test repository engineering |
+| 7 | At ceiling | Excluded: every arm solves them every time (`openssl-selfsigned-cert` is 22/22 for vanilla alone) |
+| 1 | At floor | Excluded: no arm has ever solved it (`fastapi-deprecation-response-headers`) |
+| 8 | Ungradeable | Excluded: ship no held-out `tests/` directory (e.g. `sqlite-db-truncate`) |
 
-Running the full corpus spends over half the budget on tasks that cannot teach anything, and
-dilutes the reported pass rate — which is not neutral, since it compresses every arm toward
-the middle and makes a real difference look smaller than it is.
+Running the full corpus spends over half the budget on tasks that cannot teach anything, and dilutes the reported pass rate.
 
+### Rapid Iteration: `SWE-Canary` (`--canary`)
+For fast developer turns (~15–20 min total), run the tri-language repository canary:
+```bash
+scripts/run_canary.sh
+# runs: build-cython-ext (Python/C), scc-bounded-memory-spilling (Go), katex-multicolumn-array-spans (TS)
 ```
-scripts/paired_run.py --core ...      # the 14 that can carry signal
+
+### Full Benchmark: `SWE-Core` (`--core`)
+For full releases and formal evaluation, run the 9 repository tasks:
+```bash
+scripts/paired_run.py --core ...      # the 9 canonical software repositories
 ```
 
-The split by family is the practical finding: **datacurve 8 of 9 usable, terminal-bench 6 of
-21.** The tier-1 repository tasks are where discrimination lives; most of terminal-bench is a
-ceiling for this driver.
+**Why Toy Puzzles are Excluded:**
+Superstate is an autonomous software engineering control plane (DAG state machine, AST impact slicing, scoped git rollback, TDD). Forcing Superstate to author pytest suites and execute git checkpoints for a visual chess puzzle (`chess-best-move`) or a log filter is a category error that adds ceremonial overhead. Real repository engineering is where Superstate's mechanical primitives provide measurable lift.
 
-**`--core` inflates the measured gap by construction** — excluding tasks where both arms tie
-at a ceiling removes zero-difference cases, so the average difference rises whether or not
-anything improved:
-
-| task set | n | vanilla | mcp | gap |
-|---|---|---|---|---|
-| gradeable only | 48 | 65% | 83% | **+19pp** ← the honest headline |
-| gradeable and discriminating (`--core`) | 26 | 38% | 69% | **+31pp** ← mechanism work only |
-
-Report a benchmark claim on the **gradeable** set. Use `--core` for mechanism work and for
-statistical power, and never quote its number as a benchmark result.
-
-Membership is in `lab/benchmarks/task_sets.py`, every exclusion carries a reason, and a test
-fails if a task belongs to no category. The pooled rates used to classify them mix models,
-budgets and prompt settings — they are sound for spotting a ceiling or floor and are **not**
-effect sizes. Do not quote them as lift.
+See [docs/TASK-QUALIFICATION-RUBRIC.md](docs/TASK-QUALIFICATION-RUBRIC.md) for the 5 mandatory qualification requirements (multi-file repository, sealed grader, multi-turn complexity, build telemetry, discriminative headroom).
 
 ## A task with no sealed grader cannot be scored
 
@@ -316,6 +319,24 @@ that date as unscoreable rather than as a pass.
 A gate must assert the **sufficient** condition, not a necessary one. Eight gates checked that
 an artefact existed and concluded the task was done; `sanitize-git-repo` passed when the agent
 deleted the file it was meant to sanitise.
+
+## Evaluation Philosophy: Autonomous TDD vs. Answer-Key Cheating
+
+See [docs/EVALUATION-PHILOSOPHY.md](docs/EVALUATION-PHILOSOPHY.md) for the full architectural manifesto.
+
+Three non-negotiable rules govern all evaluation tasks in this repository:
+
+1. **Never leak the maintainer's reproduction test (Anti-Cheating Invariant).**
+   Pre-seeding the maintainer's reproduction test into the repository up front is **cheating** in SWE benchmarks. It leaks the exact function names, argument shapes, and assertion values, transforming an open-ended diagnosis into a narrow test-passing game. The maintainer's test suite (`test_patch`) remains strictly sealed at `/tests/` and executes only during post-run grading.
+
+2. **Never use hand-authored synthetic gate fixtures (Ban on `GATE_FIXTURES`).**
+   Synthetic 10-line string fixtures (`cat <<'EOF' | python -`) are deprecated. They caused the 17% DataCurve gate precision collapse. In `httpx`, a hand-authored fixture checked basic multipart parsing and exited 0, causing the daemon to halt after passing 1,393 of 1,394 tests, only to fail the sealed grader on a single tab-folding edge case. Synthetic fixtures measure the human author's oversights, not the agent's capability.
+
+3. **Autonomous TDD is the canonical mechanism for bug resolution.**
+   When a repository is clean on Turn 0, the daemon executes via a deterministic 2-node DAG:
+   - **Milestone 1 (`tdd-reproduction-test`):** The agent reads the raw issue description and authors its own reproduction test in `tests/test_reproduce_issue.py`. The gate mechanically verifies that the test compiles and **fails (asserting RED)** against the unfixed code. Upon passing, a git checkpoint commit is created.
+   - **Milestone 2 (`fix-implementation`):** The agent implements the fix. The gate requires `pytest tests/test_reproduce_issue.py && pytest tests/` to exit 0 (GREEN). AST Test Impact Slicing accelerates intermediate turns, Tool Output Shunting bounds log size, and Scoped Rollback cleanly reverts broken edits to Milestone 1 if a turn fails.
+   - **Post-Run Grader:** The sealed grader executes at `/tests/` to compute the official benchmark score.
 
 ## Before running anything: check the ledger
 
