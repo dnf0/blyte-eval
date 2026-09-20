@@ -1,0 +1,54 @@
+[
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "superstate_daemon_full",
+    "passed": true,
+    "wall_clock_sec": 728.99,
+    "cost_usd": 0.69299475,
+    "input_tokens": 654003,
+    "output_tokens": 53998,
+    "milestones_completed": 3,
+    "lease_extensions_earned_sec": 3600.0,
+    "total_granted_budget_sec": 4050.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon_full-ec6c9b39",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 3,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 11
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260920-203915/eval-terminal-bench_build-cython-ext-superstate_daemon_full-ec6c9b39/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests"
+      ],
+      "engine": "superstate_rust_daemon",
+      "transport": "detached_daemon",
+      "driver_preset": "/tmp/superstate_eval_runs/20260920-203915/eval-terminal-bench_build-cython-ext-superstate_daemon_full-ec6c9b39/workspace/.agent-state/driver-wrapper.sh",
+      "superstate_bin": "/Users/danielfisher/repos/superstate/target/release/superstate",
+      "daemon_pid": 25525,
+      "daemon_steps": 2,
+      "no_worktree": true,
+      "worktree": false,
+      "advisory_review": true,
+      "review_blocking": true,
+      "auto_rollback": true,
+      "impact_slicing": true
+    }
+  }
+]
