@@ -124,3 +124,29 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
         else:
             suffix = "planned"
         assert suffix in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"
+
+
+def test_no_adapter_synthesizes_milestones_or_harness_prompts() -> None:
+    """Adapters are passive translation shims. They must NEVER synthesize task milestones or prompt engineering.
+
+    In September 2026, an adapter synthesized a 2-node TDD milestone DAG with hardcoded
+    Python files (tests/test_reproduce_issue.py) and pytest commands in the evaluation harness.
+    This was harness-level prompt engineering: it broke cross-language tasks (TypeScript/Go),
+    forced artificial turns on simple tasks, and violated arm input parity.
+
+    All task decomposition and milestone planning must originate either from the benchmark
+    specification itself or autonomously from Superstate inside the target binary, never
+    from synthetic adapter code in superstate-eval.
+    """
+    for name in COMPARED_ARMS:
+        text = (ADAPTERS / name).read_text()
+        assert "def _build_tdd_milestones" not in text, (
+            f"{name} contains synthetic milestone generation. Adapters must not decompose tasks."
+        )
+        assert "tdd_dag" not in text, (
+            f"{name} contains synthetic DAG flags. Adapters must not script execution DAGs."
+        )
+        assert "test_reproduce_issue.py" not in text, (
+            f"{name} contains hardcoded test file injections. Adapters must not prompt-engineer."
+        )
+
