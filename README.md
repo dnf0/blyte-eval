@@ -77,6 +77,17 @@ untouched checkout, so an agent cannot influence its own score by editing tests
 or leaving artefacts in the workspace. The verifier image is deleted after
 grading, because a cached one is the answer key sitting on the host.
 
+## Autonomous TDD & The Anti-Cheating Invariant
+
+See [docs/EVALUATION-PHILOSOPHY.md](docs/EVALUATION-PHILOSOPHY.md) for the complete manifesto.
+
+* **No Leaked Answer Keys:** Pre-seeding maintainer reproduction tests into the workspace is cheating in SWE benchmarking. The maintainer's test suite remains sealed at `/tests/` until post-run grading.
+* **No Synthetic Fixtures:** Hand-authored string fixtures (`GATE_FIXTURES`) are banned. They caused a 17% gate precision collapse by certifying partial work.
+* **Autonomous TDD State DAG:** When a repo is clean on Turn 0, the daemon executes a deterministic 2-node graph:
+  1. **Milestone 1 (`tdd-reproduction-test`):** Worker authors reproduction test in `tests/test_reproduce_issue.py` (gate: test fails cleanly RED). Git checkpoint recorded.
+  2. **Milestone 2 (`fix-implementation`):** Worker implements fix (gate: reproduction test + suite pass GREEN). Accelerated by Tree-sitter Test Impact Slicing, bounded by Tool Output Shunting, and protected by Scoped Rollback.
+* **Post-Run Grader:** Held-out maintainer tests score the final git patch.
+
 ## Quick start
 
 ```bash

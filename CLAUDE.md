@@ -317,6 +317,24 @@ A gate must assert the **sufficient** condition, not a necessary one. Eight gate
 an artefact existed and concluded the task was done; `sanitize-git-repo` passed when the agent
 deleted the file it was meant to sanitise.
 
+## Evaluation Philosophy: Autonomous TDD vs. Answer-Key Cheating
+
+See [docs/EVALUATION-PHILOSOPHY.md](docs/EVALUATION-PHILOSOPHY.md) for the full architectural manifesto.
+
+Three non-negotiable rules govern all evaluation tasks in this repository:
+
+1. **Never leak the maintainer's reproduction test (Anti-Cheating Invariant).**
+   Pre-seeding the maintainer's reproduction test into the repository up front is **cheating** in SWE benchmarks. It leaks the exact function names, argument shapes, and assertion values, transforming an open-ended diagnosis into a narrow test-passing game. The maintainer's test suite (`test_patch`) remains strictly sealed at `/tests/` and executes only during post-run grading.
+
+2. **Never use hand-authored synthetic gate fixtures (Ban on `GATE_FIXTURES`).**
+   Synthetic 10-line string fixtures (`cat <<'EOF' | python -`) are deprecated. They caused the 17% DataCurve gate precision collapse. In `httpx`, a hand-authored fixture checked basic multipart parsing and exited 0, causing the daemon to halt after passing 1,393 of 1,394 tests, only to fail the sealed grader on a single tab-folding edge case. Synthetic fixtures measure the human author's oversights, not the agent's capability.
+
+3. **Autonomous TDD is the canonical mechanism for bug resolution.**
+   When a repository is clean on Turn 0, the daemon executes via a deterministic 2-node DAG:
+   - **Milestone 1 (`tdd-reproduction-test`):** The agent reads the raw issue description and authors its own reproduction test in `tests/test_reproduce_issue.py`. The gate mechanically verifies that the test compiles and **fails (asserting RED)** against the unfixed code. Upon passing, a git checkpoint commit is created.
+   - **Milestone 2 (`fix-implementation`):** The agent implements the fix. The gate requires `pytest tests/test_reproduce_issue.py && pytest tests/` to exit 0 (GREEN). AST Test Impact Slicing accelerates intermediate turns, Tool Output Shunting bounds log size, and Scoped Rollback cleanly reverts broken edits to Milestone 1 if a turn fails.
+   - **Post-Run Grader:** The sealed grader executes at `/tests/` to compute the official benchmark score.
+
 ## Before running anything: check the ledger
 
 `EXPERIMENTS.md` holds one row per evaluation run — the question, the arms, the switches,
