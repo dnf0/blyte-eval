@@ -130,7 +130,7 @@ the result rests on. See `lab/engine/condition_b.py`.
 
 ## Arm input parity — the single most common source of false findings
 
-**Five times** an apparent architectural difference between arms turned out to be one arm
+**Six times** an apparent architectural difference between arms turned out to be one arm
 receiving something another did not:
 
 | What differed | What it looked like |
@@ -140,8 +140,18 @@ receiving something another did not:
 | container guidance missing | the daemon "failing build tasks" — its worker edited the host while its gate ran in the container |
 | `--print-timeout` missing | the daemon "unable to do long tasks" — every turn truncated at agy's 5-minute default |
 | `agent_gate_for` missing | the daemon "losing 5-0" — it had a strict gate while `superstate_mcp` ran on `true` |
+| synthetic DAG milestones (`tdd_dag`) | the daemon "losing on cost/turns" and "failing TypeScript/Go" — adapter hardcoded a 2-node Python TDD scaffold |
 
 Every one produced a plausible finding that dissolved on inspection, and each cost a run.
+
+### The Referee Rule: Zero Policy in Evaluation Adapters
+The benchmark harness (`superstate-eval`) is strictly an impartial referee.
+Adapters are passive translation shims between the runner and the agent binary/daemon.
+**No adapter may ever alter, decompose, template, or prompt-engineer the task input.**
+All milestone decomposition, task planning, and TDD execution must originate either from
+the benchmark task specification itself or autonomously from Superstate inside the target
+binary (`superstate state decompose` or `DaemonRunner`), NEVER from Python adapter code in
+the evaluation harness.
 
 **Before trusting any arm-vs-arm number, diff what the arms actually receive.**
 `tests/test_arm_input_parity.py` enforces the known cases; it will not catch a new one.
