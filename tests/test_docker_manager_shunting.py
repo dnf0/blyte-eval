@@ -59,8 +59,42 @@ def test_spawn_sandbox_omits_mount_when_binary_absent() -> None:
 
             call_kwargs = mock_docker_client.containers.run.call_args.kwargs
             volumes = call_kwargs.get("volumes", {})
-            for _host_path, mount_cfg in volumes.items():
-                assert mount_cfg.get("bind") != "/usr/local/bin/superstate"
+            assert not any(
+                isinstance(mount_cfg, dict) and mount_cfg.get("bind") == "/usr/local/bin/superstate"
+                for mount_cfg in volumes.values()
+            )
+
+
+def test_spawn_sandbox_does_not_duplicate_existing_superstate_mount(tmp_path: Path) -> None:
+    """Verify spawn_sandbox does not override or duplicate an existing superstate mount."""
+    fake_bin = tmp_path / "superstate-linux-x86_64"
+    fake_bin.write_bytes(b"\x7fELFfakebinary")
+    custom_bin = tmp_path / "custom-binary"
+    custom_bin.write_bytes(b"\x7fELFcustom")
+
+    mock_docker_client = MagicMock()
+    mock_container = MagicMock()
+    mock_docker_client.containers.run.return_value = mock_container
+
+    with patch(
+        "lab.sandbox.docker_manager.find_static_superstate_binary",
+        return_value=fake_bin,
+    ):
+        with patch("lab.sandbox.docker_manager.docker.from_env", return_value=mock_docker_client):
+            manager = DockerManager()
+            existing_volumes = {
+                str(custom_bin): {"bind": "/usr/local/bin/superstate", "mode": "rw"}
+            }
+            with manager.spawn_sandbox(
+                image="dummy-image", command="sleep 10", volumes=existing_volumes
+            ):
+                pass
+
+            call_kwargs = mock_docker_client.containers.run.call_args.kwargs
+            volumes = call_kwargs.get("volumes", {})
+            # Ensure custom_bin is present and fake_bin was NOT added as a duplicate
+            assert str(custom_bin) in volumes
+            assert str(fake_bin.resolve()) not in volumes
 
 
 def test_find_static_superstate_binary_env_var(

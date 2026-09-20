@@ -54,8 +54,11 @@ def find_static_superstate_binary() -> Path | None:
     candidates = [
         repo_root / "bin" / "superstate-linux-x86_64",
         repo_root / "bin" / "superstate-linux",
-        Path.home() / ".cache" / "superstate" / "superstate-linux-x86_64",
     ]
+    try:
+        candidates.append(Path.home() / ".cache" / "superstate" / "superstate-linux-x86_64")
+    except RuntimeError:
+        pass
     for c in candidates:
         if c.is_file():
             return c
@@ -100,8 +103,12 @@ class DockerManager:
             combined_volumes[str(logs_path)] = {"bind": "/logs", "mode": "rw"}
 
         # Mount pre-compiled static Linux superstate binary into container when available
+        has_superstate_mount = any(
+            isinstance(cfg, Mapping) and cfg.get("bind") == "/usr/local/bin/superstate"
+            for cfg in combined_volumes.values()
+        )
         static_bin = find_static_superstate_binary()
-        if static_bin is not None:
+        if static_bin is not None and not has_superstate_mount:
             combined_volumes[str(static_bin.resolve())] = {
                 "bind": "/usr/local/bin/superstate",
                 "mode": "ro",
