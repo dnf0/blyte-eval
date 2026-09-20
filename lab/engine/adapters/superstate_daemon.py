@@ -159,6 +159,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
     HARNESS_UNTRACKED = (
         ".agent-state/",
+        ".agents/",
         "plan.md",
         "plan.normalized.md",
         "run-in-container",
@@ -376,6 +377,13 @@ class SuperstateDaemonAdapter(AgentAdapter):
         cmd = self._build_daemon_spawn_cmd(workspace_path)
         try:
             res = subprocess.run(cmd, cwd=str(workspace_path), capture_output=True, text=True, timeout=30.0)
+            if res.returncode != 0:
+                logger.error(
+                    "Failed to spawn superstate daemon (exit %d): stdout=%s stderr=%s",
+                    res.returncode,
+                    res.stdout,
+                    res.stderr,
+                )
             return res.returncode == 0
         except Exception as e:
             logger.error("Failed to spawn superstate daemon: %s", e)
