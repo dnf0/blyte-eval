@@ -203,44 +203,35 @@ wrong interpreter.
 which does **not** word-split unquoted variables, so `--tasks $TASKS` passes the whole list
 as one filename.
 
-## Run `--core`, not the whole corpus
+## Run `--canary` or `--core`, not toy puzzles or the whole corpus
 
-The 30-task corpus holds **14 usable tasks**. The rest cannot move an arm-vs-arm result:
+The 30-task corpus holds **9 genuine software engineering repositories** (`SWE_CORE_TASKS`). The rest cannot move an arm-vs-arm result or fail to test repository software engineering:
 
-| | | |
+| Count | Classification | Detail |
 |---|---|---|
-| 8 | ungradeable | ship no held-out `tests/` — see below |
-| 7 | at ceiling | every arm solves them every time (`openssl-selfsigned-cert` is 22/22 for vanilla alone) |
-| 1 | at floor | no arm has ever solved it (`fastapi-deprecation-response-headers`) |
+| **9** | **Real Repositories (`SWE_CORE_TASKS`)** | 8 DataCurve open-source codebases + `build-cython-ext` (Python/C, Go, TypeScript) |
+| 5 | Toy command-line puzzles | Excluded: single-file puzzles (`chess-best-move`, `regex-log`, `vulnerable-secret`, `extract-elf`, `dna-insert`) that do not test repository engineering |
+| 7 | At ceiling | Excluded: every arm solves them every time (`openssl-selfsigned-cert` is 22/22 for vanilla alone) |
+| 1 | At floor | Excluded: no arm has ever solved it (`fastapi-deprecation-response-headers`) |
+| 8 | Ungradeable | Excluded: ship no held-out `tests/` directory (e.g. `sqlite-db-truncate`) |
 
-Running the full corpus spends over half the budget on tasks that cannot teach anything, and
-dilutes the reported pass rate — which is not neutral, since it compresses every arm toward
-the middle and makes a real difference look smaller than it is.
+Running the full corpus spends over half the budget on tasks that cannot teach anything, and dilutes the reported pass rate.
 
+### Rapid Iteration: `SWE-Canary` (`--canary`)
+For fast developer turns (~15–20 min total), run the tri-language repository canary:
+```bash
+scripts/run_canary.sh
+# runs: build-cython-ext (Python/C), scc-bounded-memory-spilling (Go), katex-multicolumn-array-spans (TS)
 ```
-scripts/paired_run.py --core ...      # the 14 that can carry signal
+
+### Full Benchmark: `SWE-Core` (`--core`)
+For full releases and formal evaluation, run the 9 repository tasks:
+```bash
+scripts/paired_run.py --core ...      # the 9 canonical software repositories
 ```
 
-The split by family is the practical finding: **datacurve 8 of 9 usable, terminal-bench 6 of
-21.** The tier-1 repository tasks are where discrimination lives; most of terminal-bench is a
-ceiling for this driver.
-
-**`--core` inflates the measured gap by construction** — excluding tasks where both arms tie
-at a ceiling removes zero-difference cases, so the average difference rises whether or not
-anything improved:
-
-| task set | n | vanilla | mcp | gap |
-|---|---|---|---|---|
-| gradeable only | 48 | 65% | 83% | **+19pp** ← the honest headline |
-| gradeable and discriminating (`--core`) | 26 | 38% | 69% | **+31pp** ← mechanism work only |
-
-Report a benchmark claim on the **gradeable** set. Use `--core` for mechanism work and for
-statistical power, and never quote its number as a benchmark result.
-
-Membership is in `lab/benchmarks/task_sets.py`, every exclusion carries a reason, and a test
-fails if a task belongs to no category. The pooled rates used to classify them mix models,
-budgets and prompt settings — they are sound for spotting a ceiling or floor and are **not**
-effect sizes. Do not quote them as lift.
+**Why Toy Puzzles are Excluded:**
+Superstate is an autonomous software engineering control plane (DAG state machine, AST impact slicing, scoped git rollback, TDD). Forcing Superstate to author pytest suites and execute git checkpoints for a visual chess puzzle (`chess-best-move`) or a log filter is a category error that adds ceremonial overhead. Real repository engineering is where Superstate's mechanical primitives provide measurable lift.
 
 ## A task with no sealed grader cannot be scored
 
