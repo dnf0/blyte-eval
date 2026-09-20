@@ -17,7 +17,7 @@ fi
 STAMP=$(date +"%Y%m%d_%H%M%S")
 OUT_FILE="results/canary_${STAMP}.json"
 
-echo "Starting Canary evaluation on 3 tasks (build-cython-ext, chess-best-move, httpx-multipart-response-parsing)"
+echo "Starting SWE-Canary evaluation on 3 tri-language repository tasks (build-cython-ext, scc-bounded-memory-spilling, katex-multicolumn-array-spans)"
 echo "Arms: ${ARMS[*]}"
 echo "Governor concurrency limit: 2"
 echo "Model: gemini-3.8-flash-high"
