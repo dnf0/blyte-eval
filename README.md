@@ -120,14 +120,15 @@ uv run python scripts/paired_run.py \
 Add `--only-with-verifier` to restrict a cohort to tasks that ship a held-out
 verifier.
 
-## Tasks
+## Tasks & Repository-First Suites
 
-Tasks come from [FrontierHarness Eval](https://github.com/frontier-harness-eval/eval),
-which is a task corpus and a published result set rather than a runner. Of its
-thirty tasks, nine originate from DeepSWE and ship a `tests/` directory with a
-Dockerfile and grader; those are the ones that can be graded honestly here. The
-remaining twenty-one come from terminal-bench, which keeps its grading logic in
-its own harness.
+Evaluation is conducted exclusively on **genuine software engineering repositories** (`SWE_CORE_TASKS`). All toy command-line puzzles and single-file scripts (such as visual chess puzzles or regex filters) are permanently excluded because they fail to test multi-file software engineering control planes.
+
+* **`SWE-Canary` (`scripts/run_canary.sh`):** A fast (~15–20 min) tri-language slice for continuous development and PR verification:
+  1. `build-cython-ext` (Python/C: `SPOCKnots/pyknotid` — C extension upgrades, build, pytest)
+  2. `scc-bounded-memory-spilling` (Go: `boyter/scc` — systems architecture, disk spilling)
+  3. `katex-multicolumn-array-spans` (TypeScript: `KaTeX/KaTeX` — AST parsing, math array layout)
+* **`SWE-Core` (`--core`):** The 9 canonical open-source repositories (8 DataCurve repositories + `build-cython-ext`) used for full releases and publishing benchmark lifts. All ship held-out maintainer test suites sealed at `/tests/`.
 
 ## Differential parity
 
