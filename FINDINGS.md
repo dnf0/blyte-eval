@@ -421,6 +421,28 @@ Between EXP-058 and EXP-064, rapid-iteration experiments relied on a canary slic
 
 ---
 
+## 12. Complete Autonomous Control Plane vs. Vanilla Baseline: Tri-Language SWE-Canary (2026-09-21)
+
+EXP-070 evaluated the complete autonomous Rust control plane (`superstate_daemon_full`: milestone test impact slicing + tool output shunting + scoped git rollback + blocking review + PreToolUse file read guard + PreToolUse command & polling guard) head-to-head against unmanaged `vanilla` across the 3 canonical repository canary codebases spanning Python/C, Go, and TypeScript.
+
+### Results Matrix
+
+| Repository | Language | vanilla | superstate_daemon_full | Outcome | Notes |
+|---|---|---|---|---|---|
+| `build-cython-ext` | Python / C | ✗ (0/11) | **✓ (11/11)** | **Daemon Win** | Vanilla stopped at turn 1 (136s) claiming completion ("done while wrong"). Daemon executed 5 turns, fixing build/KeyErrors to pass all tests. |
+| `katex-multicolumn-array-spans` | TypeScript | ✗ (92/94) | **✓ (94/94)** | **Daemon Win** | Daemon solved task in 2 turns ($1.01, 1358s). Vanilla failed 2 separator tests ($1.63, 1761s). Daemon was **38.2% cheaper**. |
+| `scc-bounded-memory-spilling` | Go | ✗ (28/31) | ✗ (28/31) | Tied | Both arms failed the final 3 streaming tests. Daemon was **38.0% cheaper** ($1.04 vs $1.68). |
+
+### Core Telemetry
+
+* **Held-out Grader Pass Rate:** **66.7% (2/3) vs 0.0% (0/3), +66.7pp lift** (Discordant pairs: 2 wins, 0 losses).
+* **Cost Efficiency:** Daemon was **16.1% cheaper overall** ($2.86 vs $3.41), spending 38% less on both `katex` and `scc`.
+* **Mechanism Validation:**
+  - PreToolUse file read guard and command debounce executed cleanly without runtime errors across Go, TypeScript, and Python/C.
+  - Test impact slicing and output shunting compressed context footprint while eliminating premature exit.
+
+---
+
 ## Withdrawn
 
 Fourteen ledger rows and findings are `WITHDRAWN`. They are kept, because the withdrawal is the finding.
