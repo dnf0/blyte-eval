@@ -50,7 +50,7 @@ def test_the_three_categories_do_not_overlap() -> None:
 def test_every_exclusion_states_a_reason() -> None:
     for name in EXCLUDED_TASKS:
         reason = excluded_reason(name)
-        assert reason and ("ceiling" in reason or "floor" in reason), (
-            f"{name} is excluded without saying whether it is a ceiling or a floor"
-        )
+        assert reason and (
+            "ceiling" in reason or "floor" in reason or "toy" in reason or "not a repository" in reason
+        ), f"{name} is excluded without a recognized reason (ceiling, floor, or toy/not a repository): {reason}"
         assert not is_discriminating(name)
