@@ -108,8 +108,8 @@ def test_setup_container_bridge_generates_shunting_script(tmp_path: Path) -> Non
     # Verify transparent shunting logic and flags
     assert "set -o pipefail" in content
     assert 'if [ "${SUPERSTATE_SHUNT_ENABLED:-1}" = "1" ] && command -v superstate >/dev/null 2>&1;' in content
-    assert 'exec superstate shunt --threshold-lines 50 -- docker exec -i -w /app cnt-shunting-42 "$@"' in content
-    assert 'exec docker exec -i -w /app cnt-shunting-42 "$@"' in content
+    assert 'exec superstate shunt --threshold-lines 50 -- docker exec -i -w /app "cnt-shunting-42" "$@"' in content
+    assert 'exec docker exec -i -w /app "cnt-shunting-42" "$@"' in content
 
 
 def test_container_bridge_preserves_exit_code_and_fallback(tmp_path: Path) -> None:

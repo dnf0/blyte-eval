@@ -157,9 +157,9 @@ class AgyCliDriver(AgentDriver):
             "#!/usr/bin/env bash\n"
             "set -o pipefail\n\n"
             'if [ "${SUPERSTATE_SHUNT_ENABLED:-1}" = "1" ] && command -v superstate >/dev/null 2>&1; then\n'
-            f'    exec superstate shunt --threshold-lines 50 -- docker exec -i -w /app {container_id} "$@"\n'
+            f'    exec superstate shunt --threshold-lines 50 -- docker exec -i -w /app "{container_id}" "$@"\n'
             "else\n"
-            f'    exec docker exec -i -w /app {container_id} "$@"\n'
+            f'    exec docker exec -i -w /app "{container_id}" "$@"\n'
             "fi\n"
         )
         script_path.write_text(script_content, encoding="utf-8")
