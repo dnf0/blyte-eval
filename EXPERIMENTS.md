@@ -141,13 +141,13 @@ Derived from the runs above rather than from a run of their own.
   11-2 on discordant pairs is still significant (sign test p≈0.011), but the margin is
   **+18pp, not +29pp**. Every published figure resting on the larger number is wrong.
 
-* **The corpus holds 14 usable tasks, not 30.** Eight are ungradeable, seven sit at a ceiling
-  every arm clears, one at a floor no arm has reached. By family: **datacurve 8 of 9 usable,
-  terminal-bench 6 of 21** — the tier-1 repository tasks are where discrimination lives, and
-  most of terminal-bench is a ceiling for this driver. That is why both superstate arms scored
+* **The corpus holds 9 genuine software engineering repositories, not 30 (previously categorized as 14 before excluding toy command-line puzzles).** Eight are ungradeable, seven sit at a ceiling
+  every arm clears, one at a floor no arm has reached, and five are toy puzzles (`chess-best-move`, `regex-log`, `vulnerable-secret`, `extract-elf`, `dna-insert`) that fail to evaluate multi-file software engineering control planes. By family: **datacurve 8 of 9 usable,
+  terminal-bench 1 of 21 (`build-cython-ext`)** — the tier-1 repository tasks are where discrimination lives, and
+  most of terminal-bench is a ceiling or toy script for this driver. That is why both superstate arms scored
   12/13 on the gradeable terminal-bench subset in EXP-047: it is a ceiling, not a gap, and no
-  iteration loop can improve on it. Use `paired_run.py --core`; membership and the reason for
-  every exclusion are in `lab/benchmarks/task_sets.py`.
+  iteration loop can improve on it. Use `paired_run.py --core` (or `scripts/run_canary.sh` for the tri-language canary); membership and the reason for
+  every exclusion are in `lab/benchmarks/task_sets.py` and `docs/TASK-QUALIFICATION-RUBRIC.md`.
 
 * **The lift is not the gate.** The verification command handed to `superstate_mcp` was
   literally `true` for 22 of 30 tasks, and the margin holds there. On the tasks mcp wins and

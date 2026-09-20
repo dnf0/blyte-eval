@@ -404,6 +404,23 @@ max-selection artifact over small-$n$ cells and confounded historical data:
 
 ---
 
+## 11. Repository-First Benchmark Architecture: Eliminating Command-Line Puzzles (2026-09-20)
+
+Between EXP-058 and EXP-064, rapid-iteration experiments relied on a canary slice consisting of `build-cython-ext`, `chess-best-move`, and `httpx-multipart-response-parsing`. On 2026-09-20, systematic evaluation revealed this composition suffered from two structural defects:
+
+1. **Category Error on Command-Line Puzzles:**
+   `chess-best-move` is a visual image puzzle requiring a 4-character string output into a text file. Forcing the Autonomous TDD DAG onto this puzzle caused the worker to author a `pytest` file for a visual image, generating `.pyc` bytecode that triggered code review warnings and git rollbacks. An autonomous developer control plane (AST impact slicing, dependency DAGs, scoped git rollbacks, regression prevention) is built for multi-file software repositories—applying it to single-file script puzzles adds ceremonial friction without exercising repository mechanisms.
+2. **Execution Latency in Canary Loop:**
+   While `httpx-multipart-response-parsing` is a genuine repository task, its 1,394-test regression suite pushed canary evaluation times to 40+ minutes, defeating the purpose of a fast canary feedback loop.
+
+### Decisions and Current Architecture:
+* **Permanent Ban on Toy Puzzles:** Single-file script puzzles (`chess-best-move`, `regex-log`, `vulnerable-secret`, `extract-elf`, `dna-insert`) are moved to `EXCLUDED_TASKS` in `lab/benchmarks/task_sets.py`.
+* **The Tri-Language SWE-Canary (`CANARY_TASKS`):** Formally established as 3 fast repository tasks spanning Python/C (`build-cython-ext`), Go (`scc-bounded-memory-spilling`), and TypeScript (`katex-multicolumn-array-spans`), delivering comprehensive multi-language repository coverage in ~15–20 minutes.
+* **The Canonical SWE-Core (`SWE_CORE_TASKS`):** Pinned to the 9 real software engineering repositories (8 DataCurve codebases + `build-cython-ext`).
+* **Task Qualification Rubric:** Codified the 5 mandatory criteria (multi-file repo with test suite, sealed grader, multi-turn complexity, substantial telemetry, discriminative headroom) in `docs/TASK-QUALIFICATION-RUBRIC.md`.
+
+---
+
 ## Withdrawn
 
 Fourteen ledger rows and findings are `WITHDRAWN`. They are kept, because the withdrawal is the finding.
