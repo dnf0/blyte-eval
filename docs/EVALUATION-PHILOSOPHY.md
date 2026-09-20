@@ -48,7 +48,7 @@ Agent lifecycle must never be managed through prompt persuasion, cajoling instru
 Superstate is an autonomous software engineering control plane—not a command-line utility or puzzle solver.
 * Every benchmark task must represent a genuine software repository featuring a multi-file codebase, existing architecture, and automated test suite.
 * Single-file script puzzles and visual toys (such as `chess-best-move`, `regex-log`, `vulnerable-secret`, `extract-elf`, and `openssl-selfsigned-cert`) are **permanently barred from evaluation**.
-* Forcing a multi-milestone TDD DAG, AST impact slicing, and scoped rollbacks onto a 4-character visual chess puzzle or bash command is a category error that distorts metrics and wastes evaluation compute.
+* Every candidate task must pass the 5 mandatory requirements defined in [docs/TASK-QUALIFICATION-RUBRIC.md](TASK-QUALIFICATION-RUBRIC.md).
 * All evaluation is organized into two repository-first tiers:
   1. **`SWE-Canary` (Fast Tri-Language Loop):** Exactly 3 tasks across Python/C (`build-cython-ext`), Go (`scc-bounded-memory-spilling`), and TypeScript (`katex-multicolumn-array-spans`) delivering ~15–20 min total execution.
   2. **`SWE-Core` (Canonical 9-Repository Suite):** Real open-source repositories (`scc`, `katex`, `meriyah`, `arktype`, `expr`, `anko`, `python-statemachine`, `httpx`, and `build-cython-ext`).

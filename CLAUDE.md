@@ -233,6 +233,8 @@ scripts/paired_run.py --core ...      # the 9 canonical software repositories
 **Why Toy Puzzles are Excluded:**
 Superstate is an autonomous software engineering control plane (DAG state machine, AST impact slicing, scoped git rollback, TDD). Forcing Superstate to author pytest suites and execute git checkpoints for a visual chess puzzle (`chess-best-move`) or a log filter is a category error that adds ceremonial overhead. Real repository engineering is where Superstate's mechanical primitives provide measurable lift.
 
+See [docs/TASK-QUALIFICATION-RUBRIC.md](docs/TASK-QUALIFICATION-RUBRIC.md) for the 5 mandatory qualification requirements (multi-file repository, sealed grader, multi-turn complexity, build telemetry, discriminative headroom).
+
 ## A task with no sealed grader cannot be scored
 
 Seven terminal-bench tasks ship no `tests/` directory. `task_loader` falls back to
