@@ -154,6 +154,14 @@ class AblationRunner:
                 advisory_review=True, auto_rollback=False, name="superstate_daemon_review"
             )
         elif arm in (
+            "superstate_daemon_sliced",
+            "superstate-daemon-sliced",
+            "daemon_sliced",
+        ):
+            return SuperstateDaemonAdapter(
+                advisory_review=True, auto_rollback=True, impact_slicing=True, name="superstate_daemon_sliced"
+            )
+        elif arm in (
             "superstate_daemon_rollback",
             "superstate-daemon-rollback",
             "daemon_rollback",
@@ -163,7 +171,10 @@ class AblationRunner:
         ):
             arm_name = "superstate_daemon_full" if "full" in arm else "superstate_daemon_rollback"
             return SuperstateDaemonAdapter(
-                advisory_review=True, auto_rollback=True, name=arm_name
+                advisory_review=True,
+                auto_rollback=True,
+                impact_slicing=True if "full" in arm else None,
+                name=arm_name,
             )
         raise ValueError(f"Unknown evaluation arm: {arm}")
 

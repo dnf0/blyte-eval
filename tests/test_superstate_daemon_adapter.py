@@ -551,20 +551,49 @@ def test_daemon_adapter_auto_rollback_env_var(monkeypatch: pytest.MonkeyPatch) -
         assert "--no-auto-rollback" in adapter_disabled._build_daemon_spawn_cmd()  # noqa: SLF001
 
 
-def test_daemon_adapter_spawn_daemon_forwards_auto_rollback(tmp_path: Path) -> None:
-    """_spawn_daemon includes --auto-rollback or --no-auto-rollback in subprocess.run command."""
-    adapter = SuperstateDaemonAdapter(driver=MockDriver(), auto_rollback=True)
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = SimpleNamespace(returncode=0)
-        adapter._spawn_daemon(tmp_path)  # noqa: SLF001
-        called_cmd = mock_run.call_args[0][0]
-        assert "--auto-rollback" in called_cmd
+def test_daemon_adapter_passes_impact_slicing_flag() -> None:
+    """When impact_slicing is True, --impact-slicing is appended to the daemon spawn command."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), impact_slicing=True)
+    assert adapter.impact_slicing is True
+    assert adapter.get_provenance()["impact_slicing"] is True
 
-    adapter_disabled = SuperstateDaemonAdapter(driver=MockDriver(), auto_rollback=False)
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = SimpleNamespace(returncode=0)
-        adapter_disabled._spawn_daemon(tmp_path)  # noqa: SLF001
-        called_cmd = mock_run.call_args[0][0]
-        assert "--no-auto-rollback" in called_cmd
+    cmd = adapter._build_daemon_spawn_cmd()  # noqa: SLF001
+    assert "--impact-slicing" in cmd
+
+
+def test_daemon_adapter_defaults_impact_slicing_off() -> None:
+    """When impact_slicing is not specified, it defaults to False."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver())
+    assert adapter.impact_slicing is False
+    assert adapter.get_provenance()["impact_slicing"] is False
+
+    cmd = adapter._build_daemon_spawn_cmd()  # noqa: SLF001
+    assert "--impact-slicing" not in cmd
+
+
+def test_daemon_adapter_impact_slicing_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    """IMPACT_SLICING_ENV_FLAG controls impact_slicing default when set."""
+    from lab.engine.adapters.superstate_daemon import (
+        IMPACT_SLICING_ENV_FLAG,
+        impact_slicing_enabled,
+    )
+
+    monkeypatch.delenv(IMPACT_SLICING_ENV_FLAG, raising=False)
+    assert not impact_slicing_enabled()
+
+    for val in ("1", "true", "yes", "True", "YES"):
+        monkeypatch.setenv(IMPACT_SLICING_ENV_FLAG, val)
+        assert impact_slicing_enabled()
+        adapter_enabled = SuperstateDaemonAdapter(driver=MockDriver())
+        assert adapter_enabled.impact_slicing is True
+        assert "--impact-slicing" in adapter_enabled._build_daemon_spawn_cmd()  # noqa: SLF001
+
+    for val in ("0", "false", "no", "anything_else"):
+        monkeypatch.setenv(IMPACT_SLICING_ENV_FLAG, val)
+        assert not impact_slicing_enabled()
+        adapter_disabled = SuperstateDaemonAdapter(driver=MockDriver())
+        assert adapter_disabled.impact_slicing is False
+        assert "--impact-slicing" not in adapter_disabled._build_daemon_spawn_cmd()  # noqa: SLF001
+
 
 

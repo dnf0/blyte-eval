@@ -89,6 +89,7 @@ IGNORE_FIXTURES_ENV_FLAG = "SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES"
 ADVISORY_REVIEW_ENV_FLAG = "SUPERSTATE_EVAL_ADVISORY_REVIEW"
 REVIEW_BLOCKING_ENV_FLAG = "SUPERSTATE_EVAL_REVIEW_BLOCKING"
 AUTO_ROLLBACK_ENV_FLAG = "SUPERSTATE_EVAL_AUTO_ROLLBACK"
+IMPACT_SLICING_ENV_FLAG = "SUPERSTATE_EVAL_IMPACT_SLICING"
 
 
 def advisory_review_enabled() -> bool:
@@ -107,6 +108,14 @@ def auto_rollback_enabled() -> bool:
     if val is not None:
         return val.strip().lower() in ("1", "true", "yes", "on")
     return True
+
+
+def impact_slicing_enabled() -> bool:
+    """Whether milestone-scoped test impact slicing is enabled for the daemon."""
+    val = os.environ.get(IMPACT_SLICING_ENV_FLAG)
+    if val is not None:
+        return val.strip().lower() in ("1", "true", "yes", "on")
+    return False
 
 
 def ignore_gate_fixtures() -> bool:
@@ -168,6 +177,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         advisory_review: bool = False,
         review_blocking: Optional[bool] = None,
         auto_rollback: Optional[bool] = None,
+        impact_slicing: Optional[bool] = None,
         driver: Any = None,
     ) -> None:
         """Initialize SuperstateDaemonAdapter with driver preset and polling configuration."""
@@ -193,6 +203,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         else:
             self.review_blocking = self.advisory_review and review_blocking_enabled()
         self.auto_rollback: bool = auto_rollback if auto_rollback is not None else auto_rollback_enabled()
+        self.impact_slicing: bool = impact_slicing if impact_slicing is not None else impact_slicing_enabled()
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
 
@@ -217,6 +228,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "advisory_review": self.advisory_review,
             "review_blocking": self.review_blocking,
             "auto_rollback": self.auto_rollback,
+            "impact_slicing": self.impact_slicing,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -344,6 +356,8 @@ class SuperstateDaemonAdapter(AgentAdapter):
             cmd.append("--auto-rollback")
         else:
             cmd.append("--no-auto-rollback")
+        if self.impact_slicing:
+            cmd.append("--impact-slicing")
         return cmd
 
     def _spawn_daemon(self, workspace_path: Path) -> bool:
