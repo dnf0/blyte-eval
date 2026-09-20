@@ -162,20 +162,6 @@ class AblationRunner:
                 advisory_review=True, auto_rollback=True, impact_slicing=True, name="superstate_daemon_sliced"
             )
         elif arm in (
-            "superstate_daemon_dag",
-            "superstate-daemon-dag",
-            "daemon_dag",
-            "superstate_daemon_tdd",
-            "daemon_tdd",
-        ):
-            return SuperstateDaemonAdapter(
-                advisory_review=True,
-                auto_rollback=True,
-                impact_slicing=True,
-                tdd_dag=True,
-                name="superstate_daemon_dag",
-            )
-        elif arm in (
             "superstate_daemon_rollback",
             "superstate-daemon-rollback",
             "daemon_rollback",

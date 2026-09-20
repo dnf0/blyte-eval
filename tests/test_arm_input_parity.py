@@ -104,7 +104,7 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
         ("superstate_rust", "superstate_rust_planned"),
         ("superstate_daemon", "superstate_daemon_review"),
         ("superstate_daemon_review", "superstate_daemon_rollback"),
-        ("superstate_daemon_sliced", "superstate_daemon_dag"),
+        ("superstate_daemon_rollback", "superstate_daemon_full"),
     ]
     for zero_turn, planned in pairs:
         a = runner._get_adapter(zero_turn)  # noqa: SLF001
@@ -113,9 +113,8 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
             f"{zero_turn!r} and {planned!r} both report {a.name!r}; "
             "results from the two would be pooled"
         )
-        if "dag" in planned:
-            suffix = "dag"
-            assert getattr(b, "tdd_dag", False) is True, f"{planned!r} must have tdd_dag=True"
+        if "full" in planned:
+            suffix = "full"
             assert getattr(b, "impact_slicing", False) is True, f"{planned!r} must have impact_slicing=True"
             assert getattr(b, "auto_rollback", False) is True, f"{planned!r} must have auto_rollback=True"
         elif "rollback" in planned:
