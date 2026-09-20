@@ -90,6 +90,7 @@ ADVISORY_REVIEW_ENV_FLAG = "SUPERSTATE_EVAL_ADVISORY_REVIEW"
 REVIEW_BLOCKING_ENV_FLAG = "SUPERSTATE_EVAL_REVIEW_BLOCKING"
 AUTO_ROLLBACK_ENV_FLAG = "SUPERSTATE_EVAL_AUTO_ROLLBACK"
 IMPACT_SLICING_ENV_FLAG = "SUPERSTATE_EVAL_IMPACT_SLICING"
+TDD_DAG_ENV_FLAG = "SUPERSTATE_EVAL_TDD_DAG"
 
 
 def advisory_review_enabled() -> bool:
@@ -113,6 +114,14 @@ def auto_rollback_enabled() -> bool:
 def impact_slicing_enabled() -> bool:
     """Whether milestone-scoped test impact slicing is enabled for the daemon."""
     val = os.environ.get(IMPACT_SLICING_ENV_FLAG)
+    if val is not None:
+        return val.strip().lower() in ("1", "true", "yes", "on")
+    return False
+
+
+def tdd_dag_enabled() -> bool:
+    """Whether autonomous 2-node TDD DAG execution is enabled for the daemon."""
+    val = os.environ.get(TDD_DAG_ENV_FLAG)
     if val is not None:
         return val.strip().lower() in ("1", "true", "yes", "on")
     return False
@@ -178,6 +187,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         review_blocking: Optional[bool] = None,
         auto_rollback: Optional[bool] = None,
         impact_slicing: Optional[bool] = None,
+        tdd_dag: Optional[bool] = None,
         driver: Any = None,
     ) -> None:
         """Initialize SuperstateDaemonAdapter with driver preset and polling configuration."""
@@ -204,6 +214,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             self.review_blocking = self.advisory_review and review_blocking_enabled()
         self.auto_rollback: bool = auto_rollback if auto_rollback is not None else auto_rollback_enabled()
         self.impact_slicing: bool = impact_slicing if impact_slicing is not None else impact_slicing_enabled()
+        self.tdd_dag: bool = tdd_dag if tdd_dag is not None else tdd_dag_enabled()
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
 
@@ -229,6 +240,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "review_blocking": self.review_blocking,
             "auto_rollback": self.auto_rollback,
             "impact_slicing": self.impact_slicing,
+            "tdd_dag": self.tdd_dag,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -247,11 +259,50 @@ class SuperstateDaemonAdapter(AgentAdapter):
         except OSError as err:
             logger.debug("Failed configuring git exclude: %s", err)
 
+    def _build_tdd_milestones(self, task: TaskSpec, verify_cmd: Optional[str] = None) -> list[dict[str, Any]]:
+        """Construct a 2-node TDD dependency graph for autonomous bug resolution.
+
+        Milestone 1 (tdd-reproduction-test):
+            Worker authors reproduction test in tests/test_reproduce_issue.py.
+            Gate asserts test exists, is non-empty, and compiles cleanly.
+        Milestone 2 (fix-implementation):
+            Worker modifies codebase to make reproduction test and suite pass.
+            Gate asserts pytest tests/test_reproduce_issue.py && pytest tests/ exits 0.
+            Depends on tdd-reproduction-test, enabling scoped rollback if broken.
+        """
+        repro_file = "tests/test_reproduce_issue.py"
+        m1_cmd = f"test -s {repro_file} && ./run-in-container python3 -m py_compile {repro_file}"
+
+        if verify_cmd and not NOOP_GATE_RE.match(verify_cmd) and not references_sealed_grader(verify_cmd):
+            m2_cmd = f"./run-in-container pytest {repro_file} && {verify_cmd}"
+        else:
+            m2_cmd = f"./run-in-container pytest {repro_file} && ./run-in-container pytest tests/"
+
+        return [
+            {
+                "id": "tdd-reproduction-test",
+                "title": f"Author reproduction test in {repro_file}",
+                "verify_cmd": m1_cmd,
+                "files": [repro_file],
+                "depends_on": [],
+                "status": "in_progress",
+            },
+            {
+                "id": "fix-implementation",
+                "title": "Implement codebase fix until reproduction test and regression suite pass",
+                "verify_cmd": m2_cmd,
+                "files": [],
+                "depends_on": ["tdd-reproduction-test"],
+                "status": "pending",
+            },
+        ]
+
     def _init_daemon_state(self, workspace_path: Path, task: TaskSpec, verify_cmd: str) -> bool:
         """Initialize state machine tracking via MCP superstate_handoff or CLI fallback."""
         state_dir = workspace_path / ".agent-state"
         state_dir.mkdir(parents=True, exist_ok=True)
         state_file = state_dir / "state.json"
+        milestones = self._build_tdd_milestones(task, verify_cmd) if self.tdd_dag else None
 
         # Attempt to use MCP client superstate_handoff with detach=False to provision state
         try:
@@ -261,6 +312,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
                     res = client.superstate_handoff(
                         goal=task.instruction,
                         verify_cmd=verify_cmd,
+                        milestones=milestones,
                         driver=self.driver_preset,
                         no_worktree=self.no_worktree or not self.worktree,
                         worktree=self.worktree and not self.no_worktree,
@@ -271,21 +323,32 @@ class SuperstateDaemonAdapter(AgentAdapter):
         except Exception as e:
             logger.debug("MCP superstate_handoff initialization failed, falling back to CLI: %s", e)
 
-        # Fallback to CLI superstate state handoff or state init
+        # Fallback to CLI superstate state init --milestones or state handoff
         if self.superstate_bin:
-            cmd = [
-                str(self.superstate_bin),
-                "state",
-                "handoff",
-                "--goal",
-                task.instruction,
-                "--verify-cmd",
-                verify_cmd,
-                "--driver",
-                self.driver_preset,
-                "--state",
-                str(state_file),
-            ]
+            if milestones:
+                cmd = [
+                    str(self.superstate_bin),
+                    "state",
+                    "init",
+                    "--milestones",
+                    json.dumps(milestones),
+                    "--state",
+                    str(state_file),
+                ]
+            else:
+                cmd = [
+                    str(self.superstate_bin),
+                    "state",
+                    "handoff",
+                    "--goal",
+                    task.instruction,
+                    "--verify-cmd",
+                    verify_cmd,
+                    "--driver",
+                    self.driver_preset,
+                    "--state",
+                    str(state_file),
+                ]
             if self.no_worktree or not self.worktree:
                 cmd.append("--no-worktree")
             elif self.worktree:
@@ -298,24 +361,48 @@ class SuperstateDaemonAdapter(AgentAdapter):
                 logger.debug("CLI handoff failed: %s", e)
 
         # Minimal fallback direct JSON initialization
-        direct_state = {
-            "version": "1.0",
-            "goal": task.instruction,
-            "status": "in_progress",
-            "step": 0,
-            "active_task": "task-1",
-            "active_milestone": "task-1",
-            "tasks": [
-                {
+        if milestones:
+            direct_state = {
+                "status": "in_progress",
+                "step": 1,
+                "active_task": {
+                    "id": milestones[0]["id"],
+                    "title": milestones[0]["title"],
+                    "depends_on": milestones[0].get("depends_on", []),
+                    "files_modify": milestones[0].get("files", []),
+                    "verification_cmd": milestones[0]["verify_cmd"],
+                },
+                "pending_tasks": [
+                    {
+                        "id": m["id"],
+                        "title": m["title"],
+                        "depends_on": m.get("depends_on", []),
+                        "files_modify": m.get("files", []),
+                        "verification_cmd": m["verify_cmd"],
+                    }
+                    for m in milestones[1:]
+                ],
+                "completed_tasks": [],
+                "goal": task.instruction,
+                "no_worktree": True,
+            }
+        else:
+            direct_state = {
+                "version": "1.0",
+                "goal": task.instruction,
+                "status": "in_progress",
+                "step": 0,
+                "active_task": {
                     "id": "task-1",
                     "title": task.instruction[:80],
-                    "verify_cmd": verify_cmd,
-                    "status": "in_progress",
-                }
-            ],
-            "completed_tasks": [],
-            "failed_tasks": [],
-        }
+                    "verification_cmd": verify_cmd,
+                    "depends_on": [],
+                    "files_modify": [],
+                },
+                "pending_tasks": [],
+                "completed_tasks": [],
+                "failed_tasks": [],
+            }
         state_file.write_text(json.dumps(direct_state, indent=2), encoding="utf-8")
         return True
 

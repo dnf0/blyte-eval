@@ -596,4 +596,88 @@ def test_daemon_adapter_impact_slicing_env_var(monkeypatch: pytest.MonkeyPatch) 
         assert "--impact-slicing" not in adapter_disabled._build_daemon_spawn_cmd()  # noqa: SLF001
 
 
+def test_daemon_adapter_constructs_tdd_dag_milestones() -> None:
+    """When tdd_dag is True, the adapter constructs a 2-node TDD dependency graph."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), tdd_dag=True)
+    assert adapter.tdd_dag is True
+    assert adapter.get_provenance()["tdd_dag"] is True
+
+    task = TaskSpec(
+        id="tdd-test-task",
+        name="TDD Test Task",
+        instruction="Fix multipart parsing bug",
+        docker_image="python:3.12",
+    )
+    milestones = adapter._build_tdd_milestones(task)  # noqa: SLF001
+    assert len(milestones) == 2
+    
+    m1 = milestones[0]
+    assert m1["id"] == "tdd-reproduction-test"
+    assert m1["depends_on"] == []
+    assert "tests/test_reproduce_issue.py" in m1["files"]
+    assert "test -s tests/test_reproduce_issue.py" in m1["verify_cmd"]
+
+    m2 = milestones[1]
+    assert m2["id"] == "fix-implementation"
+    assert m2["depends_on"] == ["tdd-reproduction-test"]
+    assert "tests/test_reproduce_issue.py" in m2["verify_cmd"]
+
+
+def test_daemon_adapter_defaults_tdd_dag_off() -> None:
+    """When tdd_dag is not specified, it defaults to False."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver())
+    assert adapter.tdd_dag is False
+    assert adapter.get_provenance()["tdd_dag"] is False
+
+
+def test_daemon_adapter_tdd_dag_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TDD_DAG_ENV_FLAG controls tdd_dag default when set."""
+    from lab.engine.adapters.superstate_daemon import (
+        TDD_DAG_ENV_FLAG,
+        tdd_dag_enabled,
+    )
+
+    monkeypatch.delenv(TDD_DAG_ENV_FLAG, raising=False)
+    assert not tdd_dag_enabled()
+
+    for val in ("1", "true", "yes", "True", "YES"):
+        monkeypatch.setenv(TDD_DAG_ENV_FLAG, val)
+        assert tdd_dag_enabled()
+        adapter_enabled = SuperstateDaemonAdapter(driver=MockDriver())
+        assert adapter_enabled.tdd_dag is True
+
+    for val in ("0", "false", "no", "anything_else"):
+        monkeypatch.setenv(TDD_DAG_ENV_FLAG, val)
+        assert not tdd_dag_enabled()
+        adapter_disabled = SuperstateDaemonAdapter(driver=MockDriver())
+        assert adapter_disabled.tdd_dag is False
+
+
+def test_daemon_adapter_inits_state_with_tdd_milestones(tmp_path: Path) -> None:
+    """When tdd_dag is True, _init_daemon_state writes the 2-milestone array to state.json."""
+    adapter = SuperstateDaemonAdapter(driver=MockDriver(), tdd_dag=True, superstate_bin=None)
+    task = TaskSpec(
+        id="tdd-test-task",
+        name="TDD Test Task",
+        instruction="Fix multipart parsing bug",
+        docker_image="python:3.12",
+    )
+
+    with patch("lab.engine.adapters.superstate_daemon.SuperstateMcpClient") as mock_client_cls:
+        # Simulate MCP client not available to test direct state creation
+        mock_client_cls.side_effect = RuntimeError("MCP disabled")
+        ok = adapter._init_daemon_state(tmp_path, task, "true")  # noqa: SLF001
+        assert ok is True
+
+        state_file = tmp_path / ".agent-state" / "state.json"
+        assert state_file.is_file()
+        data = json.loads(state_file.read_text(encoding="utf-8"))
+        assert data["active_task"]["id"] == "tdd-reproduction-test"
+        assert len(data["pending_tasks"]) == 1
+        assert data["pending_tasks"][0]["id"] == "fix-implementation"
+
+
+
+
+
 
