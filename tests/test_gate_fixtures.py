@@ -30,6 +30,18 @@ def test_no_fixture_reads_the_sealed_grader() -> None:
     assert not leaking, f"fixtures referencing the sealed grader: {leaking}"
 
 
+def test_references_sealed_grader_distinguishes_in_repo_tests() -> None:
+    """The sealed grader is at /tests/, whereas /app/<pkg>/tests/ is an in-repo suite."""
+    assert references_sealed_grader("python -m pytest /tests/test_patch.py") is True
+    assert references_sealed_grader("bash /tests/run.sh") is True
+    assert references_sealed_grader("pytest /tests/") is True
+
+    # In-repo suites must NOT be treated as sealed graders
+    assert references_sealed_grader("python -m pytest /app/pyknotid/tests") is False
+    assert references_sealed_grader("cd /app/repo && pytest tests/") is False
+    assert references_sealed_grader("pytest ./tests/test_foo.py") is False
+
+
 def test_no_fixture_is_a_no_op() -> None:
     """A gate that cannot fail cannot discriminate, and the worker stops the moment it passes."""
     for name, gate in GATE_FIXTURES.items():

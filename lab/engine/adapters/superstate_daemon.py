@@ -678,7 +678,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         if container is not None:
             container_workdir = "/app"
-            if "/tests/" in verify_cmd or verify_cmd.startswith("bash /tests"):
+            if references_sealed_grader(verify_cmd):
                 try:
                     chk = container.exec_run(["test", "-d", "/tests"])
                     chk_code = chk[0] if isinstance(chk, tuple) else getattr(chk, "exit_code", 0)
@@ -773,18 +773,19 @@ class SuperstateDaemonAdapter(AgentAdapter):
         budget = timeout_sec or task.agent_timeout_sec or 3600.0
         start_time = time.monotonic()
 
-        effective_vcmd, gate_telemetry = self._derive_gate(
-            workspace_path, task, driver, container, budget
-        )
-
         # The gate may resolve without a driver turn (a task-declared verifier), in which
         # case nothing has provisioned `./run-in-container` yet. The wrapper's contract
-        # points the worker at that script, so it must actually exist.
+        # points the worker at that script, and gate fixtures may run against it, so it
+        # must exist before gate derivation or execution.
         if container is not None and hasattr(driver, "_setup_container_bridge"):
             try:
                 driver._setup_container_bridge(workspace_path, container)
             except Exception as exc:
                 logger.warning("Could not provision container bridge: %s", exc)
+
+        effective_vcmd, gate_telemetry = self._derive_gate(
+            workspace_path, task, driver, container, budget
+        )
 
         # Pin the model, capture usage, and supply the environment contract the daemon's
         # own prompt omits (see _write_driver_wrapper).

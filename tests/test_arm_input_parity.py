@@ -150,3 +150,17 @@ def test_no_adapter_synthesizes_milestones_or_harness_prompts() -> None:
             f"{name} contains hardcoded test file injections. Adapters must not prompt-engineer."
         )
 
+
+def test_no_adapter_uses_raw_substring_matching_for_sealed_grader() -> None:
+    """Adapters must use `references_sealed_grader()` rather than raw `"/tests/" in cmd`.
+
+    A raw substring match on `"/tests/"` rejects or falsely passes in-repo test suites like
+    `/app/pyknotid/tests/`, treating legitimate package tests as if they were the container-root
+    sealed grader at `/tests/`.
+    """
+    for name in COMPARED_ARMS:
+        text = (ADAPTERS / name).read_text()
+        assert '"/tests/" in' not in text, (
+            f"{name} uses raw `\"/tests/\" in` substring matching. Use `references_sealed_grader()`."
+        )
+

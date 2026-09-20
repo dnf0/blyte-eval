@@ -18,7 +18,7 @@ import shutil
 import subprocess
 from typing import Any, Dict, Optional
 
-from lab.benchmarks.gate_fixtures import agent_gate_for
+from lab.benchmarks.gate_fixtures import agent_gate_for, references_sealed_grader
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.condition_b import conversation_id_for
 from lab.engine.prompt_contracts import apply_contract
@@ -477,7 +477,7 @@ class SuperstateAdapter(AgentAdapter):
 
         if container is not None:
             container_workdir = "/app"
-            if "/tests/" in verify_cmd or verify_cmd.startswith("bash /tests"):
+            if references_sealed_grader(verify_cmd):
                 try:
                     chk = container.exec_run(["test", "-d", "/tests"])
                     chk_code = chk[0] if isinstance(chk, tuple) else getattr(chk, "exit_code", 0)
@@ -839,7 +839,7 @@ class SuperstateAdapter(AgentAdapter):
             # If verification_cmd references a held-out test suite (e.g. /tests/),
             # it is sealed during the agent phase and cannot be executed by the agent.
             # Fall back to "true" so the agent is not blocked by a missing held-out answer key.
-            if vcmd and ("/tests/" in vcmd or vcmd.startswith("bash /tests")):
+            if vcmd and references_sealed_grader(vcmd):
                 vcmd = None
         effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
         if not plan_text and self.zero_turn_planning:
@@ -1083,7 +1083,7 @@ class SuperstateAdapter(AgentAdapter):
                 milestone_turns = 0
                 last_response = ""
                 direct_vcmd = getattr(task, "verification_cmd", None)
-                if direct_vcmd and ("/tests/" in direct_vcmd or direct_vcmd.startswith("bash /tests")):
+                if direct_vcmd and references_sealed_grader(direct_vcmd):
                     direct_vcmd = None
                 milestone = Milestone(
                     title=active,
