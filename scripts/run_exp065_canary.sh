@@ -2,8 +2,10 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+export PYTHONPATH="."
 
 OUT_FILE="results/canary_dag_tdd_v_mcp_exp065.json"
+
 
 echo "=== EXP-065: Canary Evaluation (Autonomous 2-Node TDD DAG Daemon vs MCP) ==="
 echo "Tasks: build-cython-ext, chess-best-move, httpx-multipart-response-parsing"

@@ -18,6 +18,11 @@ import sys
 import time
 from typing import Any
 
+# Ensure current repository/worktree root takes precedence over editable installs in site-packages
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from lab.benchmarks.gate_fixtures import is_unmeasurable
 from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
 from lab.benchmarks.task_sets import is_canary, is_discriminating
