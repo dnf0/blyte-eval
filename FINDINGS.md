@@ -707,6 +707,56 @@ Two things this did not fix, both still open:
 
 Rust suite 397 passed; eval suite 343 passed.
 
+### 13.10 EXP-072: the rollback fix holds; three more defects surfaced (2026-09-21)
+
+A 3-task canary run to answer one question -- did the fixes take effect in a live run? It is
+not a solve-rate result (1/3, $4.70) and n=3 cannot separate 2/3 from 3/3.
+
+**The rollback fix took.** One rollback across five failures, against 30 of 30 in EXP-071. The
+katex ledger reads exactly as designed:
+
+| attempt | outcome | tree changed | action |
+|---|---|---|---|
+| 1 | failed | yes | retry-extend, **no rollback** |
+| 2 | failed | yes | retry-extend, **no rollback** |
+| 3 | failed | yes | retry-extend, **no rollback** |
+| 4 | failed | **no** | rollback to baseline |
+
+One reset and six surviving commits across three runs; in EXP-071 arktype alone lost committed
+work five times.
+
+**The telemetry fix did not take.** scc's 498,304 review tokens were still excluded. The cause
+was a defect the fix unknowingly rested on: the adapter looked for
+`.agent-state/daemons/default.pid`, but the engine has written `daemons/<branch-slug>.pid`
+since ADR-0002 made daemons branch-scoped. `pid` was None on **every** daemon run ever, which
+also silently disabled the poll loop's dead-process detection and left `provenance.daemon_pid`
+null throughout. Telemetry now waits on the artefact -- the driver-turns directory going quiet
+-- rather than on process identity.
+
+**Impact slicing fired for the first time, and it manufactures failures.** All four katex
+failures were `[impact-fail] Fast test slice failed: No tests found, exiting with code 1 ... In
+/workspace`. Runner detection is a substring search, and it matched `jest` inside the *body* of
+`cat <<'GATEEOF' | ./run-in-container sh -s` -- the script being piped to another process, not
+the command the shell runs. The rewrite produced an unterminated heredoc that executed on the
+host. Four attempts, $2.71, and the task, lost to the slicer rather than the agent. This is the
+second correction to EXP-070's "impact slicing executed flawlessly": it never ran there, and
+when it does run it fabricates failures. A command that cannot be parsed is now left alone.
+
+**The same defect class had been built into the new TDD gates.** The fixtures routed through
+`./run-in-container`; the engine-derived gates did not, so `python -m pytest` and `go test`
+would have run on a host holding the source but none of the dependencies -- exactly what katex
+demonstrated. Every runner invocation now goes through the bridge when the repository carries
+one, while `test -f` stays host-side. Caught before any TDD run, by reading this canary rather
+than by running one.
+
+**What it does not settle.** Whether preserving progress beats resetting. katex's three
+preserved attempts did not converge either, so Manifesto Invariant III -- which mandates a hard
+reset on every gate failure -- remains open, and the divergence introduced on 2026-09-21 is
+still a divergence, not a decision. What is settled is that the runaway is gone: four attempts,
+not "Attempt 6 of 3".
+
+---
+
 ---
 
 ## Withdrawn
@@ -725,6 +775,7 @@ Fourteen ledger rows and findings are `WITHDRAWN`. They are kept, because the wi
 | in-loop MCP state tools are an anti-pattern | applies to `superstate_agent_mcp` only; the harness-driven arm is fine |
 | EXP-070: daemon 16.1% cheaper | adversarial-review turns excluded from telemetry; true input tokens are +11.4% vs vanilla (Section 13.5) |
 | EXP-070: impact slicing executed flawlessly | it did not execute at all — zero `[impact-*]` notes in any workspace (Section 13.1) |
+| EXP-070: impact slicing executed flawlessly (2) | it fabricates failures when it does fire -- 4 spurious `No tests found` on katex by slicing inside a heredoc (13.10) |
 | EXP-070/071: the file read guard executed cleanly | no artefact records it firing; the hook's cwd makes relative paths fail open (Section 13.4) |
 | shunting is a superstate token-saving mechanism | `AgyCliDriver` gives it to every arm, vanilla included, so it cannot show up as lift (Section 13.1) |
 
