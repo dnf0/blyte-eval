@@ -197,6 +197,24 @@ makes it the worst possible instrument for "is this wired correctly" — and the
 the same prompt against the same repository with the guard on and off. That is how Spotify's
 Portal measured its own hooks, and it needs no docker image, no sealed grader and no task.
 
+### Watching a run: a filter that cannot match is indistinguishable from nothing happening
+
+A watch on `find ... -newermt "17:35" 2>/dev/null` reported "no trace written" for 43 minutes
+while the file it was looking for was being appended to every few seconds. `find` here is `bfs`,
+which rejects that timestamp form -- `bfs: error: Invalid timestamp` -- and the redirect swallowed
+it, so every poll returned nothing and nothing looked exactly like not-yet.
+
+Two rules follow, and they are the same rule twice:
+
+* **Never discard stderr in a watch condition.** A filter that errors reports the same thing as a
+  filter that finds nothing.
+* **Always watch for the terminal state as well as the signal.** A watch that only fires on
+  success stays silent through a crash, a hang, and its own breakage. Every monitor here pairs
+  "the thing happened" with "the run ended without it".
+
+This is the same mistake as the file read guard sitting dormant for sixteen runs: absence of
+evidence was taken for evidence of absence, because nothing distinguished them.
+
 ### The recurring hazard: what the harness pins, the engine's children escape
 
 Two of the four failures above were the same defect in different clothes, and both sit exactly
