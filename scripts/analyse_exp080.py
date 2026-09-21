@@ -147,6 +147,25 @@ def main() -> int:
                 print(f"      {label:>10s} {total:>12,}{mark}")
             print(f"      -> optimum {best[0]} at {best[1]:,} "
                   f"({100 * (1 - best[1] / baseline):.0f}% cheaper than 200)")
+            # cost_at() unions every window into one `wanted` set before costing it, so the
+            # curve above prices a run in which no line is ever fetched twice. That is the
+            # IDEAL, not the trace. The difference between it and what the agent actually
+            # paid is the size of the prize for a read cache -- and it is charged at the
+            # optimum threshold, so it is on top of any tuning gain, not instead of it.
+            actual = sum(
+                args.preamble + (min(int(r.get("end")), int(r.get("lines") or 0))
+                                 - int(r.get("start")) + 1) * args.tokens_per_line
+                for r in rows
+                if str(r.get("kind", "")).startswith("read")
+                and r.get("start") is not None and r.get("end") is not None
+            )
+            if actual:
+                ideal = cost_at(best[2], files, args.preamble, args.tokens_per_line)
+                print(f"      -> as actually read: {actual:,} tokens; the curve prices a "
+                      f"perfect read cache")
+                print(f"         read cache is worth ~{actual - ideal:,} tokens "
+                      f"({100 * (1 - ideal / actual):.0f}%) ON TOP of any threshold tuning")
+
             at800 = cost_at(800, files, args.preamble, args.tokens_per_line)
             print(f"      -> shipped 800 costs {at800:,} "
                   f"({100 * (at800 / best[1] - 1):+.1f}% vs optimum, "
