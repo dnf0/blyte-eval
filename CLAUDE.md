@@ -245,6 +245,12 @@ spawning, check the eval's pinning, and vice versa.
   consumed 51 GB and throttled the disk governor to 2 workers, producing spurious failures.
 - **Watch for `Cost=$0.00` with a wall clock near the budget** — that is a driver turn that hit
   its timeout and lost its usage telemetry, not a cheap run. Raise `--budget-sec`.
+- **A run that ends in single-digit seconds did not run, whatever verdict it recorded.** The
+  inverse of the above and just as costly: `build-cython-ext` aborted in 5-8 seconds at $0.00
+  for **seven consecutive canaries** (EXP-074 through EXP-080) and was scored `passed=False`
+  every time, because autonomous TDD cannot derive a gate from the empty `/app` the task ships
+  — the task's own instruction is to clone the repository. It passed 17 of 18 runs before that.
+  Check the shortest wall clock in any run before reading its pass rate. See FINDINGS 13.20.
 - **`sqlite-db-truncate` is unmeasurable** — no verifier ships with it, so its grader exits 127
   for every arm. See `UNMEASURABLE_TASKS`.
 

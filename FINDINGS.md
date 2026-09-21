@@ -1244,3 +1244,60 @@ instead of inheriting a number measured on `superstate-core`. What is missing is
 plumbing but the evidence — one workload's curve is not a derivation rule, and a rule fitted
 to a single repository would be the same mistake as the constant it replaces. Measure the
 curve on a second and third repository before writing one.
+
+### 13.20 Autonomous TDD silently broke `build-cython-ext`, and it has been scored as a failure for seven runs (2026-09-22)
+
+Found while auditing a 7-second, $0.00 run in EXP-080. It is not a read-budget finding and it
+matters more than one.
+
+| runs | build-cython-ext | wall clock | cost |
+|---|---|---|---|
+| EXP-058 - EXP-072 (18 runs, pre-TDD) | **17 pass, 1 fail** | 550-1,030s | $0.55-1.25 |
+| EXP-074, 075, 076, 077, 078, 079, 080 | **7 fail, 0 pass** | **5.5-8.2s** | **$0.00** |
+
+The break is at `db35e76`, "delete GATE_FIXTURES and hand off under autonomous TDD".
+
+**Cause.** The task's own instruction is to clone pyknotid into `/app/pyknotid`, so the image
+ships an empty `/app` and the workspace initialises empty. `tdd.rs` derives its DAG from
+repository layout, finds no `go.mod`, `package.json` or `pyproject.toml`, and fails closed:
+
+    could not identify a test runner ... Autonomous TDD needs the repository's own runner;
+    refusing to emit a gate that cannot fail
+
+That refusal is correct in isolation -- Invariant 2 allows exactly two gate sources and an
+ungateable task should not get a fabricated gate. But the adapter treats the failed handoff as
+a failure to initialise daemon state, the run aborts before the worker takes a single turn, and
+the harness records `passed=False`. A task that cannot be *gated* is scored as a task the agent
+could not *do*.
+
+**What this invalidates, and what survives.**
+
+* Any **pass rate** from EXP-074 onward is over three tasks of which one was a guaranteed
+  zero for the daemon arm. The canary has effectively been a two-task canary for seven runs.
+* The **per-task token findings survive**, because they were computed per task from scc and
+  katex and never involved build-cython-ext. EXP-078's -27% and EXP-079's channel analysis
+  stand as stated.
+* EXP-074 and EXP-075 recorded that autonomous TDD "executes end-to-end". True for scc and
+  katex; on the third canary task it replaced a reliable pass with an instant abort, and the
+  rows do not say so.
+
+**Why it went unseen for seven runs.** A 5-second $0.00 row looks like a fast failure, and
+CLAUDE.md's existing warning is tuned for the opposite shape -- `Cost=$0.00` with a wall clock
+*near the budget*, meaning a lost-telemetry timeout. The inverse signature, a wall clock far
+*below* any plausible floor, had no rule attached to it. It does now: **a run that ends in
+single-digit seconds did not run, whatever its recorded verdict says.**
+
+**Not fixed here, because the fix is a gating-semantics decision.** Three options, in
+increasing order of how much they change what the arm measures:
+
+1. **Score it honestly.** Record an arm-level ungateable outcome distinct from `passed=False`,
+   so it stops depressing pass rates. Changes no behaviour, only the books. Note that
+   `UNMEASURABLE_TASKS` is the wrong home -- that list is about tasks with no sealed grader,
+   and this task has one and runs fine under `vanilla`. The unmeasurability is arm-specific.
+2. **Defer derivation.** Derive the TDD DAG after the worker's first turn rather than at turn
+   0, so a task whose repository does not exist yet can still be gated once it does.
+3. **Fall back to a single-milestone handoff** with the repository's native runner once one
+   appears, accepting that such a task is not gated during its first milestone.
+
+Option 1 is strictly a correction and should happen regardless. 2 and 3 change what the arm
+does and need to be chosen deliberately, not overnight.
