@@ -1048,6 +1048,56 @@ quoting "2/3 versus 1/3" as a guard effect would be quoting noise.
 
 ---
 
+### 13.17 A third of every run is MCP tool schemas (2026-09-21)
+
+Chasing where scc's 2,629,120 input tokens went ended somewhere none of the candidates predicted.
+Measured directly, with a shadow `HOME` that symlinks everything real and replaces only
+`mcp_config.json` (the first attempt failed because agy authenticates through `~/.config/gcloud`,
+which moves when `HOME` does):
+
+| configuration | fresh input for a turn that replies "pong" | vs baseline |
+|---|---|---|
+| as shipped | **24,222** | — |
+| `--disable-slash-commands` (skills off) | 20,694 | -14.6% |
+| **MCP servers removed** | **10,934** | **-54.9%** |
+
+**13,288 tokens on every agy invocation are tool schemas**, for four globally-enabled MCP servers:
+`github`, `notion`, `slack` and `superstate`. A worker fixing a Go test carries the ability to
+file GitHub issues and post to Slack. The MCP-off run still had skills enabled, so removing both
+goes lower still.
+
+A turn that does no work at all costs 24,222 fresh tokens. That is the floor every experiment has
+paid, 79 times.
+
+**Scale.** MCP schemas are ~13,288 of the ~23,000 context processed per tool call -- about 58%.
+scc made 311 calls at ~5,000 fresh tokens each, which puts MCP at roughly 800,000-900,000 tokens,
+close to a third of the run. The 13,288 is measured; the multiplication is arithmetic on top of
+it, not a second measurement, so treat the total as an estimate with the right order of magnitude.
+
+**What it does and does not invalidate.** MCP loads identically for every arm, so it is a constant
+offset rather than a confound: **paired comparisons stand**, including EXP-078's -27%. What is
+inflated is every absolute figure. "superstate solves scc for $2.07" means "$2.07, of which
+roughly a third is tool schemas for services this benchmark never touches."
+
+**There is no per-invocation escape.** agy's full flag list has nothing for tools or MCP; skills
+can be disabled per run, MCP only globally via `agy mcp disable`. Disabling it around an eval run
+is an operational step, and a crashed run leaves the servers disabled, so it needs care.
+
+**Ranked against everything else measured today:**
+
+| lever | size | ours to fix? |
+|---|---|---|
+| MCP tool schemas | ~30% of a run | yes, config |
+| agy cache hit 76-81% vs Claude's 94% on identical work | ~1M on scc | no, agy's |
+| tool call count (311 x ~5,000 fresh) | ~30% if halved | partly |
+| skill expansion | ~15% of preamble | yes, one flag |
+| the perimeter guards built today | -27% measured | yes |
+
+The guards are the smallest lever on the list and took a day to build. The largest is a config
+file nobody had looked at.
+
+---
+
 ---
 
 ## Withdrawn

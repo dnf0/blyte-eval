@@ -248,6 +248,29 @@ spawning, check the eval's pinning, and vice versa.
 - **`sqlite-db-truncate` is unmeasurable** — no verifier ships with it, so its grader exits 127
   for every arm. See `UNMEASURABLE_TASKS`.
 
+## Every token figure includes ~24k of harness preamble
+
+A turn that replies "pong" and does nothing else costs **24,222 fresh input tokens** under
+`agy`. Of that, **13,288 is MCP tool schemas** -- `github`, `notion`, `slack` and `superstate`
+are enabled globally and load on every invocation -- and ~3,500 is skill expansion. Measured
+2026-09-21; see FINDINGS.md 13.17.
+
+Consequences when reading or writing a result:
+
+* **Paired comparisons stand.** The preamble is identical for every arm, so it is a constant
+  offset, not a confound. EXP-078's -27% is real.
+* **Absolute figures are inflated.** "$2.07 per solve" includes roughly a third spent on tool
+  schemas for services no benchmark task touches. Say so when quoting one.
+* **Cost scales with tool-call count, not just content.** Each call re-sends the preamble at a
+  76-81% cache hit rate, so ~5,000 fresh tokens per call regardless of what it returns. scc made
+  311. Reducing calls beats shrinking results, which is in tension with Invariant IV's
+  interception strategy and worth holding in mind.
+
+Before an expensive run, consider `agy mcp disable github notion slack` and restore afterwards.
+There is no per-invocation flag -- the full flag list has nothing for tools or MCP -- so this is
+an operational step, and a crashed run leaves them disabled. `--disable-slash-commands` does work
+per run and removes skill expansion.
+
 ## Switches (all default OFF)
 
 | Env var | Effect |
