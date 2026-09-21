@@ -176,6 +176,26 @@ class AblationRunner:
                 impact_slicing=True if "full" in arm else None,
                 name=arm_name,
             )
+        elif arm in (
+            "superstate_daemon_stall",
+            "superstate-daemon-stall",
+            "daemon_stall",
+            "superstate_daemon_regression",
+            "superstate-daemon-regression",
+            "daemon_regression",
+        ):
+            # Rollback-policy ablation arms. The name MUST differ from superstate_daemon_full,
+            # because harness_name is what lands in the results JSON and pooling two policies
+            # under one name would make the comparison invisible -- the same reason
+            # superstate_mcp_planned is named apart from superstate_mcp.
+            policy = "on-regression" if "regression" in arm else "on-stall"
+            return SuperstateDaemonAdapter(
+                advisory_review=True,
+                auto_rollback=True,
+                impact_slicing=True,
+                rollback_policy=policy,
+                name=f"superstate_daemon_{policy.replace('-', '_')}",
+            )
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(

@@ -41,6 +41,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from lab.benchmarks.gate_fixtures import references_sealed_grader  # noqa: E402
 from lab.benchmarks.task_loader import load_benchmark_tasks  # noqa: E402
 
 TASKS_ROOT = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
@@ -103,7 +104,7 @@ def main() -> int:
 
         if runner:
             print(f"  ok      {name:40s} TDD via {runner}")
-        elif declared and str(declared).strip():
+        elif declared and str(declared).strip() and not references_sealed_grader(declared):
             # The task ships its own runner, so TDD decomposition is never reached for it.
             print(f"  ok      {name:40s} native runner declared by the task")
         else:

@@ -71,6 +71,8 @@ DAEMON_EXIT_GRACE_SEC = 900.0
 # Sentinel returned by _derive_gate when the task must run under autonomous TDD: the
 # engine derives a 2-node RED/GREEN DAG from the repository itself and the harness
 # supplies no verification command at all. Manifesto Invariant V.
+ROLLBACK_POLICIES = frozenset({"always", "on-stall", "on-regression"})
+
 TDD_MODE = "__superstate_autonomous_tdd__"
 
 # Milestone id the engine gives the GREEN node; mirrors superstate_core::tdd.
@@ -146,6 +148,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         advisory_review: bool = False,
         review_blocking: Optional[bool] = None,
         auto_rollback: Optional[bool] = None,
+        rollback_policy: str = "always",
         impact_slicing: Optional[bool] = None,
         driver: Any = None,
     ) -> None:
@@ -172,6 +175,15 @@ class SuperstateDaemonAdapter(AgentAdapter):
         else:
             self.review_blocking = self.advisory_review and review_blocking_enabled()
         self.auto_rollback: bool = auto_rollback if auto_rollback is not None else auto_rollback_enabled()
+        # When a failed attempt's tree is reset. "always" is Manifesto Invariant III and the
+        # default; the alternatives exist to be measured rather than assumed, because the
+        # evidence is split -- EXP-059 favoured resetting, EXP-071 measured its cost, and both
+        # predate the TDD DAG that changes the calculus. See FINDINGS.md 13.11.
+        if rollback_policy not in ROLLBACK_POLICIES:
+            raise ValueError(
+                f"unknown rollback policy {rollback_policy!r}; expected one of {sorted(ROLLBACK_POLICIES)}"
+            )
+        self.rollback_policy: str = rollback_policy
         self.impact_slicing: bool = impact_slicing if impact_slicing is not None else impact_slicing_enabled()
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
@@ -206,6 +218,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             # state how many tasks were gated; with GATE_FIXTURES gone this field is the
             # only way to answer that from a results file.
             "gate_source": self.gate_source,
+            "rollback_policy": self.rollback_policy,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -229,6 +242,8 @@ class SuperstateDaemonAdapter(AgentAdapter):
         state_dir = workspace_path / ".agent-state"
         state_dir.mkdir(parents=True, exist_ok=True)
         state_file = state_dir / "state.json"
+
+        tdd = verify_cmd == TDD_MODE
 
         # Attempt to use MCP client superstate_handoff with detach=False to provision state
         try:
@@ -277,6 +292,16 @@ class SuperstateDaemonAdapter(AgentAdapter):
                 cmd.append("--worktree")
             try:
                 res = subprocess.run(cmd, cwd=str(workspace_path), capture_output=True, text=True, timeout=30.0)
+                if tdd and res.returncode != 0:
+                    # Fail closed and say why. The alternative -- letting the run continue --
+                    # once put the literal sentinel into state.json as a verification command,
+                    # which is unexecutable and would have been read as a task failure.
+                    logger.error(
+                        "TDD handoff failed for %s, so this task cannot be gated: %s",
+                        getattr(task, "name", "?"),
+                        (res.stderr or res.stdout or "").strip()[:300],
+                    )
+                    return False
                 if res.returncode == 0:
                     return True
             except Exception as e:
@@ -337,6 +362,9 @@ class SuperstateDaemonAdapter(AgentAdapter):
             cmd.append("--review-blocking")
         if self.auto_rollback:
             cmd.append("--auto-rollback")
+            # Passed always, not only when non-default: a results file must state the policy
+            # that produced it, and the binary rejects an unknown value rather than defaulting.
+            cmd.extend(["--rollback-policy", self.rollback_policy])
         else:
             cmd.append("--no-auto-rollback")
         if self.impact_slicing:
