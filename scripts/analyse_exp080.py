@@ -46,6 +46,7 @@ def repeat_analysis(rows: list[dict]) -> dict:
     seen_files: set[str] = set()
     seen_lines: dict[str, set[int]] = collections.defaultdict(set)
     reads = file_repeats = line_overlap_reads = 0
+    fully_covered = fully_covered_lines = 0
     redundant_lines = total_lines = 0
 
     for r in rows:
@@ -68,6 +69,11 @@ def repeat_analysis(rows: list[dict]) -> dict:
         redundant_lines += len(already)
         if already:
             line_overlap_reads += 1
+        # A cache can only ELIMINATE a call when it already holds the whole window. A partial
+        # overlap still costs a call, so counting those inflates the prize.
+        if window <= seen_lines[path]:
+            fully_covered += 1
+            fully_covered_lines += len(window)
         seen_lines[path] |= window
 
     return {
@@ -76,6 +82,8 @@ def repeat_analysis(rows: list[dict]) -> dict:
         "line_overlap_reads": line_overlap_reads,
         "redundant_lines": redundant_lines,
         "total_lines": total_lines,
+        "fully_covered": fully_covered,
+        "fully_covered_lines": fully_covered_lines,
     }
 
 
@@ -129,6 +137,9 @@ def main() -> int:
                 pct = 100 * rep["redundant_lines"] / rep["total_lines"]
                 print(f"              {rep['redundant_lines']:,} of {rep['total_lines']:,} "
                       f"line-fetches were redundant ({pct:.1f}%)")
+                print(f"              {rep['fully_covered']} reads "
+                      f"({100 * rep['fully_covered'] / rep['reads']:.0f}%) were FULLY covered "
+                      f"by lines already held -- only these a cache can remove outright")
                 verdict = ("a read cache would pay" if pct > 25 else
                            "a read cache buys little -- the lever is elsewhere")
                 print(f"              -> {verdict}")
@@ -163,8 +174,13 @@ def main() -> int:
                 ideal = cost_at(best[2], files, args.preamble, args.tokens_per_line)
                 print(f"      -> as actually read: {actual:,} tokens; the curve prices a "
                       f"perfect read cache")
-                print(f"         read cache is worth ~{actual - ideal:,} tokens "
-                      f"({100 * (1 - ideal / actual):.0f}%) ON TOP of any threshold tuning")
+                print(f"         upper bound on a read cache: ~{actual - ideal:,} tokens "
+                      f"({100 * (1 - ideal / actual):.0f}%) -- assumes perfect dedup")
+                rep2 = repeat_analysis(rows)
+                removable = (rep2["fully_covered"] * args.preamble
+                             + rep2["fully_covered_lines"] * args.tokens_per_line)
+                print(f"         REMOVABLE by a cache that serves only fully-held windows: "
+                      f"~{removable:,} tokens ({100 * removable / actual:.0f}% of actual)")
 
             at800 = cost_at(800, files, args.preamble, args.tokens_per_line)
             print(f"      -> shipped 800 costs {at800:,} "

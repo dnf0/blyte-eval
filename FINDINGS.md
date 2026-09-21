@@ -1301,3 +1301,74 @@ increasing order of how much they change what the arm measures:
 
 Option 1 is strictly a correction and should happen regardless. 2 and 3 change what the arm
 does and need to be chosen deliberately, not overnight.
+
+### 13.21 The read budget is second-order; the repeated-read call is first-order (2026-09-22)
+
+EXP-080, from two archived traces (`traces/exp080_20260921_230506`). Replay is arithmetic, so
+these carry no run-to-run noise -- which matters, because the live version of this experiment
+was smoke-tested first and cannot work: at 800 on scc the guard denied nothing, 0 lines
+withheld, and the guarded and unguarded arms still differed **23.8%** in input tokens.
+
+**Q1 -- the optimum is 400, not 1,600, and it is the same on both repositories.**
+
+| threshold | katex | scc |
+|---|---|---|
+| 200 | 146,945 | 96,572 |
+| **400** | **133,861** | **80,040** |
+| 800 (shipped) | 151,562 | 80,328 |
+| 1,600 (13.18's "optimum") | 151,020 | 102,856 |
+| unlimited | 374,815 | 146,933 |
+
+800 costs +13.2% over optimum on katex and +3.1% over the 200 it replaced; on scc it is within
+0.4% of optimum. **13.20's revision of 13.18 is confirmed from the other direction:** that
+"optimum 1,600" came from replaying one repository whose only file above 1,600 lines is
+`daemon.rs` itself, so it measured where the budget stops binding, not a cost minimum. Two real
+tasks agree on 400. This is the evidence 13.19 said was missing before the daemon could derive
+the number rather than inherit it -- and the answer so far is that it may not need to, since
+two very different repositories land on the same value.
+
+**Q2 -- the repeats are genuine re-fetches, which reverses 13.18.**
+
+EXP-079 found 80% of reads were of already-read files but could not tell distinct windows from
+re-fetched lines. Now measurable:
+
+| | reads | re-read a file | re-read *lines* | redundant line-fetches |
+|---|---|---|---|---|
+| katex | 231 | 184 (80%) | 168 (73%) | 9,422 / 14,474 (**65%**) |
+| scc | 91 | 66 (73%) | 49 (54%) | 2,320 / 5,917 (**39%**) |
+
+13.18 reported 0% window repeats and concluded a read cache buys nothing. That was one
+single-file trace; on real tasks the agent re-fetches lines it already has, constantly.
+
+**The prize is much larger than the threshold's.** `cost_at()` unions every window before
+costing it, so **the entire budget curve has always priced a run with a perfect read cache** --
+the ideal, not the trace. The gap is the cache's value, and it is charged on top of any tuning:
+
+| | actually read | at optimum threshold | removable by a cache serving only fully-held windows |
+|---|---|---|---|
+| katex | 620,146 | 133,861 | **~423,668 (68%)** |
+| scc | 240,924 | 80,040 | **~107,784 (45%)** |
+
+Counting only reads whose whole window is already held -- 133 of 231 on katex, 35 of 91 on scc
+-- because a partial overlap still costs a call. Threshold tuning is worth 9-17%. The cache is
+worth 45-68%. Most of that is the per-call preamble, not content: 231 reads at ~2,500 tokens is
+577,500 tokens before a single line is returned, which is 93% of katex's actual read cost. This
+is 13.17's "reducing calls beats shrinking results" with a number attached.
+
+**Q3 -- the command channel is still unshunted.** 199 commands on katex (55% host-side) and 118
+on scc (59%). Shunting wraps only `./run-in-container`, so more than half of all commands are
+never bounded. Confirms EXP-079's suspicion and remains the second untouched lever.
+
+**Ranking of what to build, by measured size:**
+
+1. **A read cache** keyed on (path, window), serving fully-held windows without a tool call.
+   45-68% of read cost.
+2. **Host-side command shunting.** 55-59% of commands currently unbounded; unsized, but
+   EXP-079 put command output in the same order as reads.
+3. **Change the default budget from 800 to 400.** Worth 9-17% of read cost, and it undoes a
+   regression on katex. Cheap to do, but do not mistake it for the main event.
+
+**Scores, for the record:** all three tasks recorded `passed=False`, but two were near misses
+and one never ran -- scc 28/31 fail-to-pass with 286/286 pass-to-pass, katex 85/94 with 599/599,
+build-cython-ext aborted in 7 seconds (13.20). A 0/3 canary here does not mean the arm did
+nothing; it means the binary threshold is unforgiving and one cell was void.
