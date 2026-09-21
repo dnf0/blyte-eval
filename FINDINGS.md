@@ -859,6 +859,12 @@ consumed 1,917,135 -- 70% of the run**. Invariant IV promises that turn should h
 never been observed firing in any run. The budget policy compounds it: completing a milestone
 earns a +1200s lease extension, so decomposing one milestone into two *raises* the ceiling.
 
+**Corrected later the same day (13.14): file reads cannot account for this turn.** scc's own
+source is 133,550 tokens, so a perfect guard recovers under 7% of 1,917,135. The attribution
+above -- command output was under 2%, therefore reads must be the rest -- was elimination without
+an upper bound on the remaining candidate. Either the same files were read many times, or another
+channel carried the volume; no artefact the daemon writes can tell them apart.
+
 **Telemetry is still short by one turn.** Reported input for scc was 2,410,872; the driver turns
 sum to 2,740,756. The difference is exactly the final review turn, written after the harness
 finished. The settle-wait catches the first review and not the last.
@@ -913,6 +919,46 @@ emits any instruction to end a turn.
 Nothing here is measured yet. The prediction for the next run is specific: `guard-denials.jsonl`
 non-empty, no yields, and first-turn `input_tokens` below EXP-075's baseline of 33,213 (scc) and
 195,957 (katex).
+
+---
+
+### 13.14 The guard cannot explain the 1.92M turn (2026-09-21)
+
+`scripts/guard_ceiling.py` computes, without a model call, what a file read guard could save:
+tokens to read each file whole against tokens of the AST outline returned instead. Run against
+the canary repositories in under a second each:
+
+| repository | files over 200 lines | own source, read whole | ceiling |
+|---|---|---|---|
+| `katex` | 40 | 237,651 | **96.6%** |
+| `scc` (including vendored deps) | 289 | 2,064,564 | 93.2% |
+| **`scc` (own source only)** | **21** | **133,550** | **95.2%** |
+
+The mechanism has ample headroom -- an outline is 3-5% the size of its file, matching the
+artefact-level efficiency Portal reports. But the second row is the one that matters, and it
+retires a claim made earlier the same day.
+
+**scc's entire own source is 133,550 tokens. EXP-075's GREEN turn admitted 1,917,135.** That is
+fourteen times the codebase. A *perfect* file read guard -- intercepting every eligible file and
+saving 95.2% -- recovers at most ~127,000 tokens, **under 7% of that turn**.
+
+So 13.12's reasoning, that shunted command output was under 2% and therefore "unbounded file
+reads are the only channel that large", does not hold. Reading every file in the repository once
+does not come close to 1.92M either. Two possibilities remain and they point opposite ways:
+
+* **the same files were read repeatedly**, in which case the guard saves ~95% of every read and
+  the effect compounds to something large;
+* **the volume came from another channel** -- host-side command output that never passed through
+  `./run-in-container` and so was never shunted, or accumulated reasoning -- in which case the
+  guard barely touches it.
+
+**These cannot be distinguished from any artefact the daemon currently writes.** The arm produces
+no tool-call transcript (13.7), so there is no record of what was read, how often, or how large
+each result was. That gap, not the guard, is now the binding constraint on the whole question.
+
+The measurement discipline is the reusable part: 0.33 seconds of arithmetic produced a sharper
+and more falsifiable question than four benchmark runs did. Compute the ceiling before deciding a
+workload is worth an agent turn.
 
 ---
 
