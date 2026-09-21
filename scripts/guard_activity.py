@@ -68,12 +68,36 @@ def main() -> int:
         if repeats:
             print(f"\n  RE-READ FILES ({len(repeats)} of {len(per_file)}):")
             for target, n in repeats[: args.top]:
-                print(f"    {n:3d}x  {target}")
+                print(f"    {n:3d}x  {target.split('/')[-1]}")
             print(
                 f"\n  {sum(n for _, n in repeats)} of {len(reads)} reads were of a file already read."
             )
         else:
             print("\n  No file was read twice: repeated reads do not explain context growth.")
+
+        # The distinction that decides whether a read cache would help at all. Re-reading a
+        # DIFFERENT window of a large file is correct behaviour under a line budget; re-reading
+        # the SAME window is redundancy a cache eliminates. EXP-079 recorded no ranges and so
+        # could not separate them -- every "24x formatters.go" was ambiguous.
+        windowed = [e for e in reads if e.get("start") is not None]
+        if windowed:
+            seen = collections.Counter(
+                (e.get("target"), e.get("start"), e.get("end")) for e in windowed
+            )
+            identical = sum(n - 1 for n in seen.values() if n > 1)
+            print(
+                f"\n  of {len(windowed)} reads carrying a window, {identical} re-fetched a window "
+                f"already fetched ({100 * identical / len(windowed):.0f}%)."
+            )
+            if identical:
+                print("  redundant windows:")
+                for (target, start, end), n in seen.most_common(args.top):
+                    if n > 1:
+                        print(f"    {n:3d}x  {str(target).split('/')[-1]} [{start}:{end}]")
+            else:
+                print("  every repeat was a different window: a read cache would save nothing.")
+        elif reads:
+            print("\n  no read carried a window; ranges are not recorded in this trace.")
 
     commands = [e for e in entries if e.get("kind") == "command"]
     if commands:
