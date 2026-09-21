@@ -62,3 +62,41 @@ def test_generated_hooks_never_resolve_the_binary_through_path() -> None:
         "daemon.rs writes a hook command as a bare name; it must embed current_exe()"
     )
     assert "hook_binary()" in text, "daemon.rs no longer resolves the hook binary explicitly"
+
+
+def test_guard_bench_provisions_hooks_for_every_config() -> None:
+    """The offline harness must provision hooks the same way the daemon does.
+
+    A guard is only evaluatable offline if the offline arm is wired identically to the live
+    one -- absolute binary path included, since a bare name resolves through PATH at hook time
+    and made EXP-077 measure the previous day's build.
+    """
+    import importlib.util
+    import json as _json
+    import tempfile
+
+    spec = importlib.util.spec_from_file_location(
+        "guard_bench", ROOT / "scripts" / "guard_bench.py"
+    )
+    assert spec and spec.loader
+    bench = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bench)
+
+    assert {"none", "file", "command", "full"} <= set(bench.CONFIGS)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        ws = Path(tmp)
+        for config, expected_groups in [("none", 0), ("file", 1), ("command", 1), ("full", 2)]:
+            bench.write_hooks(ws, config, Path("/abs/path/superstate"))
+            hooks = _json.loads((ws / ".agents" / "hooks.json").read_text())
+            assert len(hooks) == expected_groups, config
+            for group in hooks.values():
+                command = group["PreToolUse"][0]["hooks"][0]["command"]
+                assert command.startswith("/"), f"{config}: hook must use an absolute path"
+
+        # Denials are what the harness measures; the accounting must be exact.
+        (ws / ".agent-state").mkdir(exist_ok=True)
+        (ws / ".agent-state" / "guard-denials.jsonl").write_text(
+            '{"ts":1,"path":"a.go","lines":400}\n{"ts":2,"path":"b.go","lines":250}\n'
+        )
+        assert bench.denials(ws) == (2, 650)
