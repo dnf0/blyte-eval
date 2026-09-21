@@ -809,6 +809,58 @@ to a new author and still unmeasured. It needs a run that reaches the grader.
 
 ---
 
+### 13.12 EXP-075: the gate-precision problem is relocated, not solved (2026-09-21)
+
+The run that asked the decisive question: when a worker's own reproduction test certifies the
+work, does the sealed grader agree?
+
+| task | milestones | gate verdict | sealed grader | cost |
+|---|---|---|---|---|
+| `scc-bounded-memory-spilling` | both completed | **done** | **f2p 31/31, p2p 286/286** -- agrees | $2.87 |
+| `katex-multicolumn-array-spans` | both completed | **done** | **f2p 92/94**, p2p 599/599 -- disagrees | $3.52 |
+| `build-cython-ext` | aborted at handoff | n/a | never ran | $0.00 |
+
+**Agent-authored gate precision: 1 of 2.** katex reached `status=completed` with both milestones
+passing, which is the control plane asserting the work is finished, and the held-out suite then
+failed it on two tests. That is the same shape of error that made the hand-authored fixtures
+worth banning, with a different author.
+
+So Manifesto Invariant V removes the *leak* -- no maintainer test is pre-seeded, and the worker
+does its own diagnosis -- but it does not by itself make the gate correct. Invariant II's claim
+that *"a milestone is complete if and only if its verification command exits 0"* holds
+mechanically and still certified incomplete work.
+
+**The failure mode is different in kind, and more tractable.** The fixtures failed by asserting
+things that were wrong: `expr` demanded behaviour its own reference solution does not implement,
+`anko` and `meriyah` could not compile. katex's reproduction test was simply *narrower* than the
+grader -- it covered the bug the worker diagnosed, and two further fail-to-pass tests were not
+covered. p2p was perfect in both tasks, so nothing was broken. A test that is too narrow can be
+widened; a test that is wrong has to be discarded.
+
+**Neither task beat its historical attractor.** Both are bimodal, and both landed where they
+usually land, at the highest cost on record:
+
+| task | non-solve | solved before | EXP-075 |
+|---|---|---|---|
+| `scc` | 28/31 | 4x at ~$1.10 | 31/31 at **$2.87** |
+| `katex` | 92/94 | 2x at ~$1.20 | 92/94 at **$3.52** |
+
+So TDD did not reach work the previous regime could not. It cost about 2.5-3x more for the same
+outcomes. 1/3 at $6.40, against EXP-072's 1/3 at $4.70.
+
+**The cost is not TDD's doing.** On scc the reproduction milestone cost 255k input tokens, about
+9%; the two adversarial review turns cost 568k, 21%; and a **single 29-minute implementation turn
+consumed 1,917,135 -- 70% of the run**. Invariant IV promises that turn should have been bounded
+("massive file reads must be intercepted", "zero token waste"), and the file-read guard has still
+never been observed firing in any run. The budget policy compounds it: completing a milestone
+earns a +1200s lease extension, so decomposing one milestone into two *raises* the ceiling.
+
+**Telemetry is still short by one turn.** Reported input for scc was 2,410,872; the driver turns
+sum to 2,740,756. The difference is exactly the final review turn, written after the harness
+finished. The settle-wait catches the first review and not the last.
+
+---
+
 ---
 
 ## Withdrawn

@@ -93,7 +93,10 @@ def cmd_check() -> int:
 
     for r in rows:
         if r["results"] in ("-", ""):
-            if r["status"] != "PLANNED":
+            # A GHOST is a verdict resting on nothing. PLANNED has not run yet, and WITHDRAWN
+            # rests on nothing by definition -- EXP-073 was aborted mid-run and never wrote a
+            # file, which is exactly what its withdrawal records.
+            if r["status"] not in ("PLANNED", "WITHDRAWN"):
                 print(f"GHOST      {r['id']}  status={r['status']} but names no results file")
                 problems += 1
             continue
