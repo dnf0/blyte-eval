@@ -962,6 +962,45 @@ workload is worth an agent turn.
 
 ---
 
+### 13.15 EXP-078: the perimeter guards work, and cost about 27% less (2026-09-21)
+
+The first run in which the guards demonstrably operated. `guard-denials.jsonl` had been empty in
+every previous run ever recorded; here scc withheld 1,917 lines across 4 denials and katex 2,258
+across 2. No worker yielded. Paired against EXP-075 on identical tasks, same arm, same rollback
+policy, same driver -- **only the binary differs**, carrying the four guard fixes:
+
+| task | EXP-075 | EXP-078 | input tokens |
+|---|---|---|---|
+| `scc-bounded-memory-spilling` | PASS 31/31, $2.87, 2,410,872 | PASS 31/31, $2.07, 1,725,692 | **-28.4%** |
+| `katex-multicolumn-array-spans` | **fail 92/94**, $3.52, 2,906,759 | **PASS 94/94**, $2.54, 2,136,189 | **-26.5%** |
+| run total | 1/3, $6.40 | **2/3, $4.61** | |
+
+**The cost reduction is the signal worth keeping.** Two independent tasks moved -28.4% and -26.5%,
+which is a far more stable quantity than a pass/fail flip. katex crossing from 92/94 to 94/94 is a
+move between the two modes it has occupied across nine recorded attempts, at n=1, and should not
+be read as a solve-rate result.
+
+**Causation is not isolated.** The binary carries four changes -- path resolution, denial
+telemetry, throttle-not-refuse, and bulk-read interception -- and at least one of them affects
+outcomes by a route other than tokens: the throttle fix removes the yield that cost katex a turn
+in EXP-075 (6 turns there, 5 here). A single-variable attribution would need the ablation arms.
+
+**Gate precision is now 3 of 4** across the two runs. katex's GREEN gate certified 92/94 work in
+EXP-075 -- the relocated 17% problem of 13.12 -- and certified correct work here. Still far too
+few observations to call it a rate.
+
+**On the -4.2% offline result (13.14):** it was not wrong, it was narrow. `guard_bench.py` asked a
+single question of one crate and intercepted one file of ten eligible; the benchmark workload is
+genuinely read-heavy and intercepted four and two. The offline number is a lower bound on a thin
+workload, the ceiling is 96%, and the realised figure on real tasks sits between them at ~27%.
+
+**What this does not settle: 13.14 stands.** scc's own source is 133,550 tokens and this turn still
+admitted 1,725,692. A 28% reduction is consistent with repeated reading being a large share of the
+remainder, but this run predates `guard-activity.jsonl`, so there is still no record of what was
+read or how often. The next run carries that trace and can answer it.
+
+---
+
 ---
 
 ## Withdrawn
