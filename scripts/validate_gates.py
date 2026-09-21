@@ -1,48 +1,94 @@
 #!/usr/bin/env python3
-"""Run each agent-facing gate inside a pristine task container.
+"""Check every task image can be decomposed into the autonomous TDD DAG.
 
-A gate that PASSES on an untouched workspace cannot discriminate: it certifies work
-nobody has done. `gate_fixtures.py` asserts in prose that every entry was validated this
-way; this makes the claim checkable.
+WHAT THIS CHECKS, AND WHY IT CHANGED
+------------------------------------
+Until 2026-09-21 this script validated the hand-authored `GATE_FIXTURES` table. Manifesto
+Invariant V removed that table: a pre-seeded reproduction test leaks the function names,
+argument shapes and assertion values, turning an open-ended diagnosis into a narrow
+test-passing game. A verification command may now come only from the repository's own
+runner, or from the RED/GREEN DAG `superstate state handoff --tdd` derives.
 
-It is the cheapest guard we have against the failure measured in EXP-047, where the gate
-ran 20 times, passed 20 times, and was wrong on 8 of them -- zero recall against bad work.
+That replacement introduced one new pre-run failure mode. Detection in
+`superstate_core::tdd` is deliberately fail-closed: a repository with no recognised runner
+returns `UnknownRunner` rather than a permissive command, because degrading to `true` would
+restore the vacuous gate the whole change removes. Fail-closed is right, but it means a task
+whose image has no recognised marker aborts at run time rather than quietly mis-measuring.
 
-    scripts/validate_gates.py                 # every gate with a local image
-    scripts/validate_gates.py dna-insert ...  # named tasks only
+This finds those tasks before a run spends money on them, by listing each image's repository
+root and applying the engine's own detection order.
 
-Exit status is non-zero if any gate passes on a pristine container.
+    scripts/validate_gates.py                 # every task with a local image
+    scripts/validate_gates.py anko-... ...    # named tasks only
+
+Exit status is non-zero if any task's repository cannot be classified.
+
+WHAT IT DELIBERATELY DOES NOT CHECK
+-----------------------------------
+Whether the generated RED gate fails on a pristine repository, and whether GREEN passes on a
+fixed one. RED requires a reproduction test that does not exist yet, so it fails by
+construction, and the command shapes are pinned by unit tests in `superstate-core/src/tdd.rs`
+-- including that every runner proves compilation before asserting failure, which is what
+stops a syntax error satisfying RED. Confirming them against real repositories needs a seeded
+workspace and belongs to a canary run, not here.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-import re
 import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lab.benchmarks.gate_fixtures import GATE_FIXTURES, agent_gate_for  # noqa: E402
+from lab.benchmarks.gate_fixtures import references_sealed_grader  # noqa: E402
 from lab.benchmarks.task_loader import load_benchmark_tasks  # noqa: E402
 
 TASKS_ROOT = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
-BODY = re.compile(r"\| \./run-in-container sh -s\n(.*)\nGATEEOF\Z", re.S)
-NOISE = ("platform", "WARNING:")
+
+# Mirrors the detection order in superstate_core::tdd::detect_profile. Order matters: a Go
+# repository that also carries a package.json for tooling is still a Go project.
+DETECTION_ORDER: list[tuple[str, tuple[str, ...]]] = [
+    ("go test", ("go.mod",)),
+    ("npm/vitest", ("package.json",)),
+    ("pytest", ("pyproject.toml", "setup.py", "setup.cfg", "pytest.ini", "tox.ini")),
+]
 
 
 def image_present(image: str) -> bool:
-    out = subprocess.run(
+    return subprocess.run(
         ["docker", "image", "inspect", image], capture_output=True, text=True
+    ).returncode == 0
+
+
+def repo_root_listing(image: str) -> list[str]:
+    """Names directly under /app in the task image."""
+    proc = subprocess.run(
+        ["docker", "run", "--rm", "--entrypoint", "sh", image, "-c", "ls -A /app 2>/dev/null"],
+        capture_output=True, text=True, timeout=300,
     )
-    return out.returncode == 0
+    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def classify(entries: list[str]) -> str | None:
+    """The runner the engine would select, or None if it would fail closed."""
+    present = set(entries)
+    for runner, markers in DETECTION_ORDER:
+        if present.intersection(markers):
+            return runner
+    # The engine's last resort: a bare tests/ directory holding Python files.
+    if "tests" in present:
+        return "pytest (bare tests/)"
+    return None
 
 
 def main() -> int:
     tasks = {t.name: t for t in load_benchmark_tasks(TASKS_ROOT)}
-    names = sys.argv[1:] or sorted(n for n in GATE_FIXTURES if n in tasks)
+    names = sys.argv[1:] or sorted(tasks)
 
-    bad, skipped, inconclusive = [], [], []
+    unclassified: list[str] = []
+    skipped: list[tuple[str, str]] = []
+
     for name in names:
         task = tasks.get(name)
         if task is None or not task.docker_image:
@@ -52,50 +98,37 @@ def main() -> int:
             skipped.append((name, f"image not local: {task.docker_image}"))
             continue
 
-        gate = agent_gate_for(name) or ""
-        match = BODY.search(gate)
-        body = match.group(1) if match else gate
-        proc = subprocess.run(
-            ["docker", "run", "--rm", "-i", "--entrypoint", "sh", task.docker_image, "-s"],
-            input=body, capture_output=True, text=True, timeout=600,
-        )
-        lines = [
-            ln for ln in (proc.stderr or proc.stdout).strip().splitlines()
-            if not any(n in ln for n in NOISE)
-        ]
-        detail = lines[-1][:120] if lines else ""
-        if "run-in-container: not found" in (proc.stderr or ""):
-            # The gate nests a further ./run-in-container call, which exists only in a
-            # prepared workspace. Exit 127 here says nothing about whether the gate can
-            # discriminate, so it must not be reported as a pass.
-            inconclusive.append(name)
-            print(f"  ?       {name:34s} INCONCLUSIVE -- needs a prepared workspace")
-        elif proc.returncode == 0:
-            bad.append(name)
-            print(f"  PASSES  {name:34s} <- CANNOT DISCRIMINATE {detail}")
+        declared = getattr(task, "verification_cmd", None)
+        entries = repo_root_listing(task.docker_image)
+        runner = classify(entries)
+
+        if runner:
+            print(f"  ok      {name:40s} TDD via {runner}")
+        elif declared and str(declared).strip() and not references_sealed_grader(declared):
+            # The task ships its own runner, so TDD decomposition is never reached for it.
+            print(f"  ok      {name:40s} native runner declared by the task")
         else:
-            limitation = " [LIMITATION]" if "GATE LIMITATION" in proc.stdout else ""
-            print(f"  fails   {name:34s} exit={proc.returncode}{limitation} {detail}")
+            unclassified.append(name)
+            sample = ", ".join(sorted(entries)[:8]) or "<empty /app>"
+            print(f"  UNKNOWN {name:40s} no recognised runner; /app holds: {sample}")
 
     for name, why in skipped:
-        print(f"  skip    {name:34s} {why}")
-    tested = len(names) - len(skipped) - len(inconclusive)
+        print(f"  skip    {name:40s} {why}")
+
+    tested = len(names) - len(skipped)
     print(
-        f"\n{tested} gate(s) actually tested, {len(bad)} pass on a pristine container, "
-        f"{len(inconclusive)} inconclusive, {len(skipped)} skipped"
+        f"\n{tested} task(s) checked, {len(unclassified)} cannot be decomposed, "
+        f"{len(skipped)} skipped"
     )
-    if inconclusive:
+    if unclassified:
         print(
-            "\nInconclusive gates nest their own ./run-in-container call and can only be "
-            "validated inside a prepared workspace:"
+            "\nThese repositories match no runner the engine recognises, so a run would abort "
+            "at handoff. Either teach superstate_core::tdd their layout, or record them as "
+            "unmeasurable:"
         )
-        for name in inconclusive:
+        for name in unclassified:
             print(f"  - {name}")
-    if bad:
-        print("\nA gate that passes before any work cannot tell done from not-done:")
-        for name in bad:
-            print(f"  - {name}")
-    return 1 if bad else 0
+    return 1 if unclassified else 0
 
 
 if __name__ == "__main__":

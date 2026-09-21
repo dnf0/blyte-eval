@@ -5,6 +5,19 @@ subprocess CLI invocations. Provides deterministic state tracking, bounded turnk
 prompts, targeted verification gates, automated checkpoint commits, and worktree cleanup.
 """
 
+# DEPRECATED as an active evaluation arm (2026-09-21).
+#
+# The daemon is the approach under development: no MCP arm has run since EXP-065, seven
+# experiments ago, and `superstate_mcp_planned` has run exactly once (EXP-055). This arm is
+# kept, not developed, because the banked results it produced -- the 76% figure and EXP-049 --
+# would otherwise be irreproducible, for the same reason WITHDRAWN ledger rows are kept.
+#
+# It is single-milestone in its Condition B configuration and so cannot run the autonomous TDD
+# DAG that replaced GATE_FIXTURES. On a task with no native runner it is genuinely UNGATED,
+# which measures the fallback rather than the execution model. `gate_source` records that per
+# run, so any number it produces is self-labelling.
+
+
 from __future__ import annotations
 
 import json
@@ -15,7 +28,7 @@ import shlex
 import subprocess
 from typing import Any, Dict, Optional
 
-from lab.benchmarks.gate_fixtures import agent_gate_for, references_sealed_grader
+from lab.benchmarks.gate_fixtures import references_sealed_grader
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.condition_b import conversation_id_for
 from lab.engine.prompt_contracts import apply_contract
@@ -99,6 +112,8 @@ class SuperstateMcpAdapter(AgentAdapter):
         """Report state engine, transport, and discovered tools provenance."""
         return {
             "engine": "superstate_rust_mcp",
+            "gate_source": getattr(self, "gate_source", "unknown"),
+            "deprecated_arm": True,
             "transport": "mcp_stdio",
             "mcp_tools_discovered": self.mcp_tools_discovered,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
@@ -537,12 +552,24 @@ class SuperstateMcpAdapter(AgentAdapter):
             # measures the gate rather than the execution model. This arm was missed when
             # fixtures were added, so it ran on `true` while the daemon ran on a strict
             # gate -- and the daemon "lost" 5-0 purely because of that asymmetry.
-            vcmd = agent_gate_for(getattr(task, "name", "") or "")
-            if not vcmd:
-                vcmd = getattr(task, "verification_cmd", None)
-                if vcmd and references_sealed_grader(vcmd):
-                    vcmd = None
+            # Hand-authored fixtures were removed on 2026-09-21 (Manifesto Invariant V).
+            # This arm is single-milestone by construction, so it cannot express the RED/GREEN
+            # DAG that replaced them; it runs on the task's own runner when there is one and
+            # is UNGATED otherwise. An ungated run measures the fallback, not the execution
+            # model, so say so rather than letting a `true` gate look like a verdict.
+            vcmd = getattr(task, "verification_cmd", None)
+            if vcmd and references_sealed_grader(vcmd):
+                vcmd = None
             effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
+            self.gate_source = "native_runner" if effective_vcmd != "true" else "ungated"
+            if effective_vcmd == "true":
+                logger.warning(
+                    "%s is UNGATED for %s: no native runner, and this arm cannot run the "
+                    "autonomous TDD DAG. Its pass rate measures the fallback, not the "
+                    "execution model, and is not comparable with a daemon arm.",
+                    self.name,
+                    getattr(task, "name", "?"),
+                )
 
             # Phase 0: Zero-turn planning or planning turn
             if not plan_text and self.zero_turn_planning:

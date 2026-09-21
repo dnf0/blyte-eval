@@ -21,7 +21,7 @@ from lab.engine.adapters.base import (
     TaskRunResult,
     strip_preexisting_guidance,
 )
-from lab.benchmarks.gate_fixtures import agent_gate_for, references_sealed_grader
+from lab.benchmarks.gate_fixtures import references_sealed_grader
 from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
 from lab.engine.mcp.client import SuperstateMcpClient
 
@@ -41,24 +41,6 @@ def _sum_telemetry(first: Any, second: Any) -> Any:
         + int(getattr(second, "output_tokens", 0) or 0),
         raw_response=getattr(second, "raw_response", ""),
     )
-
-GATE_PROMPT = """Write ONE shell command verifying EVERY requirement the task below states.
-
-The worker is told to stop the moment your command exits 0, so whatever you leave out will
-not get done. Cover each checkable requirement and join them with `&&`.
-
-Rules:
-- Output ONLY the command, on one line. No prose, no markdown fences, no explanation.
-- Answer immediately. Do not explore the repository first.
-- It must exit 0 only when EVERY requirement is met, and non-zero otherwise.
-- It must FAIL right now, before any work has been performed.
-- "At the very least ..." is a floor to exceed, not the target. Cover it AND the rest.
-- If the task names its own test suite, include it, honouring any files it excludes.
-- Do NOT reference /tests/ -- that path holds a sealed grader you must not read or run.
-
-TASK:
-{instruction}
-"""
 
 GATE_CRITIQUE_PROMPT = """This verification command was proposed for the task below:
 
@@ -82,10 +64,19 @@ TASK:
 # every gate silently degraded to `true`. Give it room, still bounded by the task budget.
 GATE_TURN_TIMEOUT_SEC = 900.0
 
-# Gate derivation is OFF by default. The daemon executes against a contract it is handed;
-# authoring its own inverts the handoff and makes the contract vary per run.
-GATE_DERIVATION_ENV_FLAG = "SUPERSTATE_EVAL_DERIVE_GATES"
-IGNORE_FIXTURES_ENV_FLAG = "SUPERSTATE_EVAL_IGNORE_GATE_FIXTURES"
+# How long to wait for the detached daemon to exit before reading its telemetry. The
+# advisory review turn lands after state.json reports `completed`; see _await_daemon_exit.
+DAEMON_EXIT_GRACE_SEC = 900.0
+
+# Sentinel returned by _derive_gate when the task must run under autonomous TDD: the
+# engine derives a 2-node RED/GREEN DAG from the repository itself and the harness
+# supplies no verification command at all. Manifesto Invariant V.
+ROLLBACK_POLICIES = frozenset({"always", "on-stall", "on-regression"})
+
+TDD_MODE = "__superstate_autonomous_tdd__"
+
+# Milestone id the engine gives the GREEN node; mirrors superstate_core::tdd.
+TDD_IMPLEMENTATION_ID = "fix-implementation"
 ADVISORY_REVIEW_ENV_FLAG = "SUPERSTATE_EVAL_ADVISORY_REVIEW"
 REVIEW_BLOCKING_ENV_FLAG = "SUPERSTATE_EVAL_REVIEW_BLOCKING"
 AUTO_ROLLBACK_ENV_FLAG = "SUPERSTATE_EVAL_AUTO_ROLLBACK"
@@ -118,24 +109,11 @@ def impact_slicing_enabled() -> bool:
     return False
 
 
-def ignore_gate_fixtures() -> bool:
-    """Whether to skip the hand-authored fixture so the driver must author the gate.
-
-    Exists for one measurement: can an agent write a gate better than its own judgement
-    about when it is done? That is the mechanism handoff-first rests on, and without this
-    flag it cannot be tested -- a fixture exists for all 30 tasks and short-circuits
-    _derive_gate before derivation is ever reached, whatever DERIVE_GATES is set to.
-
-    Default OFF. A run with it on measures gate authorship, not the execution model, and
-    its pass rates are not comparable with any other run.
-    """
-    return os.environ.get(IGNORE_FIXTURES_ENV_FLAG, "0").strip().lower() in ("1", "true", "yes", "on")
-
-
-def gate_derivation_enabled() -> bool:
-    """Whether the daemon may author its own verification contract when none is supplied."""
-    return os.environ.get(GATE_DERIVATION_ENV_FLAG, "0").strip().lower() in ("1", "true", "yes", "on")
-
+# Strips a leading `./run-in-container` so a gate can be re-run INSIDE the container, where
+# the bridge does not exist. Lost when the gate-derivation block was deleted on
+# 2026-09-21, which left normalize_gate_command raising NameError at the confirmation
+# gate -- EXP-074 recorded Passed=False and zero telemetry for two tasks that had in fact
+# completed their milestones.
 BRIDGE_PREFIX_RE = re.compile(r"(?:^|(?<=[;&|(]))\s*\.?/?run-in-container\s+")
 
 
@@ -178,6 +156,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         advisory_review: bool = False,
         review_blocking: Optional[bool] = None,
         auto_rollback: Optional[bool] = None,
+        rollback_policy: str = "always",
         impact_slicing: Optional[bool] = None,
         driver: Any = None,
     ) -> None:
@@ -204,9 +183,22 @@ class SuperstateDaemonAdapter(AgentAdapter):
         else:
             self.review_blocking = self.advisory_review and review_blocking_enabled()
         self.auto_rollback: bool = auto_rollback if auto_rollback is not None else auto_rollback_enabled()
+        # When a failed attempt's tree is reset. "always" is Manifesto Invariant III and the
+        # default; the alternatives exist to be measured rather than assumed, because the
+        # evidence is split -- EXP-059 favoured resetting, EXP-071 measured its cost, and both
+        # predate the TDD DAG that changes the calculus. See FINDINGS.md 13.11.
+        if rollback_policy not in ROLLBACK_POLICIES:
+            raise ValueError(
+                f"unknown rollback policy {rollback_policy!r}; expected one of {sorted(ROLLBACK_POLICIES)}"
+            )
+        self.rollback_policy: str = rollback_policy
         self.impact_slicing: bool = impact_slicing if impact_slicing is not None else impact_slicing_enabled()
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
+        # Which of Invariant 2's two sources supplied this run's verification command.
+        # Recorded per run because the regimes have different failure modes and a
+        # results file must not leave a reader guessing which one produced a number.
+        self.gate_source: str = "unknown"
 
     @property
     def name(self) -> str:
@@ -230,6 +222,11 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "review_blocking": self.review_blocking,
             "auto_rollback": self.auto_rollback,
             "impact_slicing": self.impact_slicing,
+            # autonomous_tdd | native_runner | ungated. CLAUDE.md requires a write-up to
+            # state how many tasks were gated; with GATE_FIXTURES gone this field is the
+            # only way to answer that from a results file.
+            "gate_source": self.gate_source,
+            "rollback_policy": self.rollback_policy,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -254,11 +251,17 @@ class SuperstateDaemonAdapter(AgentAdapter):
         state_dir.mkdir(parents=True, exist_ok=True)
         state_file = state_dir / "state.json"
 
+        tdd = verify_cmd == TDD_MODE
+
         # Attempt to use MCP client superstate_handoff with detach=False to provision state
         try:
             client = SuperstateMcpClient(superstate_bin=self.superstate_bin, cwd=workspace_path)
             with client:
                 if "superstate_handoff" in client.tools:
+                    if verify_cmd == TDD_MODE:
+                        # The MCP handoff tool has no --tdd equivalent; fall through to the
+                        # CLI, which does. Never silently substitute a gate here.
+                        raise RuntimeError("TDD handoff requires the CLI path")
                     res = client.superstate_handoff(
                         goal=task.instruction,
                         verify_cmd=verify_cmd,
@@ -280,19 +283,33 @@ class SuperstateDaemonAdapter(AgentAdapter):
                 "handoff",
                 "--goal",
                 task.instruction,
-                "--verify-cmd",
-                verify_cmd,
                 "--driver",
                 self.driver_preset,
                 "--state",
                 str(state_file),
             ]
+            # --tdd and --verify-cmd are mutually exclusive by construction: handing the
+            # worker a ready-made assertion is the scaffold Invariant V bans.
+            if verify_cmd == TDD_MODE:
+                cmd.append("--tdd")
+            else:
+                cmd.extend(["--verify-cmd", verify_cmd])
             if self.no_worktree or not self.worktree:
                 cmd.append("--no-worktree")
             elif self.worktree:
                 cmd.append("--worktree")
             try:
                 res = subprocess.run(cmd, cwd=str(workspace_path), capture_output=True, text=True, timeout=30.0)
+                if tdd and res.returncode != 0:
+                    # Fail closed and say why. The alternative -- letting the run continue --
+                    # once put the literal sentinel into state.json as a verification command,
+                    # which is unexecutable and would have been read as a task failure.
+                    logger.error(
+                        "TDD handoff failed for %s, so this task cannot be gated: %s",
+                        getattr(task, "name", "?"),
+                        (res.stderr or res.stdout or "").strip()[:300],
+                    )
+                    return False
                 if res.returncode == 0:
                     return True
             except Exception as e:
@@ -353,6 +370,9 @@ class SuperstateDaemonAdapter(AgentAdapter):
             cmd.append("--review-blocking")
         if self.auto_rollback:
             cmd.append("--auto-rollback")
+            # Passed always, not only when non-default: a results file must state the policy
+            # that produced it, and the binary rejects an unknown value rather than defaulting.
+            cmd.extend(["--rollback-policy", self.rollback_policy])
         else:
             cmd.append("--no-auto-rollback")
         if self.impact_slicing:
@@ -401,20 +421,6 @@ class SuperstateDaemonAdapter(AgentAdapter):
             return True
         return references_sealed_grader(verify_cmd)
 
-    @staticmethod
-    def _extract_gate(raw_response: str) -> Optional[str]:
-        """Pull a single shell command out of a driver response."""
-        if not raw_response:
-            return None
-        text = raw_response.strip()
-        fence = re.search(r"```(?:[a-zA-Z]*\n)?(.+?)```", text, re.DOTALL)
-        if fence:
-            text = fence.group(1).strip()
-        for line in (ln.strip() for ln in text.splitlines()):
-            if line and not line.startswith("#"):
-                return line
-        return None
-
     def _derive_gate(
         self,
         workspace_path: Path,
@@ -437,139 +443,30 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         Returns the gate and the telemetry of the authoring turn (for cost accounting).
         """
-        # A hand-authored fixture is the contract of record. Deriving the gate per run made
-        # it a random variable on top of a constant spec, so no two runs measured the same
-        # task; see lab/benchmarks/gate_fixtures.py.
-        fixture = None if ignore_gate_fixtures() else agent_gate_for(getattr(task, "name", "") or "")
-        if ignore_gate_fixtures():
-            logger.warning(
-                "%s=1: ignoring the hand-authored fixture so the driver must author the "
-                "gate. This run measures gate authorship, not the execution model.",
-                IGNORE_FIXTURES_ENV_FLAG,
-            )
-        if fixture:
-            # A fixture that already passes cannot discriminate, so the daemon would
-            # complete on its first turn having done nothing. That is a defect in the
-            # fixture, not a reason to fall back -- say so loudly and keep the contract.
-            passes_now, _, output = self._run_gate_command(
-                workspace_path, fixture, container=container
-            )
-            if passes_now:
-                logger.error(
-                    "Gate fixture for %s ALREADY PASSES before any work -- it cannot "
-                    "discriminate and this run is not measuring the task: %s",
-                    task.name,
-                    output[:200],
-                )
-            else:
-                logger.info("Gate: using hand-authored fixture for %s", task.name)
-            return fixture, None
-
+        # Manifesto Invariant V bans hand-authored fixtures: pre-seeding a reproduction test
+        # leaks the function names, argument shapes and assertion values, turning open-ended
+        # diagnosis into a narrow test-passing game. Invariant 2 of EVALUATION-PHILOSOPHY.md
+        # therefore allows exactly two sources for a verification command, and this method
+        # chooses between them -- it never invents one.
+        #
+        # 1. The repository's own runner, when the task ships one that is not the sealed
+        #    grader. This is the broken-on-turn-0 case: the native suite already discriminates.
         declared = getattr(task, "verification_cmd", None)
-        if not self._is_sealed_gate(declared):
-            logger.info("Gate: using task-declared verifier %r", declared)
+        if declared and str(declared).strip() and not self._is_sealed_gate(declared):
+            logger.info("Gate: using the task's own native runner %r", declared)
+            self.gate_source = "native_runner"
             return str(declared), None
 
-        # The daemon takes the contract it is handed; it does not invent one.
-        #
-        # superstate_handoff's entire premise is that the CALLER supplies verify_cmd -- a
-        # human or agent states what "done" means, and the daemon executes against it.
-        # Having the daemon author its own gate inverts that: the specification work moves
-        # inside the thing being specified, and the daemon ends up grading its own homework
-        # against a contract it wrote. It also made the contract a per-run random variable,
-        # so no two runs measured the same task.
-        #
-        # Derivation is retained behind a flag purely to reproduce the 2026-09-15 runs that
-        # used it. The default is the same fallback superstate_mcp uses: "true", leaving the
-        # real verdict to the harness's sealed grader.
-        if not gate_derivation_enabled():
-            logger.info("Gate: no caller-supplied contract for %s; handing off ungated", task.name)
-            return "true", None
-
-        if driver is None:
-            logger.warning("Gate: no driver available to author one; falling back to no-op")
-            return "true", None
-
-        try:
-            telemetry = driver.run(
-                task,
-                workspace_path,
-                prompt_override=GATE_PROMPT.format(instruction=task.instruction),
-                timeout_sec=min(GATE_TURN_TIMEOUT_SEC, timeout_sec),
-                container=container,
-            )
-        except Exception as exc:
-            logger.warning("Gate: driver failed to author a gate (%s); falling back to no-op", exc)
-            return "true", None
-
-        candidate = self._extract_gate(getattr(telemetry, "raw_response", "") or "")
-        if not candidate:
-            logger.warning("Gate: driver returned no parseable command; falling back to no-op")
-            return "true", telemetry
-        if NOOP_GATE_RE.match(candidate) or self._is_sealed_gate(candidate):
-            logger.warning("Gate: rejected %r (no-op or reads the sealed grader)", candidate)
-            return "true", telemetry
-
-        # One critique pass. Omissions are the expensive failure mode here: the worker is
-        # told to stop the moment the gate passes, so anything the gate misses never gets
-        # done. A single extra turn is cheap against a whole task scored zero.
-        candidate, critique = self._critique_gate(
-            workspace_path, task, driver, container, timeout_sec, candidate
+        # 2. Autonomous TDD, for every repository that is clean on turn 0. The engine derives
+        #    the RED/GREEN DAG from the repository; the harness supplies nothing, which is
+        #    what keeps this adapter a passive referee.
+        logger.info(
+            "Gate: %s ships no usable native runner; handing off under autonomous TDD "
+            "(the worker authors its own reproduction test)",
+            task.name,
         )
-        if critique is not None:
-            telemetry = _sum_telemetry(telemetry, critique)
-
-        passes_now, _, _ = self._run_gate_command(workspace_path, candidate, container=container)
-        if passes_now:
-            logger.warning("Gate: rejected %r -- already passes before any work", candidate)
-            return "true", telemetry
-
-        logger.info("Gate: driver authored %r (fails before work, as required)", candidate)
-        return candidate, telemetry
-
-    def _critique_gate(
-        self,
-        workspace_path: Path,
-        task: TaskSpec,
-        driver: Any,
-        container: Any,
-        timeout_sec: float,
-        candidate: str,
-    ) -> tuple[str, Optional[Any]]:
-        """Ask the driver what its own gate fails to check, and widen it.
-
-        Keeps the original whenever the critique returns nothing usable, a no-op, a gate
-        that reads the sealed grader, or one that already passes -- a critique is only
-        ever allowed to strengthen the contract, never weaken it.
-        """
-        try:
-            critique = driver.run(
-                task,
-                workspace_path,
-                prompt_override=GATE_CRITIQUE_PROMPT.format(
-                    gate=candidate, instruction=task.instruction
-                ),
-                timeout_sec=min(GATE_TURN_TIMEOUT_SEC, timeout_sec),
-                container=container,
-            )
-        except Exception as exc:
-            logger.warning("Gate critique failed (%s); keeping the original", exc)
-            return candidate, None
-
-        widened = self._extract_gate(getattr(critique, "raw_response", "") or "")
-        if not widened or widened == candidate:
-            return candidate, critique
-        if NOOP_GATE_RE.match(widened) or self._is_sealed_gate(widened):
-            logger.warning("Gate critique proposed %r; keeping the original", widened)
-            return candidate, critique
-
-        passes_now, _, _ = self._run_gate_command(workspace_path, widened, container=container)
-        if passes_now:
-            logger.warning("Gate critique proposed a gate that already passes; keeping original")
-            return candidate, critique
-
-        logger.info("Gate widened by critique: %r", widened)
-        return widened, critique
+        self.gate_source = "autonomous_tdd"
+        return TDD_MODE, None
 
     def _write_driver_wrapper(
         self, workspace_path: Path, driver: Any, container: Any = None, budget_sec: float = 3600.0
@@ -641,6 +538,94 @@ class SuperstateDaemonAdapter(AgentAdapter):
         wrapper.write_text(script, encoding="utf-8")
         wrapper.chmod(0o755)
         return wrapper
+
+    def _resolve_final_gate(self, workspace_path: Path, effective_vcmd: str) -> str:
+        """The verification command the harness re-runs to confirm the daemon's verdict.
+
+        Outside TDD mode this is simply what the harness handed over. Under TDD the harness
+        handed over nothing, so the GREEN command is read back from the DAG the engine
+        derived -- the last milestone's verification command. Falling back to `true` here
+        would silently restore the vacuous gate this whole path exists to remove, so an
+        unreadable state is reported as a failing gate instead.
+        """
+        if effective_vcmd != TDD_MODE:
+            return effective_vcmd
+        state_file = workspace_path / ".agent-state" / "state.json"
+        try:
+            state = json.loads(state_file.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.error("TDD: cannot read %s to recover the GREEN gate: %s", state_file, exc)
+            return "false"
+        tasks = [
+            *state.get("completed_tasks", []),
+            *( [state["active_task"]] if state.get("active_task") else [] ),
+            *state.get("pending_tasks", []),
+        ]
+        for entry in tasks:
+            if entry.get("id") == TDD_IMPLEMENTATION_ID:
+                cmd = entry.get("verification_cmd")
+                if cmd and str(cmd).strip():
+                    return str(cmd)
+        logger.error(
+            "TDD: no %s milestone carrying a verification command in %s",
+            TDD_IMPLEMENTATION_ID,
+            state_file,
+        )
+        return "false"
+
+    def _await_daemon_exit(self, pid: Optional[int], grace_sec: float = DAEMON_EXIT_GRACE_SEC) -> bool:
+        """Block until the detached daemon exits, or `grace_sec` elapses.
+
+        Post-completion work -- the advisory review turn above all -- is written after the
+        state file reports `completed`, so telemetry read before the process exits undercounts
+        the arm's real spend. Bounded so a daemon that never exits cannot stall the run.
+
+        Returns True if the process exited within the grace period.
+        """
+        if pid is None:
+            return True
+        deadline = time.monotonic() + grace_sec
+        while time.monotonic() < deadline:
+            if not is_pid_alive(pid):
+                return True
+            time.sleep(self.poll_interval_sec)
+        logger.warning(
+            "Daemon pid %s still alive after %.0fs; telemetry may undercount post-completion "
+            "driver turns such as the advisory review.",
+            pid,
+            grace_sec,
+        )
+        return False
+
+    def _await_turns_settled(
+        self, workspace_path: Path, quiet_sec: float = 30.0, max_wait_sec: float = 600.0
+    ) -> bool:
+        """Wait until no new driver turn has been written for `quiet_sec`.
+
+        Belt to _await_daemon_exit's braces. A pid file can be absent or already cleaned up,
+        and a turn can land after the process the harness was watching has gone -- EXP-072
+        lost scc's review turn, written at 11:02:55, to a harness that finished at 10:59:07.
+        Waiting on the artefact itself does not depend on getting process identity right.
+
+        Returns True if the directory went quiet within `max_wait_sec`.
+        """
+        turns_dir = workspace_path / ".agent-state" / "driver-turns"
+        if not turns_dir.is_dir() or not any(turns_dir.glob("turn-*.json")):
+            # No worker ever ran, so there is nothing that could still be written.
+            return True
+        deadline = time.monotonic() + max_wait_sec
+        last_seen = -1.0
+        while time.monotonic() < deadline:
+            files = list(turns_dir.glob("turn-*.json"))
+            newest = max((f.stat().st_mtime for f in files), default=0.0)
+            if newest == last_seen and (time.time() - newest) >= quiet_sec:
+                return True
+            last_seen = newest
+            time.sleep(min(5.0, max(0.01, self.poll_interval_sec * 5)))
+        logger.warning(
+            "Driver turns under %s never went quiet; telemetry may undercount.", turns_dir
+        )
+        return False
 
     def _collect_driver_telemetry(self, workspace_path: Path) -> tuple[int, int, int]:
         """Sum token usage across the driver turns the wrapper captured.
@@ -826,18 +811,30 @@ class SuperstateDaemonAdapter(AgentAdapter):
         # Step 3: Monitor daemon PID and state progress
         state_file = workspace_path / ".agent-state" / "state.json"
         daemons_dir = workspace_path / ".agent-state" / "daemons"
-        pid_file = daemons_dir / "default.pid"
 
+        # The engine writes `daemons/<branch-slug>.pid`, not `default.pid` -- branch-scoped
+        # since ADR-0002, so a hardcoded name never matched and `pid` was None on EVERY run.
+        # That silently disabled the dead-process check below, left provenance.daemon_pid
+        # null, and made _await_daemon_exit a no-op, which is how EXP-072 still lost scc's
+        # 498k review tokens after the telemetry fix. Glob instead of guessing.
         pid: Optional[int] = None
         for _ in range(50):
-            if pid_file.is_file():
+            for candidate in sorted(daemons_dir.glob("*.pid")) if daemons_dir.is_dir() else []:
                 try:
-                    pid = int(pid_file.read_text(encoding="utf-8").strip())
+                    pid = int(candidate.read_text(encoding="utf-8").strip())
                     self.daemon_pid = pid
                     break
                 except Exception:
-                    pass
+                    continue
+            if pid is not None:
+                break
             time.sleep(0.05)
+        if pid is None:
+            logger.warning(
+                "No daemon pid file under %s; liveness detection and the post-completion "
+                "telemetry wait are both inactive for this run.",
+                daemons_dir,
+            )
 
         is_completed = False
         error_msg: Optional[str] = None
@@ -881,10 +878,24 @@ class SuperstateDaemonAdapter(AgentAdapter):
             time.sleep(self.poll_interval_sec)
 
         # Step 4: Verification gate validation
+        #
+        # Wait for the daemon process itself to exit before reading telemetry. The poll loop
+        # above breaks as soon as state.json says `completed`, but the daemon keeps working
+        # after that: with --advisory-review it spends a further full driver turn reviewing
+        # the diff. Collecting at loop exit therefore missed every review turn -- in EXP-071,
+        # 10 of 11 daemon runs reported exactly their implementation tokens, hiding 3.6M input
+        # tokens, and EXP-070's "16.1% cheaper" reversed to +11.4% once they were counted.
+        # See FINDINGS.md 13.5.
+        self._await_daemon_exit(pid)
+        self._await_turns_settled(workspace_path)
         duration = time.monotonic() - start_time
+        # Under autonomous TDD the harness supplied no command, so the gate it re-runs for
+        # confirmation is read back from the DAG the engine derived. The referee checks the
+        # engine's own contract; it does not author one.
+        confirm_vcmd = self._resolve_final_gate(workspace_path, effective_vcmd)
+        passed, exit_code, output = self._run_gate_command(workspace_path, confirm_vcmd, container=container)
         driver_telemetry = self._collect_driver_telemetry(workspace_path)
         driver_turns_recorded = driver_telemetry[2]
-        passed, exit_code, output = self._run_gate_command(workspace_path, effective_vcmd, container=container)
         final_success = is_completed and passed
 
         # Record the gate verdict in the same shape superstate_mcp uses. Without this the
@@ -896,7 +907,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         self._record_gate_verdict(
             recorder,
             task=task,
-            verify_cmd=effective_vcmd,
+            verify_cmd=confirm_vcmd,
             gate_passed=passed,
             gate_exit_code=exit_code,
             gate_output=output,

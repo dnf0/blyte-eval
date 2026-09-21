@@ -3,7 +3,7 @@
 One place for what is true, so it stops being re-derived. Every claim names the experiment
 behind it; `EXPERIMENTS.md` holds the full ledger, `CLAUDE.md` the working rules.
 
-Last revised 2026-09-16.
+Last revised 2026-09-21.
 
 ---
 
@@ -423,6 +423,10 @@ Between EXP-058 and EXP-064, rapid-iteration experiments relied on a canary slic
 
 ## 12. Complete Autonomous Control Plane vs. Vanilla Baseline: Tri-Language SWE-Canary (2026-09-21)
 
+**Revised 2026-09-21 by the EXP-071 forensic audit (Section 13). Two claims below do not
+survive it: the cost advantage reverses once adversarial-review turns are counted, and
+impact slicing never executed. The pass-rate result stands.**
+
 EXP-070 evaluated the complete autonomous Rust control plane (`superstate_daemon_full`: milestone test impact slicing + tool output shunting + scoped git rollback + blocking review + PreToolUse file read guard + PreToolUse command & polling guard) head-to-head against unmanaged `vanilla` across the 3 canonical repository canary codebases spanning Python/C, Go, and TypeScript.
 
 ### Results Matrix
@@ -437,9 +441,565 @@ EXP-070 evaluated the complete autonomous Rust control plane (`superstate_daemon
 
 * **Held-out Grader Pass Rate:** **66.7% (2/3) vs 0.0% (0/3), +66.7pp lift** (Discordant pairs: 2 wins, 0 losses).
 * **Cost Efficiency:** Daemon was **16.1% cheaper overall** ($2.86 vs $3.41), spending 38% less on both `katex` and `scc`.
-* **Mechanism Validation:**
-  - PreToolUse file read guard and command debounce executed cleanly without runtime errors across Go, TypeScript, and Python/C.
-  - Test impact slicing and output shunting compressed context footprint while eliminating premature exit.
+* **Cost Efficiency — WITHDRAWN 2026-09-21.** The reported totals omit the adversarial-review
+  turns entirely (Section 13). Counting them, daemon input tokens are 3,177,598 against vanilla's
+  2,853,195: **+11.4%, not -17.7%**. The per-task "38% cheaper" figures on `katex` and `scc`
+  are understated by 538,042 and 291,086 input tokens respectively; `katex` is at parity.
+* **Mechanism Validation — PARTLY WITHDRAWN 2026-09-21.**
+  - The command & polling guard executed: `command_guard_history.json` is populated in every
+    daemon workspace.
+  - **Impact slicing did not execute.** Zero `[impact-pass]`, `[impact-fail]` or
+    `[impact-advisory]` notes across all EXP-070 and EXP-071 daemon workspaces. A successful
+    slice emits `[impact-pass]` (`daemon.rs:1041`), so absence of notes is absence of execution.
+  - **The file read guard is unevidenced.** No artefact from any run records it firing.
+  - Output shunting did execute, but on **both arms** — it is harness infrastructure, not a
+    treatment (Section 13).
+
+---
+
+## 13. EXP-071 forensic audit: what the control plane's mechanisms actually did (2026-09-21)
+
+EXP-071 was registered for 54 runs across the 9 `SWE_CORE_TASKS`. **It died at 21 runs covering
+4 tasks** and was never marked as such, so every figure below describes a truncated run and none
+of it is a pass-rate result. `scripts/experiments.py check` reported "0 problems" because its
+truncation branch is suppressed while a row's status is `PLANNED` (`scripts/experiments.py:106`)
+— the precise failure mode the tool exists to catch.
+
+What the audit does establish is mechanism status, and it is not what EXP-070 recorded. Each
+claim below names the artefact behind it.
+
+### 13.1 Mechanism status
+
+| Mechanism | Status | Evidence |
+|---|---|---|
+| Tool output shunting | **Executes — on every arm** | 207 logs / 20.9 MB in `.agent-state/logs/cmd_*.log`; daemon 143 logs / 14.9 MB, **vanilla 64 logs / 6.0 MB** |
+| Command & polling guard | **Executes** | `command_guard_history.json` populated in 17 workspaces with real command strings |
+| PreToolUse file read guard | **Unevidenced; a concrete path makes it fail open** | see 13.4 |
+| Milestone test impact slicing | **Never executed** | zero `[impact-*]` notes across all 16 EXP-070 + EXP-071 daemon workspaces |
+| Scoped git rollback | **Executes, destructively** | see 13.2 |
+| Adversarial review | **Executes, and is absent from telemetry** | see 13.5 |
+
+Shunting is provisioned by `AgyCliDriver._setup_container_bridge` (`lab/engine/drivers/agy_cli.py:144-166`),
+which writes the `./run-in-container` bridge for *every* arm and defaults on
+(`${SUPERSTATE_SHUNT_ENABLED:-1}`). **A mechanism both arms receive cannot appear in an
+arm-vs-arm delta**, and because the bridge defaults on when the variable is unset, an
+off-condition control arm is currently unachievable. The daemon's own provisioning
+(`daemon.rs:772-791`, a `.agent-state/bin/shunt` wrapper on `PATH`) is separately dead:
+`CommandGuardDecision` (`command_guard.rs:51-57`) offers only `Allow` and `Deny` — there is no
+rewrite variant — and neither `prompt.rs` nor `handoff.rs` ever mentions `shunt`, so nothing
+prefixes a command with it.
+
+### 13.2 Rollback destroys committed work, and disables its own retry budget
+
+`perform_rollback` (`daemon.rs:555-562`) runs `git reset --hard <milestone baseline>` followed by
+`git clean -fd`. All three call sites (`daemon.rs:978`, `:1164`, `:1386`) invoke it
+**unconditionally on every failed attempt**, including the first and including attempts that
+changed the tree. Because the eval runs `no_worktree=True`, "scoped rollback" degenerates to a
+hard reset of the live workspace.
+
+The git reflog of one arktype run states the outcome plainly:
+
+```
+dafcb320 commit: feat(json-schema): support $ref, dependencies, if/then/else, and deep enum equality
+04355e8b reset: moving to 04355e8b...      <- x5
+57d36e50 commit: feat(json-schema): support , dependencies, if/then/else, and deep enum equality
+04355e8b checkout: moving from main to feat/json-schema-refs-dependencies
+```
+
+The worker built the feature, **committed it**, had it reset away five times, and rebuilt
+substantially the same commit at the end. `reset --hard` moves the branch pointer, so worker
+commits are destroyed along with uncommitted work.
+
+It compounds with a second defect. `perform_rollback` ends by re-baselining `last_fingerprint`
+to the **post-wipe** tree (`daemon.rs:568-570`), and `made_progress` is computed against that
+(`daemon.rs:944-948`, `:1332-1337`). Any edit on the next attempt therefore counts as progress
+and renews the retry budget, so the `stalled` condition — which the surrounding comment says
+"counts only consecutive attempts that changed nothing" — is structurally unreachable. Across
+EXP-071's 12 daemon workspaces:
+
+| ledger note | count |
+|---|---|
+| `[verify-fail]` | 30 |
+| `[rollback]` | 30 |
+| `[retry-extend]` | 28 |
+
+Only the first attempt on each task failed to "make progress". One worker prompt reads
+`## PREVIOUS ATTEMPT VERIFICATION FAILURE (Attempt 6 of 3)`. The effective ceiling is
+`max_retries * PROGRESS_ATTEMPT_MULTIPLIER` = 30 attempts, bounded in practice only by wall clock.
+
+What the extra turns bought, on the task that consumed most of them:
+
+| | turns | cost | f2p |
+|---|---|---|---|
+| `arktype` daemon (best run) | 7 | $3.58 | **23/25** |
+| `arktype` vanilla | 1 | $1.13 | **23/25** |
+
+Six extra turns and 3x the spend for an identical outcome. Note the worker was *not* starved of
+diagnostics — the shunt hands it a real `--- Failure Excerpt ---` with the failing assertions.
+It knew what was wrong; it had no code left to fix.
+
+### 13.3 Four gate fixtures could not pass at all
+
+`GATE_FIXTURES` entries are declared in **non-raw** `"""` literals, so a `\n` or `\"` written for
+the generated program is eaten by Python and emitted as a real newline or a bare quote. **Two of
+thirty fixtures carry the defect** -- an earlier count of four was a false positive from scanning
+source text rather than rendered output; `httpx` and `scc` are sound. A third gate is broken for
+an unrelated reason:
+
+| task | consequence |
+|---|---|
+| `anko-typed-variable-bindings` | generated Go has a newline inside a string literal. Runtime proof from the run: `./main.go:16:37: newline in string`. The gate never compiled, so it tested nothing |
+| `meriyah-explicit-resource-declarations` | same defect breaks the generated JavaScript parse |
+| `expr-try-catch-errors` | asserts `try(1/0, "fallback") == "fallback"`. The task's own `solution/solution.patch` touches no runtime or division code, so **the reference solution fails this gate** |
+
+The anko consequence is worth stating directly: all three anko runs are recorded `completed`, but
+the gate could not compile, so completion came via the advisory-advance path. **The mechanism
+under test did not operate on that task.**
+
+A fourth gate was found broken once the positive direction could be run at all:
+
+| task | consequence |
+|---|---|
+| `arktype-json-schema-refs-dependencies` | its if/then/else fixture used `required` with no `properties`, which the library rejects as an invalid object schema, so the assertion failed on any implementation. Fixed 2026-09-21; the gate now scores 4 passing, 1 failing against the reference |
+
+The one remaining arktype failure is **not** a gate defect. The gate asserts the exact
+non-existent-`$ref` message that `instruction.md` line 8 demands, and the reference solution emits
+a different sentence. The instruction is what the worker is given and the only legitimate source
+for a gate, so the gate stands and the disagreement is recorded in `gate_fixtures.py`. This is the
+limit of reference-based validation: it assumes the reference implements the instruction.
+
+`scripts/validate_gates.py` could not catch any of this. It asserted only that a gate *fails* on a
+pristine container, so a gate that can never pass was reported as healthy. **8 of the 9
+`SWE_CORE_TASKS` ship a readable `solution/solution.patch`** (all but `build-cython-ext`), so the
+positive direction is cheap: apply it, run the gate, require exit 0.
+
+**Fixed 2026-09-21.** `validate_gates.py` now runs both directions by default and exits non-zero
+on either failure. Current SWE-Core standing:
+
+| gate | negative | positive |
+|---|---|---|
+| `expr-try-catch-errors` | fails pristine | **accepts the reference** |
+| `meriyah-explicit-resource-declarations` | fails pristine | **accepts the reference** |
+| `scc-bounded-memory-spilling` | fails pristine | **accepts the reference** |
+| `katex-multicolumn-array-spans` | fails pristine | **accepts the reference** |
+| `arktype-json-schema-refs-dependencies` | fails pristine | 4 of 5 assertions; the 5th is the instruction disagreement above |
+| `anko-typed-variable-bindings` | fails pristine | **unverifiable** -- the reference patches `parser/parser.go.y` but not the goyacc-generated `parser/parser.go`, so applying it leaves the new syntax unparseable |
+| `python-statemachine-state-data-scoping`, `httpx-multipart-response-parsing` | inconclusive -- the gate nests its own `./run-in-container` | not attempted |
+| `build-cython-ext` | fails pristine | no reference solution ships |
+
+The checker reports "unverifiable" rather than "rejects" when a reference patch edits a generator
+input without shipping the regenerated artefact, because a false accusation there would hide the
+very defect the check exists to find.
+
+This is the same lesson as the 17% datacurve gate precision collapse, one layer earlier: that
+finding was about gates asserting necessary rather than sufficient conditions; this one is about
+gates that assert nothing because they do not run.
+
+### 13.4 The file read guard's deny path works; nothing shows it firing
+
+Probed directly, the guard denies correctly — a 1769-line file at `--threshold-lines 200` returns
+`{"decision":"deny"}` with an AST symbol outline. But no artefact from any run records a denial,
+and the string `superstate-guard` appears nowhere under `/tmp/superstate_eval_runs`.
+
+A concrete mechanism would explain that. All 17 `command_guard_history.json` files sit at
+`<workspace>/.agents/.agent-state/`, so the hook process runs with cwd `<workspace>/.agents/`.
+`cmd_pre_tool_use` passes the payload path to `Path::new(&path_str)` **with no resolution against
+a workspace root** (`crates/superstate-cli/src/commands/guard.rs`), and `evaluate_file_read_guard`
+returns `Allow` when the path does not exist (`guard.rs:57-59`). Any relative path agy sends
+cannot resolve, and the guard is fail-open at seven distinct branches, so dormancy is its silent
+default.
+
+This is unresolved, not concluded. One command settles it: register a PreToolUse hook that dumps
+stdin, run a single `agy` turn against a >200-line file, and read the payload shape.
+
+### 13.5 Adversarial review runs, and is invisible in the numbers
+
+`superstate_daemon_full` passes `--advisory-review`, and review executes as a full driver turn.
+It is recorded in `.agent-state/driver-turns/` — which the eval never collects.
+
+**For 10 of 11 EXP-071 daemon rows, the reported `input_tokens` equals the implementation turns
+exactly.** The review turns — 7 turns, 3,603,203 input tokens — are excluded. Applying the same
+correction to EXP-070 reverses its headline:
+
+| EXP-070 | input tokens |
+|---|---|
+| daemon, as reported | 2,348,470 |
+| review turns, excluded | +829,128 |
+| **daemon, true** | **3,177,598** |
+| vanilla | 2,853,195 |
+| | **+11.4%, reported as -17.7%** |
+
+Separately, this is the first recorded execution of `review` in the evaluation's history. CLAUDE.md
+still lists it among the verbs that have never run; that is now out of date.
+
+### 13.6 The arms do not receive the same task
+
+Two asymmetries, both invisible in the reported result.
+
+**The daemon is handed the gate's source.** Its `handoff.md` embeds the full verification command
+including every assertion — for `expr`, the literal list of expressions and expected values. The
+daemon's per-turn prompt is 6,720 bytes against vanilla's 1,455-character prompt. Handing the
+executor its verification command is by design; **comparing that arm against one that never sees
+it is not a clean architectural comparison.** On `expr` the extra information was actively
+harmful, because the assertions were wrong.
+
+**Three of ten vanilla runs produced no work at all.** They ended after 39-110 seconds with the
+driver reporting success and a response of the form *"Waiting for the test suite to finish running
+in the container."* — the agent yielded its turn while a backgrounded container task ran. Two left
+a zero-byte `model.patch`; the third produced no patch artefact. Vanilla is single-shot, so a yield
+is fatal; the daemon is re-invoked, so a yield costs it nothing. This is a harness artefact, not a
+capability difference, and it depresses the baseline by up to 30% of its runs.
+
+### 13.7 Observability gaps that let all of this persist
+
+* The daemon arm writes **no `transcript.jsonl`** — only vanilla does. Worker turns live in
+  `.agent-state/driver-turns/`, uncollected. An earlier investigation of this run cited a
+  `transcript_full.jsonl` that does not exist, quoting guard-denial text reconstructed from the
+  source rather than observed.
+* `[verify-fail]` ledger notes store an empty diagnostic in 5 of 30 cases and a bare
+  `Command exited with status 5:` in 13 more, so the ledger cannot reconstruct why a gate failed
+  even though the worker was told.
+* No post-run assertion checks that a declared mechanism did anything. A dormant mechanism
+  currently surfaces only after a $30 run, if at all.
+
+### 13.8 What follows
+
+Ordered by what blocks a trustworthy re-run:
+
+1. Stop rolling back on gate failure; keep the tree and let the worker iterate on the excerpt it
+   already receives. Reserve rollback for a measured regression.
+2. Stop re-baselining `last_fingerprint` inside `perform_rollback`, so `max_retries` binds.
+3. Add positive-direction gate validation (apply `solution/solution.patch`, require exit 0) and
+   delete the `anko`, `meriyah` and `expr` fixtures, which fail it by inspection.
+4. Count review turns in reported tokens and cost; collect `driver-turns/` as the daemon transcript.
+5. Warn in `experiments.py check` when a `PLANNED` row has a results file with rows in it.
+6. Decide whether shunting is a treatment or harness infrastructure, and make
+   `SUPERSTATE_EVAL`-style off-switching actually work.
+7. Treat a vanilla yield as a harness abort, not a task failure.
+8. Resolve the file guard's path handling once the payload probe answers 13.4.
+9. Either teach impact slicing to recognise heredoc gates, or stop naming it in arm descriptions
+   and ledger verdicts.
+
+Nothing here is a claim about superstate's effectiveness. It is a claim about what EXP-070 and
+EXP-071 measured, which is less than they reported.
+
+### 13.9 What was fixed on 2026-09-21
+
+| # | Change | Where |
+|---|---|---|
+| 1 | Rollback fires only when an attempt changed nothing. A failing attempt that moved the tree keeps its work; a stalled worker still gets a clean baseline | `daemon.rs:978`, `:1386` |
+| 2 | Rollback removed from the blocking-review path entirely -- resetting the tree deletes the code the findings describe | `daemon.rs:1176` |
+| 3 | Gate validation runs both directions by default, with `unverifiable` for unbuildable references | `scripts/validate_gates.py` |
+| 4 | `anko` and `meriyah` escapes repaired; `expr`'s two `1/0` assertions removed; `arktype`'s `then` schema given a `properties` object | `lab/benchmarks/gate_fixtures.py` |
+| 5 | Daemon telemetry is read after the daemon process exits, so the advisory-review turn is counted | `lab/engine/adapters/superstate_daemon.py` |
+| 6 | `experiments.py check` reports `ABANDONED?` for a PLANNED row whose results file already holds runs | `scripts/experiments.py` |
+
+`last_fingerprint` is deliberately still re-baselined inside `perform_rollback`: once rollback
+only follows a stall, the post-rollback tree *is* the baseline the next attempt works from, so
+comparing against it is correct rather than the bug it was under unconditional rollback.
+
+Two things this did not fix, both still open:
+
+* `workspace_fingerprint` hashes size and mtime, not content, so a worker that rewrites identical
+  bytes still reads as progress and the stall path rarely triggers. That is now a missed escape
+  valve rather than a destructive loop, but it means `max_retries` still binds loosely.
+* ~~The file read guard's path resolution (13.4) is unchanged, pending the payload probe.~~
+  **Fixed later the same day (0bf20f6).** The probe turned out to be unnecessary: the command
+  guard populates its history on every run and both guards share `extract_tool_invocation`, so
+  the payload shape was demonstrably recognised and path resolution was the only remaining
+  failure. See 13.13, and `scripts/guard_smoke.sh` which asserts it from a `.agents` cwd.
+
+Rust suite 397 passed; eval suite 343 passed.
+
+### 13.10 EXP-072: the rollback fix holds; three more defects surfaced (2026-09-21)
+
+A 3-task canary run to answer one question -- did the fixes take effect in a live run? It is
+not a solve-rate result (1/3, $4.70) and n=3 cannot separate 2/3 from 3/3.
+
+**The rollback fix took.** One rollback across five failures, against 30 of 30 in EXP-071. The
+katex ledger reads exactly as designed:
+
+| attempt | outcome | tree changed | action |
+|---|---|---|---|
+| 1 | failed | yes | retry-extend, **no rollback** |
+| 2 | failed | yes | retry-extend, **no rollback** |
+| 3 | failed | yes | retry-extend, **no rollback** |
+| 4 | failed | **no** | rollback to baseline |
+
+One reset and six surviving commits across three runs; in EXP-071 arktype alone lost committed
+work five times.
+
+**The telemetry fix did not take.** scc's 498,304 review tokens were still excluded. The cause
+was a defect the fix unknowingly rested on: the adapter looked for
+`.agent-state/daemons/default.pid`, but the engine has written `daemons/<branch-slug>.pid`
+since ADR-0002 made daemons branch-scoped. `pid` was None on **every** daemon run ever, which
+also silently disabled the poll loop's dead-process detection and left `provenance.daemon_pid`
+null throughout. Telemetry now waits on the artefact -- the driver-turns directory going quiet
+-- rather than on process identity.
+
+**Impact slicing fired for the first time, and it manufactures failures.** All four katex
+failures were `[impact-fail] Fast test slice failed: No tests found, exiting with code 1 ... In
+/workspace`. Runner detection is a substring search, and it matched `jest` inside the *body* of
+`cat <<'GATEEOF' | ./run-in-container sh -s` -- the script being piped to another process, not
+the command the shell runs. The rewrite produced an unterminated heredoc that executed on the
+host. Four attempts, $2.71, and the task, lost to the slicer rather than the agent. This is the
+second correction to EXP-070's "impact slicing executed flawlessly": it never ran there, and
+when it does run it fabricates failures. A command that cannot be parsed is now left alone.
+
+**The same defect class had been built into the new TDD gates.** The fixtures routed through
+`./run-in-container`; the engine-derived gates did not, so `python -m pytest` and `go test`
+would have run on a host holding the source but none of the dependencies -- exactly what katex
+demonstrated. Every runner invocation now goes through the bridge when the repository carries
+one, while `test -f` stays host-side. Caught before any TDD run, by reading this canary rather
+than by running one.
+
+**What it does not settle.** Whether preserving progress beats resetting. katex's three
+preserved attempts did not converge either, so Manifesto Invariant III -- which mandates a hard
+reset on every gate failure -- remains open, and the divergence introduced on 2026-09-21 is
+still a divergence, not a decision. What is settled is that the runaway is gone: four attempts,
+not "Attempt 6 of 3".
+
+---
+
+### 13.11 EXP-074: autonomous TDD executes end to end (2026-09-21)
+
+The first valid run of the path that replaced `GATE_FIXTURES`, against a snapshotted binary so
+the build could not change underneath it (EXP-073 was withdrawn for exactly that).
+
+**The mechanism works.** `scc-bounded-memory-spilling` completed the whole DAG:
+
+| step | evidence |
+|---|---|
+| worker authors its own reproduction test | `reproduce_issue_test.go`, 10,821 bytes |
+| RED gate: compiles and FAILS | milestone `tdd-reproduction-test` completed after 3 attempts |
+| checkpoint | `e9d50ba chore(superstate): checkpoint completed milestone tdd-reproduction-test` |
+| worker implements the fix | — |
+| GREEN gate: reproduction test AND the repository's own suite pass | milestone `fix-implementation` completed |
+| checkpoint | `d10d55d chore(superstate): checkpoint completed milestone fix-implementation` |
+| final | `status=completed` |
+
+No hand-authored assertion was involved at any point. That is Manifesto Invariant V operating
+as specified, for the first time in this repository's history.
+
+**Rollback under TDD is cheap, as predicted.** RED took three attempts, two of them reset under
+the default `always` policy, and it cost little because RED is a single test file. This is the
+evidence that the EXP-071 cost measurement -- a whole feature rebuilt five times -- was an
+artefact of single-milestone fixture gating rather than of resetting as such. Invariant III
+looks defensible again; the ablation arms exist to settle it rather than to assume it.
+
+**katex blocked for a reason that predates TDD.** Its worker never wrote a test, yielding on a
+backgrounded Jest run and then on the command guard's own debounce: *"I am waiting for the
+cooldown timer to elapse. I will now stop calling tools and wait for the scheduled
+notification."* That is the yield defect of 13.6, with an added twist -- a guard meant to stop
+busy-wait polling induced the worker to stop working. Invariant IV's perimeter guards are
+mechanically present and behaviourally counterproductive here.
+
+**The pass rate and telemetry in the results file are void.** `normalize_gate_command` raised
+`NameError: BRIDGE_PREFIX_RE is not defined` at the confirmation gate, because that constant was
+deleted along with the gate-derivation block earlier the same day and nothing referenced it
+until the last step of a 40-minute run. All three rows therefore read `Passed=False`, zero
+turns, $0.00, and the sealed grader never executed. **Do not read 0/3 from
+`canary_tdd_exp074.json`.** A unit test now covers it.
+
+**Three harness defects in three runs, all introduced the same day.** The sentinel leak, the
+binary swapped mid-run, and this NameError were all mine, all from the same day's refactor, and
+all found by running rather than by reading. The runs are currently measuring the harness, not
+the system -- which is the condition this repository has documented repeatedly and which
+argues for a quiet period of fixing before any result is quoted.
+
+**What is still unknown:** whether a worker-authored reproduction test agrees with the sealed
+grader. That is the precision question that killed the hand-authored fixtures at 17%, relocated
+to a new author and still unmeasured. It needs a run that reaches the grader.
+
+---
+
+### 13.12 EXP-075: the gate-precision problem is relocated, not solved (2026-09-21)
+
+The run that asked the decisive question: when a worker's own reproduction test certifies the
+work, does the sealed grader agree?
+
+| task | milestones | gate verdict | sealed grader | cost |
+|---|---|---|---|---|
+| `scc-bounded-memory-spilling` | both completed | **done** | **f2p 31/31, p2p 286/286** -- agrees | $2.87 |
+| `katex-multicolumn-array-spans` | both completed | **done** | **f2p 92/94**, p2p 599/599 -- disagrees | $3.52 |
+| `build-cython-ext` | aborted at handoff | n/a | never ran | $0.00 |
+
+**Agent-authored gate precision: 1 of 2.** katex reached `status=completed` with both milestones
+passing, which is the control plane asserting the work is finished, and the held-out suite then
+failed it on two tests. That is the same shape of error that made the hand-authored fixtures
+worth banning, with a different author.
+
+So Manifesto Invariant V removes the *leak* -- no maintainer test is pre-seeded, and the worker
+does its own diagnosis -- but it does not by itself make the gate correct. Invariant II's claim
+that *"a milestone is complete if and only if its verification command exits 0"* holds
+mechanically and still certified incomplete work.
+
+**The failure mode is different in kind, and more tractable.** The fixtures failed by asserting
+things that were wrong: `expr` demanded behaviour its own reference solution does not implement,
+`anko` and `meriyah` could not compile. katex's reproduction test was simply *narrower* than the
+grader -- it covered the bug the worker diagnosed, and two further fail-to-pass tests were not
+covered. p2p was perfect in both tasks, so nothing was broken. A test that is too narrow can be
+widened; a test that is wrong has to be discarded.
+
+**Neither task beat its historical attractor.** Both are bimodal, and both landed where they
+usually land, at the highest cost on record:
+
+| task | non-solve | solved before | EXP-075 |
+|---|---|---|---|
+| `scc` | 28/31 | 4x at ~$1.10 | 31/31 at **$2.87** |
+| `katex` | 92/94 | 2x at ~$1.20 | 92/94 at **$3.52** |
+
+So TDD did not reach work the previous regime could not. It cost about 2.5-3x more for the same
+outcomes. 1/3 at $6.40, against EXP-072's 1/3 at $4.70.
+
+**The cost is not TDD's doing.** On scc the reproduction milestone cost 255k input tokens, about
+9%; the two adversarial review turns cost 568k, 21%; and a **single 29-minute implementation turn
+consumed 1,917,135 -- 70% of the run**. Invariant IV promises that turn should have been bounded
+("massive file reads must be intercepted", "zero token waste"), and the file-read guard has still
+never been observed firing in any run. The budget policy compounds it: completing a milestone
+earns a +1200s lease extension, so decomposing one milestone into two *raises* the ceiling.
+
+**Corrected later the same day (13.14): file reads cannot account for this turn.** scc's own
+source is 133,550 tokens, so a perfect guard recovers under 7% of 1,917,135. The attribution
+above -- command output was under 2%, therefore reads must be the rest -- was elimination without
+an upper bound on the remaining candidate. Either the same files were read many times, or another
+channel carried the volume; no artefact the daemon writes can tell them apart.
+
+**Telemetry is still short by one turn.** Reported input for scc was 2,410,872; the driver turns
+sum to 2,740,756. The difference is exactly the final review turn, written after the harness
+finished. The settle-wait catches the first review and not the last.
+
+---
+
+### 13.13 The command guard was telling the worker to stop (2026-09-21)
+
+EXP-076 was stopped after 41 minutes, having produced a finding rather than the measurement it
+was registered for. `scc` was BLOCKED four minutes in, after three consecutive turns of:
+
+> *"The existing test suite is running in the background. I will wait for it to complete."*
+> *"I will wait for the background task to complete."*
+> *"I am waiting for the background test command to finish execution."*
+
+The cause was our own guard. Its denial text read:
+
+> *"Busy-wait polling blocked: ... Do not loop on status; **yield turn to await background task
+> completion notification**."*
+
+In headless print mode nothing ever delivers that notification, so yielding ends the task. Three
+yields exhaust `max_retries` and the milestone is blocked. The same instruction is visible in
+katex's EXP-074 transcript (*"I am waiting for the cooldown timer to elapse"*) and in the three
+vanilla collapses of EXP-071 -- except vanilla has no guards, so the agent backgrounds long
+commands and yields on its own; the guard did not create the defect, it industrialised it.
+
+Two implementation errors, both fixed:
+
+| defect | fix |
+|---|---|
+| a denial that instructs the agent to end its turn | a poll inside its cooldown is now **throttled** -- the hook sleeps out the remainder and allows, bounded at 30s. Same rate limiting, no refusal |
+| every repeated shell command was debounced, not just polling | only procfs reads, process inspection and `manage_task` status/list. Re-running `go test ./...` after an edit is the TDD loop Invariant V mandates, and debouncing it put Invariant IV in direct contradiction with it |
+
+**And a third mechanism was missing entirely.** The file read guard matched only the agent's
+file *viewing tool*, so `cat internal/scanner.go` bypassed it -- along with the command guard,
+which classifies only polling, and output shunting, which wraps `./run-in-container` and not host
+commands. Across recorded runs **29 of 152 logged commands were `cat` or `grep`**. A whole-file
+dump through the shell now meets the same line budget and returns the AST outline; bounded reads
+(`head -50 x.go`, `sed -n '10,60p'`) pass through untouched, because intercepting compliance is
+the same mistake in a different costume.
+
+Spotify's Portal reports ~90% savings on bulk reads using this pair of hooks -- a file-size hook
+and a `check-bash-read` hook. We had the first and not the second. Where our design is ahead:
+Portal delegates the read to a cheaper model and reports that the summaries *"lack reliable line
+numbers"*, so it cannot delegate editing, at 10-30s latency per delegation. A Tree-sitter AST
+outline carries exact line ranges and costs no model call.
+
+**The tests asserted the harmful behaviour verbatim**, including the "yield turn" string, which
+is why it survived. They now assert that a poll receives no refusal and that the guard never
+emits any instruction to end a turn.
+
+Nothing here is measured yet. The prediction for the next run is specific: `guard-denials.jsonl`
+non-empty, no yields, and first-turn `input_tokens` below EXP-075's baseline of 33,213 (scc) and
+195,957 (katex).
+
+---
+
+### 13.14 The guard cannot explain the 1.92M turn (2026-09-21)
+
+`scripts/guard_ceiling.py` computes, without a model call, what a file read guard could save:
+tokens to read each file whole against tokens of the AST outline returned instead. Run against
+the canary repositories in under a second each:
+
+| repository | files over 200 lines | own source, read whole | ceiling |
+|---|---|---|---|
+| `katex` | 40 | 237,651 | **96.6%** |
+| `scc` (including vendored deps) | 289 | 2,064,564 | 93.2% |
+| **`scc` (own source only)** | **21** | **133,550** | **95.2%** |
+
+The mechanism has ample headroom -- an outline is 3-5% the size of its file, matching the
+artefact-level efficiency Portal reports. But the second row is the one that matters, and it
+retires a claim made earlier the same day.
+
+**scc's entire own source is 133,550 tokens. EXP-075's GREEN turn admitted 1,917,135.** That is
+fourteen times the codebase. A *perfect* file read guard -- intercepting every eligible file and
+saving 95.2% -- recovers at most ~127,000 tokens, **under 7% of that turn**.
+
+So 13.12's reasoning, that shunted command output was under 2% and therefore "unbounded file
+reads are the only channel that large", does not hold. Reading every file in the repository once
+does not come close to 1.92M either. Two possibilities remain and they point opposite ways:
+
+* **the same files were read repeatedly**, in which case the guard saves ~95% of every read and
+  the effect compounds to something large;
+* **the volume came from another channel** -- host-side command output that never passed through
+  `./run-in-container` and so was never shunted, or accumulated reasoning -- in which case the
+  guard barely touches it.
+
+**These cannot be distinguished from any artefact the daemon currently writes.** The arm produces
+no tool-call transcript (13.7), so there is no record of what was read, how often, or how large
+each result was. That gap, not the guard, is now the binding constraint on the whole question.
+
+The measurement discipline is the reusable part: 0.33 seconds of arithmetic produced a sharper
+and more falsifiable question than four benchmark runs did. Compute the ceiling before deciding a
+workload is worth an agent turn.
+
+---
+
+### 13.15 EXP-078: the perimeter guards work, and cost about 27% less (2026-09-21)
+
+The first run in which the guards demonstrably operated. `guard-denials.jsonl` had been empty in
+every previous run ever recorded; here scc withheld 1,917 lines across 4 denials and katex 2,258
+across 2. No worker yielded. Paired against EXP-075 on identical tasks, same arm, same rollback
+policy, same driver -- **only the binary differs**, carrying the four guard fixes:
+
+| task | EXP-075 | EXP-078 | input tokens |
+|---|---|---|---|
+| `scc-bounded-memory-spilling` | PASS 31/31, $2.87, 2,410,872 | PASS 31/31, $2.07, 1,725,692 | **-28.4%** |
+| `katex-multicolumn-array-spans` | **fail 92/94**, $3.52, 2,906,759 | **PASS 94/94**, $2.54, 2,136,189 | **-26.5%** |
+| run total | 1/3, $6.40 | **2/3, $4.61** | |
+
+**The cost reduction is the signal worth keeping.** Two independent tasks moved -28.4% and -26.5%,
+which is a far more stable quantity than a pass/fail flip. katex crossing from 92/94 to 94/94 is a
+move between the two modes it has occupied across nine recorded attempts, at n=1, and should not
+be read as a solve-rate result.
+
+**Causation is not isolated.** The binary carries four changes -- path resolution, denial
+telemetry, throttle-not-refuse, and bulk-read interception -- and at least one of them affects
+outcomes by a route other than tokens: the throttle fix removes the yield that cost katex a turn
+in EXP-075 (6 turns there, 5 here). A single-variable attribution would need the ablation arms.
+
+**Gate precision is now 3 of 4** across the two runs. katex's GREEN gate certified 92/94 work in
+EXP-075 -- the relocated 17% problem of 13.12 -- and certified correct work here. Still far too
+few observations to call it a rate.
+
+**On the -4.2% offline result (13.14):** it was not wrong, it was narrow. `guard_bench.py` asked a
+single question of one crate and intercepted one file of ten eligible; the benchmark workload is
+genuinely read-heavy and intercepted four and two. The offline number is a lower bound on a thin
+workload, the ceiling is 96%, and the realised figure on real tasks sits between them at ~27%.
+
+**What this does not settle: 13.14 stands.** scc's own source is 133,550 tokens and this turn still
+admitted 1,725,692. A 28% reduction is consistent with repeated reading being a large share of the
+remainder, but this run predates `guard-activity.jsonl`, so there is still no record of what was
+read or how often. The next run carries that trace and can answer it.
+
+---
 
 ---
 
@@ -457,6 +1017,11 @@ Fourteen ledger rows and findings are `WITHDRAWN`. They are kept, because the wi
 | daemon 2x cost premium | missing `--print-timeout` |
 | daemon loses 5-0 on gated tasks | the MCP arm was running on `true` |
 | in-loop MCP state tools are an anti-pattern | applies to `superstate_agent_mcp` only; the harness-driven arm is fine |
+| EXP-070: daemon 16.1% cheaper | adversarial-review turns excluded from telemetry; true input tokens are +11.4% vs vanilla (Section 13.5) |
+| EXP-070: impact slicing executed flawlessly | it did not execute at all — zero `[impact-*]` notes in any workspace (Section 13.1) |
+| EXP-070: impact slicing executed flawlessly (2) | it fabricates failures when it does fire -- 4 spurious `No tests found` on katex by slicing inside a heredoc (13.10) |
+| EXP-070/071: the file read guard executed cleanly | no artefact records it firing; the hook's cwd makes relative paths fail open (Section 13.4) |
+| shunting is a superstate token-saving mechanism | `AgyCliDriver` gives it to every arm, vanilla included, so it cannot show up as lift (Section 13.1) |
 
 **The self-grading defect is the one to remember.** Seven tasks ship no sealed verifier, so the
 harness ran `pytest tests/` inside the agent's own container — grading the agent against tests
