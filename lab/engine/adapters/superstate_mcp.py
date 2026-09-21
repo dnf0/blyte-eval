@@ -15,7 +15,7 @@ import shlex
 import subprocess
 from typing import Any, Dict, Optional
 
-from lab.benchmarks.gate_fixtures import agent_gate_for, references_sealed_grader
+from lab.benchmarks.gate_fixtures import references_sealed_grader
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.condition_b import conversation_id_for
 from lab.engine.prompt_contracts import apply_contract
@@ -537,12 +537,23 @@ class SuperstateMcpAdapter(AgentAdapter):
             # measures the gate rather than the execution model. This arm was missed when
             # fixtures were added, so it ran on `true` while the daemon ran on a strict
             # gate -- and the daemon "lost" 5-0 purely because of that asymmetry.
-            vcmd = agent_gate_for(getattr(task, "name", "") or "")
-            if not vcmd:
-                vcmd = getattr(task, "verification_cmd", None)
-                if vcmd and references_sealed_grader(vcmd):
-                    vcmd = None
+            # Hand-authored fixtures were removed on 2026-09-21 (Manifesto Invariant V).
+            # This arm is single-milestone by construction, so it cannot express the RED/GREEN
+            # DAG that replaced them; it runs on the task's own runner when there is one and
+            # is UNGATED otherwise. An ungated run measures the fallback, not the execution
+            # model, so say so rather than letting a `true` gate look like a verdict.
+            vcmd = getattr(task, "verification_cmd", None)
+            if vcmd and references_sealed_grader(vcmd):
+                vcmd = None
             effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
+            if effective_vcmd == "true":
+                logger.warning(
+                    "%s is UNGATED for %s: no native runner, and this arm cannot run the "
+                    "autonomous TDD DAG. Its pass rate measures the fallback, not the "
+                    "execution model, and is not comparable with a daemon arm.",
+                    self.name,
+                    getattr(task, "name", "?"),
+                )
 
             # Phase 0: Zero-turn planning or planning turn
             if not plan_text and self.zero_turn_planning:
