@@ -100,3 +100,32 @@ def test_guard_bench_provisions_hooks_for_every_config() -> None:
             '{"ts":1,"path":"a.go","lines":400}\n{"ts":2,"path":"b.go","lines":250}\n'
         )
         assert bench.denials(ws) == (2, 650)
+
+
+def test_guard_ceiling_reports_a_bound_without_calling_a_model() -> None:
+    """The ceiling is arithmetic, so it must be instant and deterministic.
+
+    Portal's ~90% is an artefact comparison -- file tokens versus summary tokens -- not a
+    behavioural A/B, and the like-for-like version costs no model call at all. Measured on
+    superstate-core: 96.3% ceiling against a -4.2% behavioural result, the gap being what the
+    agent reads back in ranges.
+    """
+    binary = _binary()
+    if binary is None:
+        pytest.skip("no superstate binary available")
+    repo = Path("/Users/danielfisher/repos/superstate/crates/superstate-core/src")
+    if not repo.is_dir():
+        pytest.skip("superstate source not available")
+
+    proc = subprocess.run(
+        [
+            "python3", str(ROOT / "scripts" / "guard_ceiling.py"),
+            "--repo", str(repo), "--binary", str(binary),
+        ],
+        capture_output=True, text=True, timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "CEILING SAVING" in proc.stdout, proc.stdout
+    # A guard that cannot beat reading the file whole is not worth having.
+    pct = float(proc.stdout.split("CEILING SAVING:")[1].split("%")[0].strip())
+    assert pct > 50, f"outline is not materially smaller than the file: {pct}%"
