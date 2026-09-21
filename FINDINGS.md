@@ -703,7 +703,11 @@ Two things this did not fix, both still open:
 * `workspace_fingerprint` hashes size and mtime, not content, so a worker that rewrites identical
   bytes still reads as progress and the stall path rarely triggers. That is now a missed escape
   valve rather than a destructive loop, but it means `max_retries` still binds loosely.
-* The file read guard's path resolution (13.4) is unchanged, pending the payload probe.
+* ~~The file read guard's path resolution (13.4) is unchanged, pending the payload probe.~~
+  **Fixed later the same day (0bf20f6).** The probe turned out to be unnecessary: the command
+  guard populates its history on every run and both guards share `extract_tool_invocation`, so
+  the payload shape was demonstrably recognised and path resolution was the only remaining
+  failure. See 13.13, and `scripts/guard_smoke.sh` which asserts it from a `.agents` cwd.
 
 Rust suite 397 passed; eval suite 343 passed.
 
