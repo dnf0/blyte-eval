@@ -561,6 +561,36 @@ class SuperstateDaemonAdapter(AgentAdapter):
         )
         return False
 
+    def _await_turns_settled(
+        self, workspace_path: Path, quiet_sec: float = 30.0, max_wait_sec: float = 600.0
+    ) -> bool:
+        """Wait until no new driver turn has been written for `quiet_sec`.
+
+        Belt to _await_daemon_exit's braces. A pid file can be absent or already cleaned up,
+        and a turn can land after the process the harness was watching has gone -- EXP-072
+        lost scc's review turn, written at 11:02:55, to a harness that finished at 10:59:07.
+        Waiting on the artefact itself does not depend on getting process identity right.
+
+        Returns True if the directory went quiet within `max_wait_sec`.
+        """
+        turns_dir = workspace_path / ".agent-state" / "driver-turns"
+        if not turns_dir.is_dir() or not any(turns_dir.glob("turn-*.json")):
+            # No worker ever ran, so there is nothing that could still be written.
+            return True
+        deadline = time.monotonic() + max_wait_sec
+        last_seen = -1.0
+        while time.monotonic() < deadline:
+            files = list(turns_dir.glob("turn-*.json"))
+            newest = max((f.stat().st_mtime for f in files), default=0.0)
+            if newest == last_seen and (time.time() - newest) >= quiet_sec:
+                return True
+            last_seen = newest
+            time.sleep(min(5.0, max(0.01, self.poll_interval_sec * 5)))
+        logger.warning(
+            "Driver turns under %s never went quiet; telemetry may undercount.", turns_dir
+        )
+        return False
+
     def _collect_driver_telemetry(self, workspace_path: Path) -> tuple[int, int, int]:
         """Sum token usage across the driver turns the wrapper captured.
 
@@ -745,18 +775,30 @@ class SuperstateDaemonAdapter(AgentAdapter):
         # Step 3: Monitor daemon PID and state progress
         state_file = workspace_path / ".agent-state" / "state.json"
         daemons_dir = workspace_path / ".agent-state" / "daemons"
-        pid_file = daemons_dir / "default.pid"
 
+        # The engine writes `daemons/<branch-slug>.pid`, not `default.pid` -- branch-scoped
+        # since ADR-0002, so a hardcoded name never matched and `pid` was None on EVERY run.
+        # That silently disabled the dead-process check below, left provenance.daemon_pid
+        # null, and made _await_daemon_exit a no-op, which is how EXP-072 still lost scc's
+        # 498k review tokens after the telemetry fix. Glob instead of guessing.
         pid: Optional[int] = None
         for _ in range(50):
-            if pid_file.is_file():
+            for candidate in sorted(daemons_dir.glob("*.pid")) if daemons_dir.is_dir() else []:
                 try:
-                    pid = int(pid_file.read_text(encoding="utf-8").strip())
+                    pid = int(candidate.read_text(encoding="utf-8").strip())
                     self.daemon_pid = pid
                     break
                 except Exception:
-                    pass
+                    continue
+            if pid is not None:
+                break
             time.sleep(0.05)
+        if pid is None:
+            logger.warning(
+                "No daemon pid file under %s; liveness detection and the post-completion "
+                "telemetry wait are both inactive for this run.",
+                daemons_dir,
+            )
 
         is_completed = False
         error_msg: Optional[str] = None
@@ -809,6 +851,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         # tokens, and EXP-070's "16.1% cheaper" reversed to +11.4% once they were counted.
         # See FINDINGS.md 13.5.
         self._await_daemon_exit(pid)
+        self._await_turns_settled(workspace_path)
         duration = time.monotonic() - start_time
         # Under autonomous TDD the harness supplied no command, so the gate it re-runs for
         # confirmation is read back from the DAG the engine derived. The referee checks the
