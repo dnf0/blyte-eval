@@ -138,6 +138,10 @@ def run_once(repo: Path, prompt: str, config: str, binary: Path, model: str,
             "lines_withheld": withheld,
             "seconds": round(elapsed, 1),
             "ok": proc.returncode == 0,
+            # Recorded in the ROW, not just the filename. A night of result files whose
+            # meaning depends on what they were called is how a sweep gets misread later.
+            "threshold_lines": threshold if config in ("file", "full") else None,
+            "repo": repo.name,
         }
 
 
