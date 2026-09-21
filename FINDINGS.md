@@ -1199,3 +1199,48 @@ instruction. `extractor.py` now refuses to grade such a task.
 
 None of these change what to build next. The daemon works, it is cheaper, and the mechanism is
 understood well enough to act on.
+
+### 13.19 The read budget is now a swept parameter, not a constant (2026-09-21)
+
+13.18 established that 200 lines was the wrong number. The change is not "200 → 800" but a
+change in kind: the budget became something a run can vary, because the evidence says its
+optimum is a property of the workload rather than of the guard.
+
+**What 800 rests on.** Replaying the recorded trace across thresholds put the optimum at ~1,600
+for that workload (29,932 tokens), with 800 at 32,432 — 8% above optimum. 800 was chosen over
+1,600 because the cost curve is asymmetric and the risk is not symmetric either: too low costs
+roughly twice what no budget at all costs (100 lines → 66,497; unbounded → 35,542), and the
+optimum shifts down on codebases whose files are shorter than `superstate-core`'s. 800 gives up
+8% on the measured workload to stay clear of the expensive side of the curve.
+
+**Where it is set.** One constant, `guard::DEFAULT_READ_THRESHOLD_LINES`, with the CLI defaults
+and `DaemonConfig::default()` both deriving from it. Precedence when the daemon starts:
+
+| Source | Use |
+|---|---|
+| `--read-threshold-lines N` on `state daemon` | pinning one run |
+| `SUPERSTATE_READ_THRESHOLD_LINES` | sweeping without a rebuild |
+| `DEFAULT_READ_THRESHOLD_LINES` | everything else |
+
+A malformed env value aborts rather than falling back. A swept parameter that quietly reverts
+to its default produces a run that looks like a data point and is not one — the same failure
+mode as the unrecognised `--rollback-policy`, which aborts for the same reason.
+
+**The adapter does not set it.** Per the Referee Rule the eval harness passes nothing here; the
+daemon owns the number. That is deliberate and is the precondition for the next step below.
+
+**Two test-design corrections this forced.** Three `test_cli_guard` tests failed on the change
+and told us nothing about the guard: they used 250-line fixtures against an implicit default,
+so they were asserting the default's value while claiming to assert shunt behaviour. They now
+pin `--threshold-lines 200` explicitly. `guard_smoke.sh` had the same defect in reverse — a
+hardcoded 480-line fixture that stops exercising the deny path once the budget passes it. It
+now reads the default out of `--help` and sizes its fixture at ~2× the budget.
+
+**Next: derive it inside the daemon.** The parameter exists so it can eventually stop being a
+parameter. The daemon already has the input needed to compute it: the file guard records every
+evaluation to the activity trace with its line count, which is exactly what `read_budget.py`
+replays offline. A daemon that read its own trace could converge on a repository's own optimum
+instead of inheriting a number measured on `superstate-core`. What is missing is not the
+plumbing but the evidence — one workload's curve is not a derivation rule, and a rule fitted
+to a single repository would be the same mistake as the constant it replaces. Measure the
+curve on a second and third repository before writing one.

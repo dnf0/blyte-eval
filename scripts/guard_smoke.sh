@@ -17,14 +17,23 @@ set -uo pipefail
 BIN="${1:-/Users/danielfisher/repos/superstate/target/release/superstate}"
 [ -x "$BIN" ] || { echo "no executable superstate at $BIN" >&2; exit 1; }
 
+# The budget under test. Read from the binary's own --help rather than duplicated here, so
+# this smoke test tracks the shipped default instead of failing whenever it is varied.
+THRESHOLD="${2:-$("$BIN" guard pre-tool-use --help 2>/dev/null \
+  | sed -n 's/.*\[default: \([0-9][0-9]*\)\].*/\1/p' | head -1)}"
+[ -n "$THRESHOLD" ] || { echo "could not determine the default read budget from $BIN" >&2; exit 1; }
+
 WS=$(mktemp -d "/tmp/guard_smoke.XXXXXX")
 trap 'rm -rf "$WS"' EXIT
 mkdir -p "$WS/.agents" "$WS/internal"
 
-# A file comfortably over the 200-line budget, with real symbols so the AST outline is meaningful.
+# A file comfortably over the budget, with real symbols so the AST outline is meaningful.
+# Sized FROM the threshold: a fixture with a hardcoded length silently stops exercising the
+# deny path the moment the budget is raised past it.
+FUNCS=$(( THRESHOLD / 2 ))   # 4 lines each, so ~2x the budget
 {
   echo "package internal"
-  for i in $(seq 1 120); do
+  for i in $(seq 1 "$FUNCS"); do
     printf 'func Handler%d(x int) int {\n\treturn x + %d\n}\n\n' "$i" "$i"
   done
 } > "$WS/internal/handlers.go"
@@ -36,7 +45,7 @@ cat > "$WS/.agents/hooks.json" <<EOF
   "superstate-file-guard": {
     "PreToolUse": [
       { "matcher": "view_file|View|read_file",
-        "hooks": [ { "command": "$BIN guard pre-tool-use --threshold-lines 200" } ] }
+        "hooks": [ { "command": "$BIN guard pre-tool-use --threshold-lines $THRESHOLD" } ] }
     ]
   },
   "superstate-command-guard": {
@@ -50,7 +59,7 @@ EOF
 
 echo "workspace: $WS"
 echo "binary:    $BIN"
-echo "fixture:   internal/handlers.go ($LINES lines)"
+echo "fixture:   internal/handlers.go ($LINES lines, budget $THRESHOLD)"
 echo
 
 fail=0

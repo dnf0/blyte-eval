@@ -41,23 +41,31 @@ DEFAULT_BIN = Path("/Users/danielfisher/repos/superstate/target/release/supersta
 
 # Each config is the set of PreToolUse hooks provisioned for that arm. A new perimeter
 # mechanism becomes measurable by adding a row here.
+# The read budget the benched arms enforce. Deliberately a module-level knob and NOT the
+# binary's default: a bench that silently inherits the default stops being a comparison the
+# moment the default moves, and the whole point of this harness is to vary the parameter.
+# `--threshold-lines` overrides it; see FINDINGS 13.18 for how 800 was chosen.
+READ_THRESHOLD_LINES = 800
+
 CONFIGS: dict[str, list[tuple[str, str, str]]] = {
     # name: [(hook group, tool matcher, guard subcommand + flags)]
     "none": [],
     "file": [
-        ("superstate-file-guard", "view_file|View|read_file", "guard pre-tool-use --threshold-lines 200"),
+        ("superstate-file-guard", "view_file|View|read_file", "guard pre-tool-use --threshold-lines {threshold}"),
     ],
     "command": [
         ("superstate-command-guard", "run_command|manage_task", "guard pre-command --debounce-sec 30"),
     ],
     "full": [
-        ("superstate-file-guard", "view_file|View|read_file", "guard pre-tool-use --threshold-lines 200"),
+        ("superstate-file-guard", "view_file|View|read_file", "guard pre-tool-use --threshold-lines {threshold}"),
         ("superstate-command-guard", "run_command|manage_task", "guard pre-command --debounce-sec 30"),
     ],
 }
 
 
-def write_hooks(workspace: Path, config: str, binary: Path) -> None:
+def write_hooks(
+    workspace: Path, config: str, binary: Path, threshold: int = READ_THRESHOLD_LINES
+) -> None:
     """Provision `.agents/hooks.json` exactly as DaemonRunner does, with an absolute path.
 
     The absolute path matters: a bare `superstate` resolves through PATH at hook time, which in
@@ -67,6 +75,7 @@ def write_hooks(workspace: Path, config: str, binary: Path) -> None:
     agents.mkdir(parents=True, exist_ok=True)
     hooks: dict[str, dict] = {}
     for group, matcher, subcommand in CONFIGS[config]:
+        subcommand = subcommand.format(threshold=threshold)
         hooks[group] = {
             "PreToolUse": [
                 {"matcher": matcher, "hooks": [{"command": f"{binary} {subcommand}"}]}
@@ -92,14 +101,14 @@ def denials(workspace: Path) -> tuple[int, int]:
 
 
 def run_once(repo: Path, prompt: str, config: str, binary: Path, model: str,
-             timeout_sec: int) -> dict:
+             timeout_sec: int, threshold: int = READ_THRESHOLD_LINES) -> dict:
     """One agy turn against a pristine copy of the repository."""
     with tempfile.TemporaryDirectory(prefix="guard_bench.") as tmp:
         workspace = Path(tmp) / "repo"
         # A copy per run, so one arm's edits cannot bias the next. `.git` is skipped: it is the
         # bulk of the bytes and nothing in a read-heavy prompt needs history.
         shutil.copytree(repo, workspace, ignore=shutil.ignore_patterns(".git", "target", "node_modules"))
-        write_hooks(workspace, config, binary)
+        write_hooks(workspace, config, binary, threshold)
 
         env = dict(os.environ, SUPERSTATE_WORKTREE_PATH=str(workspace))
         started = time.monotonic()
@@ -141,6 +150,12 @@ def main() -> int:
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--binary", type=Path, default=DEFAULT_BIN)
     ap.add_argument("--timeout-sec", type=int, default=300)
+    ap.add_argument(
+        "--threshold-lines",
+        type=int,
+        default=READ_THRESHOLD_LINES,
+        help="read budget the file guard enforces (default %(default)s; see FINDINGS 13.18)",
+    )
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
 
@@ -166,7 +181,7 @@ def main() -> int:
         for i in range(args.repeats):
             print(f"  running {name} ({i + 1}/{args.repeats}) ...", flush=True)
             results.append(run_once(args.repo, prompt, name, args.binary,
-                                    args.model, args.timeout_sec))
+                                    args.model, args.timeout_sec, args.threshold_lines))
 
     print(f"\n{'config':10s} {'in_tok':>10s} {'cache_read':>11s} {'out':>8s} "
           f"{'denials':>8s} {'withheld':>9s} {'secs':>6s}")
