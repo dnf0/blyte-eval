@@ -1098,6 +1098,59 @@ file nobody had looked at.
 
 ---
 
+### 13.18 The 200-line read budget costs more than it saves (2026-09-21)
+
+The window question from 13.16, answered offline in four minutes with the range-recording binary
+(b5a4656). A read-heavy prompt against a copy of `superstate-core/src`:
+
+```
+of 19 reads carrying a window, 0 re-fetched a window already fetched (0%)
+```
+
+**Not one read was redundant.** `daemon.rs` was fetched 14 times in 14 distinct windows:
+
+```
+[20:130] [130:180] [180:285] [590:720] [770:835] [835:950] [951:1030]
+[1030:1150] [1145:1185] [1170:1250] [1251:1440] [1440:1570] [1565:1640] [1780:1907]
+
+distinct lines fetched      1,396 of 1,906  (73% of the file)
+including overlap           1,429            (almost no redundancy)
+```
+
+So the repeats-by-file in 13.16 were an artefact of recording paths without ranges. The agent was
+paging through a large file exactly as the budget forces. **A read cache would save nothing**, and
+the claim that those reads were wasteful is retired for good.
+
+**The budget is net-negative on this workload.** Once a tool call carries a ~2,500-token preamble
+(13.17), splitting a file multiplies that cost:
+
+| | calls | tokens |
+|---|---|---|
+| bounded at 200 lines | 14 | **50,719** |
+| whole file | 1 | **23,466** |
+| | | **2.2x worse** |
+
+Worse, it cannot recover. The largest possible saving from skipping is the whole file, ~21,000
+tokens; thirteen extra calls cost ~32,500. **At 14 calls the budget cannot break even even if the
+agent reads nothing.** The result is robust to the preamble estimate -- at 1,000 tokens per call
+it is still 1.27x worse, and with MCP enabled (~5,000) far worse.
+
+**When it does win:** low coverage. Needing ~30% of a file is ~3 calls, costing ~5,000 in extra
+preambles against ~14,700 saved -- a clear gain. The failure is that a *fixed* threshold fires
+hardest exactly when it should not: exploring an unfamiliar large file, where the agent ends up
+reading most of it anyway.
+
+**The threshold was chosen before anyone knew a call had a fixed cost.** 200 lines is a guess from
+a model where tokens-per-read was the only quantity that mattered. The governing ratio is
+`preamble_tokens / tokens_per_line` -- roughly 230 lines of savings needed to justify each extra
+call -- so the budget must be large enough that splitting is rare, not the default.
+
+This is the third time today a perimeter mechanism turned out to be pointed at the wrong quantity:
+the guard never fired at all (13.13), then fired on a channel carrying 15% of the traffic (13.16),
+and now the one thing it does reliably costs more than it saves.
+
+---
+
 ---
 
 ## Withdrawn
