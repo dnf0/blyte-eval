@@ -109,6 +109,14 @@ def impact_slicing_enabled() -> bool:
     return False
 
 
+# Strips a leading `./run-in-container` so a gate can be re-run INSIDE the container, where
+# the bridge does not exist. Lost when the gate-derivation block was deleted on
+# 2026-09-21, which left normalize_gate_command raising NameError at the confirmation
+# gate -- EXP-074 recorded Passed=False and zero telemetry for two tasks that had in fact
+# completed their milestones.
+BRIDGE_PREFIX_RE = re.compile(r"(?:^|(?<=[;&|(]))\s*\.?/?run-in-container\s+")
+
+
 def is_pid_alive(pid: int) -> bool:
     """Check if process with given PID is alive."""
     if pid <= 0:

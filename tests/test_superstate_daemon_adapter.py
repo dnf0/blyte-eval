@@ -423,3 +423,22 @@ def test_daemon_adapter_impact_slicing_env_var(monkeypatch: pytest.MonkeyPatch) 
 
 
 
+
+
+def test_gate_command_normalisation_survives(tmp_path: Path) -> None:
+    """The confirmation gate must strip the bridge prefix when re-run inside the container.
+
+    BRIDGE_PREFIX_RE was deleted along with the gate-derivation block on 2026-09-21, and
+    nothing referenced it until the very end of a run -- so EXP-074 spent 40 minutes, completed
+    both TDD milestones on scc, then raised NameError at the confirmation gate and recorded
+    Passed=False with zero telemetry. A unit test costs nothing and catches it in a second.
+    """
+    normalize = SuperstateDaemonAdapter.normalize_gate_command
+    assert normalize("./run-in-container go test ./...", in_container=True) == "go test ./..."
+    assert (
+        normalize("./run-in-container go test ./...", in_container=False)
+        == "./run-in-container go test ./..."
+    ), "outside the container the bridge is how the toolchain is reached"
+    assert normalize("test -f x && ./run-in-container pytest -q", in_container=True) == (
+        "test -f x && pytest -q"
+    )

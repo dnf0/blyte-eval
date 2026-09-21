@@ -757,6 +757,58 @@ not "Attempt 6 of 3".
 
 ---
 
+### 13.11 EXP-074: autonomous TDD executes end to end (2026-09-21)
+
+The first valid run of the path that replaced `GATE_FIXTURES`, against a snapshotted binary so
+the build could not change underneath it (EXP-073 was withdrawn for exactly that).
+
+**The mechanism works.** `scc-bounded-memory-spilling` completed the whole DAG:
+
+| step | evidence |
+|---|---|
+| worker authors its own reproduction test | `reproduce_issue_test.go`, 10,821 bytes |
+| RED gate: compiles and FAILS | milestone `tdd-reproduction-test` completed after 3 attempts |
+| checkpoint | `e9d50ba chore(superstate): checkpoint completed milestone tdd-reproduction-test` |
+| worker implements the fix | — |
+| GREEN gate: reproduction test AND the repository's own suite pass | milestone `fix-implementation` completed |
+| checkpoint | `d10d55d chore(superstate): checkpoint completed milestone fix-implementation` |
+| final | `status=completed` |
+
+No hand-authored assertion was involved at any point. That is Manifesto Invariant V operating
+as specified, for the first time in this repository's history.
+
+**Rollback under TDD is cheap, as predicted.** RED took three attempts, two of them reset under
+the default `always` policy, and it cost little because RED is a single test file. This is the
+evidence that the EXP-071 cost measurement -- a whole feature rebuilt five times -- was an
+artefact of single-milestone fixture gating rather than of resetting as such. Invariant III
+looks defensible again; the ablation arms exist to settle it rather than to assume it.
+
+**katex blocked for a reason that predates TDD.** Its worker never wrote a test, yielding on a
+backgrounded Jest run and then on the command guard's own debounce: *"I am waiting for the
+cooldown timer to elapse. I will now stop calling tools and wait for the scheduled
+notification."* That is the yield defect of 13.6, with an added twist -- a guard meant to stop
+busy-wait polling induced the worker to stop working. Invariant IV's perimeter guards are
+mechanically present and behaviourally counterproductive here.
+
+**The pass rate and telemetry in the results file are void.** `normalize_gate_command` raised
+`NameError: BRIDGE_PREFIX_RE is not defined` at the confirmation gate, because that constant was
+deleted along with the gate-derivation block earlier the same day and nothing referenced it
+until the last step of a 40-minute run. All three rows therefore read `Passed=False`, zero
+turns, $0.00, and the sealed grader never executed. **Do not read 0/3 from
+`canary_tdd_exp074.json`.** A unit test now covers it.
+
+**Three harness defects in three runs, all introduced the same day.** The sentinel leak, the
+binary swapped mid-run, and this NameError were all mine, all from the same day's refactor, and
+all found by running rather than by reading. The runs are currently measuring the harness, not
+the system -- which is the condition this repository has documented repeatedly and which
+argues for a quiet period of fixing before any result is quoted.
+
+**What is still unknown:** whether a worker-authored reproduction test agrees with the sealed
+grader. That is the precision question that killed the hand-authored fixtures at 17%, relocated
+to a new author and still unmeasured. It needs a run that reaches the grader.
+
+---
+
 ---
 
 ## Withdrawn

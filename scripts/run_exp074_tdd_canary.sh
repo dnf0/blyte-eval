@@ -16,9 +16,9 @@ cd "$(dirname "$0")/.."
 # minutes in, so nothing it measured could be attributed to a known build. It was withdrawn.
 eval "$(scripts/pin_superstate_binary.sh)"
 
-OUT_FILE="results/canary_tdd_exp073.json"
+OUT_FILE="results/canary_tdd_exp074.json"
 
-echo "EXP-073 (re-run) TDD canary: build-cython-ext (native runner), scc (Go TDD), katex (TS TDD)"
+echo "EXP-074 TDD canary: build-cython-ext (native runner), scc (Go TDD), katex (TS TDD)"
 echo "Binary: ${SUPERSTATE_BIN}"
 echo "Output: ${OUT_FILE}"
 
