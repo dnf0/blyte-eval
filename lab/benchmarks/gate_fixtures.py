@@ -255,26 +255,26 @@ func run(src string, typed bool) (interface{}, error) {
 }
 
 func main() {
-	if v, err := run("var x: int64 = 10\nx", true); err != nil || v == nil {
+	if v, err := run("var x: int64 = 10\\nx", true); err != nil || v == nil {
 		log.Fatalf("typed declaration failed: %v", err)
 	}
-	if _, err := run("var a, b: int64 = 1, 2\na", true); err != nil {
+	if _, err := run("var a, b: int64 = 1, 2\\na", true); err != nil {
 		log.Fatalf("multi typed declaration failed: %v", err)
 	}
-	_, err := run("var y: int64 = 1\ny = \"s\"", true)
+	_, err := run("var y: int64 = 1\\ny = \\"s\\"", true)
 	if err == nil {
 		log.Fatal("type mismatch must error when TypedBindings is enabled")
 	}
 	if !strings.Contains(err.Error(), "type error") || !strings.Contains(err.Error(), "y") {
 		log.Fatalf("error must contain 'type error' and the variable name, got: %v", err)
 	}
-	if _, err := run("var n: int64 = 1\nn = nil", true); err == nil {
+	if _, err := run("var n: int64 = 1\\nn = nil", true); err == nil {
 		log.Fatal("nil assignment to a primitive must error")
 	}
-	if _, err := run("var z: int64 = 1\nz = \"s\"", false); err != nil {
+	if _, err := run("var z: int64 = 1\\nz = \\"s\\"", false); err != nil {
 		log.Fatalf("TypedBindings disabled must behave dynamically, got: %v", err)
 	}
-	if _, err := run("var q = 1\nq = \"s\"", true); err != nil {
+	if _, err := run("var q = 1\\nq = \\"s\\"", true); err != nil {
 		log.Fatalf("untyped declaration must stay dynamic, got: %v", err)
 	}
 }
@@ -313,12 +313,16 @@ func evalOK(src string, want any) {
 }
 
 func main() {
-	evalOK(`try(1/0, "fallback")`, "fallback")
+	// NOTE: assertions on `1/0` were removed on 2026-09-21. expr evaluates division as
+	// float64, so 1/0 yields +Inf without raising, and the task's own reference solution
+	// (solution/solution.patch) changes no runtime or division code -- it fails any such
+	// assertion. The gate rejected the reference fix and trapped the worker for 5 turns
+	// and $4.87 in EXP-071. See FINDINGS.md 13.3.
 	evalOK(`try(6*7, "fallback")`, 42)
 	evalOK(`try(throw("boom"), "caught")`, "caught")
 	evalOK(`try { throw("boom") } catch e { errtype(e) }`, "custom")
 	evalOK(`errtype(nil)`, "none")
-	evalOK(`try { 1/0 } catch { "handled" }`, "handled")
+	evalOK(`try { throw("e") } catch { "handled" }`, "handled")
 	evalOK(`try { 1 } catch { 2 } finally { 3 }`, 1)
 	if _, err := expr.Eval(`try(1)`, nil); err == nil {
 		log.Fatal("try requires exactly two arguments")
@@ -351,7 +355,7 @@ if (d.type !== "VariableDeclaration" || d.kind !== "using")
   throw new Error("expected VariableDeclaration kind=using, got " + d.type + "/" + d.kind);
 if (parseModule("await using y = null;", { next: true }).body[0].kind !== "await using")
   throw new Error("expected kind=await using");
-if (parseModule("using\nx = null;", { next: true }).body[0].kind === "using")
+if (parseModule("using\\nx = null;", { next: true }).body[0].kind === "using")
   throw new Error("a line break must stop using being a declaration");
 const mustThrow = (src, needle, parse) => {
   let msg = null;
@@ -421,6 +425,13 @@ GATEEOF""",
     # meriyah's). Mocha needs --no-config or the project's own spec glob pulls in the whole
     # suite, and NODE_PATH so a test outside /app can still resolve the workspace packages.
     # Validated in-container: exits 5 pre-implementation (0 passing, 5 failing).
+    # KNOWN DISAGREEMENT (2026-09-21): this gate asserts the exact non-existent-$ref message
+    # instruction.md line 8 demands -- `Unable to resolve $ref "#/$defs/NonExistentDef" from
+    # root $defs`. The task's own reference solution emits a different sentence, so
+    # `scripts/validate_gates.py` reports this gate as rejecting the reference. The gate is
+    # kept as written because the instruction, not the reference, is what the worker is given
+    # and what a gate may legitimately be derived from. Do not weaken it to match the
+    # reference without first establishing which the sealed grader follows.
     "arktype-json-schema-refs-dependencies": r"""cat <<'GATEEOF' | ./run-in-container sh -s
 set -e
 cd /app
@@ -477,7 +488,7 @@ describe("json-schema refs and dependencies", () => {
 	it("supports if/then/else and deep enum equality", () => {
 		const T = t({
 			if: { type: "object", properties: { a: { const: 1 } }, required: ["a"] },
-			then: { type: "object", required: ["b"] }
+			then: { type: "object", properties: { b: { type: "number" } }, required: ["b"] }
 		})
 		if (T.allows({ a: 1 } as never)) throw new Error("then must apply when if matches")
 		if (!T.allows({ a: 1, b: 2 } as never)) throw new Error("satisfying then must pass")
