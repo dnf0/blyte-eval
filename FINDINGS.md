@@ -1001,6 +1001,53 @@ read or how often. The next run carries that trace and can answer it.
 
 ---
 
+### 13.16 EXP-079: where the context actually comes from (2026-09-21)
+
+The first run carrying `guard-activity.jsonl`, which records every read and command the guards
+evaluate. It answers 13.14's question, and the shape is near-identical across a Go and a
+TypeScript repository, so it is a property of the workload rather than the language:
+
+| | scc | katex |
+|---|---|---|
+| evaluations | 311 | 321 |
+| commands | 145 | 152 |
+| bounded reads | 150 | 146 |
+| **whole-file reads** | **16** | **23** |
+| reads that were of a file already read | **152 of 166** | **142 of 169** |
+| most-read file | `formatters.go` **80x** | `array.ts` **79x** |
+| tokens through whole-file reads | **~4,740** | **~10,740** |
+| denials | 4 | 2 |
+
+**The file read guard is at its ceiling.** Against turns admitting 1.9-2.1M tokens, unbounded
+reads contributed under 11,000. The guard denied six times across both tasks because there was
+almost nothing left to deny -- the agent already reads in bounded ranges, 296 times out of 335.
+The ~27% reduction measured in EXP-078 is close to everything this mechanism can offer, and no
+amount of tuning its threshold will change that.
+
+**The volume is repetition and commands.** One file fetched eighty times in each repository, and
+~150 commands per task of which roughly half are host-side -- `git status` fourteen times,
+`git log`, `ls -la` -- which shunting never sees, because it wraps `./run-in-container` only.
+
+**What this still cannot say, and the claim I withdrew because of it.** This binary predates
+window recording (b5a4656), so the trace carries paths without ranges. Eighty reads of a
+1,559-line file may be eighty distinct windows, which is exactly correct behaviour under a
+200-line budget, or eighty fetches of the same lines, which is waste. I asserted the second
+before checking; it is unsupported. The two imply different fixes:
+
+* same windows -> a **read cache** is the lever;
+* distinct windows -> reads are already efficient and the remaining volume is **command output**,
+  so host-side shunting is the lever.
+
+`guard_bench.py` with the current binary answers this offline in minutes. It does not need
+another canary, and reaching for one was habit rather than reasoning.
+
+**Token reduction holds at n=2, the pass rate does not.** scc 2,410,872 -> 1,725,692 and
+1,934,937; katex 2,906,759 -> 2,136,189 and 2,148,457. Meanwhile katex graded 92/94, 94/94 and
+90/94 across the three runs: EXP-078's pass was variance, exactly as 13.15 cautioned, and anyone
+quoting "2/3 versus 1/3" as a guard effect would be quoting noise.
+
+---
+
 ---
 
 ## Withdrawn
