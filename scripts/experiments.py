@@ -121,13 +121,13 @@ def cmd_check() -> int:
                     f"{rowcount} of {declared} runs -- still running, or killed and never recorded?"
                 )
                 problems += 1
-            elif r["status"] == "PARTIAL":
-                # PARTIAL is the acknowledgement that this file is a mid-run snapshot. The
-                # short row count is then a recorded fact, not an unresolved problem, so it
-                # is reported without failing the check.
+            elif r["status"] in ("PARTIAL", "WITHDRAWN"):
+                # PARTIAL and WITHDRAWN both acknowledge that the file is a mid-run snapshot:
+                # one says the run stopped, the other says its result does not stand. Either
+                # way the short row count is a recorded fact, not an unresolved problem.
                 print(
                     f"partial    {r['id']}  {r['results']} holds {rowcount} of {declared} runs "
-                    f"(declared PARTIAL)"
+                    f"(declared {r['status']})"
                 )
                 continue
             else:

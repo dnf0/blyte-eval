@@ -861,6 +861,57 @@ finished. The settle-wait catches the first review and not the last.
 
 ---
 
+### 13.13 The command guard was telling the worker to stop (2026-09-21)
+
+EXP-076 was stopped after 41 minutes, having produced a finding rather than the measurement it
+was registered for. `scc` was BLOCKED four minutes in, after three consecutive turns of:
+
+> *"The existing test suite is running in the background. I will wait for it to complete."*
+> *"I will wait for the background task to complete."*
+> *"I am waiting for the background test command to finish execution."*
+
+The cause was our own guard. Its denial text read:
+
+> *"Busy-wait polling blocked: ... Do not loop on status; **yield turn to await background task
+> completion notification**."*
+
+In headless print mode nothing ever delivers that notification, so yielding ends the task. Three
+yields exhaust `max_retries` and the milestone is blocked. The same instruction is visible in
+katex's EXP-074 transcript (*"I am waiting for the cooldown timer to elapse"*) and in the three
+vanilla collapses of EXP-071 -- except vanilla has no guards, so the agent backgrounds long
+commands and yields on its own; the guard did not create the defect, it industrialised it.
+
+Two implementation errors, both fixed:
+
+| defect | fix |
+|---|---|
+| a denial that instructs the agent to end its turn | a poll inside its cooldown is now **throttled** -- the hook sleeps out the remainder and allows, bounded at 30s. Same rate limiting, no refusal |
+| every repeated shell command was debounced, not just polling | only procfs reads, process inspection and `manage_task` status/list. Re-running `go test ./...` after an edit is the TDD loop Invariant V mandates, and debouncing it put Invariant IV in direct contradiction with it |
+
+**And a third mechanism was missing entirely.** The file read guard matched only the agent's
+file *viewing tool*, so `cat internal/scanner.go` bypassed it -- along with the command guard,
+which classifies only polling, and output shunting, which wraps `./run-in-container` and not host
+commands. Across recorded runs **29 of 152 logged commands were `cat` or `grep`**. A whole-file
+dump through the shell now meets the same line budget and returns the AST outline; bounded reads
+(`head -50 x.go`, `sed -n '10,60p'`) pass through untouched, because intercepting compliance is
+the same mistake in a different costume.
+
+Spotify's Portal reports ~90% savings on bulk reads using this pair of hooks -- a file-size hook
+and a `check-bash-read` hook. We had the first and not the second. Where our design is ahead:
+Portal delegates the read to a cheaper model and reports that the summaries *"lack reliable line
+numbers"*, so it cannot delegate editing, at 10-30s latency per delegation. A Tree-sitter AST
+outline carries exact line ranges and costs no model call.
+
+**The tests asserted the harmful behaviour verbatim**, including the "yield turn" string, which
+is why it survived. They now assert that a poll receives no refusal and that the guard never
+emits any instruction to end a turn.
+
+Nothing here is measured yet. The prediction for the next run is specific: `guard-denials.jsonl`
+non-empty, no yields, and first-turn `input_tokens` below EXP-075's baseline of 33,213 (scc) and
+195,957 (katex).
+
+---
+
 ---
 
 ## Withdrawn
