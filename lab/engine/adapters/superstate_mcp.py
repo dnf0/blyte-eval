@@ -5,6 +5,19 @@ subprocess CLI invocations. Provides deterministic state tracking, bounded turnk
 prompts, targeted verification gates, automated checkpoint commits, and worktree cleanup.
 """
 
+# DEPRECATED as an active evaluation arm (2026-09-21).
+#
+# The daemon is the approach under development: no MCP arm has run since EXP-065, seven
+# experiments ago, and `superstate_mcp_planned` has run exactly once (EXP-055). This arm is
+# kept, not developed, because the banked results it produced -- the 76% figure and EXP-049 --
+# would otherwise be irreproducible, for the same reason WITHDRAWN ledger rows are kept.
+#
+# It is single-milestone in its Condition B configuration and so cannot run the autonomous TDD
+# DAG that replaced GATE_FIXTURES. On a task with no native runner it is genuinely UNGATED,
+# which measures the fallback rather than the execution model. `gate_source` records that per
+# run, so any number it produces is self-labelling.
+
+
 from __future__ import annotations
 
 import json
@@ -99,6 +112,8 @@ class SuperstateMcpAdapter(AgentAdapter):
         """Report state engine, transport, and discovered tools provenance."""
         return {
             "engine": "superstate_rust_mcp",
+            "gate_source": getattr(self, "gate_source", "unknown"),
+            "deprecated_arm": True,
             "transport": "mcp_stdio",
             "mcp_tools_discovered": self.mcp_tools_discovered,
             "superstate_bin": str(self.superstate_bin) if self.superstate_bin else None,
@@ -546,6 +561,7 @@ class SuperstateMcpAdapter(AgentAdapter):
             if vcmd and references_sealed_grader(vcmd):
                 vcmd = None
             effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
+            self.gate_source = "native_runner" if effective_vcmd != "true" else "ungated"
             if effective_vcmd == "true":
                 logger.warning(
                     "%s is UNGATED for %s: no native runner, and this arm cannot run the "

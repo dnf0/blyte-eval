@@ -175,6 +175,10 @@ class SuperstateDaemonAdapter(AgentAdapter):
         self.impact_slicing: bool = impact_slicing if impact_slicing is not None else impact_slicing_enabled()
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
+        # Which of Invariant 2's two sources supplied this run's verification command.
+        # Recorded per run because the regimes have different failure modes and a
+        # results file must not leave a reader guessing which one produced a number.
+        self.gate_source: str = "unknown"
 
     @property
     def name(self) -> str:
@@ -198,6 +202,10 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "review_blocking": self.review_blocking,
             "auto_rollback": self.auto_rollback,
             "impact_slicing": self.impact_slicing,
+            # autonomous_tdd | native_runner | ungated. CLAUDE.md requires a write-up to
+            # state how many tasks were gated; with GATE_FIXTURES gone this field is the
+            # only way to answer that from a results file.
+            "gate_source": self.gate_source,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -410,6 +418,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         declared = getattr(task, "verification_cmd", None)
         if declared and str(declared).strip() and not self._is_sealed_gate(declared):
             logger.info("Gate: using the task's own native runner %r", declared)
+            self.gate_source = "native_runner"
             return str(declared), None
 
         # 2. Autonomous TDD, for every repository that is clean on turn 0. The engine derives
@@ -420,6 +429,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             "(the worker authors its own reproduction test)",
             task.name,
         )
+        self.gate_source = "autonomous_tdd"
         return TDD_MODE, None
 
     def _write_driver_wrapper(

@@ -181,3 +181,43 @@ def test_no_adapter_uses_raw_substring_matching_for_sealed_grader() -> None:
             f"{name} uses raw `\"/tests/\" in` substring matching. Use `references_sealed_grader()`."
         )
 
+
+
+def test_every_arm_records_which_gating_regime_produced_its_numbers() -> None:
+    """A results file must be able to answer "how many of these tasks were gated?".
+
+    CLAUDE.md requires a write-up to state that, and the helper it named (`agent_gate_for`)
+    was removed with the fixture table. `gate_source` replaces it: autonomous_tdd when the
+    engine derived a RED/GREEN DAG, native_runner when the task shipped its own runner, and
+    ungated when neither applied. The regimes have different failure modes, so a number is
+    not interpretable without knowing which produced it.
+    """
+    from lab.engine.adapters.superstate import SuperstateAdapter
+    from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
+    from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
+
+    for adapter in (SuperstateDaemonAdapter(), SuperstateMcpAdapter(), SuperstateAdapter()):
+        provenance = adapter.get_provenance()
+        assert "gate_source" in provenance, (
+            f"{type(adapter).__name__} does not record its gating regime, so its results "
+            f"cannot be read without guessing."
+        )
+
+
+def test_the_superseded_arms_are_labelled_as_such() -> None:
+    """The daemon is the approach under development; the MCP arms are kept, not developed.
+
+    No MCP arm has run since EXP-065 and `superstate_mcp_planned` has run once (EXP-055).
+    They are retained so the results they produced stay reproducible, which is why the label
+    lives in provenance rather than the arms being deleted.
+    """
+    from lab.engine.adapters.superstate import SuperstateAdapter
+    from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
+    from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
+
+    for adapter in (SuperstateMcpAdapter(), SuperstateAdapter()):
+        assert adapter.get_provenance().get("deprecated_arm") is True
+
+    assert "deprecated_arm" not in SuperstateDaemonAdapter().get_provenance(), (
+        "the daemon is the active arm and must not be labelled superseded"
+    )
