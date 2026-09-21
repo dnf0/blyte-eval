@@ -82,6 +82,10 @@ TASK:
 # every gate silently degraded to `true`. Give it room, still bounded by the task budget.
 GATE_TURN_TIMEOUT_SEC = 900.0
 
+# How long to wait for the detached daemon to exit before reading its telemetry. The
+# advisory review turn lands after state.json reports `completed`; see _await_daemon_exit.
+DAEMON_EXIT_GRACE_SEC = 900.0
+
 # Gate derivation is OFF by default. The daemon executes against a contract it is handed;
 # authoring its own inverts the handoff and makes the contract vary per run.
 GATE_DERIVATION_ENV_FLAG = "SUPERSTATE_EVAL_DERIVE_GATES"
@@ -642,6 +646,30 @@ class SuperstateDaemonAdapter(AgentAdapter):
         wrapper.chmod(0o755)
         return wrapper
 
+    def _await_daemon_exit(self, pid: Optional[int], grace_sec: float = DAEMON_EXIT_GRACE_SEC) -> bool:
+        """Block until the detached daemon exits, or `grace_sec` elapses.
+
+        Post-completion work -- the advisory review turn above all -- is written after the
+        state file reports `completed`, so telemetry read before the process exits undercounts
+        the arm's real spend. Bounded so a daemon that never exits cannot stall the run.
+
+        Returns True if the process exited within the grace period.
+        """
+        if pid is None:
+            return True
+        deadline = time.monotonic() + grace_sec
+        while time.monotonic() < deadline:
+            if not is_pid_alive(pid):
+                return True
+            time.sleep(self.poll_interval_sec)
+        logger.warning(
+            "Daemon pid %s still alive after %.0fs; telemetry may undercount post-completion "
+            "driver turns such as the advisory review.",
+            pid,
+            grace_sec,
+        )
+        return False
+
     def _collect_driver_telemetry(self, workspace_path: Path) -> tuple[int, int, int]:
         """Sum token usage across the driver turns the wrapper captured.
 
@@ -881,10 +909,19 @@ class SuperstateDaemonAdapter(AgentAdapter):
             time.sleep(self.poll_interval_sec)
 
         # Step 4: Verification gate validation
+        #
+        # Wait for the daemon process itself to exit before reading telemetry. The poll loop
+        # above breaks as soon as state.json says `completed`, but the daemon keeps working
+        # after that: with --advisory-review it spends a further full driver turn reviewing
+        # the diff. Collecting at loop exit therefore missed every review turn -- in EXP-071,
+        # 10 of 11 daemon runs reported exactly their implementation tokens, hiding 3.6M input
+        # tokens, and EXP-070's "16.1% cheaper" reversed to +11.4% once they were counted.
+        # See FINDINGS.md 13.5.
+        self._await_daemon_exit(pid)
         duration = time.monotonic() - start_time
+        passed, exit_code, output = self._run_gate_command(workspace_path, effective_vcmd, container=container)
         driver_telemetry = self._collect_driver_telemetry(workspace_path)
         driver_turns_recorded = driver_telemetry[2]
-        passed, exit_code, output = self._run_gate_command(workspace_path, effective_vcmd, container=container)
         final_success = is_completed and passed
 
         # Record the gate verdict in the same shape superstate_mcp uses. Without this the

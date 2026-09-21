@@ -10,6 +10,12 @@ Three failures this catches, all of which have already cost real time:
   saves incrementally, so a killed run leaves a plausible-looking partial file. One such
   snapshot (31 of 40 rows) reached main and showed 10/16 vs 15/15 for a comparison whose
   real outcome was 12/20 vs 12/20.
+* **abandoned** -- a row still marked PLANNED whose results file already holds runs. The
+  truncation check used to skip PLANNED rows entirely, on the reasoning that a run which has
+  not started should not be reported as short. That hid EXP-071, which died at 21 of 54 runs
+  and was never moved off PLANNED: `check` reported "0 problems" for a file covering 4 of its
+  9 tasks. A PLANNED row with rows on disk has either started or stopped; either way the
+  status is stale. See FINDINGS.md 13.
 
 Usage:
     scripts/experiments.py check          # reconcile; non-zero exit if anything is wrong
@@ -103,7 +109,25 @@ def cmd_check() -> int:
         except ValueError:
             declared = 0
         if declared and rowcount < declared:
-            if r["status"] != "PLANNED":
+            if r["status"] == "PLANNED":
+                # A PLANNED row with runs on disk is in flight or was abandoned; either way
+                # the status no longer describes reality, and a partial file read as finished
+                # is the exact failure this tool exists to catch.
+                print(
+                    f"ABANDONED? {r['id']}  status=PLANNED but {r['results']} already holds "
+                    f"{rowcount} of {declared} runs -- still running, or killed and never recorded?"
+                )
+                problems += 1
+            elif r["status"] == "PARTIAL":
+                # PARTIAL is the acknowledgement that this file is a mid-run snapshot. The
+                # short row count is then a recorded fact, not an unresolved problem, so it
+                # is reported without failing the check.
+                print(
+                    f"partial    {r['id']}  {r['results']} holds {rowcount} of {declared} runs "
+                    f"(declared PARTIAL)"
+                )
+                continue
+            else:
                 print(
                     f"TRUNCATED  {r['id']}  {r['results']} holds {rowcount} runs, "
                     f"ledger declares {declared} -- killed mid-run?"
