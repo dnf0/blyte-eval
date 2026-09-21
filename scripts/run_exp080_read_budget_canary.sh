@@ -64,8 +64,10 @@ echo "paired_run exit: ${RC}"
 echo "archiving activity traces ..."
 found=0
 while IFS= read -r trace; do
-  ws=$(dirname "$(dirname "$trace")")
-  tag=$(basename "$ws")
+  # <run>/<task-dir>/workspace/.agent-state/guard-activity.jsonl -- the task name is THREE
+  # levels up. Using the workspace dir gave every task the tag "workspace", so each trace
+  # overwrote the last and the archive kept exactly one.
+  tag=$(basename "$(dirname "$(dirname "$(dirname "$trace")")")")
   cp "$trace" "$ARCHIVE/${tag}.guard-activity.jsonl" 2>/dev/null && found=$((found+1))
 done < <(find /tmp/superstate_eval_runs -name "guard-activity.jsonl" 2>/dev/null)
 echo "archived ${found} trace file(s) to ${ARCHIVE}"
