@@ -172,6 +172,52 @@ one command.
 - **An arm's identity**: check the arm name against the report, not from memory.
 - **A result**: read the results JSON, don't recall it.
 
+## Use the cheapest instrument that can answer the question
+
+Most questions asked here are not benchmark questions. On 2026-09-21 four consecutive canary
+runs — roughly two and a half hours and ~$15 — produced no measurement at all, because each
+was stopped by a wiring bug: a binary rebuilt mid-run, a `NameError` at the confirmation gate
+after both milestones had completed, a guard whose denial text instructed the worker to end its
+turn, and hooks that resolved `superstate` through PATH to the previous day's build. None of
+those needed a task corpus, a sealed grader or a scoring pass.
+
+| question | instrument | cost |
+|---|---|---|
+| Is the mechanism wired correctly at all? | `scripts/guard_smoke.sh` | **~2 seconds** |
+| Did a deletion orphan a symbol? | `pytest tests/test_no_orphaned_symbols.py` | instant |
+| Does a gate discriminate? | `scripts/validate_gates.py` | minutes |
+| Does a guard change tokens on read-heavy work? | `scripts/guard_bench.py` | **minutes, cents** |
+| Does a change alter solve rate or cost end-to-end? | `scripts/paired_run.py --canary` | ~60 min, ~$6 |
+| A published claim | `--core`, repeats | hours |
+
+Work down the table, not up. A benchmark run varies a thousand things at once, which is what
+makes it the worst possible instrument for "is this wired correctly" — and the most expensive.
+
+`guard_bench.py` deserves particular note: a guard's effect is *directly* measurable by running
+the same prompt against the same repository with the guard on and off. That is how Spotify's
+Portal measured its own hooks, and it needs no docker image, no sealed grader and no task.
+
+### The recurring hazard: what the harness pins, the engine's children escape
+
+Two of the four failures above were the same defect in different clothes, and both sit exactly
+on the boundary between this repository and `superstate`:
+
+* the eval pins `SUPERSTATE_BIN`, but `cargo build` overwrites that same path — so a rebuild
+  during a run silently swapped the binary under it (fixed by `scripts/pin_superstate_binary.sh`,
+  which snapshots to a run-scoped copy and reports the rev);
+* the eval pins a binary, but the daemon wrote hooks invoking bare `superstate`, resolved
+  through PATH at hook time — so the guards enforcing a run came from a different build than
+  the daemon running it (fixed: hooks embed `current_exe()`).
+
+**Anything the harness pins must be inherited by every process the engine spawns.** This is the
+same family as *Arm input parity* above, one level down: that section is about what the arms
+receive, this is about what the engine's children inherit. The daemon is the recurring offender
+for the same reason — it spawns its own worker, and now its own hooks, and both bypass whatever
+the harness set up.
+
+Neither defect is visible from inside one repository. When changing the daemon's process
+spawning, check the eval's pinning, and vice versa.
+
 ## Running evaluations
 
 - **Never request `--concurrency` above the governor's calculated max.** The surplus worker
