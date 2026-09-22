@@ -1506,3 +1506,45 @@ instrument is shorter than the phenomenon.
 replay -- exactly and without noise. What is unmeasured is whether suppressing these reads
 changes what the worker can DO, and that needs real tasks at real duration, with
 `--no-read-cache` as the control arm.
+
+### 13.24 The detach re-exec silently dropped both new flags (2026-09-22)
+
+EXP-081 was launched, killed after ~90 seconds, and relaunched. The kill was correct and the
+reason is worth more than the run.
+
+`cmd_daemon --detach` re-launches itself as a background process by **re-building the child's
+argv by hand**. Any flag not written into that block is dropped. The harness always detaches,
+so a dropped flag means the daemon runs at a default while the caller, the results file and
+the ledger all record something else.
+
+Both parameters added on 2026-09-21 were lost this way:
+
+| flag | consequence |
+|---|---|
+| `--read-threshold-lines` | a threshold sweep would have run at the default throughout |
+| `--no-read-cache` | EXP-081's control arm provisioned `--read-cache true`, identical to the treatment |
+
+The ablation would have compared an arm against itself and produced a null result reading as
+"the read cache does not matter" -- a false negative with a plausible story and no way to tell
+it from the real thing.
+
+**The unit test passed.** `test_arm_input_parity` asserts the two arms' *spawn commands* differ
+by exactly `--no-read-cache`, and they did. The loss happened one level further down, when the
+daemon re-executed itself. A test at the boundary you are thinking about does not cover the
+boundary you are not.
+
+**What caught it** was comparing the two arms' live `hooks.json` 90 seconds into the run,
+because the hook is what actually governs the worker. That check cost nothing and is now the
+habit: verify the treatment differs from the control *in the artefact the mechanism reads*,
+not in the command that was supposed to produce it.
+
+`test_detach_argv` now covers the class rather than the two known cases: it asserts every
+switch it names is a real flag, so it cannot pass vacuously, then drives a detached daemon end
+to end and checks the values arrive in the provisioned `hooks.json`.
+
+This is the same family as EXP-077, where hooks resolved `superstate` through PATH to the
+previous day's build: **what the caller pins, the engine's children escape.** CLAUDE.md already
+carries that rule. The instance it did not cover is a process re-executing *itself*.
+
+EXP-080 is unaffected -- its adapter passes no threshold flag, so parent and child resolved the
+same default.
