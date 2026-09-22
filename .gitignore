@@ -29,3 +29,8 @@ graphify-out/obsidian/
 graphify-out/20*/
 .worktrees/
 traces/
+
+# Secrets. Never commit. Holds GEMINI_API_KEY.
+.env
+.env.*
+!.env.example
