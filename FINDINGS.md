@@ -1654,3 +1654,37 @@ produced 942-961 lines in the other arm.
 The reason they had never been checked is that neither claim carried a pointer to what
 established it -- which is the argument for citing FINDINGS entries inline in the manifesto,
 so that auditing it is a grep rather than a reconstruction.
+
+### 13.27 CORRECTION: the 13,288-token MCP figure does not reproduce (2026-09-22)
+
+13.17 reported that a "pong" turn costs 24,222 fresh input tokens of which **13,288 is MCP tool
+schemas** (55%), with wall clock 17.2s against 1.7s. That figure has been quoted since as the
+largest single cost lever available. **Re-measured today it is wrong by an order of magnitude.**
+
+| | MCP on | github/notion/slack stripped | delta |
+|---|---|---|---|
+| trivial turn, input tokens | 11,662 | 11,254 | **-3.5%** |
+| tool-using turn, input tokens | 16,138 | 15,452 | **-4.3%** |
+| trivial turn, wall clock (median of 3) | 4.0s | 3.2s | **-21%** |
+
+Repeats were tight -- 11,664/11,660 against 11,250/11,257 -- so this is not noise. The saving
+is roughly **400-690 tokens per invocation**, not 13,288.
+
+Note also that today's baseline trivial turn is **11,662** tokens where 13.17 measured 24,222.
+The baseline itself halved, so something in the environment changed between the two
+measurements and 13.17's method was not recorded well enough to say what. A tool-using turn was
+measured here as well as a trivial one, in case schemas load lazily; they do not appear to --
+both show the same ~4%.
+
+**What this changes.** MCP stripping is a modest win, not the headline: ~4% of tokens and ~20%
+of latency, free, and it removes a source of drift between runs. It stays default-on for
+evaluation runs on that basis. It is **not** the biggest available lever, and the "a third of
+every run is MCP schemas" line in CLAUDE.md is withdrawn.
+
+**The pattern worth naming.** This is the third figure in one day that did not survive
+re-measurement: the read cache's 45-68% saving (13.25, premise invalid), the 1,600-line read
+optimum (13.20, single-file trace), and now 13,288. All three shared a shape -- **derived once,
+under conditions that were not recorded, then quoted as established.** CLAUDE.md's first rule
+already covers it: verify what produced a number before reporting it. The rule needs applying
+to this file's own entries, not only to results JSONs. An entry that cannot be re-run is a
+claim, not a measurement, and should say so.

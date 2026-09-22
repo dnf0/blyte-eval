@@ -262,12 +262,15 @@ spawning, check the eval's pinning, and vice versa.
 - **`sqlite-db-truncate` is unmeasurable** — no verifier ships with it, so its grader exits 127
   for every arm. See `UNMEASURABLE_TASKS`.
 
-## Every token figure includes ~24k of harness preamble
+## Every token figure includes a fixed harness preamble
 
-A turn that replies "pong" and does nothing else costs **24,222 fresh input tokens** under
-`agy`. Of that, **13,288 is MCP tool schemas** -- `github`, `notion`, `slack` and `superstate`
-are enabled globally and load on every invocation -- and ~3,500 is skill expansion. Measured
-2026-09-21; see FINDINGS.md 13.17.
+A turn that replies "pong" and does nothing else costs **~11,700 fresh input tokens** under
+`agy` (measured 2026-09-22). **The 13,288-token MCP figure previously quoted here is withdrawn:**
+re-measured, stripping `github`/`notion`/`slack` saves **~400-690 tokens, 3.5-4.3%**, plus about
+20% of wall clock. See FINDINGS.md 13.27 for the retraction and 13.17 for the original claim.
+
+`scripts/paired_run.py` strips them by default now (`--keep-mcp` opts out), on the basis of the
+smaller number plus the latency and the removal of drift between runs.
 
 Consequences when reading or writing a result:
 
@@ -280,10 +283,9 @@ Consequences when reading or writing a result:
   311. Reducing calls beats shrinking results, which is in tension with Invariant IV's
   interception strategy and worth holding in mind.
 
-Before an expensive run, consider `agy mcp disable github notion slack` and restore afterwards.
-There is no per-invocation flag -- the full flag list has nothing for tools or MCP -- so this is
-an operational step, and a crashed run leaves them disabled. `--disable-slash-commands` does work
-per run and removes skill expansion.
+This is handled automatically: `paired_run.py` renames the MCP config aside for the duration of
+a run and restores it afterwards, self-healing on the next run if one was killed. `superstate`
+is never stripped -- it is Condition B's transport and part of what is under test.
 
 ## Switches (all default OFF)
 
