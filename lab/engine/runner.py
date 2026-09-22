@@ -27,6 +27,7 @@ from lab.engine.adapters import (
     VanillaAdapter,
 )
 from lab.engine.adapters.superstate import ENGINE_PYTHON, ENGINE_RUST
+from lab.engine.void import is_void
 from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
 from lab.engine.extractor import compute_test_metrics, extract_and_grade
 from lab.engine.governor import ConcurrencyGovernor
@@ -402,9 +403,17 @@ class AblationRunner:
                         # consequence, not the diagnosis. Reporting the grading message
                         # first made every agent-side failure look like a bad patch.
                         if run_result.error_message:
-                            failure_reason = f"Agent run failed: {run_result.error_message}"
-                            if grade_res.failure_reason:
-                                failure_reason += f" | grading then reported: {grade_res.failure_reason}"
+                            # A void run is not an agent failure. Prefixing "Agent run failed:"
+                            # onto an UNGATEABLE outcome is exactly how build-cython-ext read as
+                            # seven task losses instead of seven runs that never started.
+                            if is_void(run_result.error_message):
+                                failure_reason = run_result.error_message
+                            else:
+                                failure_reason = f"Agent run failed: {run_result.error_message}"
+                                if grade_res.failure_reason:
+                                    failure_reason += (
+                                        f" | grading then reported: {grade_res.failure_reason}"
+                                    )
                         else:
                             failure_reason = grade_res.failure_reason
                         extra = {

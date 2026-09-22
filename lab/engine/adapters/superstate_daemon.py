@@ -21,6 +21,7 @@ from lab.engine.adapters.base import (
     TaskRunResult,
     strip_preexisting_guidance,
 )
+from lab.engine.void import UNGATEABLE_PREFIX
 from lab.benchmarks.gate_fixtures import references_sealed_grader
 from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
 from lab.engine.mcp.client import SuperstateMcpClient
@@ -304,11 +305,16 @@ class SuperstateDaemonAdapter(AgentAdapter):
                     # Fail closed and say why. The alternative -- letting the run continue --
                     # once put the literal sentinel into state.json as a verification command,
                     # which is unexecutable and would have been read as a task failure.
+                    detail = (res.stderr or res.stdout or "").strip()[:300]
                     logger.error(
                         "TDD handoff failed for %s, so this task cannot be gated: %s",
                         getattr(task, "name", "?"),
-                        (res.stderr or res.stdout or "").strip()[:300],
+                        detail,
                     )
+                    # Record WHY, so the runner can tell "this arm could not start" from
+                    # "the agent tried and failed". Without it build-cython-ext was scored
+                    # passed=False for seven consecutive canaries (FINDINGS 13.20).
+                    self._ungateable_reason = f"{UNGATEABLE_PREFIX} {detail}"
                     return False
                 if res.returncode == 0:
                     return True
@@ -788,12 +794,16 @@ class SuperstateDaemonAdapter(AgentAdapter):
 
         # Step 1: Initialize state
         if not self._init_daemon_state(workspace_path, task, effective_vcmd):
+            # A task this arm cannot GATE is not a task the agent failed to DO. Invariant II
+            # forbids falling back to an ungated `true`, so failing closed is correct -- but
+            # the outcome must be recorded as void, not as a loss.
+            ungateable = getattr(self, "_ungateable_reason", None)
             return TaskRunResult(
                 task_id=task.task_id,
                 harness_name=self.name,
                 success=False,
                 duration_seconds=time.monotonic() - start_time,
-                error_message="Failed to initialize daemon state",
+                error_message=ungateable or "Failed to initialize daemon state",
                 provenance=self.get_provenance(),
             )
 

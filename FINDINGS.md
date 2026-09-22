@@ -1302,6 +1302,30 @@ increasing order of how much they change what the arm measures:
 Option 1 is strictly a correction and should happen regardless. 2 and 3 change what the arm
 does and need to be chosen deliberately, not overnight.
 
+**Option 1 implemented 2026-09-22.** `lab/engine/void.py` gives the harness a vocabulary it
+did not have: a run can now be **UNMEASURABLE** (nobody can grade this task -- a property of
+the task, true for every arm) or **UNGATEABLE** (this arm could not derive a verification
+command for a task that is otherwise gradeable -- a property of the arm). The distinction
+decides what you fix: an unmeasurable task leaves the corpus, an ungateable run is a gap in
+the arm.
+
+Three places changed. The daemon adapter marks a failed TDD handoff `UNGATEABLE` instead of
+the generic "Failed to initialize daemon state". The runner no longer prefixes "Agent run
+failed:" onto a void outcome -- that wrapping is precisely what made seven runs that never
+started read as seven runs the agent lost. The reporter excludes void runs from the pass-rate
+denominator and renders a `Void` column, because silently dropping them would hide that the
+corpus shrank. Re-scored, EXP-080 reads **Scored 2, Passes 0, Void 1** rather than 0/3.
+
+Note the reporter defect was more general than this one task: `total_tasks = len(arm_runs)`
+with `failures = total_tasks - passes` meant even the pre-existing UNMEASURABLE path would
+have depressed a pass rate. It never did only because `paired_run.py` filters those tasks out
+by name before the run starts. Both are now handled at the point of aggregation.
+
+**Historical results files are not retro-corrected.** They predate the marker, so their rows
+still read `Agent run failed: Failed to initialize daemon state`. Auto-classifying that string
+as void would be guessing -- it is a generic message that could have other causes. Use the
+detection rule instead: single-digit wall clock at $0.00 did not run.
+
 ### 13.21 The read budget is second-order; the repeated-read call is first-order (2026-09-22)
 
 EXP-080, from two archived traces (`traces/exp080_20260921_230506`). Replay is arithmetic, so

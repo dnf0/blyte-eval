@@ -16,6 +16,8 @@ import shutil
 import tarfile
 from typing import Any
 
+from lab.engine.void import UNMEASURABLE_PREFIX
+
 logger = logging.getLogger("superstate_eval.extractor")
 
 # Files the harness itself writes into the workspace. They differ by arm
@@ -207,7 +209,7 @@ def _unmeasurable_result(
     """
     if recorder is not None:
         try:
-            recorder.record_verifier_output(f"UNMEASURABLE: {reason}")
+            recorder.record_verifier_output(f"{UNMEASURABLE_PREFIX} {reason}")
         except Exception:
             pass
     return EvaluationResult(
@@ -218,7 +220,7 @@ def _unmeasurable_result(
         exit_code=-1,
         patch_path=patch_path,
         state_json_path=None,
-        failure_reason=f"UNMEASURABLE: {reason}",
+        failure_reason=f"{UNMEASURABLE_PREFIX} {reason}",
         stats={"unmeasurable": True},
     )
 

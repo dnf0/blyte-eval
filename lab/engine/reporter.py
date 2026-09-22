@@ -7,6 +7,7 @@ import re
 from typing import Any, Dict, List
 
 from lab.engine.budget_policy import RunTelemetry
+from lab.engine.void import is_void, void_kind
 
 
 def generate_comparison_summary(
@@ -20,10 +21,19 @@ def generate_comparison_summary(
     summary: Dict[str, Dict[str, Any]] = {}
 
     for arm, arm_runs in arms.items():
-        total_tasks = len(arm_runs)
-        passes = sum(1 for r in arm_runs if r.passed)
+        attempted = len(arm_runs)
+        # A run that produced no measurement -- nobody could grade the task, or this arm could
+        # not derive a gate for it -- is not a failure and must leave the denominator. Counting
+        # them made seven canaries read 0/3 when only two tasks could be scored at all
+        # (FINDINGS 13.20). They are reported separately rather than dropped silently.
+        void_runs = [r for r in arm_runs if is_void(r.failure_reason)]
+        scored_runs = [r for r in arm_runs if not is_void(r.failure_reason)]
+        void = len(void_runs)
+        total_tasks = len(scored_runs)
+        passes = sum(1 for r in scored_runs if r.passed)
         failures = total_tasks - passes
         pass_rate = round((passes / total_tasks * 100.0) if total_tasks > 0 else 0.0, 1)
+        void_kinds = Counter(void_kind(r.failure_reason) for r in void_runs)
         total_cost = round(sum(r.cost_usd for r in arm_runs), 2)
         total_wall_clock_sec = round(sum(r.wall_clock_sec for r in arm_runs), 1)
         total_extensions = round(sum(r.lease_extensions_earned_sec for r in arm_runs), 1)
@@ -44,6 +54,9 @@ def generate_comparison_summary(
 
         summary[arm] = {
             "total_tasks": total_tasks,
+            "attempted_tasks": attempted,
+            "void": void,
+            "void_kinds": dict(void_kinds),
             "passes": passes,
             "failures": failures,
             "pass_rate_pct": pass_rate,
@@ -69,9 +82,9 @@ def generate_comparison_summary(
 def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
     """Render summary as a formatted text table for reports."""
     lines = [
-        "| Paradigm Arm | Tasks | Passes | Strict Pass Rate | Total Cost ($) | Cost/Solve ($) | "
-        "Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | "
+        "Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for arm, stats in summary.items():
         wall_min = round(stats["total_wall_clock_sec"] / 60.0, 1)
@@ -83,7 +96,8 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
         tok_out = stats.get("output_tokens_per_solve")
         lines.append(
             f"| {arm} | {stats['total_tasks']} | {stats['passes']} | {stats['pass_rate_pct']}% | "
-            f"${stats['total_cost_usd']} | {cost_solve} | {wall_min}m | {ext_min}m | "
+            f"{stats.get('void', 0)} | ${stats['total_cost_usd']} | {cost_solve} | "
+            f"{wall_min}m | {ext_min}m | "
             f"{tok_in if tok_in is not None else 'N/A'} | "
             f"{tok_out if tok_out is not None else 'N/A'} |"
         )
