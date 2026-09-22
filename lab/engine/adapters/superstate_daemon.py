@@ -159,6 +159,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         auto_rollback: Optional[bool] = None,
         rollback_policy: str = "always",
         impact_slicing: Optional[bool] = None,
+        read_cache: bool = True,
         driver: Any = None,
     ) -> None:
         """Initialize SuperstateDaemonAdapter with driver preset and polling configuration."""
@@ -194,6 +195,11 @@ class SuperstateDaemonAdapter(AgentAdapter):
             )
         self.rollback_policy: str = rollback_policy
         self.impact_slicing: bool = impact_slicing if impact_slicing is not None else impact_slicing_enabled()
+        # The read cache suppresses a read whose lines the worker already holds. Unlike the
+        # line budget it changes what the worker SEES, not only what a read costs, so it is
+        # ablatable: 13.23 established that no offline instrument can tell whether that
+        # changes what the worker can do.
+        self.read_cache: bool = read_cache
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
         # Which of Invariant 2's two sources supplied this run's verification command.
@@ -228,6 +234,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
             # only way to answer that from a results file.
             "gate_source": self.gate_source,
             "rollback_policy": self.rollback_policy,
+            "read_cache": self.read_cache,
         }
 
     def _exclude_harness_artifacts(self, workspace_path: Path) -> None:
@@ -383,6 +390,10 @@ class SuperstateDaemonAdapter(AgentAdapter):
             cmd.append("--no-auto-rollback")
         if self.impact_slicing:
             cmd.append("--impact-slicing")
+        # Only the OFF form exists on `state daemon` (the cache is on by default), so the
+        # ablation arm is the one that carries a flag. Asserted by test_arm_input_parity.
+        if not self.read_cache:
+            cmd.append("--no-read-cache")
         return cmd
 
     def _spawn_daemon(self, workspace_path: Path) -> bool:

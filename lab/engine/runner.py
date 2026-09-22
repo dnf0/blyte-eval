@@ -197,6 +197,25 @@ class AblationRunner:
                 rollback_policy=policy,
                 name=f"superstate_daemon_{policy.replace('-', '_')}",
             )
+        elif arm in (
+            "superstate_daemon_nocache",
+            "superstate-daemon-nocache",
+            "daemon_nocache",
+        ):
+            # The read-cache ablation. Identical to superstate_daemon_full in EVERY other
+            # respect -- advisory review, rollback, impact slicing -- so the pair differs by
+            # one flag and nothing else. Six false findings in this project came from an arm
+            # receiving something its counterpart did not.
+            #
+            # Named apart because harness_name is what lands in the results JSON; pooling the
+            # two under one name would make the comparison invisible.
+            return SuperstateDaemonAdapter(
+                advisory_review=True,
+                auto_rollback=True,
+                impact_slicing=True,
+                read_cache=False,
+                name="superstate_daemon_nocache",
+            )
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(

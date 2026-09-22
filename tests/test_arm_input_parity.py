@@ -221,3 +221,55 @@ def test_the_superseded_arms_are_labelled_as_such() -> None:
     assert "deprecated_arm" not in SuperstateDaemonAdapter().get_provenance(), (
         "the daemon is the active arm and must not be labelled superseded"
     )
+
+
+def test_read_cache_ablation_differs_by_exactly_one_flag():
+    """`superstate_daemon_nocache` must differ from `superstate_daemon_full` only in the cache.
+
+    Six false findings in this project were an arm receiving something its counterpart did
+    not: an unpinned --model, a missing --output-format, absent container guidance, a missing
+    --print-timeout, a strict gate on one side only, and a hardcoded TDD scaffold. An ablation
+    whose arms differ in two ways measures neither.
+    """
+    from pathlib import Path
+
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner.__new__(AblationRunner)
+    treatment = runner._get_adapter("superstate_daemon_full")
+    control = runner._get_adapter("superstate_daemon_nocache")
+
+    assert treatment.read_cache is True
+    assert control.read_cache is False
+
+    ws = Path("/tmp/parity-probe")
+    t_cmd = treatment._build_daemon_spawn_cmd(ws)
+    c_cmd = control._build_daemon_spawn_cmd(ws)
+
+    # The ONLY difference in the spawn command may be the ablation flag itself.
+    assert [a for a in c_cmd if a not in t_cmd] == ["--no-read-cache"], (
+        f"control carries unexpected extra arguments:\n  treatment={t_cmd}\n  control={c_cmd}"
+    )
+    assert [a for a in t_cmd if a not in c_cmd] == [], (
+        f"treatment carries arguments the control does not:\n  treatment={t_cmd}\n  control={c_cmd}"
+    )
+
+
+def test_read_cache_ablation_is_named_apart_from_the_treatment():
+    """Pooling both under one harness_name would make the comparison invisible in results."""
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner.__new__(AblationRunner)
+    treatment = runner._get_adapter("superstate_daemon_full")
+    control = runner._get_adapter("superstate_daemon_nocache")
+    assert treatment.name != control.name
+    assert control.name == "superstate_daemon_nocache"
+
+
+def test_read_cache_state_reaches_the_results_provenance():
+    """A results file must say which side of the ablation produced it."""
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner.__new__(AblationRunner)
+    control = runner._get_adapter("superstate_daemon_nocache")
+    assert control.get_provenance()["read_cache"] is False
