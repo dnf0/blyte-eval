@@ -1733,3 +1733,51 @@ calls, and that is a worker-plane problem.**
 **Method note.** The replay is imperfect -- a freshly-initialised repo is not the mid-run tree,
 and commands with pipes, redirects or docker were excluded (451 of 582). It establishes an
 order of magnitude, not a precise figure, and that is all the decision needed.
+
+### 13.29 Half of all tokens are spent waiting, not working (2026-09-22)
+
+Found while de-risking the SKILL.state schema question. It does not answer that question; it
+displaces it.
+
+Per-turn telemetry from EXP-081's four runs, classified by whether a turn's entire response
+was about waiting for a background task:
+
+| run | waiting | working | waiting share |
+|---|---|---|---|
+| katex, cache on | 3,908,127 | 825,809 | **82.6%** |
+| katex, control | 1,795,595 | 2,040,524 | **46.8%** |
+| scc, cache on | 0 | 2,067,075 | 0% |
+| scc, control | 0 | 1,346,477 | 0% |
+| **all four** | **5,703,722** | 6,279,885 | **47.6%** |
+
+The single most expensive turn recorded anywhere in this project cost **1,384,188 input tokens,
+15,327,627 cache reads, 151,142 output and 110,092 thinking tokens**. Its complete response:
+
+> Notice: The task 'Running jest on reproduction test' is currently running in the background.
+> Please wait for it to complete.
+> Wait for lint task to finish.
+
+**Mechanism.** agy backgrounds long-running commands through `manage_task`. The agent then
+polls for completion, and *each poll is a full model turn* carrying the entire accumulated
+conversation. A slow test suite therefore converts directly into millions of tokens of nothing.
+scc shows 0% because Go's test suite returns fast enough to run inline; katex runs jest and
+yarn, and pays 47-83%.
+
+**This is the problem the command guard was built for, and bolting it on made things worse.**
+Debouncing the polls is treating the symptom at the wrong layer: 13.13 records the guard's
+denial text instructing the worker to yield its turn, which in headless mode ends the run
+outright. You cannot fix "the agent must poll" from outside the loop -- you can only make
+polling more expensive or more fatal.
+
+**What actually fixes it is one line of harness design: execute the command synchronously and
+return its result.** No background task, no polling, no turn. That is unavailable at every
+layer we have been working at and trivial at the layer above.
+
+**Caveats.** Four runs, two tasks, and the entire effect comes from katex. The honest
+generalisation is "wherever the verification command is slower than the harness will block
+for", which is most real repositories, but it is a mechanism established on one of them.
+
+**Consequence for the harness question.** The dominant cost here is not context accumulation
+from reading, which is what SKILL.state addresses, and not per-call preamble, which is what the
+perimeter addresses. It is turns spent on nothing. Any new runtime should be measured on that
+first, because it is the largest number in this file and the cheapest to remove.
