@@ -193,6 +193,14 @@ those needed a task corpus, a sealed grader or a scoring pass.
 Work down the table, not up. A benchmark run varies a thousand things at once, which is what
 makes it the worst possible instrument for "is this wired correctly" — and the most expensive.
 
+**But check the mechanism's timescale before picking on cost alone.** An instrument shorter
+than the phenomenon measures nothing, however cheap. The read cache fires on the *second* visit
+to a file, and a worker does not revisit until it has gone away and come back: 0% of reads are
+fully-held repeats two minutes into a run, 29–39% at thirty minutes, 39–61% over a whole run. A
+`guard_bench` turn is ~2 minutes, so it cannot see the cache at all — while it measures the read
+*budget*, which fires on the first oversized read, perfectly well. Before reaching for the cheap
+instrument, ask when the thing you are measuring starts happening. See FINDINGS 13.23.
+
 `guard_bench.py` deserves particular note: a guard's effect is *directly* measurable by running
 the same prompt against the same repository with the guard on and off. That is how Spotify's
 Portal measured its own hooks, and it needs no docker image, no sealed grader and no task.
