@@ -1781,3 +1781,46 @@ for", which is most real repositories, but it is a mechanism established on one 
 from reading, which is what SKILL.state addresses, and not per-call preamble, which is what the
 perimeter addresses. It is turns spent on nothing. Any new runtime should be measured on that
 first, because it is the largest number in this file and the cheapest to remove.
+
+### 13.30 Offered a state file, the agent wrote nothing to it (2026-09-22)
+
+Superstate has always exposed `state note`, and `.agent-state/state.json` carries a `notes`
+array the worker can append to. On a full katex task -- two milestones, five failed
+verifications, five rollbacks, eventually passing -- the array held **15 entries, of which the
+agent wrote 0**. Every one was authored by `superstate-daemon`:
+
+    [impact-pass]  [retry-extend]  [verify-fail] x5  [rollback] x5
+
+**Caveat, and it matters:** the handoff prompt names the state file and the gate command but
+never asks the worker to record anything. This is absence of instruction as much as absence of
+need, and it does not establish that an agent *would not* write useful state if asked.
+
+**What it does establish** is that the state which accumulated and proved useful was
+**runtime-observed**: what failed, what was rolled back, what the tree looked like between
+attempts. Facts the runtime is better placed to know than the worker, and -- unlike a worker's
+self-report -- ones it cannot get wrong.
+
+Same trace incidentally shows Invariant III working plainly: five failed attempts, five clean
+rollbacks, then a pass.
+
+**Design consequence, and how the open schema question gets settled.** State splits into three
+regions by *authority*, not by who happens to write:
+
+| region | written by | mutable to the agent |
+|---|---|---|
+| **orchestrator** — goal, gate, acceptance criteria | human or calling agent | **never** |
+| **runtime** — observed facts, failures, rollbacks | the harness | no |
+| **agent** — working notes, hypotheses, findings | the worker | yes |
+
+The first is non-negotiable and settles the question this project spent a week on: a control
+plane that lets the worker author its definition of done is self-grading with extra steps.
+DeepSeek's harness reaches the same place by a different route -- its `create_goal`/`update_goal`
+tools require "direct-human root authority" -- which is the enforcement mechanism superstate
+asserted as doctrine but never had.
+
+The third region is the experiment. SKILL.state's own limitation #1 is the unknown schema; the
+way to answer it is to offer the region, *this time actually ask for it in the prompt*, and
+measure what keys appear across a handful of real tasks. A stable shape means formalise it.
+Nothing written, having been asked, means state is runtime-owned and the paper's patch model
+does not transfer to software engineering. Either outcome is worth more than a guess, and it
+costs nothing extra once the loop exists.
