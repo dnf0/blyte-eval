@@ -1604,3 +1604,53 @@ would flip the sign, and nothing here shows that is achievable at the perimeter.
 fifteen minutes into this one, competing for CPU and RAM. Both arms ran concurrently through
 that window so it should not bias the comparison, but it adds noise to wall clock. `pkill` on
 the wrapper does not stop a detached daemon -- the same lesson as the racing `run_sweep.sh`.
+
+### 13.26 The manifesto's two unsourced claims, checked (2026-09-22)
+
+Both survive, neither as written. Checked against archived EXP-081 telemetry and the existing
+ledger; no new runs, about five minutes.
+
+**Claim: "Within three turns, the repository is littered with contradictory partial fixes,
+dangling syntax, and wrecked git trees."**
+
+Directionally supported, with different evidence than the wording implies. EXP-059 is a pure
+ablation -- rollback on, versus retaining dirty working-tree state across retries -- and the
+managed arm scored 3/3 against 2/3 while spending **25.3% fewer input tokens per solve** (683k
+vs 915k) at $0.79 vs $1.06. EXP-071 adds that failing turns are not hypothetical: rollback
+fired on **all 30 verification failures** in one run.
+
+What is *not* measured is the picture the sentence paints. Nothing here inspects tree state,
+counts contradictory fixes, or observes dangling syntax; "within three turns" is a figure with
+no measurement behind it. The defensible claim is about cost and solve rate, not about what the
+tree looks like.
+
+EXP-071 also supplies a counterweight the manifesto omits entirely: rollback reset one worker's
+**committed feature five times**, rebuilding it each time. Resetting is not free, which is
+precisely why `rollback_policy` became a measured switch rather than a constant.
+
+**Claim: "Multi-thousand line compiler dumps and noisy test logs saturate the context window."**
+
+True in kind, wrong in frequency -- and the correction strengthens the mechanism rather than
+weakening it. Across 64 command outputs in four EXP-081 workspaces:
+
+| | katex full | katex nocache | scc full | scc nocache |
+|---|---|---|---|---|
+| outputs | 10 | 16 | 17 | 21 |
+| median lines | 140 | 196 | 307 | 165 |
+| max lines | 408 | 376 | 961 | **25,105** |
+| >=1,000 lines | 0 | 0 | 0 | 1 |
+
+**One output of 64 (1.6%) was multi-thousand-line. It was 25,105 lines -- 88% of that arm's
+entire output volume and 26x the next largest** -- and it was exactly what the manifesto names:
+`go test ./...` exiting 1.
+
+So this is a heavy tail, not a common case. The manifesto reads as though every build floods
+the context; measurement says almost none do and one will. That is a *better* argument for
+mechanical shunting than the original, because the distribution is unpredictable: no rule about
+which commands are noisy would have caught this one, since the same `go test` invocation
+produced 942-961 lines in the other arm.
+
+**Method note.** Both checks were answerable from telemetry already on disk plus the ledger.
+The reason they had never been checked is that neither claim carried a pointer to what
+established it -- which is the argument for citing FINDINGS entries inline in the manifesto,
+so that auditing it is a grep rather than a reconstruction.
