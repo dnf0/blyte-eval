@@ -1688,3 +1688,48 @@ under conditions that were not recorded, then quoted as established.** CLAUDE.md
 already covers it: verify what produced a number before reporting it. The rule needs applying
 to this file's own entries, not only to results JSONs. An entry that cannot be re-run is a
 claim, not a measurement, and should say so.
+
+### 13.28 Host-side command shunting is a ~5% lever, not a 55% one (2026-09-22)
+
+I had been quoting "55-59% of commands are host-side and never shunted" as the largest
+remaining lever. That is a share of COMMAND COUNT, and I had never measured the share of
+OUTPUT VOLUME. They are not the same number.
+
+582 distinct host-side commands were extracted from the EXP-080/081 traces and the 451
+read-only ones replayed against copies of the real repositories -- deterministic, no LLM, a
+couple of minutes:
+
+| | |
+|---|---|
+| total output | **13,742 lines** |
+| median | **6 lines** |
+| over the 50-line shunt threshold | 61 commands (14%), carrying 9,859 lines (72% of host volume) |
+| **>= 1,000 lines** | **zero** |
+| largest | 820 (`git diff HEAD~1`) |
+
+What host-side commands actually are: 297 greps (`git grep`, `grep -n`, `grep -rn`), then
+`git status` x75, `ls -la` x74, `git log` x55, `git diff` x50, `git show` x34. Overwhelmingly
+tiny, with a tail in the hundreds of lines concentrated in `git diff` variants.
+
+**The catastrophic-tail argument does not transfer.** Container-side, one command produced
+25,105 lines -- 88% of that run's output volume -- which is what makes mechanical shunting
+compelling there. Host-side the largest of 451 was 820 lines. Shunting the 61 oversized
+commands to head+tail would save roughly 6,800 lines, on the order of **75k tokens of
+conversation content** against runs admitting 1.1M-4.7M input tokens. Single-digit percent,
+the same order as the read budget, for a mechanism with materially more risk: a `PreToolUse`
+hook cannot see output that does not exist yet, so shunting host commands means the hook
+*executing* them itself, with all the cwd, environment and timeout divergence that implies.
+
+**Recommendation: do not build it now.** The measured benefit does not justify that risk, and
+the same effort spent on call count would be worth more.
+
+**Where the cost actually is, restated.** Reads cost ~620k on katex (13.21), host commands
+~151k here, container commands already shunted. That is well under a quarter of a 4.7M-token
+run. The remainder is the conversation being re-sent on every call, which scales with **call
+count**, and 13.25 established the perimeter cannot reduce call count. Three separate
+measurements now point the same way: **the remaining lever is not a bigger guard, it is fewer
+calls, and that is a worker-plane problem.**
+
+**Method note.** The replay is imperfect -- a freshly-initialised repo is not the mid-run tree,
+and commands with pipes, redirects or docker were excluded (451 of 582). It establishes an
+order of magnitude, not a precise figure, and that is all the decision needed.
