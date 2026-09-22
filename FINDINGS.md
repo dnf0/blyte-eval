@@ -1372,3 +1372,19 @@ never bounded. Confirms EXP-079's suspicion and remains the second untouched lev
 and one never ran -- scc 28/31 fail-to-pass with 286/286 pass-to-pass, katex 85/94 with 599/599,
 build-cython-ext aborted in 7 seconds (13.20). A 0/3 canary here does not mean the arm did
 nothing; it means the binary threshold is unforgiving and one cell was void.
+
+**Addendum (finer grid).** 400 was the minimum of a coarse grid that jumped 200-400-800, so it
+was worth checking it is not a grid artefact. Replayed at 17 thresholds, both repositories put
+their minimum at exactly 400 independently, inside a shallow basin running roughly 300-450:
+
+| | 250 | 300 | 350 | **400** | 450 | 500 | 800 |
+|---|---|---|---|---|---|---|---|
+| katex | 138,232 | 137,756 | 136,361 | **133,861** | 138,041 | 140,249 | 151,562 |
+| scc | 95,040 | 87,540 | 85,040 | **80,040** | 80,040 | 84,209 | 80,328 |
+
+Two caveats worth keeping. The cost function is a step function -- `ceil(wanted / threshold)`
+calls per file -- so the curve is jagged and individual local minima are partly quantisation;
+scc's 800 dipping back to 80,328 is that effect, not a second optimum. And the model assumes
+wanted lines repack optimally into windows, which flatters high thresholds, so if anything the
+true optimum sits at or below 400 rather than above it. The basin, not the exact integer, is
+the finding: **anything in 300-450 is defensible; 800 is not.**
