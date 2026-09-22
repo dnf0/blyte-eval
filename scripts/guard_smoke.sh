@@ -82,6 +82,39 @@ check "whole-file read, relative path from .agents cwd" deny \
 check "bounded read (lines 10-60)" allow \
   '{"tool_name":"view_file","tool_input":{"path":"internal/handlers.go","start_line":10,"end_line":60}}' "$WS/.agents" pre-tool-use
 
+# The read cache. A distinct helper because these checks turn on WHY a read was refused --
+# "you already hold this" and "this exceeds the budget" are both `deny` to the caller, and a
+# test that cannot tell them apart would pass with the cache switched off.
+cache_check() { # name, expected(allow|cached), start, end
+  local name="$1" want="$2" body got
+  body=$(cd "$WS/.agents" && printf '{"toolCall":{"name":"view_file","args":{"AbsolutePath":"%s","StartLine":%s,"EndLine":%s}}}' \
+          "$WS/internal/handlers.go" "$3" "$4" \
+          | SUPERSTATE_WORKTREE_PATH="$WS" "$BIN" guard pre-tool-use 2>/dev/null)
+  case "$body" in
+    *"Already in context"*) got=cached ;;
+    *'"decision":"allow"'*) got=allow ;;
+    *) got=deny ;;
+  esac
+  if [ "$got" = "$want" ]; then
+    printf '  ok      %-52s -> %s\n' "$name" "$got"
+  else
+    printf '  FAIL    %-52s -> %s (wanted %s)\n' "$name" "${got:-<none>}" "$want"
+    fail=1
+  fi
+}
+
+echo "read cache:"
+# A window the earlier "bounded read" check did NOT touch -- it read 10-60, and reusing it
+# here silently started this sequence one step in, reporting a first read as a cache hit.
+cache_check "first read of a window"                        allow  100 160
+cache_check "identical window is served from context"       cached 100 160
+cache_check "insisting on it is honoured"                   allow  100 160
+cache_check "a window inside one already held"              cached 110 140
+cache_check "a window never fetched"                        allow  300 340
+printf '\n# line added by the smoke test\n' >> "$WS/internal/handlers.go"
+cache_check "editing the file invalidates what was held"    allow  10 60
+echo
+
 echo "shell channel:"
 check "cat whole file" deny \
   '{"tool_name":"run_command","tool_input":{"CommandLine":"cat internal/handlers.go"}}' "$WS/.agents" pre-command

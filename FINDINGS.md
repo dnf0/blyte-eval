@@ -1412,3 +1412,55 @@ scc's 800 dipping back to 80,328 is that effect, not a second optimum. And the m
 wanted lines repack optimally into windows, which flatters high thresholds, so if anything the
 true optimum sits at or below 400 rather than above it. The basin, not the exact integer, is
 the finding: **anything in 300-450 is defensible; 800 is not.**
+
+### 13.22 The read cache, and why it answers with a pointer (2026-09-22)
+
+Built from 13.21. Invariant IV's enumerated mechanisms were calibrated to massive file reads,
+which measurement puts at ~4,740 tokens of a 1.9M turn; the volume is repeated reads, which no
+Invariant IV mechanism addressed. The cache is a fourth mechanism at the same perimeter.
+
+**It returns a pointer, not the content.** Serving the cached lines back would save nothing --
+they are already in the transcript, so re-sending them costs what the read would have. The
+saving comes from answering in ~60 tokens that the worker already holds these lines, so
+neither the ~2,500-token call preamble nor a duplicate copy enters context, and neither is
+re-sent on every subsequent turn.
+
+**Two mechanical escapes, because context collapse is real.** The manifesto names it as the
+third failure of chat-driven development, and a worker whose context was compacted genuinely
+may not hold what the cache believes it holds. Neither escape requires the worker to read or
+understand the refusal, which matters because Invariant IV exists precisely because prose does
+not bind an agent under pressure:
+
+* **Content change invalidates.** Records are keyed by a hash of the file, so any edit -- the
+  worker's own, or a scoped rollback's -- drops every prior record for that path. A read after
+  a write is never suppressed.
+* **Insisting wins.** The identical window requested twice in a row is served. The worst case
+  is one wasted denial.
+
+**A bug that would have starved the worker, caught by an existing test.** The first wiring
+recorded a window as held at *request* time. A whole-file read that the line budget denied --
+and served as an AST outline -- was therefore banked as though the worker had received those
+lines, and every later read of any window inside that file would have been suppressed. The
+worker would have been refused content it never got, with only the insist escape to recover.
+`test_flexible_payload_formats_and_tool_names` failed because its second read flipped from
+allow to deny; the diagnosis came from asking why, rather than pinning the test. **Windows are
+now recorded only when the read is actually allowed.**
+
+The general lesson is worth keeping: a cache of what someone else holds must be written from
+what was *delivered*, never from what was *asked for*.
+
+**Kept ablatable.** `--read-cache` on the guard, `DaemonConfig.read_cache`, `--no-read-cache`
+on `state daemon`, and a `file_cached` arm in `guard_bench.py`. This mechanism changes what the
+worker SEES, not only what it costs, so it could move solve rate in either direction and must
+be measured rather than assumed. A test asserts the ablation reaches the provisioned hook --
+an ablation arm that silently runs the treatment is the shape of six prior parity defects.
+
+`guard_bench.py` now counts cache hits separately from denials, because a cache hit writes no
+denial record and an arm running the cache would otherwise report zero and look inert. Quoting
+a token delta beside a mechanism that provably did nothing is exactly how the 23.8% noise floor
+was nearly mistaken for a result.
+
+**Not yet measured live.** The 45-68% is an offline replay. What is unmeasured is whether
+suppressing these reads changes what the worker can do. `guard_bench.py --configs
+file,file_cached` answers the token half in minutes and cents; the solve-rate half needs a
+paired canary with `--no-read-cache` as the control.

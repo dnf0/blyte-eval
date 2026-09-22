@@ -44,20 +44,30 @@ DEFAULT_BIN = Path("/Users/danielfisher/repos/superstate/target/release/supersta
 # The read budget the benched arms enforce. Deliberately a module-level knob and NOT the
 # binary's default: a bench that silently inherits the default stops being a comparison the
 # moment the default moves, and the whole point of this harness is to vary the parameter.
-# `--threshold-lines` overrides it; see FINDINGS 13.18 for how 800 was chosen.
-READ_THRESHOLD_LINES = 800
+# `--threshold-lines` overrides it; see FINDINGS 13.21 for how 400 was chosen.
+READ_THRESHOLD_LINES = 400
 
 CONFIGS: dict[str, list[tuple[str, str, str]]] = {
     # name: [(hook group, tool matcher, guard subcommand + flags)]
     "none": [],
+    # The line budget alone, cache OFF. The ablation arm for `file_cached`.
     "file": [
-        ("superstate-file-guard", "view_file|View|read_file", "guard pre-tool-use --threshold-lines {threshold}"),
+        ("superstate-file-guard", "view_file|View|read_file",
+         "guard pre-tool-use --threshold-lines {threshold} --read-cache false"),
+    ],
+    # Budget plus read cache. Measured at 45-68% of read cost offline (FINDINGS 13.21); this
+    # is the arm that checks whether a live turn agrees, and whether suppressing a read the
+    # worker already holds changes what it can DO as well as what it costs.
+    "file_cached": [
+        ("superstate-file-guard", "view_file|View|read_file",
+         "guard pre-tool-use --threshold-lines {threshold} --read-cache true"),
     ],
     "command": [
         ("superstate-command-guard", "run_command|manage_task", "guard pre-command --debounce-sec 30"),
     ],
     "full": [
-        ("superstate-file-guard", "view_file|View|read_file", "guard pre-tool-use --threshold-lines {threshold}"),
+        ("superstate-file-guard", "view_file|View|read_file",
+         "guard pre-tool-use --threshold-lines {threshold} --read-cache true"),
         ("superstate-command-guard", "run_command|manage_task", "guard pre-command --debounce-sec 30"),
     ],
 }
@@ -100,6 +110,28 @@ def denials(workspace: Path) -> tuple[int, int]:
     return count, withheld
 
 
+def cache_hits(workspace: Path) -> int:
+    """Reads the cache suppressed, from the activity trace.
+
+    Counted separately from denials on purpose. A cache hit is not a budget denial and writes
+    no denial record, so an arm running the cache would otherwise report zero and look inert.
+    Reporting a token delta beside a mechanism that provably did nothing is how the 23.8%
+    noise floor was nearly mistaken for a result (FINDINGS 13.21).
+    """
+    log = workspace / ".agent-state" / "guard-activity.jsonl"
+    if not log.is_file():
+        return 0
+    hits = 0
+    for line in log.read_text(encoding="utf-8").splitlines():
+        try:
+            entry = json.loads(line)
+        except Exception:
+            continue
+        if entry.get("decision") == "cached":
+            hits += 1
+    return hits
+
+
 def run_once(repo: Path, prompt: str, config: str, binary: Path, model: str,
              timeout_sec: int, threshold: int = READ_THRESHOLD_LINES) -> dict:
     """One agy turn against a pristine copy of the repository."""
@@ -129,12 +161,14 @@ def run_once(repo: Path, prompt: str, config: str, binary: Path, model: str,
         except Exception:
             pass
         count, withheld = denials(workspace)
+        hits = cache_hits(workspace)
         return {
             "config": config,
             "input_tokens": int(usage.get("input_tokens") or 0),
             "output_tokens": int(usage.get("output_tokens") or 0),
             "cache_read_tokens": int(usage.get("cache_read_tokens") or 0),
             "denials": count,
+            "cache_hits": hits,
             "lines_withheld": withheld,
             "seconds": round(elapsed, 1),
             "ok": proc.returncode == 0,
@@ -158,7 +192,7 @@ def main() -> int:
         "--threshold-lines",
         type=int,
         default=READ_THRESHOLD_LINES,
-        help="read budget the file guard enforces (default %(default)s; see FINDINGS 13.18)",
+        help="read budget the file guard enforces (default %(default)s; see FINDINGS 13.21)",
     )
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
@@ -188,7 +222,7 @@ def main() -> int:
                                     args.model, args.timeout_sec, args.threshold_lines))
 
     print(f"\n{'config':10s} {'in_tok':>10s} {'cache_read':>11s} {'out':>8s} "
-          f"{'denials':>8s} {'withheld':>9s} {'secs':>6s}")
+          f"{'denials':>8s} {'cached':>7s} {'withheld':>9s} {'secs':>6s}")
     medians: dict[str, float] = {}
     for name in names:
         rows = [r for r in results if r["config"] == name]
@@ -198,6 +232,7 @@ def main() -> int:
               f"{statistics.median(r['cache_read_tokens'] for r in rows):>11,.0f} "
               f"{statistics.median(r['output_tokens'] for r in rows):>8,.0f} "
               f"{statistics.median(r['denials'] for r in rows):>8,.0f} "
+              f"{statistics.median(r['cache_hits'] for r in rows):>7,.0f} "
               f"{statistics.median(r['lines_withheld'] for r in rows):>9,.0f} "
               f"{statistics.median(r['seconds'] for r in rows):>6,.0f}")
 
