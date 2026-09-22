@@ -1464,3 +1464,45 @@ was nearly mistaken for a result.
 suppressing these reads changes what the worker can do. `guard_bench.py --configs
 file,file_cached` answers the token half in minutes and cents; the solve-rate half needs a
 paired canary with `--no-read-cache` as the control.
+
+### 13.23 `guard_bench` cannot measure the read cache: repeats need time to appear (2026-09-22)
+
+The bench was the right instrument for the read *budget* and is the wrong one for the read
+*cache*. Stopped after one turn, having established why.
+
+**Repeats are a function of elapsed work, not of reading a lot.** Replaying the EXP-080 traces
+by how far into the run each read happened:
+
+| window | katex reads / fully held | scc reads / fully held |
+|---|---|---|
+| first 2 min | 5 / **0 (0%)** | 5 / **0 (0%)** |
+| first 5 min | 6 / 0 (0%) | 16 / 3 (19%) |
+| first 10 min | 12 / 0 (0%) | 28 / 3 (11%) |
+| first 30 min | 62 / 18 (29%) | 74 / 29 (39%) |
+| whole run | 194 / 119 (**61%**) | 74 / 29 (39%) |
+
+A worker re-reads because it has gone away, done something, and come back -- run a test, make
+an edit, follow a call chain into another file and return. None of that has happened two
+minutes in. The 45-68% in 13.21 is a whole-run figure and cannot be collected from a slice at
+the start of one.
+
+**Confirmed directly on the bench's own workload, not merely predicted.** Inspecting the live
+control turn while it ran: 16 reads across 8 distinct files, **0 would have been cache hits**,
+1 partial overlap. A `guard_bench` turn is ~2 minutes, which is precisely the regime where the
+mechanism does nothing.
+
+So the bench would have reported a token delta between two arms whose only difference provably
+never fired -- the same shape as the 23.8% at zero denials in 13.21, and the reason that
+measurement was believed briefly. Continuing would have cost ~30 minutes and several dollars
+to re-derive the noise floor. The run was stopped after ~$0.60.
+
+**What this means for the instrument ladder.** CLAUDE.md's ladder ranks instruments by cost.
+It needs a second axis: *the timescale at which the mechanism engages*. A guard that fires on
+the first oversized read is visible in one turn; a cache that fires on the second visit to a
+file is not visible until there has been a second visit. Cheapness does not help if the
+instrument is shorter than the phenomenon.
+
+**The remaining question needs a canary.** The token half is already answered offline by
+replay -- exactly and without noise. What is unmeasured is whether suppressing these reads
+changes what the worker can DO, and that needs real tasks at real duration, with
+`--no-read-cache` as the control arm.
