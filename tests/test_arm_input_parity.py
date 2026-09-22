@@ -236,22 +236,23 @@ def test_read_cache_ablation_differs_by_exactly_one_flag():
     from lab.engine.runner import AblationRunner
 
     runner = AblationRunner.__new__(AblationRunner)
-    treatment = runner._get_adapter("superstate_daemon_full")
-    control = runner._get_adapter("superstate_daemon_nocache")
+    # The cache defaults OFF after EXP-081, so the TREATMENT is the arm carrying the flag.
+    control = runner._get_adapter("superstate_daemon_full")
+    treatment = runner._get_adapter("superstate_daemon_cache")
 
+    assert control.read_cache is False, "the default arm must not run a measured regression"
     assert treatment.read_cache is True
-    assert control.read_cache is False
 
     ws = Path("/tmp/parity-probe")
     t_cmd = treatment._build_daemon_spawn_cmd(ws)
     c_cmd = control._build_daemon_spawn_cmd(ws)
 
     # The ONLY difference in the spawn command may be the ablation flag itself.
-    assert [a for a in c_cmd if a not in t_cmd] == ["--no-read-cache"], (
+    assert [a for a in t_cmd if a not in c_cmd] == ["--read-cache", "true"], (
         f"control carries unexpected extra arguments:\n  treatment={t_cmd}\n  control={c_cmd}"
     )
-    assert [a for a in t_cmd if a not in c_cmd] == [], (
-        f"treatment carries arguments the control does not:\n  treatment={t_cmd}\n  control={c_cmd}"
+    assert [a for a in c_cmd if a not in t_cmd] == [], (
+        f"control carries arguments the treatment does not:\n  treatment={t_cmd}\n  control={c_cmd}"
     )
 
 
@@ -260,10 +261,10 @@ def test_read_cache_ablation_is_named_apart_from_the_treatment():
     from lab.engine.runner import AblationRunner
 
     runner = AblationRunner.__new__(AblationRunner)
-    treatment = runner._get_adapter("superstate_daemon_full")
-    control = runner._get_adapter("superstate_daemon_nocache")
+    treatment = runner._get_adapter("superstate_daemon_cache")
+    control = runner._get_adapter("superstate_daemon_full")
     assert treatment.name != control.name
-    assert control.name == "superstate_daemon_nocache"
+    assert treatment.name == "superstate_daemon_cache"
 
 
 def test_read_cache_state_reaches_the_results_provenance():
@@ -271,5 +272,5 @@ def test_read_cache_state_reaches_the_results_provenance():
     from lab.engine.runner import AblationRunner
 
     runner = AblationRunner.__new__(AblationRunner)
-    control = runner._get_adapter("superstate_daemon_nocache")
-    assert control.get_provenance()["read_cache"] is False
+    assert runner._get_adapter("superstate_daemon_cache").get_provenance()["read_cache"] is True
+    assert runner._get_adapter("superstate_daemon_full").get_provenance()["read_cache"] is False

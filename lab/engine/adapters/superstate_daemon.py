@@ -159,7 +159,7 @@ class SuperstateDaemonAdapter(AgentAdapter):
         auto_rollback: Optional[bool] = None,
         rollback_policy: str = "always",
         impact_slicing: Optional[bool] = None,
-        read_cache: bool = True,
+        read_cache: bool = False,
         driver: Any = None,
     ) -> None:
         """Initialize SuperstateDaemonAdapter with driver preset and polling configuration."""
@@ -195,10 +195,9 @@ class SuperstateDaemonAdapter(AgentAdapter):
             )
         self.rollback_policy: str = rollback_policy
         self.impact_slicing: bool = impact_slicing if impact_slicing is not None else impact_slicing_enabled()
-        # The read cache suppresses a read whose lines the worker already holds. Unlike the
-        # line budget it changes what the worker SEES, not only what a read costs, so it is
-        # ablatable: 13.23 established that no offline instrument can tell whether that
-        # changes what the worker can do.
+        # DEFAULT OFF. EXP-081 measured +37%/+55% input tokens with the cache on: 89-91% of
+        # suppressions were immediately insisted on, so each one added a round trip instead of
+        # saving one, and a PreToolUse hook cannot prevent the call it refuses. FINDINGS 13.25.
         self.read_cache: bool = read_cache
         self.daemon_pid: Optional[int] = None
         self.step_count: int = 0
@@ -390,10 +389,10 @@ class SuperstateDaemonAdapter(AgentAdapter):
             cmd.append("--no-auto-rollback")
         if self.impact_slicing:
             cmd.append("--impact-slicing")
-        # Only the OFF form exists on `state daemon` (the cache is on by default), so the
-        # ablation arm is the one that carries a flag. Asserted by test_arm_input_parity.
-        if not self.read_cache:
-            cmd.append("--no-read-cache")
+        # The cache is OFF by default after EXP-081, so the arm that ENABLES it is the one
+        # carrying a flag. Asserted by test_arm_input_parity.
+        if self.read_cache:
+            cmd.extend(["--read-cache", "true"])
         return cmd
 
     def _spawn_daemon(self, workspace_path: Path) -> bool:

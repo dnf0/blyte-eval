@@ -1548,3 +1548,59 @@ carries that rule. The instance it did not cover is a process re-executing *itse
 
 EXP-080 is unaffected -- its adapter passes no threshold flag, so parent and child resolved the
 same default.
+
+### 13.25 The read cache makes things worse, and the reason invalidates its premise (2026-09-22)
+
+EXP-081, paired ablation, cache ON vs `--no-read-cache`. Parity verified on the live
+`hooks.json`; treatment recorded 85 and 38 cache hits, control exactly 0, so the comparison was
+live in a way neither `guard_bench` nor the first launch managed.
+
+| task | arm | passed | input tokens | turns |
+|---|---|---|---|---|
+| katex | cache ON | **True** | 4,733,936 | 7 |
+| katex | control | False | **3,443,737** | 7 |
+| scc | cache ON | False | 1,786,702 | 4 |
+| scc | control | **True** | **1,149,043** | 5 |
+
+Solve rate 1-1, no signal at n=2. **Tokens went the wrong way on both tasks: +37% and +55%.**
+On katex both arms took the same seven turns, so this is not the treatment doing more work.
+
+**Why: the escape hatch became the normal path.** 77 of 85 suppressions on katex (**91%**) and
+34 of 38 on scc (**89%**) were immediately insisted on. A worker that has decided it needs
+lines 120-180 needs them; being told it already has them does not change its plan, it just
+re-issues the request. So a suppression does not save a call, it **adds** one: refusal, then
+the read anyway.
+
+    accept  ~10%  saves ~400 tokens   (content not sent)
+    insist  ~90%  costs ~2,300 tokens (a wasted round trip)
+    net     about -1,900 tokens per suppression
+
+The observed gap is larger than that per-suppression figure, which is consistent with each
+wasted round trip permanently enlarging the conversation that every subsequent call re-sends.
+
+**The premise was wrong, not just the tuning.** A `PreToolUse` guard cannot prevent a tool
+call. By the time the hook runs, the model has already emitted the request and the conversation
+has already been re-sent -- **the preamble is spent before the guard sees anything.** The guard
+can only change what the *response* costs.
+
+That invalidates how 13.21 computed the prize. `cost_at()` charges a preamble per call and
+derives its saving from there being fewer calls, which describes a world where redundant reads
+are *eliminated*. A perimeter guard does not eliminate them; it answers them. The 45-68% was
+never available to this mechanism. **The redundancy measurement stands; the attribution of a
+saving to perimeter interception does not.**
+
+**This bounds Invariant IV generally.** Mechanical perimeter interception can shrink what a
+tool call returns. It cannot reduce how many calls a worker makes, and 13.17 established that
+call count -- not response size -- is what cost scales with. Every mechanism the invariant
+names sits on the wrong side of that line for the dominant cost. Reducing calls requires
+changing what the worker decides to do, which is the worker plane, not the perimeter.
+
+**Action taken:** the cache now defaults OFF. Leaving a measured 37-55% regression on by
+default would be worse than not having built it. The code stays, switchable, because the
+insist rate is the thing to attack if anyone returns to this -- a refusal the worker accepts
+would flip the sign, and nothing here shows that is achievable at the perimeter.
+
+**Caveat on the run.** Detached daemons from the killed first launch ran until 08:10, roughly
+fifteen minutes into this one, competing for CPU and RAM. Both arms ran concurrently through
+that window so it should not bias the comparison, but it adds noise to wall clock. `pkill` on
+the wrapper does not stop a detached daemon -- the same lesson as the racing `run_sweep.sh`.

@@ -89,7 +89,7 @@ cache_check() { # name, expected(allow|cached), start, end
   local name="$1" want="$2" body got
   body=$(cd "$WS/.agents" && printf '{"toolCall":{"name":"view_file","args":{"AbsolutePath":"%s","StartLine":%s,"EndLine":%s}}}' \
           "$WS/internal/handlers.go" "$3" "$4" \
-          | SUPERSTATE_WORKTREE_PATH="$WS" "$BIN" guard pre-tool-use 2>/dev/null)
+          | SUPERSTATE_WORKTREE_PATH="$WS" "$BIN" guard pre-tool-use --read-cache true 2>/dev/null)
   case "$body" in
     *"Already in context"*) got=cached ;;
     *'"decision":"allow"'*) got=allow ;;
@@ -103,7 +103,9 @@ cache_check() { # name, expected(allow|cached), start, end
   fi
 }
 
-echo "read cache:"
+# Enabled explicitly: the cache defaults OFF after EXP-081 measured it a regression. These
+# checks cover the MECHANISM, which is still switchable and still has to work when switched on.
+echo "read cache (explicitly enabled; default is off -- FINDINGS 13.25):"
 # A window the earlier "bounded read" check did NOT touch -- it read 10-60, and reusing it
 # here silently started this sequence one step in, reporting a first read as a cache hit.
 cache_check "first read of a window"                        allow  100 160
