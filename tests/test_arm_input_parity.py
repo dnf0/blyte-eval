@@ -18,34 +18,51 @@ ADAPTERS = pathlib.Path("lab/engine/adapters")
 COMPARED_ARMS = ("superstate.py", "superstate_mcp.py", "superstate_daemon.py")
 
 
-def test_every_compared_arm_resolves_the_same_verification_command() -> None:
-    """All arms must consult GATE_FIXTURES before falling back.
+def test_no_compared_arm_consults_a_hand_authored_gate_table() -> None:
+    """Parity is now maintained by removing the shared fixture table, not by sharing it.
 
-    superstate_mcp.py was missed when fixtures were added. It ran on `true` while
-    superstate_daemon ran on a strict hand-written gate, and the daemon lost 5-0 on a
-    20-task comparison purely because of that asymmetry.
+    Until 2026-09-21 this file asserted the opposite: every arm had to call `agent_gate_for`,
+    because `superstate_mcp.py` was once missed when fixtures were added and lost 5-0 on a
+    20-task comparison purely from that asymmetry. Manifesto Invariant V then removed the
+    table itself -- a hand-authored gate leaks the answer's shape and turns diagnosis into
+    test-passing -- so the parity requirement inverts: no arm may consult one.
     """
-    missing = [
+    offenders = [
         name for name in COMPARED_ARMS
-        if "agent_gate_for" not in (ADAPTERS / name).read_text()
+        if "agent_gate_for" in (ADAPTERS / name).read_text()
     ]
-    assert not missing, (
-        f"these arms do not resolve the shared verification command: {missing}. "
-        "An arm-vs-arm result is meaningless while they differ."
+    assert not offenders, (
+        f"these arms consult a hand-authored gate table: {offenders}. See "
+        f"lab/benchmarks/gate_fixtures.py and docs/EVALUATION-PHILOSOPHY.md Invariant 2."
     )
 
 
-def test_no_compared_arm_falls_back_to_true_before_checking_fixtures() -> None:
-    """The `true` fallback must come AFTER the fixture lookup, not instead of it."""
-    for name in COMPARED_ARMS:
+def test_an_ungated_arm_says_so() -> None:
+    """An arm that cannot gate must announce it rather than let `true` look like a verdict.
+
+    `superstate_mcp` and `superstate` are single-milestone by construction, so they cannot
+    run the RED/GREEN DAG that replaced the fixtures. On a task with no native runner they
+    are genuinely ungated, and an ungated run measures the fallback, not the execution model.
+    """
+    for name in ("superstate.py", "superstate_mcp.py"):
         text = (ADAPTERS / name).read_text()
-        if 'else "true"' not in text:
-            continue
-        fixture_at = text.index("agent_gate_for")
-        fallback_at = text.index('else "true"')
-        assert fixture_at < fallback_at, (
-            f"{name} falls back to 'true' before consulting the fixtures"
+        assert 'else "true"' in text, f"{name} no longer has the fallback this test guards"
+        assert "UNGATED" in text, (
+            f"{name} falls back to 'true' without warning that the run is ungated and "
+            f"not comparable with a daemon arm."
         )
+
+
+def test_the_daemon_arm_gates_every_task_one_way_or_the_other() -> None:
+    """The daemon must never reach the `true` fallback: it has TDD for the ungated case."""
+    text = (ADAPTERS / "superstate_daemon.py").read_text()
+    assert "return TDD_MODE, None" in text, (
+        "the daemon's gate resolution must end in autonomous TDD, not a no-op gate"
+    )
+    resolve = text[text.index("def _derive_gate"):text.index("return TDD_MODE, None")]
+    assert 'return "true"' not in resolve, (
+        "the daemon still has a path that hands over an ungated contract"
+    )
 
 
 def test_daemon_worker_invocation_matches_the_shared_driver() -> None:
@@ -164,3 +181,96 @@ def test_no_adapter_uses_raw_substring_matching_for_sealed_grader() -> None:
             f"{name} uses raw `\"/tests/\" in` substring matching. Use `references_sealed_grader()`."
         )
 
+
+
+def test_every_arm_records_which_gating_regime_produced_its_numbers() -> None:
+    """A results file must be able to answer "how many of these tasks were gated?".
+
+    CLAUDE.md requires a write-up to state that, and the helper it named (`agent_gate_for`)
+    was removed with the fixture table. `gate_source` replaces it: autonomous_tdd when the
+    engine derived a RED/GREEN DAG, native_runner when the task shipped its own runner, and
+    ungated when neither applied. The regimes have different failure modes, so a number is
+    not interpretable without knowing which produced it.
+    """
+    from lab.engine.adapters.superstate import SuperstateAdapter
+    from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
+    from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
+
+    for adapter in (SuperstateDaemonAdapter(), SuperstateMcpAdapter(), SuperstateAdapter()):
+        provenance = adapter.get_provenance()
+        assert "gate_source" in provenance, (
+            f"{type(adapter).__name__} does not record its gating regime, so its results "
+            f"cannot be read without guessing."
+        )
+
+
+def test_the_superseded_arms_are_labelled_as_such() -> None:
+    """The daemon is the approach under development; the MCP arms are kept, not developed.
+
+    No MCP arm has run since EXP-065 and `superstate_mcp_planned` has run once (EXP-055).
+    They are retained so the results they produced stay reproducible, which is why the label
+    lives in provenance rather than the arms being deleted.
+    """
+    from lab.engine.adapters.superstate import SuperstateAdapter
+    from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
+    from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
+
+    for adapter in (SuperstateMcpAdapter(), SuperstateAdapter()):
+        assert adapter.get_provenance().get("deprecated_arm") is True
+
+    assert "deprecated_arm" not in SuperstateDaemonAdapter().get_provenance(), (
+        "the daemon is the active arm and must not be labelled superseded"
+    )
+
+
+def test_read_cache_ablation_differs_by_exactly_one_flag():
+    """`superstate_daemon_nocache` must differ from `superstate_daemon_full` only in the cache.
+
+    Six false findings in this project were an arm receiving something its counterpart did
+    not: an unpinned --model, a missing --output-format, absent container guidance, a missing
+    --print-timeout, a strict gate on one side only, and a hardcoded TDD scaffold. An ablation
+    whose arms differ in two ways measures neither.
+    """
+    from pathlib import Path
+
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner.__new__(AblationRunner)
+    # The cache defaults OFF after EXP-081, so the TREATMENT is the arm carrying the flag.
+    control = runner._get_adapter("superstate_daemon_full")
+    treatment = runner._get_adapter("superstate_daemon_cache")
+
+    assert control.read_cache is False, "the default arm must not run a measured regression"
+    assert treatment.read_cache is True
+
+    ws = Path("/tmp/parity-probe")
+    t_cmd = treatment._build_daemon_spawn_cmd(ws)
+    c_cmd = control._build_daemon_spawn_cmd(ws)
+
+    # The ONLY difference in the spawn command may be the ablation flag itself.
+    assert [a for a in t_cmd if a not in c_cmd] == ["--read-cache", "true"], (
+        f"control carries unexpected extra arguments:\n  treatment={t_cmd}\n  control={c_cmd}"
+    )
+    assert [a for a in c_cmd if a not in t_cmd] == [], (
+        f"control carries arguments the treatment does not:\n  treatment={t_cmd}\n  control={c_cmd}"
+    )
+
+
+def test_read_cache_ablation_is_named_apart_from_the_treatment():
+    """Pooling both under one harness_name would make the comparison invisible in results."""
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner.__new__(AblationRunner)
+    treatment = runner._get_adapter("superstate_daemon_cache")
+    control = runner._get_adapter("superstate_daemon_full")
+    assert treatment.name != control.name
+    assert treatment.name == "superstate_daemon_cache"
+
+
+def test_read_cache_state_reaches_the_results_provenance():
+    """A results file must say which side of the ablation produced it."""
+    from lab.engine.runner import AblationRunner
+
+    runner = AblationRunner.__new__(AblationRunner)
+    assert runner._get_adapter("superstate_daemon_cache").get_provenance()["read_cache"] is True
+    assert runner._get_adapter("superstate_daemon_full").get_provenance()["read_cache"] is False

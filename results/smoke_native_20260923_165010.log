@@ -1,0 +1,37 @@
+16:50:12 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack (kept: superstate). ~13,288 tokens/invocation.
+16:50:12 [INFO] superstate_eval.paired: Native superstate driver: bin=/var/folders/dq/mf3w4h0164b7dq8jwty4vt6c0000gn/T/superstate-native-tmqkhp5d/superstate (sha256 5b2e938d905b, copied from /Users/danielfisher/repos/superstate/target/release/superstate), context=state-only, loop_breaker=True, reports -> results/smoke_native_20260923_165010.native_reports
+16:50:12 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+16:50:12 [INFO] superstate_eval.paired: ==============================================================================
+16:50:12 [INFO] superstate_eval.paired: Harness=superstate[state-only]  model=gemini-3.8-flash-high  tasks=1  arms=vanilla  concurrency=1
+16:50:12 [INFO] superstate_eval.paired: Runs=1  budget=900s/arm  workspaces=/tmp/superstate_eval_runs/20260923-165012
+16:50:12 [INFO] superstate_eval.paired: ==============================================================================
+16:50:12 [INFO] superstate_eval.paired: -> build-cython-ext [vanilla] (budget: 900s)
+16:50:12 [INFO] superstate_eval.docker_manager: Host disk check: 30.41 GB free on /
+16:50:12 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: vanilla] (Base budget: 900.0s)
+16:50:12 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 6.0 GB reported available], Disk limit=1, User override=None)
+16:50:12 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260923-165012/eval-terminal-bench_build-cython-ext-vanilla-65b313f1/workspace
+16:50:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 560c68755dee (alexgshaw/build-cython-ext:20251031)
+17:05:14 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm vanilla (set metadata.base_commit_hash in task.toml to capture patches).
+17:05:19 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=vanilla: passed=False, reward=0.0, exit_code=0
+17:05:19 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 560c68755dee
+17:05:19 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+17:05:20 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: vanilla]: Passed=False, WallClock=907.21s, Cost=$1.96, TotalGrantedBudget=900.0s
+17:05:20 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$1.9560 turns=1 908s  Agent run failed: superstate outcome: budget_exhausted | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output: t_outputs.py::test_cinvariants_cython_extension
+PASSED ../tests/test_outputs.py::test_chelpers
+FAILED ../tests/test_outputs.py::test_ccomplexity - AttributeError: module 'n...
+FAILED ../tests/test_outputs.py::test_cinvariants_python_vs_cython - Attribut...
+FAILED ../tests/test_outputs.py::test_example_usage - AttributeError: module ...
+FAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - AssertionEr...
+========================= 4 failed, 7 passed in 3.09s ==========================
+
+17:05:20 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| vanilla | 1 | 0 | 0.0% | 0 | $1.96 | N/A | 15.1m | 0.0m | N/A | N/A |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/smoke_native_20260923_165010.json

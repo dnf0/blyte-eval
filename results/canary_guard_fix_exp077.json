@@ -1,0 +1,56 @@
+[
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "superstate_daemon_full",
+    "passed": false,
+    "wall_clock_sec": 5.73,
+    "cost_usd": 0.0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": "Agent run failed: Failed to initialize daemon state | grading then reported: Verification failed: Reward was 0.0 < 1.0\nOutput: - ModuleNo...\nFAILED ../tests/test_outputs.py::test_chelpers - ModuleNotFoundError: No modu...\nFAILED ../tests/test_outputs.py::test_ccomplexity - ModuleNotFoundError: No m...\nFAILED ../tests/test_outputs.py::test_cinvariants_python_vs_cython - ModuleNo...\nFAILED ../tests/test_outputs.py::test_example_usage - ModuleNotFoundError: No...\nFAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - FileNotFoun...\n========================= 10 failed, 1 passed in 1.68s =========================\n",
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-superstate_daemon_full-6de28fc6",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 0,
+      "agent_succeeded": false,
+      "reward": 0.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 1
+      },
+      "test_pass_fraction": 0.09090909090909091,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 1,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260921-145818/eval-terminal-bench_build-cython-ext-superstate_daemon_full-6de28fc6/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests"
+      ],
+      "engine": "superstate_rust_daemon",
+      "transport": "detached_daemon",
+      "driver_preset": "/tmp/superstate_eval_runs/20260921-145818/eval-terminal-bench_build-cython-ext-superstate_daemon_full-6de28fc6/workspace/.agent-state/driver-wrapper.sh",
+      "superstate_bin": "/tmp/superstate_eval_bin/superstate-20260921_145818",
+      "daemon_pid": null,
+      "daemon_steps": 0,
+      "no_worktree": true,
+      "worktree": false,
+      "advisory_review": true,
+      "review_blocking": true,
+      "auto_rollback": true,
+      "impact_slicing": true,
+      "gate_source": "autonomous_tdd",
+      "rollback_policy": "always"
+    }
+  }
+]

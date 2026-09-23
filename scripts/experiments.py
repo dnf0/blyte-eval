@@ -10,6 +10,12 @@ Three failures this catches, all of which have already cost real time:
   saves incrementally, so a killed run leaves a plausible-looking partial file. One such
   snapshot (31 of 40 rows) reached main and showed 10/16 vs 15/15 for a comparison whose
   real outcome was 12/20 vs 12/20.
+* **abandoned** -- a row still marked PLANNED whose results file already holds runs. The
+  truncation check used to skip PLANNED rows entirely, on the reasoning that a run which has
+  not started should not be reported as short. That hid EXP-071, which died at 21 of 54 runs
+  and was never moved off PLANNED: `check` reported "0 problems" for a file covering 4 of its
+  9 tasks. A PLANNED row with rows on disk has either started or stopped; either way the
+  status is stale. See FINDINGS.md 13.
 
 Usage:
     scripts/experiments.py check          # reconcile; non-zero exit if anything is wrong
@@ -87,7 +93,10 @@ def cmd_check() -> int:
 
     for r in rows:
         if r["results"] in ("-", ""):
-            if r["status"] != "PLANNED":
+            # A GHOST is a verdict resting on nothing. PLANNED has not run yet, and WITHDRAWN
+            # rests on nothing by definition -- EXP-073 was aborted mid-run and never wrote a
+            # file, which is exactly what its withdrawal records.
+            if r["status"] not in ("PLANNED", "WITHDRAWN"):
                 print(f"GHOST      {r['id']}  status={r['status']} but names no results file")
                 problems += 1
             continue
@@ -103,7 +112,25 @@ def cmd_check() -> int:
         except ValueError:
             declared = 0
         if declared and rowcount < declared:
-            if r["status"] != "PLANNED":
+            if r["status"] == "PLANNED":
+                # A PLANNED row with runs on disk is in flight or was abandoned; either way
+                # the status no longer describes reality, and a partial file read as finished
+                # is the exact failure this tool exists to catch.
+                print(
+                    f"ABANDONED? {r['id']}  status=PLANNED but {r['results']} already holds "
+                    f"{rowcount} of {declared} runs -- still running, or killed and never recorded?"
+                )
+                problems += 1
+            elif r["status"] in ("PARTIAL", "WITHDRAWN"):
+                # PARTIAL and WITHDRAWN both acknowledge that the file is a mid-run snapshot:
+                # one says the run stopped, the other says its result does not stand. Either
+                # way the short row count is a recorded fact, not an unresolved problem.
+                print(
+                    f"partial    {r['id']}  {r['results']} holds {rowcount} of {declared} runs "
+                    f"(declared {r['status']})"
+                )
+                continue
+            else:
                 print(
                     f"TRUNCATED  {r['id']}  {r['results']} holds {rowcount} runs, "
                     f"ledger declares {declared} -- killed mid-run?"

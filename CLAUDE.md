@@ -172,6 +172,78 @@ one command.
 - **An arm's identity**: check the arm name against the report, not from memory.
 - **A result**: read the results JSON, don't recall it.
 
+## Use the cheapest instrument that can answer the question
+
+Most questions asked here are not benchmark questions. On 2026-09-21 four consecutive canary
+runs — roughly two and a half hours and ~$15 — produced no measurement at all, because each
+was stopped by a wiring bug: a binary rebuilt mid-run, a `NameError` at the confirmation gate
+after both milestones had completed, a guard whose denial text instructed the worker to end its
+turn, and hooks that resolved `superstate` through PATH to the previous day's build. None of
+those needed a task corpus, a sealed grader or a scoring pass.
+
+| question | instrument | cost |
+|---|---|---|
+| Is the mechanism wired correctly at all? | `scripts/guard_smoke.sh` | **~2 seconds** |
+| Did a deletion orphan a symbol? | `pytest tests/test_no_orphaned_symbols.py` | instant |
+| Does a gate discriminate? | `scripts/validate_gates.py` | minutes |
+| Does a guard change tokens on read-heavy work? | `scripts/guard_bench.py` | **minutes, cents** |
+| Does a change alter solve rate or cost end-to-end? | `scripts/paired_run.py --canary` | ~60 min, ~$6 |
+| A published claim | `--core`, repeats | hours |
+
+Work down the table, not up. A benchmark run varies a thousand things at once, which is what
+makes it the worst possible instrument for "is this wired correctly" — and the most expensive.
+
+**But check the mechanism's timescale before picking on cost alone.** An instrument shorter
+than the phenomenon measures nothing, however cheap. The read cache fires on the *second* visit
+to a file, and a worker does not revisit until it has gone away and come back: 0% of reads are
+fully-held repeats two minutes into a run, 29–39% at thirty minutes, 39–61% over a whole run. A
+`guard_bench` turn is ~2 minutes, so it cannot see the cache at all — while it measures the read
+*budget*, which fires on the first oversized read, perfectly well. Before reaching for the cheap
+instrument, ask when the thing you are measuring starts happening. See FINDINGS 13.23.
+
+`guard_bench.py` deserves particular note: a guard's effect is *directly* measurable by running
+the same prompt against the same repository with the guard on and off. That is how Spotify's
+Portal measured its own hooks, and it needs no docker image, no sealed grader and no task.
+
+### Watching a run: a filter that cannot match is indistinguishable from nothing happening
+
+A watch on `find ... -newermt "17:35" 2>/dev/null` reported "no trace written" for 43 minutes
+while the file it was looking for was being appended to every few seconds. `find` here is `bfs`,
+which rejects that timestamp form -- `bfs: error: Invalid timestamp` -- and the redirect swallowed
+it, so every poll returned nothing and nothing looked exactly like not-yet.
+
+Two rules follow, and they are the same rule twice:
+
+* **Never discard stderr in a watch condition.** A filter that errors reports the same thing as a
+  filter that finds nothing.
+* **Always watch for the terminal state as well as the signal.** A watch that only fires on
+  success stays silent through a crash, a hang, and its own breakage. Every monitor here pairs
+  "the thing happened" with "the run ended without it".
+
+This is the same mistake as the file read guard sitting dormant for sixteen runs: absence of
+evidence was taken for evidence of absence, because nothing distinguished them.
+
+### The recurring hazard: what the harness pins, the engine's children escape
+
+Two of the four failures above were the same defect in different clothes, and both sit exactly
+on the boundary between this repository and `superstate`:
+
+* the eval pins `SUPERSTATE_BIN`, but `cargo build` overwrites that same path — so a rebuild
+  during a run silently swapped the binary under it (fixed by `scripts/pin_superstate_binary.sh`,
+  which snapshots to a run-scoped copy and reports the rev);
+* the eval pins a binary, but the daemon wrote hooks invoking bare `superstate`, resolved
+  through PATH at hook time — so the guards enforcing a run came from a different build than
+  the daemon running it (fixed: hooks embed `current_exe()`).
+
+**Anything the harness pins must be inherited by every process the engine spawns.** This is the
+same family as *Arm input parity* above, one level down: that section is about what the arms
+receive, this is about what the engine's children inherit. The daemon is the recurring offender
+for the same reason — it spawns its own worker, and now its own hooks, and both bypass whatever
+the harness set up.
+
+Neither defect is visible from inside one repository. When changing the daemon's process
+spawning, check the eval's pinning, and vice versa.
+
 ## Running evaluations
 
 - **Never request `--concurrency` above the governor's calculated max.** The surplus worker
@@ -181,8 +253,39 @@ one command.
   consumed 51 GB and throttled the disk governor to 2 workers, producing spurious failures.
 - **Watch for `Cost=$0.00` with a wall clock near the budget** — that is a driver turn that hit
   its timeout and lost its usage telemetry, not a cheap run. Raise `--budget-sec`.
+- **A run that ends in single-digit seconds did not run, whatever verdict it recorded.** The
+  inverse of the above and just as costly: `build-cython-ext` aborted in 5-8 seconds at $0.00
+  for **seven consecutive canaries** (EXP-074 through EXP-080) and was scored `passed=False`
+  every time, because autonomous TDD cannot derive a gate from the empty `/app` the task ships
+  — the task's own instruction is to clone the repository. It passed 17 of 18 runs before that.
+  Check the shortest wall clock in any run before reading its pass rate. See FINDINGS 13.20.
 - **`sqlite-db-truncate` is unmeasurable** — no verifier ships with it, so its grader exits 127
   for every arm. See `UNMEASURABLE_TASKS`.
+
+## Every token figure includes a fixed harness preamble
+
+A turn that replies "pong" and does nothing else costs **~11,700 fresh input tokens** under
+`agy` (measured 2026-09-22). **The 13,288-token MCP figure previously quoted here is withdrawn:**
+re-measured, stripping `github`/`notion`/`slack` saves **~400-690 tokens, 3.5-4.3%**, plus about
+20% of wall clock. See FINDINGS.md 13.27 for the retraction and 13.17 for the original claim.
+
+`scripts/paired_run.py` strips them by default now (`--keep-mcp` opts out), on the basis of the
+smaller number plus the latency and the removal of drift between runs.
+
+Consequences when reading or writing a result:
+
+* **Paired comparisons stand.** The preamble is identical for every arm, so it is a constant
+  offset, not a confound. EXP-078's -27% is real.
+* **Absolute figures are inflated.** "$2.07 per solve" includes roughly a third spent on tool
+  schemas for services no benchmark task touches. Say so when quoting one.
+* **Cost scales with tool-call count, not just content.** Each call re-sends the preamble at a
+  76-81% cache hit rate, so ~5,000 fresh tokens per call regardless of what it returns. scc made
+  311. Reducing calls beats shrinking results, which is in tension with Invariant IV's
+  interception strategy and worth holding in mind.
+
+This is handled automatically: `paired_run.py` renames the MCP config aside for the duration of
+a run and restores it afterwards, self-healing on the next run if one was killed. `superstate`
+is never stripped -- it is Condition B's transport and part of what is under test.
 
 ## Switches (all default OFF)
 
@@ -379,3 +482,7 @@ EXP-020, where vanilla beat `superstate_rust` and exposed the prompt-contract co
 Gate-strength and daemon-vs-mcp questions are settled within the superstate arms; `vanilla` has
 no gate and contributes nothing to either. The lift is banked at EXP-049 (67.5% vs 45%, n=40,
 p=0.037) and does not need re-measuring.
+
+## Working model: Claude orchestrates, agy implements
+
+When executing a plan, follow the `agy-orchestration` skill (`~/.claude/skills/agy-orchestration/`; repo rules in `.claude/agy-rules.md`): dispatch one task at a time to headless `agy` in its own worktree (`../superstate-eval--<task>`), validate independently, then merge. agy never starts a paid run; benchmark runs are Claude's, and only with a named decision (see above).

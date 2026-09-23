@@ -24,10 +24,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from lab.benchmarks.gate_fixtures import is_unmeasurable
+from lab.engine import mcp_isolation
 from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
 from lab.benchmarks.task_sets import is_canary, is_discriminating
 from lab.engine.drivers.agy_cli import AgyCliDriver
 from lab.engine.drivers.claude_cli import ClaudeCliDriver
+from lab.engine.drivers.superstate_native import SuperstateNativeDriver
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table
 from lab.engine.runner import AblationRunner
@@ -50,8 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--only-with-verifier", action="store_true",
                     help="Skip tasks that ship no held-out verifier")
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
-    ap.add_argument("--driver", choices=["agy", "claude"], default="agy",
-                    help="Agent driver harness (default: agy)")
+    ap.add_argument("--driver", choices=["agy", "claude", "superstate"], default="agy",
+                    help="Worker runtime: agy, claude, or the native superstate harness (default: agy)")
+    ap.add_argument("--context", choices=["state-only", "conversational"], default="state-only",
+                    help="Native superstate driver only: context strategy (default: state-only)")
+    ap.add_argument("--no-loop-breaker", action="store_true",
+                    help="Native superstate driver only: disable the loop-breaker guards (ablation control)")
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
                     help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
@@ -67,12 +73,40 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--canary", action="store_true",
                     help="Run the fast 3-task Tri-Language SWE-Canary slice (build-cython-ext, scc, katex; ~15-20 min total)")
     ap.add_argument("--out", type=Path, help="Write results JSON here")
+    ap.add_argument(
+        "--keep-mcp",
+        action="store_true",
+        help="Do not strip unrelated MCP servers for this run. They cost ~13,288 fresh input "
+             "tokens on EVERY agy invocation (FINDINGS 13.17) and no benchmark task uses "
+             "github/notion/slack, so this is only for debugging the harness itself.",
+    )
     return ap
 
 
 def main() -> int:
+    """Strip unrelated MCP servers for the whole run, then execute it.
+
+    Default ON. Every agy invocation otherwise loads github/notion/slack schemas -- 13,288
+    fresh input tokens before the task is read, 55% of a trivial turn, for services no
+    benchmark task touches (FINDINGS 13.17). `superstate` is kept: it is Condition B's
+    transport and part of what is under test.
+
+    Wrapped here rather than inside the runner so that it covers EVERY agy process a run
+    spawns, including the daemon's own worker, which bypasses the drivers.
+    """
     ap = build_parser()
     args = ap.parse_args()
+
+    with mcp_isolation.stripped_mcp_servers(enabled=not args.keep_mcp) as stripped:
+        if stripped:
+            print(f"MCP servers stripped for this run: {', '.join(stripped)} "
+                  f"(~13,288 tokens/invocation saved; --keep-mcp to disable)")
+        elif args.keep_mcp:
+            print("MCP servers LEFT ENABLED (--keep-mcp): expect ~13,288 extra tokens per call")
+        return _run(args)
+
+
+def _run(args) -> int:
 
     tier1_names = {
         "anko-typed-variable-bindings",
@@ -142,6 +176,24 @@ def main() -> int:
     if args.driver == "claude":
         model = args.model if args.model != "gemini-3.8-flash-high" else "claude-3-7-sonnet-20250219"
         driver = ClaudeCliDriver(model=model)
+    elif args.driver == "superstate":
+        # Same --model as every other driver, so model parity holds by construction.
+        report_dir = (
+            args.out.with_suffix(".native_reports") if args.out
+            else args.workspace_root / "native_reports"
+        )
+        driver = SuperstateNativeDriver(
+            model=args.model,
+            context=args.context,
+            loop_breaker=not args.no_loop_breaker,
+            report_dir=report_dir,
+        )
+        logger.info(
+            "Native superstate driver: bin=%s (sha256 %s, copied from %s), context=%s, "
+            "loop_breaker=%s, reports -> %s",
+            driver.superstate_bin, driver.superstate_bin_sha256[:12],
+            driver.superstate_bin_source, args.context, not args.no_loop_breaker, report_dir,
+        )
     else:
         driver = AgyCliDriver(model=args.model)
     # These runs are LLM-bound, not local-compute-bound: the wall clock is the agent

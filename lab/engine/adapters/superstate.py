@@ -5,6 +5,19 @@ Directly integrates with the superstate deterministic binary / state engine CLI,
 state transitions, turnkey milestone prompts, and verification gates.
 """
 
+# DEPRECATED as an active evaluation arm (2026-09-21).
+#
+# The daemon is the approach under development: no MCP arm has run since EXP-065, seven
+# experiments ago, and `superstate_mcp_planned` has run exactly once (EXP-055). This arm is
+# kept, not developed, because the banked results it produced -- the 76% figure and EXP-049 --
+# would otherwise be irreproducible, for the same reason WITHDRAWN ledger rows are kept.
+#
+# It is single-milestone in its Condition B configuration and so cannot run the autonomous TDD
+# DAG that replaced GATE_FIXTURES. On a task with no native runner it is genuinely UNGATED,
+# which measures the fallback rather than the execution model. `gate_source` records that per
+# run, so any number it produces is self-labelling.
+
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,7 +31,7 @@ import shutil
 import subprocess
 from typing import Any, Dict, Optional
 
-from lab.benchmarks.gate_fixtures import agent_gate_for, references_sealed_grader
+from lab.benchmarks.gate_fixtures import references_sealed_grader
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.condition_b import conversation_id_for
 from lab.engine.prompt_contracts import apply_contract
@@ -248,6 +261,8 @@ class SuperstateAdapter(AgentAdapter):
         """Report which state engine actually drove this run."""
         return {
             "state_engine": self.engine_used,
+            "gate_source": getattr(self, "gate_source", "unknown"),
+            "deprecated_arm": True,
             # Which implementation was requested, and what actually ran. A result
             # is not interpretable without both.
             "engine": self.engine,
@@ -830,18 +845,25 @@ class SuperstateAdapter(AgentAdapter):
         plan_file = workspace_path / "plan.md"
         plan_text = plan_file.read_text(encoding="utf-8") if plan_file.is_file() else ""
 
-        # A hand-authored fixture is the contract of record, and every arm must receive the
-        # SAME one -- otherwise the arms are gated differently and the comparison measures
-        # the gates rather than the execution models. See lab/benchmarks/gate_fixtures.py.
-        vcmd = agent_gate_for(getattr(task, "name", "") or "")
-        if not vcmd:
-            vcmd = getattr(task, "verification_cmd", None)
-            # If verification_cmd references a held-out test suite (e.g. /tests/),
-            # it is sealed during the agent phase and cannot be executed by the agent.
-            # Fall back to "true" so the agent is not blocked by a missing held-out answer key.
-            if vcmd and references_sealed_grader(vcmd):
-                vcmd = None
+        # Hand-authored fixtures were removed on 2026-09-21 (Manifesto Invariant V). This
+        # arm is single-milestone and cannot express the RED/GREEN DAG that replaced them,
+        # so it runs on the task's own runner when there is one and is UNGATED otherwise.
+        #
+        # A verification_cmd pointing at the sealed grader cannot be used either: it is the
+        # answer key, sealed during the agent phase.
+        vcmd = getattr(task, "verification_cmd", None)
+        if vcmd and references_sealed_grader(vcmd):
+            vcmd = None
         effective_vcmd = vcmd if vcmd and vcmd.strip() else "true"
+        self.gate_source = "native_runner" if effective_vcmd != "true" else "ungated"
+        if effective_vcmd == "true":
+            logger.warning(
+                "%s is UNGATED for %s: no native runner, and this arm cannot run the "
+                "autonomous TDD DAG. Its pass rate measures the fallback, not the execution "
+                "model, and is not comparable with a daemon arm.",
+                self.name,
+                getattr(task, "name", "?"),
+            )
         if not plan_text and self.zero_turn_planning:
             state_path = workspace_path / ".agent-state" / "state.json"
             state_path.parent.mkdir(parents=True, exist_ok=True)
