@@ -1,0 +1,80 @@
+[
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "bare",
+    "passed": true,
+    "wall_clock_sec": 715.82,
+    "cost_usd": 0.875676,
+    "input_tokens": 958418,
+    "output_tokens": 41830,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-bare-b1e2cfb0",
+      "harness": "agy",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 11
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260923-210956/eval-terminal-bench_build-cython-ext-bare-b1e2cfb0/logs",
+      "held_out_verifier": true,
+      "isolated_execution": false,
+      "answer_key_sealed": [
+        "/Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests"
+      ]
+    }
+  },
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "bare",
+    "passed": false,
+    "wall_clock_sec": 908.73,
+    "cost_usd": 2.592504,
+    "input_tokens": 3359997,
+    "output_tokens": 19335,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": "Agent run failed: superstate outcome: budget_exhausted | grading then reported: Verification failed: Reward was 0.0 < 1.0\nOutput: t_outputs.py::test_cinvariants_cython_extension\nPASSED ../tests/test_outputs.py::test_chelpers\nFAILED ../tests/test_outputs.py::test_ccomplexity - AttributeError: module 'n...\nFAILED ../tests/test_outputs.py::test_cinvariants_python_vs_cython - Attribut...\nFAILED ../tests/test_outputs.py::test_example_usage - AttributeError: module ...\nFAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - AssertionEr...\n========================= 4 failed, 7 passed in 3.45s ==========================\n",
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-bare-f0add1cd",
+      "harness": "superstate[state-only]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": false,
+      "reward": 0.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 7
+      },
+      "test_pass_fraction": 0.6363636363636364,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 7,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260923-210956/eval-terminal-bench_build-cython-ext-bare-f0add1cd/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": []
+    }
+  }
+]
