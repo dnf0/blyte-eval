@@ -55,7 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
     ap.add_argument("--driver", choices=["agy", "claude", "superstate"], default="agy",
                     help="Worker runtime: agy, claude, or the native superstate harness (default: agy)")
-    ap.add_argument("--context", choices=["state-only", "conversational"], default="state-only",
+    ap.add_argument("--context", choices=["state-only", "state-window", "conversational"], default="state-only",
                     help="Native superstate driver only: context strategy (default: state-only)")
     ap.add_argument("--no-loop-breaker", action="store_true",
                     help="Native superstate driver only: disable the loop-breaker guards (ablation control)")

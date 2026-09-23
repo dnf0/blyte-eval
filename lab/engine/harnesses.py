@@ -21,7 +21,8 @@ from lab.engine.budget_policy import RunTelemetry
 BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z,-]*)\])?$")
-_SUPERSTATE_OPTIONS = ("state-only", "conversational", "no-loop-breaker", "tdd")
+_SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational")
+_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd")
 
 
 class HarnessSpecError(ValueError):
@@ -47,8 +48,11 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
             raise HarnessSpecError(
                 f"unknown superstate option(s) {unknown}; known: {list(_SUPERSTATE_OPTIONS)}"
             )
-        if "state-only" in opts and "conversational" in opts:
-            raise HarnessSpecError("choose one context: state-only or conversational")
+        contexts = [o for o in opts if o in _SUPERSTATE_CONTEXTS]
+        if len(contexts) > 1:
+            raise HarnessSpecError(
+                f"choose one context, got {contexts}; one of {list(_SUPERSTATE_CONTEXTS)}"
+            )
         return name, opts
     raise HarnessSpecError(f"unknown harness {name!r}; known: agy, claude, superstate")
 
@@ -73,7 +77,7 @@ def build_harness(spec: str, model: str, report_dir: Optional[Path] = None) -> A
 
     return SuperstateNativeDriver(
         model=model,
-        context="conversational" if "conversational" in opts else "state-only",
+        context=next((o for o in opts if o in _SUPERSTATE_CONTEXTS), "state-only"),
         loop_breaker="no-loop-breaker" not in opts,
         gate="tdd" if "tdd" in opts else None,
         report_dir=report_dir,

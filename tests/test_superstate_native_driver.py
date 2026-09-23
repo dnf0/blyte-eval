@@ -356,3 +356,12 @@ def test_nothing_is_written_without_a_report_dir(tmp_path: Path) -> None:
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     assert driver.last_events_path is None
 
+
+def test_state_window_context_is_passed_through(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub, context="state-window")
+    assert driver.harness_name == "superstate[state-window]"
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    [argv] = _calls(tmp_path)
+    assert argv[argv.index("--context") + 1] == "state-window"
+
