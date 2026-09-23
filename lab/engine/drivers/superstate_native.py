@@ -38,7 +38,7 @@ MAX_TURNS = 1000
 #: this grace. A kill loses the report, and with it the tokens (FINDINGS 13.5).
 KILL_GRACE_SEC = 900.0
 REPORT_SCHEMA_VERSION = 1
-CONTEXTS = ("state-only", "state-window", "conversational")
+CONTEXTS = ("state-only", "state-window", "conversational", "folded")
 #: Gate sources the driver can ask the harness for. None is ungated, like agy under vanilla;
 #: "tdd" is the harness's own autonomous TDD (RED then GREEN), never a command we author.
 GATES = (None, "tdd")

@@ -171,3 +171,9 @@ def test_state_window_is_a_superstate_context(superstate_stub: Path) -> None:
 def test_only_one_context_per_harness(spec: str) -> None:
     with pytest.raises(HarnessSpecError, match="one context"):
         parse_harness_spec(spec)
+
+
+def test_folded_is_a_superstate_context(superstate_stub: Path) -> None:
+    assert build_harness("superstate[folded]", MODEL).harness_name == "superstate[folded]"
+    with pytest.raises(HarnessSpecError, match="one context"):
+        parse_harness_spec("superstate[folded,conversational]")
