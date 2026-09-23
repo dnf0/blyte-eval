@@ -1948,3 +1948,29 @@ n=2 on one task. The edit count (3 → 23 in both runs) is robust; pass/fail at 
 has never used. Across every native run, at most ~150K tokens were cached against 2.5–5.8M fresh
 input. Neither context strategy keeps a stable prompt prefix: the state prompt, which holds the
 append-only action ledger, is rebuilt as the first message every turn.
+
+### 13.35 A cache-stable prompt prefix raises caching from ~2% to ~9%, and no further (2026-09-23)
+
+Built from 13.34. Gemini 3.8 Flash caches implicitly, but only a shared prompt prefix of at least
+4,096 tokens, and on a best-effort basis (ai.google.dev/gemini-api/docs/caching). The fixed part of
+a native request (system instruction, tools and task) is about 838 tokens. The state prompt put the
+append-only action ledger **last**, behind sections that change every turn, so consecutive requests
+shared almost nothing. superstate `feat/cache-stable-prefix` moves the ledger to right after the
+task, so turn N+1 starts with turn N's task and full ledger.
+
+| run (`state-window`, build-cython-ext, 900s) | cached share | cached / fresh input | grader | edits | repeat rate | cost |
+|---|---|---|---|---|---|---|
+| before, #1 | 2.6% | 154K / 5.8M | 8/11 | 23 | 0.56 | $4.44 |
+| before, #2 | 2.0% | 85K / 4.1M | 11/11 | 23 | 0.50 | $3.14 |
+| ledger first | **9.4%** | **471K / 4.5M** | 10/11 | 15 | 0.44 | $3.50 |
+
+* **3–5× more tokens cached, still under a tenth of the input.** The prefix only qualifies once the
+  ledger reaches ~4,096 tokens (~130 actions), and implicit caching then hits on only part of the
+  eligible turns.
+* **Behaviour did not degrade** (n=1): 10/11, 15 edits, the lowest repeat rate so far.
+* **Reported cost did not move**, and cannot. Like agy's, the eval's cost counts only fresh input,
+  so cache savings never appear in it. The invoice sees them at the cached-token discount.
+
+**Consequence.** Caching is worth keeping but will not close the 3.5–5× cost gap with agy. The
+larger lever is the one 13.25 and 13.28 already named: fewer calls. The native harness makes 320–380
+calls on a task agy finishes in one 12-minute session.
