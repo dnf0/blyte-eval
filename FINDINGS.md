@@ -1829,8 +1829,8 @@ costs nothing extra once the loop exists.
 
 Until now every arm drove agy or Claude Code, so the native harness (`superstate "<prompt>"`,
 superstate #42 onwards) had never been measured. `SuperstateNativeDriver` (#27, #28) runs it as
-the worker runtime, where agy sits, so `vanilla` + agy and `vanilla` + superstate compare the
-harness on the same task, model and sealed grader. The superstate side (#46, #47) adds a JSON run
+the worker runtime, where agy sits, so agy and superstate can be compared as harnesses on the
+same bare task, model and sealed grader (`paired_run.py --harnesses agy superstate[state-only]`). The superstate side (#46, #47) adds a JSON run
 report, a self-enforced deadline, `--container-workdir`, agy effort-suffix parity and `--tdd`.
 
 Four smoke runs, all `gemini-3.8-flash-high`, `state-only`, 900s. **n=1 per configuration: these
@@ -1911,5 +1911,5 @@ goldfish effect the action ledger addressed for actions, reappearing for code.
 **What would test it:** the identical run with `--context conversational`. If GREEN then edits and
 reaches a gate attempt, the working set, not the model, is the bottleneck, and the next harness
 work is working-set sizing or read memory. Not run: the decision to change the working set can
-wait until the harness-vs-harness comparison (`vanilla` + agy vs `vanilla` + superstate) is on the
+wait until the harness-vs-harness comparison (`--harnesses agy superstate[state-only]`) is on the
 table, which is the run this instrument was built for.
