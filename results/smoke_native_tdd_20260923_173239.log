@@ -1,0 +1,43 @@
+17:32:40 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack (kept: superstate). ~13,288 tokens/invocation.
+17:32:40 [INFO] superstate_eval.paired: Native superstate driver: bin=/var/folders/dq/mf3w4h0164b7dq8jwty4vt6c0000gn/T/superstate-native-3c7qaqc5/superstate (sha256 d59505f26953, copied from /Users/danielfisher/repos/superstate/target/release/superstate), context=state-only, loop_breaker=True, reports -> results/smoke_native_tdd_20260923_173239.native_reports, gate=tdd
+17:32:40 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+17:32:40 [INFO] superstate_eval.paired: ==============================================================================
+17:32:40 [INFO] superstate_eval.paired: Harness=superstate[state-only,tdd]  model=gemini-3.8-flash-high  tasks=1  arms=vanilla  concurrency=1
+17:32:40 [INFO] superstate_eval.paired: Runs=1  budget=900s/arm  workspaces=/tmp/superstate_eval_runs/20260923-173240
+17:32:40 [INFO] superstate_eval.paired: ==============================================================================
+17:32:40 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [vanilla] (budget: 900s)
+17:32:40 [INFO] superstate_eval.docker_manager: Host disk check: 31.37 GB free on /
+17:32:40 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: vanilla] (Base budget: 900.0s)
+17:32:40 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=1, User override=None)
+17:32:42 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260923-173240/eval-datacurve_scc-bounded-memory-spilling-vanilla-bd245225/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+17:32:42 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 44e03098ab30 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+17:47:44 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: f88ed4bf': granted +1200.0s lease extension (Total budget: 2100.0s, completed milestones: 1)
+17:47:44 [INFO] superstate_eval.progress_tracker: [VANILLA] New git commit detected: f88ed4bf (prev=bc2796e0). Lease extended.
+17:48:20 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:d32d90de34ea from /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests
+17:48:21 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 621682bad719 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:d32d90de34ea)
+17:49:58 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 621682bad719
+17:49:58 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:d32d90de34ea
+17:49:58 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=vanilla: passed=False, reward=0.0, exit_code=0
+17:49:58 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 44e03098ab30
+17:49:58 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+17:49:58 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: vanilla]: Passed=False, WallClock=1038.01s, Cost=$2.73, TotalGrantedBudget=2100.0s
+17:49:58 [INFO] superstate_eval.paired:    vanilla: passed=False cost=$2.7288 turns=1 1038s  Agent run failed: superstate outcome: budget_exhausted | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output:               version for scc
+              -w, --wide                               wider output with additional statistics (implies --complexity)
+            
+            exit status 1
+    --- FAIL: TestBoundedMemory_StatsLinePresenceIsOptIn (0.29s)
+P2P 286/286 pass 0 fail; F2P 0/31 pass 31 fail; PARTIAL 0.9022082018927445; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 0, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.0, "p2p": 1.0, "partial": 0.9022082018927445}
+
+17:49:58 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| vanilla | 1 | 0 | 0.0% | 0 | $2.73 | N/A | 17.3m | 20.0m | N/A | N/A |
+
+No paired results: no runs found for the 'vanilla' baseline arm.
+
+Results written to results/smoke_native_tdd_20260923_173239.json
+exit=0
