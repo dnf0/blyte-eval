@@ -263,3 +263,10 @@ def test_paired_run_accepts_the_superstate_driver() -> None:
     defaults = module.build_parser().parse_args([])
     assert defaults.context == "state-only"
     assert defaults.no_loop_breaker is False
+
+
+def test_harness_name_encodes_the_configuration(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    assert _driver(tmp_path, stub).harness_name == "superstate[state-only]"
+    ablated = _driver(tmp_path, stub, context="conversational", loop_breaker=False)
+    assert ablated.harness_name == "superstate[conversational,no-loop-breaker]"

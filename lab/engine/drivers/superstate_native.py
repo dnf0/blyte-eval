@@ -109,6 +109,11 @@ class SuperstateNativeDriver(AgentDriver):
         self.model = model
         self.context = context
         self.loop_breaker = loop_breaker
+        # Results are pooled by `harness` (runner.py records harness_name), so every
+        # configuration that changes behaviour must be in the name. Otherwise a loop-breaker
+        # ablation pools its control with its treatment.
+        config = [context] + ([] if loop_breaker else ["no-loop-breaker"])
+        self.harness_name = f"superstate[{','.join(config)}]"
         self.report_dir = Path(report_dir) if report_dir is not None else None
 
         source = Path(superstate_bin) if superstate_bin is not None else _resolve_binary()
