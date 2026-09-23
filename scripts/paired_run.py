@@ -58,6 +58,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="Native superstate driver only: context strategy (default: state-only)")
     ap.add_argument("--no-loop-breaker", action="store_true",
                     help="Native superstate driver only: disable the loop-breaker guards (ablation control)")
+    ap.add_argument("--gate", choices=["none", "tdd"], default="none",
+                    help="Native superstate driver only: 'tdd' gates by the harness's autonomous TDD (default: none)")
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
                     help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
@@ -186,13 +188,15 @@ def _run(args) -> int:
             model=args.model,
             context=args.context,
             loop_breaker=not args.no_loop_breaker,
+            gate=None if args.gate == "none" else args.gate,
             report_dir=report_dir,
         )
         logger.info(
             "Native superstate driver: bin=%s (sha256 %s, copied from %s), context=%s, "
-            "loop_breaker=%s, reports -> %s",
+            "loop_breaker=%s, reports -> %s, gate=%s",
             driver.superstate_bin, driver.superstate_bin_sha256[:12],
             driver.superstate_bin_source, args.context, not args.no_loop_breaker, report_dir,
+            args.gate,
         )
     else:
         driver = AgyCliDriver(model=args.model)

@@ -39,6 +39,9 @@ MAX_TURNS = 1000
 KILL_GRACE_SEC = 900.0
 REPORT_SCHEMA_VERSION = 1
 CONTEXTS = ("state-only", "conversational")
+#: Gate sources the driver can ask the harness for. None is ungated, like agy under vanilla;
+#: "tdd" is the harness's own autonomous TDD (RED then GREEN), never a command we author.
+GATES = (None, "tdd")
 
 
 class SuperstateNativeDriverError(RuntimeError):
@@ -94,6 +97,7 @@ class SuperstateNativeDriver(AgentDriver):
         model: str,
         context: str = "state-only",
         loop_breaker: bool = True,
+        gate: Optional[str] = None,
         superstate_bin: Optional[str | Path] = None,
         report_dir: Optional[str | Path] = None,
     ) -> None:
@@ -101,6 +105,8 @@ class SuperstateNativeDriver(AgentDriver):
             raise SuperstateNativeDriverError(
                 f"context must be one of {CONTEXTS}, got {context!r}"
             )
+        if gate not in GATES:
+            raise SuperstateNativeDriverError(f"gate must be one of {GATES}, got {gate!r}")
         if not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
             raise SuperstateNativeDriverError(
                 "GEMINI_API_KEY (or GOOGLE_API_KEY) must be set: the native harness calls the "
@@ -109,10 +115,15 @@ class SuperstateNativeDriver(AgentDriver):
         self.model = model
         self.context = context
         self.loop_breaker = loop_breaker
+        self.gate = gate
         # Results are pooled by `harness` (runner.py records harness_name), so every
         # configuration that changes behaviour must be in the name. Otherwise a loop-breaker
         # ablation pools its control with its treatment.
-        config = [context] + ([] if loop_breaker else ["no-loop-breaker"])
+        config = (
+            [context]
+            + ([] if loop_breaker else ["no-loop-breaker"])
+            + ([gate] if gate else [])
+        )
         self.harness_name = f"superstate[{','.join(config)}]"
         self.report_dir = Path(report_dir) if report_dir is not None else None
 
@@ -129,7 +140,7 @@ class SuperstateNativeDriver(AgentDriver):
     def build_command(
         self, prompt: str, container_id: str, report_path: Path, timeout_sec: float
     ) -> list[str]:
-        """The argv for one task. No `--gate`: this driver runs ungated, like agy under vanilla."""
+        """The argv for one task. Never a --gate: ungated, or the harness's own --tdd."""
         cmd = [
             str(self.superstate_bin),
             "--model",
@@ -149,6 +160,8 @@ class SuperstateNativeDriver(AgentDriver):
         ]
         if not self.loop_breaker:
             cmd.append("--no-loop-breaker")
+        if self.gate == "tdd":
+            cmd.append("--tdd")
         # `--` so an instruction that starts with a dash is never parsed as a flag.
         cmd += ["--", prompt]
         return cmd

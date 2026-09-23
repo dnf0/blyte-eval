@@ -270,3 +270,48 @@ def test_harness_name_encodes_the_configuration(tmp_path: Path) -> None:
     assert _driver(tmp_path, stub).harness_name == "superstate[state-only]"
     ablated = _driver(tmp_path, stub, context="conversational", loop_breaker=False)
     assert ablated.harness_name == "superstate[conversational,no-loop-breaker]"
+
+
+def test_tdd_gate_passes_the_flag_and_names_the_harness(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub, gate="tdd")
+    assert driver.harness_name == "superstate[state-only,tdd]"
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    [argv] = _calls(tmp_path)
+    flags = argv[: argv.index("--")]
+    assert "--tdd" in flags
+    assert "--gate" not in flags and "-g" not in flags
+
+
+def test_ungated_is_the_default(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub)
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    [argv] = _calls(tmp_path)
+    assert "--tdd" not in argv
+
+
+def test_rejects_an_unknown_gate(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    with pytest.raises(SuperstateNativeDriverError):
+        _driver(tmp_path, stub, gate="pytest")
+
+
+def test_harness_name_orders_every_option(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub, context="conversational", loop_breaker=False, gate="tdd")
+    assert driver.harness_name == "superstate[conversational,no-loop-breaker,tdd]"
+
+
+def test_paired_run_accepts_the_tdd_gate() -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "paired_run", Path(__file__).resolve().parent.parent / "scripts" / "paired_run.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.build_parser().parse_args(["--gate", "tdd"]).gate == "tdd"
+    assert module.build_parser().parse_args([]).gate == "none"
+
