@@ -1974,3 +1974,50 @@ task, so turn N+1 starts with turn N's task and full ledger.
 **Consequence.** Caching is worth keeping but will not close the 3.5–5× cost gap with agy. The
 larger lever is the one 13.25 and 13.28 already named: fewer calls. The native harness makes 320–380
 calls on a task agy finishes in one 12-minute session.
+
+### 13.36 With the conversation kept, superstate matches agy: 4/4 passes, all ending on their own (2026-09-23)
+
+The control 13.33 asked for, and the design it pointed to. SKILL.state (arXiv:2608.26263v2) makes
+discarding history safe only by **requiring** the model to write a structured state patch
+(`ΔΣₜ`) every turn, validated and applied by the runtime. It names schema-discovered-during-execution
+and relevance-recognised-late as the settings where discarding fails. Debugging an unfamiliar
+repository is both. `state-only` and `state-window` built the discarding half without the
+mandatory patch: the optional `note` tool got 0–2 keys per run. They also dropped Gemini's thought
+signatures, which Google says must be resent "exactly as they were received" and never removed.
+
+`folded` (superstate `feat/folded-context`) keeps the conversation append-only. Once the verbatim
+part passes ~48K tokens, its older half becomes one harness-written digest (one line per action,
+from the ledger's summarisers). Folds are computed greedily from the start of history, so each
+turn reproduces earlier folds exactly and the prefix stays cacheable. A transient-error retry was
+added first: the first `conversational` attempt died after 28 calls on a burst 429
+(`results/conversational_20260923_225918.*`).
+
+`build-cython-ext`, 900s, `gemini-3.8-flash-high`:
+
+| harness | grader | ended itself | calls | edits | cached share | avg prompt | cost |
+|---|---|---|---|---|---|---|---|
+| agy | 11/11 | 716s | — | — | — | — | $0.88 |
+| `state-only` | 7/11 | no | 338 | 3 | 3% | ~10K | $2.59 |
+| `state-window` ×2 | 8/11, 11/11 | no / 779s | 378, 328 | 23, 23 | 2–3% | ~15K | $4.44, $3.14 |
+| **`conversational` ×2** | **11/11, 11/11** | **610s, 459s** | 178, 180 | 33, 34 | **95%** | ~111K, ~97K | **$0.75, $0.65** |
+| **`folded` ×2** | **11/11, 11/11** | **742s, 527s** | 234, 181 | 34, 29 | **88–89%** | **~56K, ~50K** | $1.11, $0.89 |
+
+* **The harness was never the problem; its context strategy was.** With the conversation kept,
+  the same loop, tools, model and loop-breaker pass every run, end on their own, and are faster
+  than agy on this task at similar reported cost.
+* **`folded` halves the prompt** against `conversational` (~50–56K against ~97–111K tokens per
+  turn) and still passes. It costs somewhat more (more calls, and each fold costs one cache miss).
+  Its value is that the bound holds on tasks long enough to exhaust a context window, which
+  `build-cython-ext` is not.
+* **Cost caveat.** Reported cost counts fresh input only, the same accounting as agy's, so the
+  95% cached share is not in these dollars. On an invoice, cached tokens are billed at a discount,
+  not free. Relative to agy, which also caches heavily, the comparison holds; the absolute
+  figures understate both.
+
+n=2 per configuration on one short task. The next claim needs the canary's two 90-minute tasks
+(katex, scc), where `folded`'s bound should matter and `conversational` may not fit.
+
+**Consequences.** `state-only` and `state-window` should not be the native default. Given the
+bound, `folded` is the candidate; `conversational` is the ceiling to measure it against. The
+observation-table idea (a harness-applied, patch-style state keyed by call) is not needed for
+this task: repeats did not stop either configuration from finishing.

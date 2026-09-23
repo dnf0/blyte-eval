@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "outcome": "error",
+  "error": "provider returned 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource has been exhausted (e.g. check quota).\",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n",
+  "model_requested": "gemini-3.8-flash-high",
+  "model_id": "gemini/gemini-3.8-flash",
+  "context": "conversational",
+  "loop_breaker": true,
+  "gated": false,
+  "gate_source": "none",
+  "phases": [],
+  "container": "0a02c7039895ca1a254a545f212931aaccdafd58f54670e90b2571f942256ec4",
+  "container_workdir": "/app",
+  "duration_seconds": 48.296870167,
+  "turns": 29,
+  "empty_turns": 0,
+  "tool_calls": 28,
+  "gate_attempts": 0,
+  "rollbacks": 0,
+  "usage": {
+    "input": 200279,
+    "cached": 32267,
+    "output": 902,
+    "thinking": 2538
+  },
+  "interceptions": {
+    "read": 0,
+    "bash": 0
+  },
+  "insists": 0,
+  "agent_note_keys": []
+}
