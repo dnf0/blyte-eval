@@ -1,0 +1,46 @@
+[
+  {
+    "task_id": "datacurve/scc-bounded-memory-spilling",
+    "arm": "vanilla",
+    "passed": false,
+    "wall_clock_sec": 1020.62,
+    "cost_usd": 2.16254025,
+    "input_tokens": 2819062,
+    "output_tokens": 12865,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 2100.0,
+    "failure_reason": "Agent run failed: superstate outcome: budget_exhausted | grading then reported: Verification failed: Reward was 0.0 < 1.0\nOutput:               version for scc\n              -w, --wide                               wider output with additional statistics (implies --complexity)\n            \n            exit status 1\n    --- FAIL: TestBoundedMemory_StatsLinePresenceIsOptIn (0.28s)\nP2P 286/286 pass 0 fail; F2P 0/31 pass 31 fail; PARTIAL 0.9022082018927445; BINARY 0\n[verifier] reward.json={\"reward\": 0, \"f2p_total\": 31, \"f2p_passed\": 0, \"p2p_total\": 286, \"p2p_passed\": 286, \"f2p\": 0.0, \"p2p\": 1.0, \"partial\": 0.9022082018927445}\n",
+    "extra": {
+      "run_id": "eval-datacurve_scc-bounded-memory-spilling-vanilla-70601423",
+      "harness": "superstate[state-only,tdd]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": "none",
+      "nano_cpus": 2000000000,
+      "mem_limit": "8192m",
+      "turns": 1,
+      "agent_succeeded": false,
+      "reward": 0.0,
+      "test_stats": {
+        "reward": 0,
+        "f2p_total": 31,
+        "f2p_passed": 0,
+        "p2p_total": 286,
+        "p2p_passed": 286,
+        "f2p": 0.0,
+        "p2p": 1.0,
+        "partial": 0.9022082018927445
+      },
+      "test_pass_fraction": 0.9022082018927445,
+      "f2p_fraction": 0.0,
+      "p2p_fraction": 1.0,
+      "tests_passed": 286,
+      "tests_total": 317,
+      "patch_path": "/tmp/superstate_eval_runs/20260923-185702/eval-datacurve_scc-bounded-memory-spilling-vanilla-70601423/logs/artifacts/model.patch",
+      "logs_dir": "/tmp/superstate_eval_runs/20260923-185702/eval-datacurve_scc-bounded-memory-spilling-vanilla-70601423/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": []
+    }
+  }
+]

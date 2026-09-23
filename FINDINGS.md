@@ -1824,3 +1824,92 @@ measure what keys appear across a handful of real tasks. A stable shape means fo
 Nothing written, having been asked, means state is runtime-owned and the paper's patch model
 does not transfer to software engineering. Either outcome is worth more than a guess, and it
 costs nothing extra once the loop exists.
+
+### 13.31 The native harness is now measurable, and the instrument works (2026-09-23)
+
+Until now every arm drove agy or Claude Code, so the native harness (`superstate "<prompt>"`,
+superstate #42 onwards) had never been measured. `SuperstateNativeDriver` (#27, #28) runs it as
+the worker runtime, where agy sits, so `vanilla` + agy and `vanilla` + superstate compare the
+harness on the same task, model and sealed grader. The superstate side (#46, #47) adds a JSON run
+report, a self-enforced deadline, `--container-workdir`, agy effort-suffix parity and `--tdd`.
+
+Four smoke runs, all `gemini-3.8-flash-high`, `state-only`, 900s. **n=1 per configuration: these
+validate the instrument, not a solve rate.** Figures are from `results/smoke_native*_20260923_*`.
+
+| run | task | harness | turns | fresh / cached input | cost | grader |
+|---|---|---|---|---|---|---|
+| 165010 | build-cython-ext | `superstate[state-only]` | 290 | 2.51M / 20K | $1.96 | 7/11 |
+| 173239 | scc | `superstate[state-only,tdd]` | 377 | 3.58M / 0 | $2.73 | P2P 286/286, F2P 0/31 |
+| 181407 | scc | `superstate[state-only,tdd]` | 366 | 3.21M / 85K | $2.47 | P2P 286/286, F2P 0/31 |
+| 185702 | scc | `superstate[state-only,tdd]` (loop-breaker fixed) | 340 | 2.82M / 0 | $2.16 | P2P 286/286, F2P 0/31 |
+
+What is established:
+
+* **The wiring holds end to end.** Every run executed in the task container at `/app`, stopped
+  itself at the deadline with `budget_exhausted`, and wrote its report, so no tokens were lost to
+  a kill (the 13.5 failure). The grader ran every time.
+* **Autonomous TDD's RED works natively.** All three `tdd` runs passed RED on the first gate
+  attempt, and the workspace checkpoint (`chore(superstate): checkpoint phase
+  tdd-reproduction-test`) held exactly `reproduce_issue_test.go` (checked in 173239's
+  workspace), so the RED-scope check and checkpointing work in a real container.
+* **Nothing ever ended on its own.** Across all four runs the phase that did not pass never
+  reached a gate attempt: the model kept calling tools until the deadline. Ungated (165010) that
+  is the whole run.
+* **Prompt caching is effectively absent**: at most 85K cached against 2.5–3.6M fresh input per
+  run. At about $2–3 per 15 minutes this is the largest cost lever visible so far, and it is
+  untouched.
+* **Agent notes, now that the prompt asks** (the 13.30 experiment): `current_task`;
+  `branch`, `implementation_started`; `reproduction_test`; and nothing in the fourth run. Four
+  runs, no stable shape yet.
+
+### 13.32 The loop-breaker told a GREEN worker its failing test was passing (2026-09-23)
+
+Run 181407 kept the harness's event stream (the driver discarded it before, which is why 173239
+could not be diagnosed). GREEN ran 211 turns with **no `write` or `edit` at all**, and the log
+shows why:
+
+1. During RED, the worker ran `go test -run '^$' ./...`, a compile-only check that runs **no**
+   tests. It exited 0.
+2. In GREEN, its first real `go test -run TestReproduceIssue ./...` was intercepted:
+   "Unit tests … have already passed and no files were modified since." RED had just proved that
+   test **fails**. It never ran.
+3. `context.rs` added "## Verification Status: Unit tests are passing" to every GREEN prompt.
+
+**Mechanism.** superstate #44's guard and prompt notice treated "any test-like command exited 0
+since the last edit" as "the tests pass". That was wrong across different commands (a compile
+check is not a test run) and across phases (RED's history carried into GREEN). A worker told on
+every turn that its tests pass has no reason to edit.
+
+This is the perimeter lesson of 13.25 turned around: there a refusal was ignored 90% of the
+time; here, inside the harness, the worker **believed** the refusal and the prompt. A native
+guard is more persuasive, so its claims must be exactly true.
+
+**Fixed** in superstate `3283cdb` (PR #47):
+* phase markers scope every inference to the current phase;
+* a test command is intercepted only when the identical command already passed (truncation is
+  judged by length: Go's `./...` ends in `...`);
+* "passing" claims require the verification command itself, and name it;
+* a recorded failure is cleared only when the same command passes.
+
+Run 185702, with the fix: **0 interceptions**, down from 12, 4 and 3 in the earlier runs. It did
+not make GREEN edit (13.33).
+
+### 13.33 Under `state-only`, GREEN re-reads six files 101 times and never edits (2026-09-23)
+
+With the loop-breaker no longer misleading it, run 185702's GREEN spent 167 turns on **101 reads,
+63 greps and 3 bash calls, with no edit and no test run**. The 101 reads cover **6 distinct
+files**: a vendored `gocodewalker/file.go` 43 times, `processor/processor.go` 36 times, a window at
+a time. No turn carried model text, and the agent wrote no notes. RED showed the same shape: 172
+turns of reading before writing its test on the 173rd.
+
+**Hypothesis, untested:** `state-only` keeps too little code in view for a multi-file change. The
+prompt holds the task, the agent's notes, a working set capped at 3 files / 250 lines (longer
+files cut to 50 head + 50 tail lines), the action ledger and the last observation. So the worker
+re-reads what it can no longer see and never accumulates enough to design the fix. This is the
+goldfish effect the action ledger addressed for actions, reappearing for code.
+
+**What would test it:** the identical run with `--context conversational`. If GREEN then edits and
+reaches a gate attempt, the working set, not the model, is the bottleneck, and the next harness
+work is working-set sizing or read memory. Not run: the decision to change the working set can
+wait until the harness-vs-harness comparison (`vanilla` + agy vs `vanilla` + superstate) is on the
+table, which is the run this instrument was built for.
