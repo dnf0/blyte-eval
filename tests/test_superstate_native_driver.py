@@ -60,8 +60,9 @@ def _make_stub(
     report: Optional[dict[str, Any]],
     exit_code: int = 0,
     stderr: str = "",
+    stdout: str = "",
 ) -> Path:
-    """A fake `superstate` that logs its argv and writes `report` to the --report path."""
+    """A fake `superstate` that logs its argv, prints `stdout`, and writes `report`."""
     stub = tmp_path / "superstate-stub"
     calls = tmp_path / "calls.jsonl"
     payload = json.dumps(report)
@@ -77,6 +78,7 @@ def _make_stub(
             payload = {payload!r}
             if payload != "null":
                 Path(args[args.index("--report") + 1]).write_text(payload)
+            sys.stdout.write({stdout!r})
             sys.stderr.write({stderr!r})
             sys.exit({exit_code})
             """
@@ -85,6 +87,7 @@ def _make_stub(
     )
     stub.chmod(0o755)
     return stub
+
 
 
 def _calls(tmp_path: Path) -> list[list[str]]:
@@ -314,4 +317,42 @@ def test_paired_run_accepts_the_tdd_gate() -> None:
     spec.loader.exec_module(module)
     assert module.build_parser().parse_args(["--gate", "tdd"]).gate == "tdd"
     assert module.build_parser().parse_args([]).gate == "none"
+
+
+EVENTS = "[Turn 1] looking around\n● read main.go -> 40 lines read\n[Turn 2] done\n"
+
+
+def test_the_event_stream_is_saved_next_to_the_report(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report(), stdout=EVENTS, stderr="warning: slow\n")
+    report_dir = tmp_path / "reports"
+    driver = _driver(tmp_path, stub, report_dir=report_dir)
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+
+    [report] = list(report_dir.glob("*.json"))
+    [events] = list(report_dir.glob("*.events.log"))
+    assert events.name == report.name.removesuffix(".json") + ".events.log"
+    text = events.read_text()
+    assert "● read main.go -> 40 lines read" in text
+    assert "warning: slow" in text
+    assert driver.last_events_path == events
+
+
+def test_the_event_stream_is_kept_when_there_is_no_report(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, None, exit_code=1, stdout=EVENTS, stderr="panicked\n")
+    report_dir = tmp_path / "reports"
+    driver = _driver(tmp_path, stub, report_dir=report_dir)
+    t = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+
+    assert t.success is False
+    assert list(report_dir.glob("*.json")) == []
+    [events] = list(report_dir.glob("*.events.log"))
+    assert "[Turn 2] done" in events.read_text()
+    assert "panicked" in events.read_text()
+
+
+def test_nothing_is_written_without_a_report_dir(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report(), stdout=EVENTS)
+    driver = _driver(tmp_path, stub)
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    assert driver.last_events_path is None
 

@@ -69,6 +69,14 @@ def _tail(text: Optional[str | bytes], limit: int = 800) -> str:
     return text.strip()[-limit:]
 
 
+def _text(value: Optional[str | bytes]) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
 def _read_report(path: Path) -> Optional[Dict[str, Any]]:
     """The report, or None if it is missing, unparseable, or of an unknown schema."""
     if not path.is_file():
@@ -136,6 +144,7 @@ class SuperstateNativeDriver(AgentDriver):
         self.superstate_bin_source = source
         self.superstate_bin_sha256 = hashlib.sha256(self.superstate_bin.read_bytes()).hexdigest()
         self.last_report: Optional[Dict[str, Any]] = None
+        self.last_events_path: Optional[Path] = None
 
     def build_command(
         self, prompt: str, container_id: str, report_path: Path, timeout_sec: float
@@ -195,6 +204,7 @@ class SuperstateNativeDriver(AgentDriver):
 
         killed = False
         returncode: Optional[int] = None
+        stdout: Optional[str | bytes] = None
         stderr: Optional[str | bytes] = None
         try:
             proc = subprocess.run(
@@ -205,10 +215,21 @@ class SuperstateNativeDriver(AgentDriver):
                 timeout=timeout_sec + KILL_GRACE_SEC,
                 check=False,
             )
-            returncode, stderr = proc.returncode, proc.stderr
+            returncode, stdout, stderr = proc.returncode, proc.stdout, proc.stderr
         except subprocess.TimeoutExpired as exc:
-            killed, stderr = True, exc.stderr
+            killed, stdout, stderr = True, exc.stdout, exc.stderr
         elapsed = time.monotonic() - start
+
+        # Kept on every exit path, and before the report is checked: a run with no report, or
+        # one that was killed, is exactly the run that most needs a record of what it did.
+        self.last_events_path = None
+        if self.report_dir is not None:
+            self.report_dir.mkdir(parents=True, exist_ok=True)
+            events_path = self.report_dir / f"{task.name}-{report_path.stem}.events.log"
+            events_path.write_text(
+                _text(stdout) + "\n--- stderr ---\n" + _text(stderr), encoding="utf-8"
+            )
+            self.last_events_path = events_path
 
         report = _read_report(report_path)
         self.last_report = report
