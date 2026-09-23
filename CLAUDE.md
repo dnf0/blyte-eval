@@ -482,3 +482,7 @@ EXP-020, where vanilla beat `superstate_rust` and exposed the prompt-contract co
 Gate-strength and daemon-vs-mcp questions are settled within the superstate arms; `vanilla` has
 no gate and contributes nothing to either. The lift is banked at EXP-049 (67.5% vs 45%, n=40,
 p=0.037) and does not need re-measuring.
+
+## Working model: Claude orchestrates, agy implements
+
+When executing a plan, follow the `agy-orchestration` skill (`~/.claude/skills/agy-orchestration/`; repo rules in `.claude/agy-rules.md`): dispatch one task at a time to headless `agy` in its own worktree (`../superstate-eval--<task>`), validate independently, then merge. agy never starts a paid run; benchmark runs are Claude's, and only with a named decision (see above).
