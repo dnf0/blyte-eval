@@ -30,6 +30,7 @@ from lab.benchmarks.task_sets import is_canary, is_discriminating
 from lab.engine.drivers.agy_cli import AgyCliDriver
 from lab.engine.drivers.claude_cli import ClaudeCliDriver
 from lab.engine.drivers.superstate_native import SuperstateNativeDriver
+from lab.engine.harnesses import BARE_ARM, build_harness, by_harness, render_harness_comparison
 from lab.engine.governor import ConcurrencyGovernor
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table
 from lab.engine.runner import AblationRunner
@@ -60,6 +61,10 @@ def build_parser() -> argparse.ArgumentParser:
                     help="Native superstate driver only: disable the loop-breaker guards (ablation control)")
     ap.add_argument("--gate", choices=["none", "tdd"], default="none",
                     help="Native superstate driver only: 'tdd' gates by the harness's autonomous TDD (default: none)")
+    ap.add_argument("--harnesses", nargs="+", default=None,
+                    help="Harness-vs-harness mode: compare these harnesses on the bare task, first "
+                         "is the baseline, e.g. agy superstate[state-only] superstate[state-only,tdd]. "
+                         "Replaces --arms, --driver, --context, --gate and --no-loop-breaker")
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
                     help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
@@ -175,7 +180,27 @@ def _run(args) -> int:
         logger.error("No tasks selected")
         return 1
 
-    if args.driver == "claude":
+    drivers: list[Any] = []
+    if args.harnesses:
+        if (
+            args.driver != "agy"
+            or args.context != "state-only"
+            or args.gate != "none"
+            or args.no_loop_breaker
+        ):
+            logger.error(
+                "--harnesses spells each harness's settings in its name "
+                "(e.g. superstate[conversational,tdd]); do not combine it with --driver, "
+                "--context, --gate or --no-loop-breaker."
+            )
+            return 1
+        report_dir = (
+            args.out.with_suffix(".native_reports") if args.out
+            else args.workspace_root / "native_reports"
+        )
+        drivers = [build_harness(s, args.model, report_dir) for s in args.harnesses]
+        driver = drivers[0]
+    elif args.driver == "claude":
         model = args.model if args.model != "gemini-3.8-flash-high" else "claude-3-7-sonnet-20250219"
         driver = ClaudeCliDriver(model=model)
     elif args.driver == "superstate":
@@ -258,6 +283,9 @@ def _run(args) -> int:
     total_runs = len(tasks) * sum(reps for _, reps in parsed_arms)
     arms_label = ", ".join(f"{a}:{r}" if r > 1 else a for a, r in parsed_arms)
     budget_label = f"{args.budget_sec:.0f}s" if args.budget_sec else "task-default"
+    if drivers:
+        total_runs = len(tasks) * len(drivers) * args.repeats
+        arms_label = f"{BARE_ARM} x " + ", ".join(d.harness_name for d in drivers)
     logger.info("=" * 78)
     logger.info("Harness=%s  model=%s  tasks=%d  arms=%s  concurrency=%d",
                 driver.harness_name, args.model, len(tasks), arms_label, args.concurrency)
@@ -266,25 +294,32 @@ def _run(args) -> int:
     logger.info("=" * 78)
 
     jobs = []
-    for task in tasks:
-        for arm, reps in parsed_arms:
-            for rep in range(1, reps + 1):
-                jobs.append((task, arm, rep, reps))
+    if drivers:
+        for task in tasks:
+            for drv in drivers:
+                for rep in range(1, args.repeats + 1):
+                    jobs.append((task, BARE_ARM, rep, args.repeats, drv))
+    else:
+        for task in tasks:
+            for arm, reps in parsed_arms:
+                for rep in range(1, reps + 1):
+                    jobs.append((task, arm, rep, reps, driver))
 
     results = []
 
-    def execute_job(t: Any, a: str, r: int, total_reps: int) -> Any:
+    def execute_job(t: Any, a: str, r: int, total_reps: int, drv: Any) -> Any:
         rep_tag = f" [run {r}/{total_reps}]" if total_reps > 1 else ""
+        label = drv.harness_name if a == BARE_ARM else a
         task_budget = args.budget_sec or t.agent_timeout_sec or 3600.0
-        logger.info("-> %s [%s]%s (budget: %.0fs)", t.name, a, rep_tag, task_budget)
+        logger.info("-> %s [%s]%s (budget: %.0fs)", t.name, label, rep_tag, task_budget)
         started = time.monotonic()
         tel = runner.run_task(
             task_id=t.id, arm=a, image=t.docker_image,
-            base_budget_sec=task_budget, task_spec=t, driver=driver,
+            base_budget_sec=task_budget, task_spec=t, driver=drv,
         )
         logger.info(
             "   %s%s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
-            a, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
+            label, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
             time.monotonic() - started, tel.failure_reason or "",
         )
         return tel
@@ -299,19 +334,24 @@ def _run(args) -> int:
 
     if args.concurrency > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-            futures = [pool.submit(execute_job, t, a, r, reps) for t, a, r, reps in jobs]
+            futures = [pool.submit(execute_job, *job) for job in jobs]
             for fut in concurrent.futures.as_completed(futures):
                 results.append(fut.result())
                 _save_incremental(results)
     else:
-        for t, a, r, reps in jobs:
-            results.append(execute_job(t, a, r, reps))
+        for job in jobs:
+            results.append(execute_job(*job))
             _save_incremental(results)
 
     print()
-    print(render_summary_table(generate_comparison_summary(results)))
-    print()
-    print(render_lift_report(results))
+    if drivers:
+        print(render_summary_table(generate_comparison_summary(by_harness(results))))
+        print()
+        print(render_harness_comparison(results, baseline=drivers[0].harness_name))
+    else:
+        print(render_summary_table(generate_comparison_summary(results)))
+        print()
+        print(render_lift_report(results))
 
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

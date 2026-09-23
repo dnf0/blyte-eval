@@ -108,7 +108,25 @@ been run until EXP-055.
 **Before quoting any superstate number, check which of the two produced it.** See
 `superstate/docs/SYSTEM-REVIEW.md` for how the two diverged.
 
-## Arms — check the name before comparing anything
+## Harnesses — the current comparison
+
+Superstate is now a harness in its own right, so the question this evaluation answers is
+**harness against harness** on the same bare task, model and sealed grader:
+
+    python scripts/paired_run.py --harnesses agy superstate[state-only] superstate[state-only,tdd] --canary
+
+The first harness is the baseline, and results pair by task (`lab/engine/harnesses.py`). Every
+harness runs through the `bare` pass-through arm: the instruction untouched, guidance files
+stripped, no gate from the evaluation. What a harness does beyond that is part of the harness
+and is spelled out in its name, `superstate[<state-only|conversational>,no-loop-breaker,tdd]`.
+`superstate[…,tdd]` gates **itself** by autonomous TDD. Compare it with agy as "a harness with
+its own gate", not as an ungated run.
+
+## Arms (legacy, bolt-on era) — check the name before comparing anything
+
+These arms measure a layer attached to agy or Claude Code: the question before superstate was a
+harness. They stay runnable to reproduce past results. They are not the current design, and
+`vanilla` survives only as the adapter behind `bare`.
 
 The benchmark's Condition labels map to specific arm names. Getting this wrong invalidates
 a comparison silently, and has.
