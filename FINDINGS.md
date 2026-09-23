@@ -1913,3 +1913,38 @@ reaches a gate attempt, the working set, not the model, is the bottleneck, and t
 work is working-set sizing or read memory. Not run: the decision to change the working set can
 wait until the harness-vs-harness comparison (`--harnesses agy superstate[state-only]`) is on the
 table, which is the run this instrument was built for.
+
+### 13.34 `state-window` makes the native harness keep working, and its first pass (2026-09-23)
+
+Built from 13.33. `state-window` is `state-only`'s bounded prompt plus the last 8 tool call/result
+pairs, each cut to 60 lines. It is at most 18 messages whatever the session length. `state-only`
+is unchanged, as the control (superstate branch `feat/state-window-context`). Two runs on
+`build-cython-ext` (900s), against the same-day baselines from 13.31's harness canary. Metrics
+come from the event logs; "repeat rate" is the share of tool calls identical to an earlier call
+in the same run.
+
+| run | grader | edits | last edit (call / total) | ended itself | repeat rate | input/turn | cost |
+|---|---|---|---|---|---|---|---|
+| agy | **11/11** | — | — | yes, 716s | — | — | $0.88 |
+| `state-only` | 7/11 | 3 | 109 / 338 | no | 0.56 | 9.9K | $2.59 |
+| `state-window` #1 | 8/11 | **23** | 378 / 378 | no | 0.56 | 15.3K | $4.44 |
+| `state-window` #2 | **11/11** | **23** | 284 / 328 | **yes, 779s** | 0.50 | 12.5K | $3.14 |
+
+* **The first native pass, and the first time the harness ended on its own.** Every earlier
+  native run hit its deadline.
+* **The effect is on progress, not on repetition.** Edits went from 3 to 23 in **both** runs.
+  Under `state-only` the last 229 of 338 calls contained no edit; under `state-window` one run was
+  still editing at the deadline and the other finished. The repeat rate barely moved
+  (0.56/0.50 against 0.56), so the prediction that seeing recent results would stop re-runs was
+  **wrong**. Some re-running is legitimate (checking again after an edit). What `state-only` did
+  was lose the thread, not merely repeat.
+* **It costs more per turn:** 12.5–15.3K fresh input against 9.9K, and $3.14–4.44 against $2.59.
+  That is still **3.5–5× agy** for the same task, and agy was faster.
+
+n=2 on one task. The edit count (3 → 23 in both runs) is robust; pass/fail at 1 of 2 is not.
+
+**Consequences.** `state-window` should replace `state-only` as the native default, with
+`state-only` kept as the control. Cost is now the main gap with agy, and caching is the lever it
+has never used. Across every native run, at most ~150K tokens were cached against 2.5–5.8M fresh
+input. Neither context strategy keeps a stable prompt prefix: the state prompt, which holds the
+append-only action ledger, is rebuilt as the first message every turn.
