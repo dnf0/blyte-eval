@@ -1,0 +1,78 @@
+[
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "bare",
+    "passed": true,
+    "wall_clock_sec": 564.79,
+    "cost_usd": 0.7744125,
+    "input_tokens": 956685,
+    "output_tokens": 15173,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-bare-34c922c5",
+      "harness": "superstate[conversational]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 11
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260924-080910/eval-terminal-bench_build-cython-ext-bare-34c922c5/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": []
+    }
+  },
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "bare",
+    "passed": true,
+    "wall_clock_sec": 620.28,
+    "cost_usd": 0.78786825,
+    "input_tokens": 974936,
+    "output_tokens": 15111,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-bare-94990309",
+      "harness": "superstate[conversational]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 11
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260924-080910/eval-terminal-bench_build-cython-ext-bare-94990309/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": []
+    }
+  }
+]
