@@ -36,7 +36,7 @@ The diagnostics:
 Append to `tests/test_superstate_native_driver.py`:
 
 ```python
-EVENTS = (
+METRIC_EVENTS = (
     "[Turn 1] \n"
     "● read a.py -> 10 lines read\n"
     "● read a.py -> 10 lines read\n"
@@ -60,7 +60,7 @@ TURN_USAGE = [
 def test_run_metrics_counts_rereads_repeats_and_splits_fresh_input() -> None:
     from lab.engine.drivers.superstate_native import run_metrics
 
-    m = run_metrics(_report(turns=3, fold_notes=2, fold_note_failures=1, turn_usage=TURN_USAGE), EVENTS)
+    m = run_metrics(_report(turns=3, fold_notes=2, fold_note_failures=1, turn_usage=TURN_USAGE), METRIC_EVENTS)
     assert m["harness_turns"] == 3
     assert (m["fold_notes"], m["fold_note_failures"]) == (2, 1)
     assert (m["reads"], m["unchanged_rereads"], m["changed_rereads"]) == (3, 1, 1)
@@ -79,7 +79,7 @@ def test_run_metrics_tolerates_an_old_report() -> None:
 
 
 def test_metrics_reach_the_task_result(tmp_path: Path) -> None:
-    stub = _make_stub(tmp_path, _report(turns=3, turn_usage=TURN_USAGE), stdout=EVENTS)
+    stub = _make_stub(tmp_path, _report(turns=3, turn_usage=TURN_USAGE), stdout=METRIC_EVENTS)
     driver = _driver(tmp_path, stub, max_cost_usd=4.0)
     result = VanillaAdapter().execute(
         tmp_path, _task(tmp_path), driver, timeout_sec=60.0, container=FakeContainer()
