@@ -20,9 +20,10 @@ from lab.engine.budget_policy import RunTelemetry
 #: The pass-through arm every harness runs under. An alias of the legacy `vanilla` adapter.
 BARE_ARM = "bare"
 
-_SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z,-]*)\])?$")
+_SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z0-9,-]*)\])?$")
 _SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact")
 _SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review", "fold-notes")
+_FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
 
 
 class HarnessSpecError(ValueError):
@@ -43,7 +44,7 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
             raise HarnessSpecError(f"{name} takes no options, got {opts}")
         return name, opts
     if name == "superstate":
-        unknown = [o for o in opts if o not in _SUPERSTATE_OPTIONS]
+        unknown = [o for o in opts if o not in _SUPERSTATE_OPTIONS and not _FOLD_BUDGET_RE.fullmatch(o)]
         if unknown:
             raise HarnessSpecError(
                 f"unknown superstate option(s) {unknown}; known: {list(_SUPERSTATE_OPTIONS)}"
@@ -53,11 +54,19 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
             raise HarnessSpecError(
                 f"choose one context, got {contexts}; one of {list(_SUPERSTATE_CONTEXTS)}"
             )
+        budgets = [o for o in opts if _FOLD_BUDGET_RE.fullmatch(o)]
+        if len(budgets) > 1:
+            raise HarnessSpecError(f"choose one fold budget, got {budgets}")
         return name, opts
     raise HarnessSpecError(f"unknown harness {name!r}; known: agy, claude, superstate")
 
 
-def build_harness(spec: str, model: str, report_dir: Optional[Path] = None) -> Any:
+def build_harness(
+    spec: str,
+    model: str,
+    report_dir: Optional[Path] = None,
+    max_cost_usd: Optional[float] = None,
+) -> Any:
     """The driver for one harness spec. Every harness gets the same model string."""
     name, opts = parse_harness_spec(spec)
     if name == "agy":
@@ -82,6 +91,10 @@ def build_harness(spec: str, model: str, report_dir: Optional[Path] = None) -> A
         gate="tdd" if "tdd" in opts else None,
         review="review" in opts,
         fold_notes="fold-notes" in opts,
+        fold_budget=next(
+            (int(m.group(1)) * 1000 for o in opts if (m := _FOLD_BUDGET_RE.fullmatch(o))), None
+        ),
+        max_cost_usd=max_cost_usd,
         report_dir=report_dir,
     )
 

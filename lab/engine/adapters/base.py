@@ -67,6 +67,9 @@ class DriverTelemetry:
     cost_usd: float = 0.0
     conversation_id: Optional[str] = None
     error_message: Optional[str] = None
+    #: Harness-reported diagnostics for this invocation (merged into the result's provenance).
+    metrics: Dict[str, Any] = field(default_factory=dict)
+
 
 
 @dataclass
@@ -238,6 +241,7 @@ class TurnBasedAdapter(AgentAdapter):
 
         completed_cleanly = False
         stream_retries = 0
+        metrics: Dict[str, Any] = {}
         for _ in range(self.max_turns):
             if duration >= budget:
                 error_msg = f"Timed out after {duration:.1f}s (budget: {budget:.1f}s)"
@@ -267,6 +271,7 @@ class TurnBasedAdapter(AgentAdapter):
             turns += 1
             conversation_id = telemetry.conversation_id or conversation_id
             last_response = telemetry.raw_response
+            metrics.update(telemetry.metrics)
 
             # Poll for verifiable progress; the budget may grow mid-run as a result.
             if budget_hook is not None:
@@ -329,5 +334,5 @@ class TurnBasedAdapter(AgentAdapter):
             cost_usd=cost_usd,
             error_message=error_msg,
             turns=turns,
-            provenance=self.get_provenance(),
+            provenance={**self.get_provenance(), **metrics},
         )

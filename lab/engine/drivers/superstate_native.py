@@ -10,11 +10,13 @@ Spec: superstate/docs/superpowers/specs/2026-09-23-native-harness-eval-surface-d
 
 from __future__ import annotations
 
+from collections import Counter
 import hashlib
 import json
 import logging
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -92,6 +94,62 @@ def _read_report(path: Path) -> Optional[Dict[str, Any]]:
     return data
 
 
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+_TOOL_EVENT_RE = re.compile(r"^\s*● (\w+) (.*?) -> ")
+
+
+def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
+    """Diagnostics for comparing harness configurations, from the run report and event log.
+
+    Re-reads of an unchanged file and repeated identical commands are work a context strategy
+    should have made unnecessary (FINDINGS 13.33, 13.42). Fresh input is split by whether the
+    call's prompt only grew (`appended`), where a prefix cache can serve all but the new part
+    (`new_tokens_est_on_appended`, at 4 characters per token), or was rewritten (a fold), where
+    a cache miss is expected. Tolerates reports that predate any of these fields.
+    """
+    usage = report.get("turn_usage") or []
+    appended = [t for t in usage if t.get("appended")]
+    rewritten = [t for t in usage if not t.get("appended")]
+    reads = unchanged = changed = 0
+    seen: set[str] = set()
+    edited: set[str] = set()
+    counts: Counter[tuple[str, str]] = Counter()
+    for raw in events_text.splitlines():
+        m = _TOOL_EVENT_RE.match(_ANSI_RE.sub("", raw))
+        if not m:
+            continue
+        tool, target = m.group(1), m.group(2)
+        counts[(tool, target)] += 1
+        if tool == "read":
+            reads += 1
+            if target in seen:
+                if target in edited:
+                    changed += 1
+                else:
+                    unchanged += 1
+            seen.add(target)
+            edited.discard(target)
+        elif tool in ("edit", "write"):
+            edited.add(target)
+    repeated = sum(
+        c - 1 for (tool, _), c in counts.items() if c > 1 and tool in ("bash", "grep", "glob")
+    )
+    return {
+        "harness_turns": int(report.get("turns") or 0),
+        "fold_notes": int(report.get("fold_notes") or 0),
+        "fold_note_failures": int(report.get("fold_note_failures") or 0),
+        "reads": reads,
+        "unchanged_rereads": unchanged,
+        "changed_rereads": changed,
+        "repeated_commands": repeated,
+        "appended_turns": len(appended),
+        "rewritten_turns": len(rewritten),
+        "fresh_on_appended": sum(int(t.get("input", 0)) for t in appended),
+        "new_tokens_est_on_appended": sum(int(t.get("new_chars", 0)) for t in appended) // 4,
+        "fresh_on_rewritten": sum(int(t.get("input", 0)) for t in rewritten),
+    }
+
+
 class SuperstateNativeDriver(AgentDriver):
     """Runs a whole task through the native superstate harness in one call."""
 
@@ -108,6 +166,8 @@ class SuperstateNativeDriver(AgentDriver):
         gate: Optional[str] = None,
         review: bool = False,
         fold_notes: bool = False,
+        fold_budget: Optional[int] = None,
+        max_cost_usd: Optional[float] = None,
         superstate_bin: Optional[str | Path] = None,
         report_dir: Optional[str | Path] = None,
     ) -> None:
@@ -128,6 +188,8 @@ class SuperstateNativeDriver(AgentDriver):
         self.gate = gate
         self.review = review
         self.fold_notes = fold_notes
+        self.fold_budget = fold_budget
+        self.max_cost_usd = max_cost_usd
         # Results are pooled by `harness` (runner.py records harness_name), so every
         # configuration that changes behaviour must be in the name. Otherwise a loop-breaker
         # ablation pools its control with its treatment.
@@ -137,6 +199,7 @@ class SuperstateNativeDriver(AgentDriver):
             + ([gate] if gate else [])
             + (["review"] if review else [])
             + (["fold-notes"] if fold_notes else [])
+            + ([f"fold-budget-{fold_budget // 1000}k"] if fold_budget else [])
         )
         self.harness_name = f"superstate[{','.join(config)}]"
         self.report_dir = Path(report_dir) if report_dir is not None else None
@@ -181,6 +244,10 @@ class SuperstateNativeDriver(AgentDriver):
             cmd.append("--review")
         if self.fold_notes:
             cmd.append("--fold-notes")
+        if self.fold_budget:
+            cmd += ["--fold-budget", str(self.fold_budget)]
+        if self.max_cost_usd is not None:
+            cmd += ["--max-cost-usd", str(self.max_cost_usd)]
         # `--` so an instruction that starts with a dash is never parsed as a flag.
         cmd += ["--", prompt]
         return cmd
@@ -267,6 +334,13 @@ class SuperstateNativeDriver(AgentDriver):
         output_tokens = int(usage.get("output", 0))
         cached_input_tokens = int(usage.get("cached", 0))
         thinking_tokens = int(usage.get("thinking", 0))
+        cost_usd = estimate_cost_usd(
+            self.model, input_tokens, output_tokens, cached_input_tokens, thinking_tokens
+        )
+        metrics = run_metrics(report, _text(stdout))
+        if metrics["harness_turns"]:
+            metrics["cost_per_turn"] = round(cost_usd / metrics["harness_turns"], 6)
+        metrics["max_cost_usd"] = self.max_cost_usd
         success = report.get("outcome") == "verified"
         error_message = None
         if not success:
@@ -279,9 +353,8 @@ class SuperstateNativeDriver(AgentDriver):
             output_tokens=output_tokens,
             cached_input_tokens=cached_input_tokens,
             thinking_tokens=thinking_tokens,
-            cost_usd=estimate_cost_usd(
-                self.model, input_tokens, output_tokens, cached_input_tokens, thinking_tokens
-            ),
+            cost_usd=cost_usd,
             conversation_id=None,
             error_message=error_message,
+            metrics=metrics,
         )

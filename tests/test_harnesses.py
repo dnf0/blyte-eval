@@ -194,3 +194,19 @@ def test_fold_notes_is_a_superstate_option(superstate_stub: Path) -> None:
 def test_compact_is_a_superstate_context(superstate_stub: Path) -> None:
     assert build_harness("superstate[compact,tdd]", MODEL).harness_name == "superstate[compact,tdd]"
 
+
+def test_fold_budget_is_a_superstate_option(superstate_stub: Path) -> None:
+    built = build_harness("superstate[compact,fold-notes,fold-budget-16k]", MODEL)
+    assert built.harness_name == "superstate[compact,fold-notes,fold-budget-16k]"
+    assert built.fold_budget == 16000
+    with pytest.raises(HarnessSpecError, match="one fold budget"):
+        parse_harness_spec("superstate[compact,fold-budget-16k,fold-budget-8k]")
+    with pytest.raises(HarnessSpecError, match="unknown superstate option"):
+        parse_harness_spec("superstate[compact,fold-budget-lots]")
+
+
+def test_the_cost_cap_reaches_superstate_harnesses_only(superstate_stub: Path) -> None:
+    assert build_harness("superstate[compact]", MODEL, max_cost_usd=2.0).max_cost_usd == 2.0
+    assert build_harness("superstate[compact]", MODEL).max_cost_usd is None
+
+

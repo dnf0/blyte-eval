@@ -386,3 +386,91 @@ def test_fold_notes_is_passed_and_named(tmp_path: Path) -> None:
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     assert "--fold-notes" in argv[: argv.index("--")]
+
+
+METRIC_EVENTS = (
+    "[Turn 1] \n"
+    "● read a.py -> 10 lines read\n"
+    "● read a.py -> 10 lines read\n"
+    "● edit a.py -> replaced 1 line\n"
+    "● read a.py -> 10 lines read\n"
+    "● bash pytest -q -> exit 1\n"
+    "\x1b[31m● bash pytest -q -> exit 1\x1b[0m\n"
+    "● grep foo -> 2 matches\n"
+)
+
+TURN_USAGE = [
+    {"turn": 1, "input": 1000, "cached": 0, "output": 5, "thinking": 0,
+     "prompt_messages": 1, "appended": False, "new_chars": 4000},
+    {"turn": 2, "input": 300, "cached": 900, "output": 5, "thinking": 0,
+     "prompt_messages": 3, "appended": True, "new_chars": 800},
+    {"turn": 3, "input": 5000, "cached": 100, "output": 5, "thinking": 0,
+     "prompt_messages": 5, "appended": True, "new_chars": 400},
+]
+
+
+def test_run_metrics_counts_rereads_repeats_and_splits_fresh_input() -> None:
+    from lab.engine.drivers.superstate_native import run_metrics
+
+    m = run_metrics(_report(turns=3, fold_notes=2, fold_note_failures=1, turn_usage=TURN_USAGE), METRIC_EVENTS)
+    assert m["harness_turns"] == 3
+    assert (m["fold_notes"], m["fold_note_failures"]) == (2, 1)
+    assert (m["reads"], m["unchanged_rereads"], m["changed_rereads"]) == (3, 1, 1)
+    assert m["repeated_commands"] == 1
+    assert (m["appended_turns"], m["rewritten_turns"]) == (2, 1)
+    assert m["fresh_on_appended"] == 5300
+    assert m["new_tokens_est_on_appended"] == 300
+    assert m["fresh_on_rewritten"] == 1000
+
+
+def test_run_metrics_tolerates_an_old_report() -> None:
+    from lab.engine.drivers.superstate_native import run_metrics
+
+    m = run_metrics(_report(), "")
+    assert m["reads"] == 0 and m["appended_turns"] == 0 and m["fold_notes"] == 0
+
+
+def test_metrics_reach_the_task_result(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report(turns=3, turn_usage=TURN_USAGE), stdout=METRIC_EVENTS)
+    driver = _driver(tmp_path, stub, max_cost_usd=4.0)
+    result = VanillaAdapter().execute(
+        tmp_path, _task(tmp_path), driver, timeout_sec=60.0, container=FakeContainer()
+    )
+    assert result.provenance["unchanged_rereads"] == 1
+    assert result.provenance["harness_turns"] == 3
+    assert result.provenance["cost_per_turn"] == pytest.approx(result.cost_usd / 3, rel=1e-3)
+    assert result.provenance["max_cost_usd"] == 4.0
+
+
+def test_fold_budget_and_cost_cap_are_passed(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub, context="compact", fold_budget=16000, max_cost_usd=2.5)
+    assert driver.harness_name == "superstate[compact,fold-budget-16k]"
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    [argv] = _calls(tmp_path)
+    flags = argv[: argv.index("--")]
+    assert flags[flags.index("--fold-budget") + 1] == "16000"
+    assert flags[flags.index("--max-cost-usd") + 1] == "2.5"
+
+
+def test_no_cap_and_no_budget_pass_no_flags(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    _driver(tmp_path, stub).run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    [argv] = _calls(tmp_path)
+    assert "--fold-budget" not in argv and "--max-cost-usd" not in argv
+
+
+def test_paired_run_accepts_a_cost_cap() -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "paired_run", Path(__file__).resolve().parent.parent / "scripts" / "paired_run.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    args = module.build_parser().parse_args(
+        ["--harnesses", "superstate[compact]", "--max-cost-usd", "3"]
+    )
+    assert args.max_cost_usd == 3.0
+
