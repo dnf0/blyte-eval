@@ -116,6 +116,8 @@ ENGINE_PATHS: dict[str, tuple[Path, ...]] = {
         Path.home() / ".local/bin/agent-rules",
     ),
     ENGINE_RUST: (
+        Path.home() / "repos/superstate/target/release/blyte",
+        Path.home() / "repos/superstate/target/debug/blyte",
         Path.home() / "repos/superstate/target/release/superstate",
         Path.home() / "repos/superstate/target/debug/superstate",
     ),
@@ -132,9 +134,11 @@ def find_superstate_binary(engine: str = DEFAULT_ENGINE) -> Optional[Path]:
     share the name `superstate`, and picking the wrong one is undetectable in the
     results.
     """
-    env_path = os.environ.get("SUPERSTATE_BIN")
-    if env_path and Path(env_path).is_file():
-        return Path(env_path)
+    # The harness was renamed superstate -> blyte on 2026-09-24; BLYTE_BIN is preferred.
+    for var in ("BLYTE_BIN", "SUPERSTATE_BIN"):
+        env_path = os.environ.get(var)
+        if env_path and Path(env_path).is_file():
+            return Path(env_path)
 
     # Prefer the most recently built artefact. A stale release build silently
     # shadows a freshly compiled debug one, and the run then measures old code

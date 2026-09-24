@@ -58,7 +58,7 @@ def _resolve_binary() -> Path:
     if found is None:
         raise SuperstateNativeDriverError(
             "No superstate binary found. Build it (`cargo build --release` in the superstate "
-            "repo) or set SUPERSTATE_BIN."
+            "repo) or set BLYTE_BIN."
         )
     return found
 
@@ -157,7 +157,7 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
 class SuperstateNativeDriver(AgentDriver):
     """Runs a whole task through the native superstate harness in one call."""
 
-    harness_name: str = "superstate"
+    harness_name: str = "blyte"
     # Every tool call is a `docker exec` into the task container; the model never gets a host
     # shell, so it cannot reach the Docker daemon or the held-out tests.
     provides_isolated_execution: bool = True
@@ -205,14 +205,14 @@ class SuperstateNativeDriver(AgentDriver):
             + (["fold-notes"] if fold_notes else [])
             + ([f"fold-budget-{fold_budget // 1000}k"] if fold_budget else [])
         )
-        self.harness_name = f"superstate[{','.join(config)}]"
+        self.harness_name = f"blyte[{','.join(config)}]"
         self.report_dir = Path(report_dir) if report_dir is not None else None
 
         source = Path(superstate_bin) if superstate_bin is not None else _resolve_binary()
         # Copy to a run-scoped path: `cargo build` rewrites target/*/superstate in place, and a
         # rebuild mid-run would make one run measure two binaries while reporting one (EXP-073).
         self._work_dir = Path(tempfile.mkdtemp(prefix="superstate-native-"))
-        self.superstate_bin = self._work_dir / "superstate"
+        self.superstate_bin = self._work_dir / "blyte"
         shutil.copy2(source, self.superstate_bin)
         self.superstate_bin_source = source
         self.superstate_bin_sha256 = hashlib.sha256(self.superstate_bin.read_bytes()).hexdigest()

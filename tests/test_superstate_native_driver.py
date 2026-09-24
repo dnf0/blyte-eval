@@ -272,15 +272,15 @@ def test_paired_run_accepts_the_superstate_driver() -> None:
 
 def test_harness_name_encodes_the_configuration(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
-    assert _driver(tmp_path, stub).harness_name == "superstate[folded]"
+    assert _driver(tmp_path, stub).harness_name == "blyte[folded]"
     ablated = _driver(tmp_path, stub, context="conversational", loop_breaker=False)
-    assert ablated.harness_name == "superstate[conversational,no-loop-breaker]"
+    assert ablated.harness_name == "blyte[conversational,no-loop-breaker]"
 
 
 def test_tdd_gate_passes_the_flag_and_names_the_harness(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, gate="tdd")
-    assert driver.harness_name == "superstate[folded,tdd]"
+    assert driver.harness_name == "blyte[folded,tdd]"
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     flags = argv[: argv.index("--")]
@@ -305,7 +305,7 @@ def test_rejects_an_unknown_gate(tmp_path: Path) -> None:
 def test_harness_name_orders_every_option(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, context="conversational", loop_breaker=False, gate="tdd")
-    assert driver.harness_name == "superstate[conversational,no-loop-breaker,tdd]"
+    assert driver.harness_name == "blyte[conversational,no-loop-breaker,tdd]"
 
 
 def test_paired_run_accepts_the_tdd_gate() -> None:
@@ -362,7 +362,7 @@ def test_nothing_is_written_without_a_report_dir(tmp_path: Path) -> None:
 def test_state_window_context_is_passed_through(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, context="state-window")
-    assert driver.harness_name == "superstate[state-window]"
+    assert driver.harness_name == "blyte[state-window]"
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     assert argv[argv.index("--context") + 1] == "state-window"
@@ -372,7 +372,7 @@ def test_state_window_context_is_passed_through(tmp_path: Path) -> None:
 def test_review_is_passed_and_named(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, gate="tdd", review=True)
-    assert driver.harness_name == "superstate[folded,tdd,review]"
+    assert driver.harness_name == "blyte[folded,tdd,review]"
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     flags = argv[: argv.index("--")]
@@ -382,7 +382,7 @@ def test_review_is_passed_and_named(tmp_path: Path) -> None:
 def test_fold_notes_is_passed_and_named(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, context="compact", fold_notes=True)
-    assert driver.harness_name == "superstate[compact,fold-notes]"
+    assert driver.harness_name == "blyte[compact,fold-notes]"
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     assert "--fold-notes" in argv[: argv.index("--")]
@@ -445,7 +445,7 @@ def test_metrics_reach_the_task_result(tmp_path: Path) -> None:
 def test_fold_budget_and_cost_cap_are_passed(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, context="compact", fold_budget=16000, max_cost_usd=2.5)
-    assert driver.harness_name == "superstate[compact,fold-budget-16k]"
+    assert driver.harness_name == "blyte[compact,fold-budget-16k]"
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     flags = argv[: argv.index("--")]
@@ -470,7 +470,7 @@ def test_paired_run_accepts_a_cost_cap() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     args = module.build_parser().parse_args(
-        ["--harnesses", "superstate[compact]", "--max-cost-usd", "3"]
+        ["--harnesses", "blyte[compact]", "--max-cost-usd", "3"]
     )
     assert args.max_cost_usd == 3.0
 
