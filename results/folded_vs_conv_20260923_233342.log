@@ -1,0 +1,46 @@
+23:33:42 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack (kept: superstate). ~13,288 tokens/invocation.
+23:33:42 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+23:33:42 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.9 GB reported available], Disk limit=4, User override=None)
+23:33:42 [INFO] superstate_eval.paired: ==============================================================================
+23:33:42 [INFO] superstate_eval.paired: Harness=superstate[conversational]  model=gemini-3.8-flash-high  tasks=1  arms=bare x superstate[conversational], superstate[folded]  concurrency=2
+23:33:42 [INFO] superstate_eval.paired: Runs=2  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260923-233342
+23:33:42 [INFO] superstate_eval.paired: ==============================================================================
+23:33:42 [INFO] superstate_eval.paired: -> build-cython-ext [superstate[conversational]] (budget: 900s)
+23:33:42 [INFO] superstate_eval.paired: -> build-cython-ext [superstate[folded]] (budget: 900s)
+23:33:42 [INFO] superstate_eval.docker_manager: Host disk check: 67.03 GB free on /
+23:33:42 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: bare] (Base budget: 900.0s)
+23:33:42 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: bare] (Base budget: 900.0s)
+23:33:42 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.9 GB reported available], Disk limit=4, User override=None)
+23:33:42 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.9 GB reported available], Disk limit=4, User override=None)
+23:33:42 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260923-233342/eval-terminal-bench_build-cython-ext-bare-47646ba4/workspace
+23:33:42 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260923-233342/eval-terminal-bench_build-cython-ext-bare-4bab7fb0/workspace
+23:33:42 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ba662b43ebe7 (alexgshaw/build-cython-ext:20251031)
+23:33:42 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 78bcd6f8dbc9 (alexgshaw/build-cython-ext:20251031)
+23:41:16 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+23:41:21 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=bare: passed=True, reward=1.0, exit_code=0
+23:41:21 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 78bcd6f8dbc9
+23:41:21 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: bare]: Passed=True, WallClock=458.80s, Cost=$0.65, TotalGrantedBudget=900.0s
+23:41:21 [INFO] superstate_eval.paired:    superstate[conversational]: passed=True cost=$0.6546 turns=1 459s  
+23:42:24 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+23:42:29 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=bare: passed=True, reward=1.0, exit_code=0
+23:42:29 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ba662b43ebe7
+23:42:29 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+23:42:29 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: bare]: Passed=True, WallClock=527.27s, Cost=$0.89, TotalGrantedBudget=900.0s
+23:42:29 [INFO] superstate_eval.paired:    superstate[folded]: passed=True cost=$0.8856 turns=1 527s  
+23:42:29 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| superstate[conversational] | 1 | 1 | 100.0% | 0 | $0.65 | $0.65 | 7.6m | 0.0m | 803465 | 13858 |
+| superstate[folded] | 1 | 1 | 100.0% | 0 | $0.89 | $0.89 | 8.8m | 0.0m | 1110205 | 14123 |
+
+## Harnesses against `superstate[conversational]` (paired by task; same model, prompt and grader)
+
+| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| superstate[folded] | 1 | 1 | 1 | 0 | 0 | 0.65 | 0.89 |
+
+Small n cannot support a claim: report the paired rows, not a headline rate.
+
+Results written to results/folded_vs_conv_20260923_233342.json

@@ -1824,3 +1824,200 @@ measure what keys appear across a handful of real tasks. A stable shape means fo
 Nothing written, having been asked, means state is runtime-owned and the paper's patch model
 does not transfer to software engineering. Either outcome is worth more than a guess, and it
 costs nothing extra once the loop exists.
+
+### 13.31 The native harness is now measurable, and the instrument works (2026-09-23)
+
+Until now every arm drove agy or Claude Code, so the native harness (`superstate "<prompt>"`,
+superstate #42 onwards) had never been measured. `SuperstateNativeDriver` (#27, #28) runs it as
+the worker runtime, where agy sits, so agy and superstate can be compared as harnesses on the
+same bare task, model and sealed grader (`paired_run.py --harnesses agy superstate[state-only]`). The superstate side (#46, #47) adds a JSON run
+report, a self-enforced deadline, `--container-workdir`, agy effort-suffix parity and `--tdd`.
+
+Four smoke runs, all `gemini-3.8-flash-high`, `state-only`, 900s. **n=1 per configuration: these
+validate the instrument, not a solve rate.** Figures are from `results/smoke_native*_20260923_*`.
+
+| run | task | harness | turns | fresh / cached input | cost | grader |
+|---|---|---|---|---|---|---|
+| 165010 | build-cython-ext | `superstate[state-only]` | 290 | 2.51M / 20K | $1.96 | 7/11 |
+| 173239 | scc | `superstate[state-only,tdd]` | 377 | 3.58M / 0 | $2.73 | P2P 286/286, F2P 0/31 |
+| 181407 | scc | `superstate[state-only,tdd]` | 366 | 3.21M / 85K | $2.47 | P2P 286/286, F2P 0/31 |
+| 185702 | scc | `superstate[state-only,tdd]` (loop-breaker fixed) | 340 | 2.82M / 0 | $2.16 | P2P 286/286, F2P 0/31 |
+
+What is established:
+
+* **The wiring holds end to end.** Every run executed in the task container at `/app`, stopped
+  itself at the deadline with `budget_exhausted`, and wrote its report, so no tokens were lost to
+  a kill (the 13.5 failure). The grader ran every time.
+* **Autonomous TDD's RED works natively.** All three `tdd` runs passed RED on the first gate
+  attempt, and the workspace checkpoint (`chore(superstate): checkpoint phase
+  tdd-reproduction-test`) held exactly `reproduce_issue_test.go` (checked in 173239's
+  workspace), so the RED-scope check and checkpointing work in a real container.
+* **Nothing ever ended on its own.** Across all four runs the phase that did not pass never
+  reached a gate attempt: the model kept calling tools until the deadline. Ungated (165010) that
+  is the whole run.
+* **Prompt caching is effectively absent**: at most 85K cached against 2.5–3.6M fresh input per
+  run. At about $2–3 per 15 minutes this is the largest cost lever visible so far, and it is
+  untouched.
+* **Agent notes, now that the prompt asks** (the 13.30 experiment): `current_task`;
+  `branch`, `implementation_started`; `reproduction_test`; and nothing in the fourth run. Four
+  runs, no stable shape yet.
+
+### 13.32 The loop-breaker told a GREEN worker its failing test was passing (2026-09-23)
+
+Run 181407 kept the harness's event stream (the driver discarded it before, which is why 173239
+could not be diagnosed). GREEN ran 211 turns with **no `write` or `edit` at all**, and the log
+shows why:
+
+1. During RED, the worker ran `go test -run '^$' ./...`, a compile-only check that runs **no**
+   tests. It exited 0.
+2. In GREEN, its first real `go test -run TestReproduceIssue ./...` was intercepted:
+   "Unit tests … have already passed and no files were modified since." RED had just proved that
+   test **fails**. It never ran.
+3. `context.rs` added "## Verification Status: Unit tests are passing" to every GREEN prompt.
+
+**Mechanism.** superstate #44's guard and prompt notice treated "any test-like command exited 0
+since the last edit" as "the tests pass". That was wrong across different commands (a compile
+check is not a test run) and across phases (RED's history carried into GREEN). A worker told on
+every turn that its tests pass has no reason to edit.
+
+This is the perimeter lesson of 13.25 turned around: there a refusal was ignored 90% of the
+time; here, inside the harness, the worker **believed** the refusal and the prompt. A native
+guard is more persuasive, so its claims must be exactly true.
+
+**Fixed** in superstate `3283cdb` (PR #47):
+* phase markers scope every inference to the current phase;
+* a test command is intercepted only when the identical command already passed (truncation is
+  judged by length: Go's `./...` ends in `...`);
+* "passing" claims require the verification command itself, and name it;
+* a recorded failure is cleared only when the same command passes.
+
+Run 185702, with the fix: **0 interceptions**, down from 12, 4 and 3 in the earlier runs. It did
+not make GREEN edit (13.33).
+
+### 13.33 Under `state-only`, GREEN re-reads six files 101 times and never edits (2026-09-23)
+
+With the loop-breaker no longer misleading it, run 185702's GREEN spent 167 turns on **101 reads,
+63 greps and 3 bash calls, with no edit and no test run**. The 101 reads cover **6 distinct
+files**: a vendored `gocodewalker/file.go` 43 times, `processor/processor.go` 36 times, a window at
+a time. No turn carried model text, and the agent wrote no notes. RED showed the same shape: 172
+turns of reading before writing its test on the 173rd.
+
+**Hypothesis, untested:** `state-only` keeps too little code in view for a multi-file change. The
+prompt holds the task, the agent's notes, a working set capped at 3 files / 250 lines (longer
+files cut to 50 head + 50 tail lines), the action ledger and the last observation. So the worker
+re-reads what it can no longer see and never accumulates enough to design the fix. This is the
+goldfish effect the action ledger addressed for actions, reappearing for code.
+
+**What would test it:** the identical run with `--context conversational`. If GREEN then edits and
+reaches a gate attempt, the working set, not the model, is the bottleneck, and the next harness
+work is working-set sizing or read memory. Not run: the decision to change the working set can
+wait until the harness-vs-harness comparison (`--harnesses agy superstate[state-only]`) is on the
+table, which is the run this instrument was built for.
+
+### 13.34 `state-window` makes the native harness keep working, and its first pass (2026-09-23)
+
+Built from 13.33. `state-window` is `state-only`'s bounded prompt plus the last 8 tool call/result
+pairs, each cut to 60 lines. It is at most 18 messages whatever the session length. `state-only`
+is unchanged, as the control (superstate branch `feat/state-window-context`). Two runs on
+`build-cython-ext` (900s), against the same-day baselines from 13.31's harness canary. Metrics
+come from the event logs; "repeat rate" is the share of tool calls identical to an earlier call
+in the same run.
+
+| run | grader | edits | last edit (call / total) | ended itself | repeat rate | input/turn | cost |
+|---|---|---|---|---|---|---|---|
+| agy | **11/11** | — | — | yes, 716s | — | — | $0.88 |
+| `state-only` | 7/11 | 3 | 109 / 338 | no | 0.56 | 9.9K | $2.59 |
+| `state-window` #1 | 8/11 | **23** | 378 / 378 | no | 0.56 | 15.3K | $4.44 |
+| `state-window` #2 | **11/11** | **23** | 284 / 328 | **yes, 779s** | 0.50 | 12.5K | $3.14 |
+
+* **The first native pass, and the first time the harness ended on its own.** Every earlier
+  native run hit its deadline.
+* **The effect is on progress, not on repetition.** Edits went from 3 to 23 in **both** runs.
+  Under `state-only` the last 229 of 338 calls contained no edit; under `state-window` one run was
+  still editing at the deadline and the other finished. The repeat rate barely moved
+  (0.56/0.50 against 0.56), so the prediction that seeing recent results would stop re-runs was
+  **wrong**. Some re-running is legitimate (checking again after an edit). What `state-only` did
+  was lose the thread, not merely repeat.
+* **It costs more per turn:** 12.5–15.3K fresh input against 9.9K, and $3.14–4.44 against $2.59.
+  That is still **3.5–5× agy** for the same task, and agy was faster.
+
+n=2 on one task. The edit count (3 → 23 in both runs) is robust; pass/fail at 1 of 2 is not.
+
+**Consequences.** `state-window` should replace `state-only` as the native default, with
+`state-only` kept as the control. Cost is now the main gap with agy, and caching is the lever it
+has never used. Across every native run, at most ~150K tokens were cached against 2.5–5.8M fresh
+input. Neither context strategy keeps a stable prompt prefix: the state prompt, which holds the
+append-only action ledger, is rebuilt as the first message every turn.
+
+### 13.35 A cache-stable prompt prefix raises caching from ~2% to ~9%, and no further (2026-09-23)
+
+Built from 13.34. Gemini 3.8 Flash caches implicitly, but only a shared prompt prefix of at least
+4,096 tokens, and on a best-effort basis (ai.google.dev/gemini-api/docs/caching). The fixed part of
+a native request (system instruction, tools and task) is about 838 tokens. The state prompt put the
+append-only action ledger **last**, behind sections that change every turn, so consecutive requests
+shared almost nothing. superstate `feat/cache-stable-prefix` moves the ledger to right after the
+task, so turn N+1 starts with turn N's task and full ledger.
+
+| run (`state-window`, build-cython-ext, 900s) | cached share | cached / fresh input | grader | edits | repeat rate | cost |
+|---|---|---|---|---|---|---|
+| before, #1 | 2.6% | 154K / 5.8M | 8/11 | 23 | 0.56 | $4.44 |
+| before, #2 | 2.0% | 85K / 4.1M | 11/11 | 23 | 0.50 | $3.14 |
+| ledger first | **9.4%** | **471K / 4.5M** | 10/11 | 15 | 0.44 | $3.50 |
+
+* **3–5× more tokens cached, still under a tenth of the input.** The prefix only qualifies once the
+  ledger reaches ~4,096 tokens (~130 actions), and implicit caching then hits on only part of the
+  eligible turns.
+* **Behaviour did not degrade** (n=1): 10/11, 15 edits, the lowest repeat rate so far.
+* **Reported cost did not move**, and cannot. Like agy's, the eval's cost counts only fresh input,
+  so cache savings never appear in it. The invoice sees them at the cached-token discount.
+
+**Consequence.** Caching is worth keeping but will not close the 3.5–5× cost gap with agy. The
+larger lever is the one 13.25 and 13.28 already named: fewer calls. The native harness makes 320–380
+calls on a task agy finishes in one 12-minute session.
+
+### 13.36 With the conversation kept, superstate matches agy: 4/4 passes, all ending on their own (2026-09-23)
+
+The control 13.33 asked for, and the design it pointed to. SKILL.state (arXiv:2608.26263v2) makes
+discarding history safe only by **requiring** the model to write a structured state patch
+(`ΔΣₜ`) every turn, validated and applied by the runtime. It names schema-discovered-during-execution
+and relevance-recognised-late as the settings where discarding fails. Debugging an unfamiliar
+repository is both. `state-only` and `state-window` built the discarding half without the
+mandatory patch: the optional `note` tool got 0–2 keys per run. They also dropped Gemini's thought
+signatures, which Google says must be resent "exactly as they were received" and never removed.
+
+`folded` (superstate `feat/folded-context`) keeps the conversation append-only. Once the verbatim
+part passes ~48K tokens, its older half becomes one harness-written digest (one line per action,
+from the ledger's summarisers). Folds are computed greedily from the start of history, so each
+turn reproduces earlier folds exactly and the prefix stays cacheable. A transient-error retry was
+added first: the first `conversational` attempt died after 28 calls on a burst 429
+(`results/conversational_20260923_225918.*`).
+
+`build-cython-ext`, 900s, `gemini-3.8-flash-high`:
+
+| harness | grader | ended itself | calls | edits | cached share | avg prompt | cost |
+|---|---|---|---|---|---|---|---|
+| agy | 11/11 | 716s | — | — | — | — | $0.88 |
+| `state-only` | 7/11 | no | 338 | 3 | 3% | ~10K | $2.59 |
+| `state-window` ×2 | 8/11, 11/11 | no / 779s | 378, 328 | 23, 23 | 2–3% | ~15K | $4.44, $3.14 |
+| **`conversational` ×2** | **11/11, 11/11** | **610s, 459s** | 178, 180 | 33, 34 | **95%** | ~111K, ~97K | **$0.75, $0.65** |
+| **`folded` ×2** | **11/11, 11/11** | **742s, 527s** | 234, 181 | 34, 29 | **88–89%** | **~56K, ~50K** | $1.11, $0.89 |
+
+* **The harness was never the problem; its context strategy was.** With the conversation kept,
+  the same loop, tools, model and loop-breaker pass every run, end on their own, and are faster
+  than agy on this task at similar reported cost.
+* **`folded` halves the prompt** against `conversational` (~50–56K against ~97–111K tokens per
+  turn) and still passes. It costs somewhat more (more calls, and each fold costs one cache miss).
+  Its value is that the bound holds on tasks long enough to exhaust a context window, which
+  `build-cython-ext` is not.
+* **Cost caveat.** Reported cost counts fresh input only, the same accounting as agy's, so the
+  95% cached share is not in these dollars. On an invoice, cached tokens are billed at a discount,
+  not free. Relative to agy, which also caches heavily, the comparison holds; the absolute
+  figures understate both.
+
+n=2 per configuration on one short task. The next claim needs the canary's two 90-minute tasks
+(katex, scc), where `folded`'s bound should matter and `conversational` may not fit.
+
+**Consequences.** `state-only` and `state-window` should not be the native default. Given the
+bound, `folded` is the candidate; `conversational` is the ceiling to measure it against. The
+observation-table idea (a harness-applied, patch-style state keyed by call) is not needed for
+this task: repeats did not stop either configuration from finishing.

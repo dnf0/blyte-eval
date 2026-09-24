@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "outcome": "verified",
+  "error": null,
+  "model_requested": "gemini-3.8-flash-high",
+  "model_id": "gemini/gemini-3.8-flash",
+  "context": "conversational",
+  "loop_breaker": true,
+  "gated": false,
+  "gate_source": "none",
+  "phases": [],
+  "container": "17d2087cd97df9ce4d170c939da5a273be1a3b012e423c4f07f354367bf51a2b",
+  "container_workdir": "/app",
+  "duration_seconds": 603.640231625,
+  "turns": 179,
+  "empty_turns": 0,
+  "tool_calls": 178,
+  "gate_attempts": 1,
+  "rollbacks": 0,
+  "provider_retries": 0,
+  "usage": {
+    "input": 933767,
+    "cached": 18948683,
+    "output": 13574,
+    "thinking": 17358
+  },
+  "interceptions": {
+    "read": 0,
+    "bash": 0
+  },
+  "insists": 0,
+  "agent_note_keys": [
+    "cause",
+    "extensions_status",
+    "repo_status"
+  ]
+}

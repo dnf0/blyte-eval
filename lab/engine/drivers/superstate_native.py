@@ -38,7 +38,10 @@ MAX_TURNS = 1000
 #: this grace. A kill loses the report, and with it the tokens (FINDINGS 13.5).
 KILL_GRACE_SEC = 900.0
 REPORT_SCHEMA_VERSION = 1
-CONTEXTS = ("state-only", "conversational")
+CONTEXTS = ("state-only", "state-window", "conversational", "folded")
+#: Gate sources the driver can ask the harness for. None is ungated, like agy under vanilla;
+#: "tdd" is the harness's own autonomous TDD (RED then GREEN), never a command we author.
+GATES = (None, "tdd")
 
 
 class SuperstateNativeDriverError(RuntimeError):
@@ -64,6 +67,14 @@ def _tail(text: Optional[str | bytes], limit: int = 800) -> str:
     if isinstance(text, bytes):
         text = text.decode("utf-8", errors="replace")
     return text.strip()[-limit:]
+
+
+def _text(value: Optional[str | bytes]) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
 
 
 def _read_report(path: Path) -> Optional[Dict[str, Any]]:
@@ -94,6 +105,7 @@ class SuperstateNativeDriver(AgentDriver):
         model: str,
         context: str = "state-only",
         loop_breaker: bool = True,
+        gate: Optional[str] = None,
         superstate_bin: Optional[str | Path] = None,
         report_dir: Optional[str | Path] = None,
     ) -> None:
@@ -101,6 +113,8 @@ class SuperstateNativeDriver(AgentDriver):
             raise SuperstateNativeDriverError(
                 f"context must be one of {CONTEXTS}, got {context!r}"
             )
+        if gate not in GATES:
+            raise SuperstateNativeDriverError(f"gate must be one of {GATES}, got {gate!r}")
         if not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
             raise SuperstateNativeDriverError(
                 "GEMINI_API_KEY (or GOOGLE_API_KEY) must be set: the native harness calls the "
@@ -109,10 +123,15 @@ class SuperstateNativeDriver(AgentDriver):
         self.model = model
         self.context = context
         self.loop_breaker = loop_breaker
+        self.gate = gate
         # Results are pooled by `harness` (runner.py records harness_name), so every
         # configuration that changes behaviour must be in the name. Otherwise a loop-breaker
         # ablation pools its control with its treatment.
-        config = [context] + ([] if loop_breaker else ["no-loop-breaker"])
+        config = (
+            [context]
+            + ([] if loop_breaker else ["no-loop-breaker"])
+            + ([gate] if gate else [])
+        )
         self.harness_name = f"superstate[{','.join(config)}]"
         self.report_dir = Path(report_dir) if report_dir is not None else None
 
@@ -125,11 +144,12 @@ class SuperstateNativeDriver(AgentDriver):
         self.superstate_bin_source = source
         self.superstate_bin_sha256 = hashlib.sha256(self.superstate_bin.read_bytes()).hexdigest()
         self.last_report: Optional[Dict[str, Any]] = None
+        self.last_events_path: Optional[Path] = None
 
     def build_command(
         self, prompt: str, container_id: str, report_path: Path, timeout_sec: float
     ) -> list[str]:
-        """The argv for one task. No `--gate`: this driver runs ungated, like agy under vanilla."""
+        """The argv for one task. Never a --gate: ungated, or the harness's own --tdd."""
         cmd = [
             str(self.superstate_bin),
             "--model",
@@ -149,6 +169,8 @@ class SuperstateNativeDriver(AgentDriver):
         ]
         if not self.loop_breaker:
             cmd.append("--no-loop-breaker")
+        if self.gate == "tdd":
+            cmd.append("--tdd")
         # `--` so an instruction that starts with a dash is never parsed as a flag.
         cmd += ["--", prompt]
         return cmd
@@ -182,6 +204,7 @@ class SuperstateNativeDriver(AgentDriver):
 
         killed = False
         returncode: Optional[int] = None
+        stdout: Optional[str | bytes] = None
         stderr: Optional[str | bytes] = None
         try:
             proc = subprocess.run(
@@ -192,10 +215,21 @@ class SuperstateNativeDriver(AgentDriver):
                 timeout=timeout_sec + KILL_GRACE_SEC,
                 check=False,
             )
-            returncode, stderr = proc.returncode, proc.stderr
+            returncode, stdout, stderr = proc.returncode, proc.stdout, proc.stderr
         except subprocess.TimeoutExpired as exc:
-            killed, stderr = True, exc.stderr
+            killed, stdout, stderr = True, exc.stdout, exc.stderr
         elapsed = time.monotonic() - start
+
+        # Kept on every exit path, and before the report is checked: a run with no report, or
+        # one that was killed, is exactly the run that most needs a record of what it did.
+        self.last_events_path = None
+        if self.report_dir is not None:
+            self.report_dir.mkdir(parents=True, exist_ok=True)
+            events_path = self.report_dir / f"{task.name}-{report_path.stem}.events.log"
+            events_path.write_text(
+                _text(stdout) + "\n--- stderr ---\n" + _text(stderr), encoding="utf-8"
+            )
+            self.last_events_path = events_path
 
         report = _read_report(report_path)
         self.last_report = report

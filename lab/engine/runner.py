@@ -103,7 +103,7 @@ class AblationRunner:
         self._active_lock = threading.Lock()
 
     def _get_adapter(self, arm: str) -> AgentAdapter:
-        if arm == "vanilla":
+        if arm in ("vanilla", "bare"):
             return VanillaAdapter()
         elif arm == "superpowers":
             return SuperpowersAdapter()

@@ -1,0 +1,51 @@
+21:09:56 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack (kept: superstate). ~13,288 tokens/invocation.
+21:09:56 [INFO] superstate_eval.paired: Canary slice: 3 of 30 tasks (build-cython-ext, katex-multicolumn-array-spans, scc-bounded-memory-spilling).
+21:09:56 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+21:09:56 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=2 [24.0 GB total - 4.0 GB reserve, 8.0 GB per worker; 4.9 GB reported available], Disk limit=5, User override=None)
+21:09:56 [INFO] superstate_eval.paired: ==============================================================================
+21:09:56 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=3  arms=bare x agy, superstate[state-only]  concurrency=2
+21:09:56 [INFO] superstate_eval.paired: Runs=6  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260923-210956
+21:09:56 [INFO] superstate_eval.paired: ==============================================================================
+21:09:56 [INFO] superstate_eval.paired: -> build-cython-ext [agy] (budget: 900s)
+21:09:56 [INFO] superstate_eval.paired: -> build-cython-ext [superstate[state-only]] (budget: 900s)
+21:09:56 [INFO] superstate_eval.docker_manager: Host disk check: 70.96 GB free on /
+21:09:56 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: bare] (Base budget: 900.0s)
+21:09:56 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: bare] (Base budget: 900.0s)
+21:09:56 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.9 GB reported available], Disk limit=5, User override=None)
+21:09:56 [INFO] superstate_eval.governor: Calculated concurrency: 5 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.9 GB reported available], Disk limit=5, User override=None)
+21:09:57 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260923-210956/eval-terminal-bench_build-cython-ext-bare-b1e2cfb0/workspace
+21:09:57 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260923-210956/eval-terminal-bench_build-cython-ext-bare-f0add1cd/workspace
+21:09:57 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 18c2f74db35a (alexgshaw/build-cython-ext:20251031)
+21:09:57 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 5156071f2fdb (alexgshaw/build-cython-ext:20251031)
+21:09:57 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests for the agent phase
+21:09:57 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+21:21:47 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+21:21:52 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=bare: passed=True, reward=1.0, exit_code=0
+21:21:52 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 5156071f2fdb
+21:21:52 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: bare]: Passed=True, WallClock=715.82s, Cost=$0.88, TotalGrantedBudget=900.0s
+21:21:52 [INFO] superstate_eval.paired:    agy: passed=True cost=$0.8757 turns=1 716s  
+21:21:52 [INFO] superstate_eval.paired: -> katex-multicolumn-array-spans [agy] (budget: 5400s)
+21:21:52 [INFO] superstate_eval.runner: Starting task 'datacurve/katex-multicolumn-array-spans' [Arm: bare] (Base budget: 5400.0s)
+21:21:52 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.6 GB reported available], Disk limit=4, User override=None)
+21:22:11 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260923-210956/eval-datacurve_katex-multicolumn-array-spans-bare-ec6ed45a/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1:/app (40235 entries)
+21:22:11 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 36f8fda2e64e (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1)
+21:22:15 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/katex-multicolumn-array-spans/tests for the agent phase
+21:22:15 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+21:25:00 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+21:25:05 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=bare: passed=False, reward=0.0, exit_code=0
+21:25:05 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 18c2f74db35a
+21:25:05 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: bare]: Passed=False, WallClock=908.73s, Cost=$2.59, TotalGrantedBudget=900.0s
+21:25:05 [INFO] superstate_eval.paired:    superstate[state-only]: passed=False cost=$2.5925 turns=1 909s  Agent run failed: superstate outcome: budget_exhausted | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output: t_outputs.py::test_cinvariants_cython_extension
+PASSED ../tests/test_outputs.py::test_chelpers
+FAILED ../tests/test_outputs.py::test_ccomplexity - AttributeError: module 'n...
+FAILED ../tests/test_outputs.py::test_cinvariants_python_vs_cython - Attribut...
+FAILED ../tests/test_outputs.py::test_example_usage - AttributeError: module ...
+FAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - AssertionEr...
+========================= 4 failed, 7 passed in 3.45s ==========================
+
+21:25:05 [INFO] superstate_eval.paired: -> katex-multicolumn-array-spans [superstate[state-only]] (budget: 5400s)
+21:25:05 [INFO] superstate_eval.runner: Starting task 'datacurve/katex-multicolumn-array-spans' [Arm: bare] (Base budget: 5400.0s)
+21:25:05 [INFO] superstate_eval.governor: Calculated concurrency: 4 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.3 GB reported available], Disk limit=4, User override=None)
+21:25:28 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260923-210956/eval-datacurve_katex-multicolumn-array-spans-bare-aca07732/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1:/app (40235 entries)
+21:25:29 [INFO] superstate_eval.docker_manager: Spawned sandbox container: dc8ca9bf2c91 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1)

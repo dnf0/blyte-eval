@@ -1,0 +1,40 @@
+[
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "bare",
+    "passed": false,
+    "wall_clock_sec": 906.4,
+    "cost_usd": 3.49919025,
+    "input_tokens": 4533782,
+    "output_tokens": 26361,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": "Agent run failed: superstate outcome: budget_exhausted | grading then reported: Verification failed: Reward was 0.0 < 1.0\nOutput: sts/test_outputs.py::test_ccomplexity_cython_extension\nPASSED ../tests/test_outputs.py::test_cinvariants_cython_extension\nPASSED ../tests/test_outputs.py::test_chelpers\nPASSED ../tests/test_outputs.py::test_ccomplexity\nPASSED ../tests/test_outputs.py::test_cinvariants_python_vs_cython\nPASSED ../tests/test_outputs.py::test_example_usage\nFAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - AssertionEr...\n========================= 1 failed, 10 passed in 3.86s =========================\n",
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-bare-a8bcadff",
+      "harness": "superstate[state-window]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "agent_succeeded": false,
+      "reward": 0.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 10
+      },
+      "test_pass_fraction": 0.9090909090909091,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 10,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260923-223344/eval-terminal-bench_build-cython-ext-bare-a8bcadff/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": []
+    }
+  }
+]
