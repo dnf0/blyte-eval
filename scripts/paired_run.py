@@ -98,8 +98,8 @@ def main() -> int:
 
     Default ON. Every agy invocation otherwise loads github/notion/slack schemas -- 13,288
     fresh input tokens before the task is read, 55% of a trivial turn, for services no
-    benchmark task touches (FINDINGS 13.17). `superstate` is kept: it is Condition B's
-    transport and part of what is under test.
+    benchmark task touches (FINDINGS 13.17). `superstate` is kept only for the legacy arms, where
+    it is Condition B's transport; a `--harnesses` comparison strips it too.
 
     Wrapped here rather than inside the runner so that it covers EVERY agy process a run
     spawns, including the daemon's own worker, which bypasses the drivers.
@@ -107,7 +107,8 @@ def main() -> int:
     ap = build_parser()
     args = ap.parse_args()
 
-    with mcp_isolation.stripped_mcp_servers(enabled=not args.keep_mcp) as stripped:
+    keep = mcp_isolation.servers_to_keep(harness_mode=bool(args.harnesses))
+    with mcp_isolation.stripped_mcp_servers(keep=keep, enabled=not args.keep_mcp) as stripped:
         if stripped:
             print(f"MCP servers stripped for this run: {', '.join(stripped)} "
                   f"(~13,288 tokens/invocation saved; --keep-mcp to disable)")
