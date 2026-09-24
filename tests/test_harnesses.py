@@ -183,3 +183,8 @@ def test_review_is_a_superstate_option(superstate_stub: Path) -> None:
     built = build_harness("superstate[folded,tdd,review]", MODEL)
     assert built.harness_name == "superstate[folded,tdd,review]"
     assert build_harness("superstate[conversational]", MODEL).harness_name == "superstate[conversational]"
+
+
+def test_compact_is_a_superstate_context(superstate_stub: Path) -> None:
+    assert build_harness("superstate[compact,tdd]", MODEL).harness_name == "superstate[compact,tdd]"
+

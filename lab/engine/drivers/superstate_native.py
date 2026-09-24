@@ -38,7 +38,7 @@ MAX_TURNS = 1000
 #: this grace. A kill loses the report, and with it the tokens (FINDINGS 13.5).
 KILL_GRACE_SEC = 900.0
 REPORT_SCHEMA_VERSION = 1
-CONTEXTS = ("state-only", "state-window", "conversational", "folded")
+CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact")
 #: Gate sources the driver can ask the harness for. None is ungated, like agy under vanilla;
 #: "tdd" is the harness's own autonomous TDD (RED then GREEN), never a command we author.
 GATES = (None, "tdd")
@@ -256,10 +256,12 @@ class SuperstateNativeDriver(AgentDriver):
             shutil.copy2(report_path, self.report_dir / f"{task.name}-{report_path.name}")
 
         usage = report.get("usage") or {}
-        # agy parity: AgyCliDriver counts only fresh input and visible output. Cached and
-        # thinking tokens stay in the report (and last_report), not in the totals.
+        # Same accounting as AgyCliDriver: fresh input, cached input, output and thinking are
+        # counted separately and all four are priced.
         input_tokens = int(usage.get("input", 0))
         output_tokens = int(usage.get("output", 0))
+        cached_input_tokens = int(usage.get("cached", 0))
+        thinking_tokens = int(usage.get("thinking", 0))
         success = report.get("outcome") == "verified"
         error_message = None
         if not success:
@@ -270,7 +272,11 @@ class SuperstateNativeDriver(AgentDriver):
             duration_seconds=elapsed,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
-            cost_usd=estimate_cost_usd(self.model, input_tokens, output_tokens),
+            cached_input_tokens=cached_input_tokens,
+            thinking_tokens=thinking_tokens,
+            cost_usd=estimate_cost_usd(
+                self.model, input_tokens, output_tokens, cached_input_tokens, thinking_tokens
+            ),
             conversation_id=None,
             error_message=error_message,
         )

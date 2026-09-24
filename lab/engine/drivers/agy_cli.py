@@ -25,14 +25,16 @@ logger = logging.getLogger("superstate_eval.drivers.agy_cli")
 
 DEFAULT_MODEL = "gemini-3.8-flash-high"
 
-# Standard pricing table per 1M tokens ($/MTok)
-MODEL_PRICING: dict[str, tuple[float, float]] = {
-    # model: (input_per_mtok, output_per_mtok)
-    # Gemini 3.8 Flash official introductory developer pricing ($0.75 in / $3.75 out per MTok)
-    "gemini-3.8-flash-high": (0.75, 3.75),
-    "gemini-3.8-flash": (0.75, 3.75),
-    "gemini-2.5-flash": (0.15, 0.60),
-    "gemini-2.5-pro": (1.25, 5.00),
+# Standard pricing table per 1M tokens ($/MTok): (input, output, cached input).
+# Output is billed INCLUDING thinking tokens. Cached input is the implicit/explicit cache-hit
+# rate. Gemini 3.8 Flash per ai.google.dev/gemini-api/docs/pricing (through 2026-12-31).
+# Older entries have no documented cache rate here, so cached input is priced at the full input
+# rate: an overestimate, never a hidden discount.
+MODEL_PRICING: dict[str, tuple[float, float, float]] = {
+    "gemini-3.8-flash-high": (0.75, 3.75, 0.075),
+    "gemini-3.8-flash": (0.75, 3.75, 0.075),
+    "gemini-2.5-flash": (0.15, 0.60, 0.15),
+    "gemini-2.5-pro": (1.25, 5.00, 1.25),
 }
 
 CONTAINER_GUIDANCE_TEMPLATE = """
@@ -63,11 +65,18 @@ def base_model_name(model: str) -> str:
     return model
 
 
-def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
-    """Calculate USD cost for a given model and token counts.
+def estimate_cost_usd(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cached_tokens: int = 0,
+    thinking_tokens: int = 0,
+) -> float:
+    """USD cost of fresh input, cached input, and output including thinking.
 
-    Returns 0.0 for an unpriced model rather than guessing: cost per solve is a
-    headline metric of this evaluation and a fabricated rate would corrupt it.
+    Returns 0.0 for an unpriced model rather than guessing: cost per solve is a headline metric
+    of this evaluation and a fabricated rate would corrupt it. Callers that pass no cached or
+    thinking tokens get exactly the old fresh-input-plus-output figure.
     """
     pricing = MODEL_PRICING.get(model) or MODEL_PRICING.get(base_model_name(model))
     if not pricing:
@@ -75,8 +84,12 @@ def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> floa
             "No pricing for model %s: cost will be reported as $0.00, not estimated.", model
         )
         return 0.0
-    in_rate, out_rate = pricing
-    return (input_tokens * in_rate + output_tokens * out_rate) / 1_000_000.0
+    in_rate, out_rate, cached_rate = pricing
+    return (
+        input_tokens * in_rate
+        + cached_tokens * cached_rate
+        + (output_tokens + thinking_tokens) * out_rate
+    ) / 1_000_000.0
 
 
 def _resolve_cli_path(candidate: Optional[str] = None) -> str:
@@ -307,8 +320,12 @@ class AgyCliDriver(AgentDriver):
         usage = data.get("usage", {})
         input_tokens = int(usage.get("input_tokens", 0))
         output_tokens = int(usage.get("output_tokens", 0))
+        cached_input_tokens = int(usage.get("cache_read_tokens", 0))
+        thinking_tokens = int(usage.get("thinking_tokens", 0))
 
-        cost_usd = estimate_cost_usd(self.model, input_tokens, output_tokens)
+        cost_usd = estimate_cost_usd(
+            self.model, input_tokens, output_tokens, cached_input_tokens, thinking_tokens
+        )
         status_str = str(data.get("status", "SUCCESS")).upper()
         success = (status_str == "SUCCESS")
         raw_error = data.get("error_message") or data.get("error")
@@ -320,6 +337,8 @@ class AgyCliDriver(AgentDriver):
             duration_seconds=reported_duration,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cached_input_tokens=cached_input_tokens,
+            thinking_tokens=thinking_tokens,
             cost_usd=cost_usd,
             conversation_id=conv_id,
             error_message=error_message,

@@ -159,10 +159,11 @@ def test_telemetry_uses_agy_token_accounting(tmp_path: Path) -> None:
 
     assert t.success is True
     assert t.error_message is None
-    # Fresh input and visible output only: cached and thinking are NOT added, exactly as
-    # AgyCliDriver counts only input_tokens and output_tokens.
+    # Fresh input and visible output stay separate from cached and thinking, and all four are
+    # priced, exactly as AgyCliDriver now does.
     assert (t.input_tokens, t.output_tokens) == (1000, 200)
-    assert t.cost_usd == estimate_cost_usd(MODEL, 1000, 200)
+    assert (t.cached_input_tokens, t.thinking_tokens) == (5000, 300)
+    assert t.cost_usd == estimate_cost_usd(MODEL, 1000, 200, cached_tokens=5000, thinking_tokens=300)
     assert t.raw_response == ""
     assert t.conversation_id is None
     assert driver.last_report is not None
@@ -246,6 +247,7 @@ def test_vanilla_arm_makes_exactly_one_driver_call(tmp_path: Path) -> None:
     assert result.success is True
     assert result.turns == 1
     assert (result.input_tokens, result.output_tokens) == (1000, 200)
+    assert (result.cached_input_tokens, result.thinking_tokens) == (5000, 300)
 
 
 def test_paired_run_accepts_the_superstate_driver() -> None:

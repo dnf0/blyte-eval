@@ -458,6 +458,10 @@ class AblationRunner:
                             "nano_cpus": nano_cpus,
                             "mem_limit": mem_limit,
                             "turns": run_result.turns,
+                            "cached_input_tokens": run_result.cached_input_tokens,
+                            "thinking_tokens": run_result.thinking_tokens,
+                            # Results before 2026-09-24 priced fresh input + output only.
+                            "cost_basis": "fresh+cached+thinking",
                             "agent_succeeded": run_result.success,
                             "reward": grade_res.reward,
                             "test_stats": grade_res.stats,

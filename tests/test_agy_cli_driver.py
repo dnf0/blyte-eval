@@ -81,8 +81,10 @@ def test_driver_parses_result_tokens_cost_and_session(tmp_path: Path) -> None:
     assert telemetry.output_tokens == 2000
     assert telemetry.conversation_id == "conv-1234"
     assert telemetry.duration_seconds == pytest.approx(4.2)
-    # Gemini 3.8 Flash pricing: $0.75/MTok in ($0.0075), $3.75/MTok out ($0.0075) -> $0.015
-    assert telemetry.cost_usd == pytest.approx(0.015)
+    # $0.75/MTok in ($0.0075) + $3.75/MTok on output AND thinking (2,500 tokens: $0.009375).
+    # Thinking is billed as output, so leaving it out understated every run.
+    assert telemetry.thinking_tokens == 500
+    assert telemetry.cost_usd == pytest.approx(0.016875)
 
 
 def test_driver_reports_cli_failure_rather_than_claiming_success(tmp_path: Path) -> None:
@@ -221,3 +223,31 @@ def test_unpriced_model_reports_zero_rather_than_a_guess() -> None:
     from lab.engine.drivers.agy_cli import estimate_cost_usd
 
     assert estimate_cost_usd("some-unlisted-model", 1_000_000, 1_000_000) == 0.0
+
+
+def test_cached_input_is_counted_and_priced(tmp_path: Path) -> None:
+    stub = _make_stub(
+        tmp_path,
+        {
+            "status": "SUCCESS",
+            "response": "ok",
+            "usage": {
+                "input_tokens": 1_000_000,
+                "output_tokens": 100_000,
+                "thinking_tokens": 100_000,
+                "cache_read_tokens": 10_000_000,
+            },
+        },
+    )
+    telemetry = AgyCliDriver(cli_path=str(stub)).run(task=_task(tmp_path), workspace_path=tmp_path)
+    assert telemetry.cached_input_tokens == 10_000_000
+    # 1M fresh $0.75 + 10M cached at $0.075 $0.75 + 200K output+thinking at $3.75 $0.75
+    assert telemetry.cost_usd == pytest.approx(2.25)
+
+
+def test_callers_without_cache_or_thinking_get_the_old_price() -> None:
+    assert estimate_cost_usd("gemini-3.8-flash-high", 1_000_000, 100_000) == pytest.approx(1.125)
+    assert estimate_cost_usd(
+        "gemini-3.8-flash-high", 1_000_000, 100_000, cached_tokens=10_000_000, thinking_tokens=100_000
+    ) == pytest.approx(2.25)
+

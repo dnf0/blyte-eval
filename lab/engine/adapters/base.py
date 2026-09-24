@@ -60,6 +60,10 @@ class DriverTelemetry:
     duration_seconds: float
     input_tokens: int = 0
     output_tokens: int = 0
+    #: Input tokens served from the provider's prompt cache (billed at the cached rate).
+    cached_input_tokens: int = 0
+    #: Hidden reasoning tokens (billed as output).
+    thinking_tokens: int = 0
     cost_usd: float = 0.0
     conversation_id: Optional[str] = None
     error_message: Optional[str] = None
@@ -75,6 +79,10 @@ class TaskRunResult:
     duration_seconds: float
     input_tokens: int = 0
     output_tokens: int = 0
+    #: Input tokens served from the provider's prompt cache (billed at the cached rate).
+    cached_input_tokens: int = 0
+    #: Hidden reasoning tokens (billed as output).
+    thinking_tokens: int = 0
     cost_usd: float = 0.0
     error_message: Optional[str] = None
     turns: int = 0
@@ -219,6 +227,8 @@ class TurnBasedAdapter(AgentAdapter):
         duration = 0.0
         input_tokens = 0
         output_tokens = 0
+        cached_input_tokens = 0
+        thinking_tokens = 0
         cost_usd = 0.0
         turns = 0
         conversation_id: Optional[str] = None
@@ -251,6 +261,8 @@ class TurnBasedAdapter(AgentAdapter):
             duration += telemetry.duration_seconds
             input_tokens += telemetry.input_tokens
             output_tokens += telemetry.output_tokens
+            cached_input_tokens += telemetry.cached_input_tokens
+            thinking_tokens += telemetry.thinking_tokens
             cost_usd += telemetry.cost_usd
             turns += 1
             conversation_id = telemetry.conversation_id or conversation_id
@@ -312,6 +324,8 @@ class TurnBasedAdapter(AgentAdapter):
             duration_seconds=duration,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cached_input_tokens=cached_input_tokens,
+            thinking_tokens=thinking_tokens,
             cost_usd=cost_usd,
             error_message=error_msg,
             turns=turns,
