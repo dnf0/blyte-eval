@@ -2058,3 +2058,37 @@ and a system-prompt invitation does not change that. Time and cost are within ru
 The protocol fix stays (it is correctness, not tuning). The invitation is harmless but unproven.
 Fewer calls will not come from asking; if it comes at all, it will be from the harness doing work
 the model now spends turns on, such as running the check itself after an edit.
+
+### 13.38 Gated, superstate is faster and cheaper at parity, and its own gate certified unfinished work (2026-09-24)
+
+The comparison 13.36 deferred: agy against the native harness **with its own gate**
+(`--tdd`: the worker writes a failing reproduction test, then must make it and the repository suite
+pass, with rollback on failure). Two 90-minute tasks, one run per harness,
+`results/gated_canary_20260924_082946.*`:
+
+| task | agy | `superstate[conversational,tdd]` | `superstate[folded,tdd]` |
+|---|---|---|---|
+| katex (94 F2P) | **pass**, 2275s, $2.04 | 92/94, 1582s, $1.01 | 92/94, 1519s, $1.06 |
+| scc (31 F2P) | 28/31, 1462s, $1.48 | 28/31, 1040s, $0.97 | **pass**, 1028s, $1.02 |
+
+Every run kept P2P at 100%.
+
+* **Pass rate: parity.** Every run was a near miss or a pass (90–100% F2P). agy and `folded,tdd`
+  each solved one task. At n=1 this is a coin flip, not a ranking.
+* **Speed and cost: superstate wins on every pair**, about 30% less wall time and 30–50% lower
+  reported cost, with 91–94% of input cached.
+* **The gate did not do its job.** All four superstate runs passed RED **and** GREEN on the first
+  attempt, with zero rollbacks, yet the grader found the work incomplete in three of them. The
+  worker's reproduction test was narrower than the task, so GREEN certified an incomplete fix and
+  the harness stopped. On katex agy kept working 12 minutes longer and passed. This is 13.12's
+  gate-precision problem in its native form: a worker-authored gate is only as complete as the
+  worker's reading of the specification. The external gate removes self-*declared* completion but
+  not self-*defined* completion.
+* **`folded` vs `conversational`: no measurable difference** (same katex result; `folded` passed
+  scc). The prompt bound cost nothing measurable, which supports `folded` as the native default.
+
+**Consequence.** superstate is currently better on cost and speed, not on correctness. Its
+correctness advantage depends on gate precision. The next lever is making GREEN harder to satisfy
+prematurely: for example, an adversarial review of the diff against the task statement before
+completion is accepted (the daemon's blocking review, 13.x), or requiring the reproduction test
+to cover each behaviour the task names.
