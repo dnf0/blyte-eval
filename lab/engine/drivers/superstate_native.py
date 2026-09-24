@@ -40,7 +40,7 @@ MAX_TURNS = 1000
 #: this grace. A kill loses the report, and with it the tokens (FINDINGS 13.5).
 KILL_GRACE_SEC = 900.0
 REPORT_SCHEMA_VERSION = 1
-CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact")
+CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact", "adaptive")
 #: Gate sources the driver can ask the harness for. None is ungated, like agy under vanilla;
 #: "tdd" is the harness's own autonomous TDD (RED then GREEN), never a command we author.
 GATES = (None, "tdd")
@@ -147,6 +147,10 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
         "fresh_on_appended": sum(int(t.get("input", 0)) for t in appended),
         "new_tokens_est_on_appended": sum(int(t.get("new_chars", 0)) for t in appended) // 4,
         "fresh_on_rewritten": sum(int(t.get("input", 0)) for t in rewritten),
+        # The fold budget in force on the last call: an adaptive context's grown budget.
+        "final_fold_budget": next(
+            (t.get("fold_budget") for t in reversed(usage) if t.get("fold_budget")), None
+        ),
     }
 
 

@@ -21,7 +21,7 @@ from lab.engine.budget_policy import RunTelemetry
 BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z0-9,-]*)\])?$")
-_SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact")
+_SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact", "adaptive")
 _SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review", "fold-notes")
 _FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
 
