@@ -2190,3 +2190,33 @@ Between folds the prompt only grows at the end.
 **Consequence.** v2 is at least no worse than `folded` on every measure, and cheaper per turn. It is
 a candidate for the default, but that needs repeats: at least 3 runs of each on 2–3 tasks, read per
 turn and in total.
+
+### 13.42 Fold notes: fewer re-reads, no net saving at n=1 (2026-09-24)
+
+SKILL.state (arXiv 2608.26263) gets its results from structured notes the model writes itself:
+facts established, approaches ruled out, relevant files. Superstate has had a `note` tool, but
+the worker called it 4 times across the four build-cython runs of 13.39 and 13.41, and
+`folded`/`compact` never showed state anyway. superstate `feat/fold-notes` adds
+`--fold-notes` (harness option `fold-notes`). The first time a fold appears, the harness asks the
+worker, in one extra no-tools call that shares the cached prefix, for a JSON note on the turns
+being folded, and that fold's digest carries the rendered note from then on. It stays cache-safe:
+the note enters the prompt only when a fold happens. Any failure keeps the harness digest alone.
+
+`build-cython-ext`, 900s, one run each, `results/fold_notes_20260924_142735.*`:
+
+| harness | grader | turns | reads | unchanged re-reads | repeated bash/grep/glob | fresh in | cached in | true cost |
+|---|---|---|---|---|---|---|---|---|
+| `superstate[compact]` | 11/11 | 180 | 51 | 27 | 7 | 796K | 8.14M | $1.33 |
+| `superstate[compact,fold-notes]` | 11/11 | 169 | 34 | **12** | 18 | 898K | 7.93M | $1.38 |
+
+* **The mechanism works:** 3 folds, 3 notes, 0 failures.
+* **Re-reads of unchanged files fell from 27 to 12**, which is what notes should do, but repeated
+  shell and search commands rose from 7 to 18, so the saving moved rather than vanished. Turns
+  fell by 6% and cost rose by 4%: both inside the n=1 noise measured in 13.41.
+* **There is little for the notes to act on at a 48K fold budget:** three folds in a 170-turn
+  run. The effect should grow with the number of folds, so on longer tasks or with a smaller fold
+  budget.
+
+**Consequence.** Keep `fold-notes` off by default. Settling it needs the repeats already planned
+(at least 3 runs per cell), plus a cell with a smaller fold budget, where notes carry more of the
+context.

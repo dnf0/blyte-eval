@@ -377,3 +377,12 @@ def test_review_is_passed_and_named(tmp_path: Path) -> None:
     [argv] = _calls(tmp_path)
     flags = argv[: argv.index("--")]
     assert "--review" in flags and "--tdd" in flags
+
+
+def test_fold_notes_is_passed_and_named(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub, context="compact", fold_notes=True)
+    assert driver.harness_name == "superstate[compact,fold-notes]"
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    [argv] = _calls(tmp_path)
+    assert "--fold-notes" in argv[: argv.index("--")]

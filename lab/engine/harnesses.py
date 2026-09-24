@@ -22,7 +22,7 @@ BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z,-]*)\])?$")
 _SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact")
-_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review")
+_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review", "fold-notes")
 
 
 class HarnessSpecError(ValueError):
@@ -81,6 +81,7 @@ def build_harness(spec: str, model: str, report_dir: Optional[Path] = None) -> A
         loop_breaker="no-loop-breaker" not in opts,
         gate="tdd" if "tdd" in opts else None,
         review="review" in opts,
+        fold_notes="fold-notes" in opts,
         report_dir=report_dir,
     )
 
