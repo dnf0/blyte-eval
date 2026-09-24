@@ -210,3 +210,9 @@ def test_the_cost_cap_reaches_superstate_harnesses_only(superstate_stub: Path) -
     assert build_harness("superstate[compact]", MODEL).max_cost_usd is None
 
 
+
+
+def test_adaptive_is_a_superstate_context(superstate_stub: Path) -> None:
+    built = build_harness("superstate[adaptive,fold-budget-16k]", MODEL)
+    assert built.harness_name == "superstate[adaptive,fold-budget-16k]"
+    assert built.context == "adaptive"

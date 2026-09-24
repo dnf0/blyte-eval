@@ -474,3 +474,11 @@ def test_paired_run_accepts_a_cost_cap() -> None:
     )
     assert args.max_cost_usd == 3.0
 
+
+
+def test_run_metrics_reports_the_final_fold_budget() -> None:
+    from lab.engine.drivers.superstate_native import run_metrics
+
+    usage = [dict(TURN_USAGE[0], fold_budget=16000), dict(TURN_USAGE[1], fold_budget=24000)]
+    assert run_metrics(_report(turn_usage=usage), "")["final_fold_budget"] == 24000
+    assert run_metrics(_report(turn_usage=TURN_USAGE), "")["final_fold_budget"] is None
