@@ -2021,3 +2021,39 @@ n=2 per configuration on one short task. The next claim needs the canary's two 9
 bound, `folded` is the candidate; `conversational` is the ceiling to measure it against. The
 observation-table idea (a harness-applied, patch-style state keyed by call) is not needed for
 this task: repeats did not stop either configuration from finishing.
+
+### 13.39 True cost, and why exact compaction did not pay (2026-09-24)
+
+**Cost accounting was wrong for both harnesses.** Gemini 3.8 Flash bills cached input at $0.075/M
+(a tenth of fresh input) and output **including thinking** at $3.75/M. Until now both drivers
+priced only fresh input and visible output, and `AgyCliDriver` discarded agy's `cache_read_tokens`
+and `thinking_tokens`. A `superstate[conversational]` run reported at $0.75 actually cost about
+$2.24, most of it re-reading 18.9M cached tokens. From this entry on, `cost_usd` is
+fresh + cached + output + thinking (`extra.cost_basis`), and cached and thinking tokens are
+recorded per run. **Every earlier cost in this file understates the bill, and understated agy's
+by an unknown amount.**
+
+`build-cython-ext`, 900s, one run each, `results/compact_20260924_113751.*`:
+
+| harness | grader | time | turns | avg prompt | fresh in | cached in | out + thinking | true cost |
+|---|---|---|---|---|---|---|---|---|
+| agy | 11/11 | 752s | — | — | 683K | 8.83M | 61K | **$1.40** |
+| `superstate[folded]` | 11/11 | 501s | 151 | 53K | 722K | 7.32M | 24K | **$1.18** |
+| `superstate[compact]` | 11/11 | 502s | 168 | **40K** | **965K** | **5.76M** | 26K | $1.26 |
+
+* **The honest comparison:** superstate is about **16% cheaper and 33% faster** than agy on this
+  task. The earlier "cheaper" figures overstated the gap by leaving out both harnesses' cached reads.
+* **`compact`** (superstate `feat/folded-default-review-gate`) is `folded` plus the harness's
+  exact reductions: outputs superseded by a later edit or identical re-run are masked, applied per
+  completed 40-message epoch, and duplicates of visible outputs are referenced. It **cut the average
+  prompt by 25% and cached reads by 21%**, but raised fresh input by 34%, so net cost did not
+  fall ($1.26 against $1.18, within one-run noise).
+* **Why.** Masking rewrites the prompt from the masked point on, so everything after it is re-read
+  at the **fresh** price once, ten times the cached price. With 90%+ of input already cached,
+  removing tokens pays only if the removed volume × the remaining turns × the cached price exceeds
+  the re-prefill of the tail × the fresh price. Epoch-level masks frequently fail that test: this
+  is TokenPilot's cache-continuity lesson measured on our harness.
+
+**Consequence.** Keep `folded` as the default. Redesign `compact` to apply supersession masking
+**only at fold points**, where the cache breaks anyway, so the reduction is free. De-duplication,
+which never rewrites earlier messages, can stay as is.
