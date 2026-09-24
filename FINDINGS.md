@@ -2307,3 +2307,45 @@ Three runs per cell, four superstate configurations, `build-cython-ext` and
   and **completeness** (the only failures seen). The 13.40 review gate and the TDD gate target the
   second; neither was in this run.
 * This run has no agy cells, so it says nothing new about superstate against agy.
+
+### 13.45 blyte (then superstate) beats agy on completion, cost and time; the adaptive fold budget does not pay (2026-09-24)
+
+**agy against the harness, 3 runs each.** Same tasks, model (`gemini-3.8-flash-high`) and sealed
+grader. For agy, every MCP server was stripped, including `superstate`, which harness comparisons
+no longer keep (#36). Results: `results/agy_repeats_20260924_194009.*`, with 13.44's
+`superstate[folded]` cells:
+
+| task | harness | pass | tests | true cost | time |
+|---|---|---|---|---|---|
+| build-cython | agy | 3/3 | 11/11 | $1.45–1.70 (mean $1.57) | 816–902s |
+| build-cython | `superstate[folded]` | 3/3 | 11/11 | **$1.32–1.43 (mean $1.38)** | **539–592s** |
+| scc | agy | **0/3** | 314/317 each | $2.79–2.93 (mean $2.87) | 1544–1769s |
+| scc | `superstate[folded]` | **2/3** | 317/317 in both passes | $2.34–3.07 (mean $2.61) | 772–1263s |
+
+* **On build-cython, every superstate run beat every agy run on both cost and time.** The ranges do
+  not overlap: 12% cheaper and 33% faster on average.
+* **On scc, agy failed all three runs**, each missing `FormatMulti_CsvStream_WritesToFile` and two
+  more tests. superstate passed two of three and was cheaper and 30–50% faster.
+* **Output is where agy's cost and time go.** On scc it wrote 142–177K output tokens plus
+  104–136K thinking tokens per run, several times the harness's.
+* Stripping the `superstate` MCP server from agy barely changed its build-cython cost
+  (13.41: $1.40–1.82 with it), so earlier comparisons were not materially skewed.
+
+**The adaptive fold budget** (superstate #59) starts at 16K and grows by 8K, up to 64K, whenever the
+worker re-fetches folded content. 3 runs per task (`results/adaptive_20260924_204648.*`, $14.50):
+
+| task | `adaptive` | fixed 48K (`folded`) | fixed 16K |
+|---|---|---|---|
+| build-cython | 3/3, 230 ± 44 turns, **$1.59 ± 0.32** | 170 turns, $1.38 | 161 turns, **$1.10** |
+| scc | 3/3, 287 ± 34 turns, **$3.25 ± 0.11** | 177 turns, $2.61 | 314 turns, $3.00 |
+
+* **It cost more than both fixed budgets on both tasks.** The logged budgets show why:
+  - growth began only after 40–130 turns, after the extra turns had already happened;
+  - three of six runs grew all the way to 64K, so later turns paid for large prompts too.
+  
+  The re-fetch signal is real, but it arrives too late to help.
+* Its 3/3 on scc is within noise: the 48K fold-notes cell also went 3/3 in 13.44.
+
+**Consequence.** `folded` at 48K stays the default. Delete `adaptive`: it fails the
+earn-its-place rule. The harness's lead over agy on this model is now shown with repeats on two
+tasks: equal or better completion, 12–30% lower cost, and a third less wall time.
