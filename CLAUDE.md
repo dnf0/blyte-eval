@@ -113,12 +113,14 @@ been run until EXP-055.
 Superstate is now a harness in its own right, so the question this evaluation answers is
 **harness against harness** on the same bare task, model and sealed grader:
 
-    python scripts/paired_run.py --harnesses agy superstate[state-only] superstate[state-only,tdd] --canary
+    python scripts/paired_run.py --harnesses agy superstate[folded] superstate[folded,tdd,review] --canary
 
 The first harness is the baseline, and results pair by task (`lab/engine/harnesses.py`). Every
 harness runs through the `bare` pass-through arm: the instruction untouched, guidance files
 stripped, no gate from the evaluation. What a harness does beyond that is part of the harness
-and is spelled out in its name, `superstate[<state-only|conversational>,no-loop-breaker,tdd]`.
+and is spelled out in its name, `superstate[<folded|conversational|state-window|state-only>,no-loop-breaker,tdd,review]`.
+`folded` is the default context (FINDINGS 13.36–13.38): the bounded `state-only`/`state-window` strategies
+lost the thread and are kept only as controls.
 `superstate[…,tdd]` gates **itself** by autonomous TDD. Compare it with agy as "a harness with
 its own gate", not as an ungated run.
 

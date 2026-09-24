@@ -131,7 +131,7 @@ def test_command_pins_model_container_workdir_and_budget(tmp_path: Path) -> None
     flags = argv[: argv.index("--")]
     assert argv[argv.index("--") + 1 :] == ["Fix the bug."]
     assert flags[flags.index("--model") + 1] == MODEL
-    assert flags[flags.index("--context") + 1] == "state-only"
+    assert flags[flags.index("--context") + 1] == "folded"
     assert flags[flags.index("--container") + 1] == "cnt-1"
     assert flags[flags.index("--container-workdir") + 1] == CONTAINER_WORKDIR == "/app"
     assert flags[flags.index("--max-turns") + 1] == str(MAX_TURNS)
@@ -159,10 +159,11 @@ def test_telemetry_uses_agy_token_accounting(tmp_path: Path) -> None:
 
     assert t.success is True
     assert t.error_message is None
-    # Fresh input and visible output only: cached and thinking are NOT added, exactly as
-    # AgyCliDriver counts only input_tokens and output_tokens.
+    # Fresh input and visible output stay separate from cached and thinking, and all four are
+    # priced, exactly as AgyCliDriver now does.
     assert (t.input_tokens, t.output_tokens) == (1000, 200)
-    assert t.cost_usd == estimate_cost_usd(MODEL, 1000, 200)
+    assert (t.cached_input_tokens, t.thinking_tokens) == (5000, 300)
+    assert t.cost_usd == estimate_cost_usd(MODEL, 1000, 200, cached_tokens=5000, thinking_tokens=300)
     assert t.raw_response == ""
     assert t.conversation_id is None
     assert driver.last_report is not None
@@ -246,6 +247,7 @@ def test_vanilla_arm_makes_exactly_one_driver_call(tmp_path: Path) -> None:
     assert result.success is True
     assert result.turns == 1
     assert (result.input_tokens, result.output_tokens) == (1000, 200)
+    assert (result.cached_input_tokens, result.thinking_tokens) == (5000, 300)
 
 
 def test_paired_run_accepts_the_superstate_driver() -> None:
@@ -264,13 +266,13 @@ def test_paired_run_accepts_the_superstate_driver() -> None:
     assert args.context == "conversational"
     assert args.no_loop_breaker is True
     defaults = module.build_parser().parse_args([])
-    assert defaults.context == "state-only"
+    assert defaults.context == "folded"
     assert defaults.no_loop_breaker is False
 
 
 def test_harness_name_encodes_the_configuration(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
-    assert _driver(tmp_path, stub).harness_name == "superstate[state-only]"
+    assert _driver(tmp_path, stub).harness_name == "superstate[folded]"
     ablated = _driver(tmp_path, stub, context="conversational", loop_breaker=False)
     assert ablated.harness_name == "superstate[conversational,no-loop-breaker]"
 
@@ -278,7 +280,7 @@ def test_harness_name_encodes_the_configuration(tmp_path: Path) -> None:
 def test_tdd_gate_passes_the_flag_and_names_the_harness(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, gate="tdd")
-    assert driver.harness_name == "superstate[state-only,tdd]"
+    assert driver.harness_name == "superstate[folded,tdd]"
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     flags = argv[: argv.index("--")]
@@ -365,3 +367,13 @@ def test_state_window_context_is_passed_through(tmp_path: Path) -> None:
     [argv] = _calls(tmp_path)
     assert argv[argv.index("--context") + 1] == "state-window"
 
+
+
+def test_review_is_passed_and_named(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub, gate="tdd", review=True)
+    assert driver.harness_name == "superstate[folded,tdd,review]"
+    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    [argv] = _calls(tmp_path)
+    flags = argv[: argv.index("--")]
+    assert "--review" in flags and "--tdd" in flags

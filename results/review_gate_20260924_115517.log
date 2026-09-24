@@ -1,0 +1,66 @@
+11:55:17 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack (kept: superstate). ~13,288 tokens/invocation.
+11:55:17 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+11:55:17 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=2 [24.0 GB total - 4.0 GB reserve, 8.0 GB per worker; 4.7 GB reported available], Disk limit=2, User override=None)
+11:55:17 [INFO] superstate_eval.paired: ==============================================================================
+11:55:17 [INFO] superstate_eval.paired: Harness=superstate[folded,tdd,review]  model=gemini-3.8-flash-high  tasks=2  arms=bare x superstate[folded,tdd,review]  concurrency=2
+11:55:17 [INFO] superstate_eval.paired: Runs=2  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260924-115517
+11:55:17 [INFO] superstate_eval.paired: ==============================================================================
+11:55:17 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [superstate[folded,tdd,review]] (budget: 5400s)
+11:55:17 [INFO] superstate_eval.paired: -> katex-multicolumn-array-spans [superstate[folded,tdd,review]] (budget: 5400s)
+11:55:17 [INFO] superstate_eval.docker_manager: Host disk check: 46.84 GB free on /
+11:55:17 [INFO] superstate_eval.runner: Starting task 'datacurve/katex-multicolumn-array-spans' [Arm: bare] (Base budget: 5400.0s)
+11:55:17 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+11:55:17 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=2, User override=None)
+11:55:17 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=2, User override=None)
+11:55:19 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260924-115517/eval-datacurve_scc-bounded-memory-spilling-bare-e3b78642/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+11:55:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1529a0c6f98c (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+11:55:42 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260924-115517/eval-datacurve_katex-multicolumn-array-spans-bare-4d8221ae/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1:/app (40235 entries)
+11:55:42 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d4ad28d479f6 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1)
+12:01:56 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:4a0233bb9bac from /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/katex-multicolumn-array-spans/tests
+12:01:57 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 12b44e329a33 (superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:4a0233bb9bac)
+12:02:05 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 12b44e329a33
+12:02:05 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:4a0233bb9bac
+12:02:05 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/katex-multicolumn-array-spans arm=bare: passed=False, reward=0.0, exit_code=0
+12:02:05 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d4ad28d479f6
+12:02:05 [INFO] superstate_eval.runner: Finished task 'datacurve/katex-multicolumn-array-spans' [Arm: bare]: Passed=False, WallClock=407.89s, Cost=$0.32, TotalGrantedBudget=5400.0s
+12:02:05 [INFO] superstate_eval.paired:    superstate[folded,tdd,review]: passed=False cost=$0.3167 turns=1 408s  Agent run failed: provider returned 400: {
+  "error": {
+    "code": 400,
+    "message": "The input token count exceeds the maximum number of tokens allowed (1048576).",
+    "status": "INVALID_ARGUMENT"
+  }
+}
+ | grading then reported: Verification failed: Reward was 0.0 < 1.0
+Output: fier] ✗ [f2p] \multicolumn styling node interactions should work with color command inside multicolumn
+    ParseError: KaTeX parse error: Undefined control sequence: \multicolumn at position 19: …gin{array}{cc} \̲m̲u̲l̲t̲i̲c̲o̲l̲u̲m̲n̲{2}{c}{\color{r…
+P2P 599/599 pass 0 fail; F2P 0/94 pass 94 fail; PARTIAL 0.8643578643578643; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 94, "f2p_passed": 0, "p2p_total": 599, "p2p_passed": 599, "f2p": 0.0, "p2p": 1.0, "partial": 0.8643578643578643}
+
+12:18:30 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 185f5381': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+12:18:30 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 185f5381 (prev=bc2796e0). Lease extended.
+12:18:58 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:244a66e0a542 from /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests
+12:18:58 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e874aa50b771 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:244a66e0a542)
+12:20:43 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e874aa50b771
+12:20:43 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:244a66e0a542
+12:20:43 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=False, reward=0.0, exit_code=0
+12:20:43 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1529a0c6f98c
+12:20:43 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+12:20:43 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=False, WallClock=1525.68s, Cost=$3.05, TotalGrantedBudget=6600.0s
+12:20:43 [INFO] superstate_eval.paired:    superstate[folded,tdd,review]: passed=False cost=$3.0524 turns=1 1526s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.63s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+12:20:43 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| superstate[folded,tdd,review] | 2 | 0 | 0.0% | 0 | $3.37 | N/A | 32.2m | 20.0m | N/A | N/A |
+
+No paired results: no task was run by both `superstate[folded,tdd,review]` and another harness.
+
+Results written to results/review_gate_20260924_115517.json
+exit=0

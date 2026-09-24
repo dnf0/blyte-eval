@@ -5,7 +5,7 @@ agy" (the arm table in CLAUDE.md, kept for reproducing bolt-on-era results) but 
 compare on the same bare task, model and sealed grader". Every harness runs through the `bare`
 pass-through arm: the task instruction untouched, guidance files stripped, no gate from the
 evaluation. Anything a harness does beyond that (its loop, context strategy, its own gate) is part
-of the harness, and is spelled out in its name, e.g. `superstate[state-only,tdd]`.
+of the harness, and is spelled out in its name, e.g. `superstate[folded,tdd,review]`.
 """
 
 from __future__ import annotations
@@ -21,8 +21,8 @@ from lab.engine.budget_policy import RunTelemetry
 BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z,-]*)\])?$")
-_SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational", "folded")
-_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd")
+_SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact")
+_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review")
 
 
 class HarnessSpecError(ValueError):
@@ -34,7 +34,7 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
     m = _SPEC_RE.match(spec.strip())
     if not m:
         raise HarnessSpecError(
-            f"not a harness spec: {spec!r} (expected e.g. agy, superstate[state-only,tdd])"
+            f"not a harness spec: {spec!r} (expected e.g. agy, superstate[folded,tdd,review])"
         )
     name = m.group("name")
     opts = [o for o in (m.group("opts") or "").split(",") if o]
@@ -77,9 +77,10 @@ def build_harness(spec: str, model: str, report_dir: Optional[Path] = None) -> A
 
     return SuperstateNativeDriver(
         model=model,
-        context=next((o for o in opts if o in _SUPERSTATE_CONTEXTS), "state-only"),
+        context=next((o for o in opts if o in _SUPERSTATE_CONTEXTS), "folded"),
         loop_breaker="no-loop-breaker" not in opts,
         gate="tdd" if "tdd" in opts else None,
+        review="review" in opts,
         report_dir=report_dir,
     )
 
