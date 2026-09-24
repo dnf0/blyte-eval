@@ -31,7 +31,7 @@ The diagnostics:
 - Modify: `lab/engine/adapters/base.py`, `lab/engine/drivers/superstate_native.py`, `lab/engine/harnesses.py`, `scripts/paired_run.py`
 - Test: `tests/test_superstate_native_driver.py`, `tests/test_harnesses.py` (append only)
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 Append to `tests/test_superstate_native_driver.py`:
 
@@ -141,9 +141,9 @@ def test_the_cost_cap_reaches_superstate_harnesses_only(superstate_stub: Path) -
     assert build_harness("superstate[compact]", MODEL).max_cost_usd is None
 ```
 
-- [ ] **Step 2: Run to confirm they fail.** Run: `uv run pytest -q tests/test_superstate_native_driver.py tests/test_harnesses.py`. Expected: the new tests fail (`run_metrics`, `fold_budget`, `max_cost_usd` do not exist). The existing tests pass.
+- [x] **Step 2: Run to confirm they fail.** Run: `uv run pytest -q tests/test_superstate_native_driver.py tests/test_harnesses.py`. Expected: the new tests fail (`run_metrics`, `fold_budget`, `max_cost_usd` do not exist). The existing tests pass.
 
-- [ ] **Step 3: Metrics travel from driver to result.** In `lab/engine/adapters/base.py`:
+- [x] **Step 3: Metrics travel from driver to result.** In `lab/engine/adapters/base.py`:
   1. In `DriverTelemetry`, after `error_message`, add:
 
 ```python
@@ -154,7 +154,7 @@ def test_the_cost_cap_reaches_superstate_harnesses_only(superstate_stub: Path) -
      Import `Dict`, `Any` and `field` if they are not already imported.
   2. In `TurnBasedAdapter`'s run method: directly before `for _ in range(self.max_turns):`, add `metrics: Dict[str, Any] = {}`. Directly after `last_response = telemetry.raw_response`, add `metrics.update(telemetry.metrics)`. In the final `return TaskRunResult(...)`, change `provenance=self.get_provenance(),` to `provenance={**self.get_provenance(), **metrics},`.
 
-- [ ] **Step 4: `run_metrics` and the driver.** In `lab/engine/drivers/superstate_native.py`:
+- [x] **Step 4: `run_metrics` and the driver.** In `lab/engine/drivers/superstate_native.py`:
   1. Add at module level (with `import re` and `from collections import Counter` among the imports):
 
 ```python
@@ -235,7 +235,7 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
 
      Pass `cost_usd=cost_usd` and `metrics=metrics` to that `DriverTelemetry`.
 
-- [ ] **Step 5: The harness spec and `paired_run.py`.** In `lab/engine/harnesses.py`:
+- [x] **Step 5: The harness spec and `paired_run.py`.** In `lab/engine/harnesses.py`:
   1. Change `_SPEC_RE`'s option class from `[a-z,-]*` to `[a-z0-9,-]*`. Add `_FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")`.
   2. In `parse_harness_spec`'s superstate branch, compute `unknown = [o for o in opts if o not in _SUPERSTATE_OPTIONS and not _FOLD_BUDGET_RE.fullmatch(o)]`. After the one-context check, add:
 
@@ -264,11 +264,11 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
 
      Change `drivers = [build_harness(s, args.model, report_dir) for s in args.harnesses]` to pass `max_cost_usd=args.max_cost_usd`.
 
-- [ ] **Step 6: Run the tests.** Run: `uv run pytest -q tests/test_superstate_native_driver.py tests/test_harnesses.py tests/test_adapters.py`. Expected: all pass.
+- [x] **Step 6: Run the tests.** Run: `uv run pytest -q tests/test_superstate_native_driver.py tests/test_harnesses.py tests/test_adapters.py`. Expected: all pass.
 
-- [ ] **Step 7: Full check.** Run: `make lint && make test`. Expected: lint clean. Tests pass except the known governor-sizing test.
+- [x] **Step 7: Full check.** Run: `make lint && make test`. Expected: lint clean. Tests pass except the known governor-sizing test.
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add lab tests scripts
