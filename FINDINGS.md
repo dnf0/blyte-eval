@@ -2057,3 +2057,35 @@ by an unknown amount.**
 **Consequence.** Keep `folded` as the default. Redesign `compact` to apply supersession masking
 **only at fold points**, where the cache breaks anyway, so the reduction is free. De-duplication,
 which never rewrites earlier messages, can stay as is.
+
+### 13.40 The review gate shows no attributable effect at n=1, and one crash was the harness's fault (2026-09-24)
+
+13.38 found that superstate's own gate certified unfinished work: a worker-written reproduction
+test is only as complete as the worker's reading of the task. superstate
+`feat/folded-default-review-gate` adds a **completeness review**. When the verification command
+passes, the same model, with no tools, reads the diff against the task and may send the worker back
+with Critical/High unmet requirements, at most twice. Any failure to review accepts, and the
+exit code remains the verdict.
+
+Gated runs, one per cell (`results/gated_canary_*`, `results/review_gate_*`):
+
+| | katex | scc |
+|---|---|---|
+| agy | pass | 28/31 |
+| `folded,tdd` (13.38) | 92/94 | pass |
+| `folded,tdd,review` | **pass**; 1 review, accepted | 28/31; 2 reviews, 1 rejection |
+
+* **Nothing here is attributable to the review.** It sent the worker back once (scc), and the worker
+  addressed something other than what the grader tests. On katex it accepted, so that pass came
+  from a better reproduction test, not from the review.
+* **Run-to-run variance dominates.** The same configuration flips between pass and near-miss across
+  runs (`folded,tdd`: katex 92/94 then pass under review; scc pass then 28/31). Every cell in this
+  table is n=1. Deciding whether the review earns its cost needs repeats: at least 3 per cell.
+* **The first `folded,tdd,review` katex attempt crashed**, and it was the harness's fault, not the
+  model's. A `grep` in a container without ripgrep ran over `node_modules`, returned
+  megabyte-long minified lines, and the next request exceeded Gemini's 1,048,576-token limit.
+  Tool output was bounded only by line count. Fixed in superstate #52: every tool result is bounded
+  by size (lines clipped at 500 chars, total capped at 60K chars), and the grep fallback excludes
+  dependency and build trees. The katex pass above ran on the fixed binary.
+
+True costs of the review runs (fresh + cached + output + thinking): katex $2.42, scc $3.05.

@@ -1,0 +1,34 @@
+12:41:13 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack (kept: superstate). ~13,288 tokens/invocation.
+12:41:13 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+12:41:13 [INFO] superstate_eval.paired: ==============================================================================
+12:41:13 [INFO] superstate_eval.paired: Harness=superstate[folded,tdd,review]  model=gemini-3.8-flash-high  tasks=1  arms=bare x superstate[folded,tdd,review]  concurrency=1
+12:41:13 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260924-124113
+12:41:13 [INFO] superstate_eval.paired: ==============================================================================
+12:41:13 [INFO] superstate_eval.paired: -> katex-multicolumn-array-spans [superstate[folded,tdd,review]] (budget: 5400s)
+12:41:13 [INFO] superstate_eval.docker_manager: Host disk check: 44.34 GB free on /
+12:41:13 [INFO] superstate_eval.runner: Starting task 'datacurve/katex-multicolumn-array-spans' [Arm: bare] (Base budget: 5400.0s)
+12:41:13 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+12:41:31 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260924-124113/eval-datacurve_katex-multicolumn-array-spans-bare-5243c31d/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1:/app (40235 entries)
+12:41:32 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 5f4b74773ca7 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1)
+13:07:03 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: c6133004': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+13:07:03 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: c6133004 (prev=89bede49). Lease extended.
+13:07:37 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:b91ba6720430 from /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/katex-multicolumn-array-spans/tests
+13:07:38 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0f13a1377db8 (superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:b91ba6720430)
+13:07:49 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0f13a1377db8
+13:07:50 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:b91ba6720430
+13:07:50 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/katex-multicolumn-array-spans arm=bare: passed=True, reward=1.0, exit_code=0
+13:07:50 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 5f4b74773ca7
+13:07:50 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+13:07:50 [INFO] superstate_eval.runner: Finished task 'datacurve/katex-multicolumn-array-spans' [Arm: bare]: Passed=True, WallClock=1597.11s, Cost=$2.42, TotalGrantedBudget=6600.0s
+13:07:50 [INFO] superstate_eval.paired:    superstate[folded,tdd,review]: passed=True cost=$2.4176 turns=1 1597s  
+13:07:50 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| superstate[folded,tdd,review] | 1 | 1 | 100.0% | 0 | $2.42 | $2.42 | 26.6m | 20.0m | 1171589 | 16907 |
+
+No paired results: no task was run by both `superstate[folded,tdd,review]` and another harness.
+
+Results written to results/review_gate_katex_20260924_124112.json
+exit=0
