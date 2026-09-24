@@ -8,8 +8,10 @@ and does nothing else costs **24,222 fresh input tokens**, of which **13,288 is 
 schemas** -- 55% -- for `github`, `notion` and `slack`, which no benchmark task touches. It
 also costs wall clock: 17.2s against 1.7s.
 
-`superstate` is NOT stripped. The `superstate_mcp` arms are Condition B and talk to it over
-stdio; removing it would change what is under test rather than what surrounds it.
+`superstate` is kept only for the legacy bolt-on arms: the `superstate_mcp` arms are Condition B
+and talk to it over stdio, so removing it would change what is under test. A harness comparison
+(`paired_run.py --harnesses`) keeps nothing: there the `superstate` server is ambient overhead
+on agy (~13K tokens a call) that no harness under test uses (`servers_to_keep`).
 
 WHY IT IS DONE HERE RATHER THAN BY HAND
 ---------------------------------------
@@ -41,6 +43,11 @@ STASH = MCP_CONFIG.with_suffix(".json.superstate-eval-stash")
 
 #: Servers kept during a run. `superstate` is the arm under test, not ambient overhead.
 KEEP_BY_DEFAULT = frozenset({"superstate"})
+
+
+def servers_to_keep(harness_mode: bool) -> frozenset[str]:
+    """Servers to keep for a run: none when comparing harnesses, `superstate` for legacy arms."""
+    return frozenset() if harness_mode else KEEP_BY_DEFAULT
 
 
 def _restore(reason: str) -> bool:

@@ -86,3 +86,14 @@ def test_the_original_is_moved_not_copied(cfg):
             "the stash must be the SAME inode, i.e. renamed rather than copied"
         )
     assert cfg.stat().st_ino == inode_before
+
+
+def test_a_harness_comparison_strips_superstate_too(cfg):
+    # In a harness comparison no harness under test uses the superstate MCP server; left in, it
+    # is ~13K tokens of overhead on every agy call.
+    assert mcp_isolation.servers_to_keep(harness_mode=True) == frozenset()
+    assert mcp_isolation.servers_to_keep(harness_mode=False) == frozenset({"superstate"})
+    with mcp_isolation.stripped_mcp_servers(keep=mcp_isolation.servers_to_keep(True)) as stripped:
+        assert _servers(cfg) == set()
+        assert stripped == ["github", "notion", "slack", "superstate"]
+    assert _servers(cfg) == {"slack", "github", "notion", "superstate"}
