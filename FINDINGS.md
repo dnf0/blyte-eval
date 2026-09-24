@@ -2159,3 +2159,34 @@ Gated runs, one per cell (`results/gated_canary_*`, `results/review_gate_*`):
   dependency and build trees. The katex pass above ran on the fixed binary.
 
 True costs of the review runs (fresh + cached + output + thinking): katex $2.42, scc $3.05.
+
+### 13.41 Compact v2: masking only at folds removes the fresh-input penalty (2026-09-24)
+
+13.39 found that `compact` v1 masked superseded outputs once per 40-message epoch. Each epoch's
+masks re-prefilled the tail at the fresh price, so it saved no money. superstate
+`feat/compact-v2` masks **only when a fold happens**, judged by calls up to that fold's trigger.
+A fold already rewrites the prompt from its digest on, so masking then costs no extra cache miss.
+Between folds the prompt only grows at the end.
+
+`build-cython-ext`, 900s, one run each, `results/compact_v2_20260924_134252.*`:
+
+| harness | grader | time | turns | avg prompt | fresh in | cached in | out + thinking | true cost | cost / turn |
+|---|---|---|---|---|---|---|---|---|---|
+| agy | 11/11 | 849s | — | — | 905K | 11.74M | 70K | $1.82 | — |
+| `superstate[folded]` | 11/11 | 570s | 195 | 54K | 1,152K | 9.38M | 32K | $1.69 | $0.0087 |
+| `superstate[compact]` v2 | 11/11 | 573s | 174 | 50K | **957K** | 7.80M | 30K | **$1.42** | **$0.0082** |
+
+* **The fresh-input penalty is gone.** v1 used 34% *more* fresh input than `folded` (965K vs 722K).
+  v2 uses 17% *less* (957K vs 1,152K): 5.5K per turn against `folded`'s 5.9K.
+* **The reduction is smaller than v1's.** The average prompt is 7% below `folded` (v1: 25%),
+  because masks now land only at folds. Cost per turn is 6% lower. The 16% gap in total cost is
+  mostly the 21 fewer turns, which is run-to-run variance at n=1.
+* **Variance, again:** the same `superstate[folded]` configuration took 151 turns and $1.18 in
+  13.39, and 195 turns and $1.69 here. Differences in total cost under about 30% are not
+  attributable at n=1. Per-turn figures are the steadier signal.
+* **superstate against agy:** both superstate runs were cheaper than agy ($1.69 and $1.42 against
+  $1.82) and about 33% faster (570s against 849s), in line with 13.39.
+
+**Consequence.** v2 is at least no worse than `folded` on every measure, and cheaper per turn. It is
+a candidate for the default, but that needs repeats: at least 3 runs of each on 2–3 tasks, read per
+turn and in total.
