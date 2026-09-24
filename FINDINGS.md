@@ -2262,3 +2262,48 @@ cache engineering. In this run:
 * the model still issues one tool call per turn (13.37).
 
 Cutting turns cuts cost roughly in proportion. Explicit caching is not planned.
+
+### 13.44 Repeats: context configuration does not move the pass rate; turn count drives cost; `folded` stays the default (2026-09-24)
+
+Three runs per cell, four superstate configurations, `build-cython-ext` and
+`scc-bounded-memory-spilling`, ungated, $4 cap per run (never hit).
+`results/repeats_20260924_155821.*`, $50.55 in total. Mean ± sd:
+
+| task | harness | pass | turns | true cost | $/turn | avg prompt | fold notes (ok / failed) |
+|---|---|---|---|---|---|---|---|
+| build-cython | `folded` | 3/3 | 170 ± 14 | $1.38 ± 0.05 | 0.0081 | ~51K | — |
+| build-cython | `compact` | 3/3 | 175 ± 36 | $1.36 ± 0.35 | 0.0078 | ~47K | — |
+| build-cython | `compact,fold-notes` | 3/3 | 181 ± 26 | $1.44 ± 0.30 | 0.0079 | ~48K | 0.7 / 1.0 |
+| build-cython | `compact,fold-notes,fold-budget-16k` | 3/3 | 161 ± 2 | **$1.10 ± 0.07** | **0.0068** | **~21K** | 2.7 / 6.0 |
+| scc | `folded` | 2/3 (99.7%) | 177 ± 37 | **$2.61 ± 0.40** | 0.0149 | | — |
+| scc | `compact` | 2/3 (99.7%) | 216 ± 22 | $3.08 ± 0.44 | 0.0142 | | — |
+| scc | `compact,fold-notes` | 3/3 | 209 ± 55 | $2.88 ± 0.55 | 0.0139 | | 2.0 / 0 |
+| scc | `compact,fold-notes,fold-budget-16k` | 2/3 (99.7%) | **314 ± 20** | $3.00 ± 0.01 | **0.0096** | | 15.0 / 0 |
+
+* **Pass rate is not moved by context configuration.** All three scc failures are the same
+  single test out of 317 (`FormatMulti_CsvStream_WritesToFile`: a bounded csv-stream output file),
+  one in each of three different cells. It is a task-comprehension miss, the 13.38 failure mode
+  (the worker's own view of "done" is incomplete), not a context effect. 3/3 against 2/3 at n=3
+  is noise.
+* **Turn count drives cost, as 13.43 predicted.** Cost per turn is steady within a cell (sd
+  about 5%). Cost differences between runs are mostly turn differences, and the failed scc runs
+  were among the longest in their cells.
+* **The 16K fold budget depends on the task.** On build-cython it was the cheapest cell by 20%,
+  with ranges that do not overlap (prompt less than half as large, turns unchanged). On scc it
+  cut cost per turn by a third but took **77% more turns** and more wall-clock time (about 1180s
+  against about 900s), so net cost was no better. Re-reads of unchanged files rose (4.3 against
+  about 1), which suggests the smaller verbatim window lost context the task needed.
+* **`compact` shows no advantage over `folded`** on either task: equal on build-cython, and more
+  turns and cost on scc.
+* **Fold notes** are rare at the 48K budget (0.7–2 per run), too few to matter. At 16K, 45 of 45
+  succeeded on scc, but 18 of 26 failed on build-cython. The failures are not logged with a
+  reason. The likely cause, tool calls in place of the JSON note, can be ruled out by forbidding
+  function calls on the note request (Gemini `functionCallingConfig` mode `NONE`, tools still
+  declared so the cached prefix is unchanged).
+
+**Consequences.**
+* Keep `folded` as the default. `compact`, fold notes and the fold budget stay opt-in.
+* Context engineering is not where the remaining gains are. They are in **fewer turns** (cost)
+  and **completeness** (the only failures seen). The 13.40 review gate and the TDD gate target the
+  second; neither was in this run.
+* This run has no agy cells, so it says nothing new about superstate against agy.
