@@ -5,7 +5,8 @@ agy" (the arm table in CLAUDE.md, kept for reproducing bolt-on-era results) but 
 compare on the same bare task, model and sealed grader". Every harness runs through the `bare`
 pass-through arm: the task instruction untouched, guidance files stripped, no gate from the
 evaluation. Anything a harness does beyond that (its loop, context strategy, its own gate) is part
-of the harness, and is spelled out in its name, e.g. `superstate[folded,tdd,review]`.
+of the harness, and is spelled out in its name, e.g. `blyte[folded,tdd,review]`. The harness was named superstate until 2026-09-24;
+`superstate[...]` is accepted as an alias and builds the same `blyte[...]` harness.
 """
 
 from __future__ import annotations
@@ -31,23 +32,25 @@ class HarnessSpecError(ValueError):
 
 
 def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
-    """Split `superstate[conversational,tdd]` into `("superstate", ["conversational", "tdd"])`."""
+    """Split `blyte[conversational,tdd]` into `("blyte", ["conversational", "tdd"])` (`superstate[...]` is an alias)."""
     m = _SPEC_RE.match(spec.strip())
     if not m:
         raise HarnessSpecError(
-            f"not a harness spec: {spec!r} (expected e.g. agy, superstate[folded,tdd,review])"
+            f"not a harness spec: {spec!r} (expected e.g. agy, blyte[folded,tdd,review])"
         )
     name = m.group("name")
+    if name == "superstate":  # renamed to blyte on 2026-09-24
+        name = "blyte"
     opts = [o for o in (m.group("opts") or "").split(",") if o]
     if name in ("agy", "claude"):
         if opts:
             raise HarnessSpecError(f"{name} takes no options, got {opts}")
         return name, opts
-    if name == "superstate":
+    if name == "blyte":
         unknown = [o for o in opts if o not in _SUPERSTATE_OPTIONS and not _FOLD_BUDGET_RE.fullmatch(o)]
         if unknown:
             raise HarnessSpecError(
-                f"unknown superstate option(s) {unknown}; known: {list(_SUPERSTATE_OPTIONS)}"
+                f"unknown blyte option(s) {unknown}; known: {list(_SUPERSTATE_OPTIONS)}"
             )
         contexts = [o for o in opts if o in _SUPERSTATE_CONTEXTS]
         if len(contexts) > 1:
@@ -58,7 +61,7 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
         if len(budgets) > 1:
             raise HarnessSpecError(f"choose one fold budget, got {budgets}")
         return name, opts
-    raise HarnessSpecError(f"unknown harness {name!r}; known: agy, claude, superstate")
+    raise HarnessSpecError(f"unknown harness {name!r}; known: agy, claude, blyte (alias: superstate)")
 
 
 def build_harness(
