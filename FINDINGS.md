@@ -2220,3 +2220,45 @@ the note enters the prompt only when a fold happens. Any failure keeps the harne
 **Consequence.** Keep `fold-notes` off by default. Settling it needs the repeats already planned
 (at least 3 runs per cell), plus a cell with a smaller fold budget, where notes carry more of the
 context.
+
+### 13.43 Where fresh input goes: Gemini's implicit cache is block-granular, and explicit caching would not pay (2026-09-24)
+
+Fresh input was about half the true cost of a run (13.42), at 4–6K fresh tokens per turn. That is
+far more than a turn's new content. superstate #57 records usage per model call, together with
+whether the prompt was the previous one plus new messages (`appended`) and how many characters
+were new. One `superstate[compact]` run on `build-cython-ext`
+(`results/turn_usage_20260924_153215.*`; 11/11, 183 turns, $1.37):
+
+| | tokens |
+|---|---|
+| fresh input on appended calls (181 of 183) | 858K |
+| new content on those calls (chars / 4) | **54K** |
+| fresh input on rewritten calls (2 folds) | 49K |
+
+**About 94% of fresh input is cache misses on prompts that only grew**, which is not what a
+prefix cache should allow. The per-call record shows the mechanism:
+
+* **Nothing is cached until the prompt passes about 16K tokens.** Turns 1–28 had zero cached
+  tokens: 230K fresh tokens, 27% of the run's fresh input.
+* **After that, the cache matches only in blocks of about 4K tokens, and lags.** The cached amounts
+  step 12.0K, 16.0K, 20.1K, 24.1K, 28.2K… while the prompt grows by about 300 tokens a turn. So
+  every turn pays fresh for everything past the last cached block: a median of 4.0K tokens beyond
+  its new content.
+
+**Explicit caching (`cachedContents`) does not fix this for our loop.**
+* An explicit cache is immutable, so covering new turns means creating a new one, and creation
+  bills the whole prefix like a normal request. Storage is extra: $0.50 per million tokens per
+  hour on 3.8 Flash.
+* With a 50K prefix growing by 300 tokens a turn, the best refresh interval is about every 18
+  turns. That costs about $0.0041 per turn in creation plus uncached suffix, against the
+  **$0.0033 per turn** the implicit cache's misses cost now.
+* It only wins if creation were billed at the cached rate.
+
+**Consequence.** Per-turn cost is close to fixed: about $0.0033 of fresh overhead plus about $0.0035
+of cached re-reading at a 45K prompt, plus output. The lever is **the number of turns**, not
+cache engineering. In this run:
+* 31 of 57 reads re-read an unchanged file;
+* 11 commands repeated verbatim;
+* the model still issues one tool call per turn (13.37).
+
+Cutting turns cuts cost roughly in proportion. Explicit caching is not planned.
