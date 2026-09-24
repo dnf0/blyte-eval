@@ -2021,3 +2021,40 @@ n=2 per configuration on one short task. The next claim needs the canary's two 9
 bound, `folded` is the candidate; `conversational` is the ceiling to measure it against. The
 observation-table idea (a harness-applied, patch-style state keyed by call) is not needed for
 this task: repeats did not stop either configuration from finishing.
+
+### 13.37 Invited to batch tool calls, the model still makes exactly one per turn (2026-09-24)
+
+In all four passing runs of 13.36, the native harness made **exactly one tool call per turn**
+(178–234 turns of about 3 seconds each). Gemini supports parallel calls. A direct API probe
+returned 3 `functionCall`s in one turn when asked, at both `high` and `low` effort, with the thought
+signature on the first call only. The loop executes several calls per turn. So the question was
+whether inviting batching would cut turns.
+
+Two findings on the way, both in superstate `feat/parallel-tool-calls`:
+
+* **Batched calls would have broken the run.** The loop recorded each call directly followed by
+  its result, and the Gemini adapter sent each call as its own model turn. Gemini signs only the
+  first call of a batch and rejects a model turn whose first call is unsigned, so the second call
+  of any batch would have failed the request. Fixed: calls and results travel as whole turn blocks
+  through the loop, the adapter and every context strategy.
+* **Gemini call ids repeat every turn** (`call_0`, `call_1`, …, synthesised by the adapter). A
+  digest that paired calls with results by id matched a call with an earlier turn's result. It was
+  caught in review before merge and fixed to pair by position within each block; the regression
+  test fails on the id version.
+
+With the protocol safe, a "Working efficiently" section was added to the system prompt, inviting
+the model to batch independent reads, searches and commands. `superstate[conversational]`,
+`build-cython-ext`, 900s:
+
+| run | grader | calls | turns | calls/turn | time | cost |
+|---|---|---|---|---|---|---|
+| baseline #1 (13.36) | 11/11 | 178 | 179 | 0.99 | 604s | $0.75 |
+| baseline #2 (13.36) | 11/11 | 180 | 181 | 0.99 | 453s | $0.65 |
+| batching invited #1 | 11/11 | 196 | 197 | 0.99 | 559s | $0.77 |
+| batching invited #2 | 11/11 | 182 | 183 | 0.99 | 614s | $0.79 |
+
+**No effect.** The model is able to batch, but in this agentic loop it chooses sequential steps,
+and a system-prompt invitation does not change that. Time and cost are within run-to-run noise.
+The protocol fix stays (it is correctness, not tuning). The invitation is harmless but unproven.
+Fewer calls will not come from asking; if it comes at all, it will be from the harness doing work
+the model now spends turns on, such as running the check itself after an edit.
