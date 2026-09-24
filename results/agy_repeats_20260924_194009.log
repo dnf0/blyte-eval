@@ -1,0 +1,121 @@
+19:40:09 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+19:40:10 [INFO] superstate_eval.answer_key: Restored previously sealed path /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests
+19:40:10 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+19:40:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=2 [24.0 GB total - 4.0 GB reserve, 8.0 GB per worker; 4.6 GB reported available], Disk limit=2, User override=None)
+19:40:10 [INFO] superstate_eval.paired: ==============================================================================
+19:40:10 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=2  arms=bare x agy  concurrency=2
+19:40:10 [INFO] superstate_eval.paired: Runs=6  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260924-194009
+19:40:10 [INFO] superstate_eval.paired: ==============================================================================
+19:40:10 [INFO] superstate_eval.paired: -> build-cython-ext [agy] [run 1/3] (budget: 900s)
+19:40:10 [INFO] superstate_eval.docker_manager: Host disk check: 43.01 GB free on /
+19:40:10 [INFO] superstate_eval.paired: -> build-cython-ext [agy] [run 2/3] (budget: 900s)
+19:40:10 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: bare] (Base budget: 900.0s)
+19:40:10 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: bare] (Base budget: 900.0s)
+19:40:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.6 GB reported available], Disk limit=2, User override=None)
+19:40:10 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 4.6 GB reported available], Disk limit=2, User override=None)
+19:40:10 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260924-194009/eval-terminal-bench_build-cython-ext-bare-8c15f119/workspace
+19:40:10 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260924-194009/eval-terminal-bench_build-cython-ext-bare-e9846795/workspace
+19:40:10 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1972bf615471 (alexgshaw/build-cython-ext:20251031)
+19:40:10 [INFO] superstate_eval.docker_manager: Spawned sandbox container: cd985729eee9 (alexgshaw/build-cython-ext:20251031)
+19:40:10 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/build-cython-ext/tests for the agent phase
+19:40:10 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+19:40:10 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+19:53:40 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+19:53:45 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=bare: passed=True, reward=1.0, exit_code=0
+19:53:45 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: cd985729eee9
+19:53:45 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: bare]: Passed=True, WallClock=815.96s, Cost=$1.45, TotalGrantedBudget=900.0s
+19:53:45 [INFO] superstate_eval.paired:    agy [run 1/3]: passed=True cost=$1.4487 turns=1 816s  
+19:53:45 [INFO] superstate_eval.paired: -> build-cython-ext [agy] [run 3/3] (budget: 900s)
+19:53:45 [INFO] superstate_eval.runner: Starting task 'terminal-bench/build-cython-ext' [Arm: bare] (Base budget: 900.0s)
+19:53:45 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=10 [24.0 GB total - 4.0 GB reserve, 2.0 GB per worker; 5.5 GB reported available], Disk limit=2, User override=None)
+19:53:46 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/build-cython-ext:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260924-194009/eval-terminal-bench_build-cython-ext-bare-21aea882/workspace
+19:53:46 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7df8593c4dd1 (alexgshaw/build-cython-ext:20251031)
+19:53:46 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=900.0s, conversation_id=None)
+19:55:06 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+19:55:11 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=bare: passed=True, reward=1.0, exit_code=0
+19:55:11 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1972bf615471
+19:55:11 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: bare]: Passed=True, WallClock=901.56s, Cost=$1.70, TotalGrantedBudget=900.0s
+19:55:11 [INFO] superstate_eval.paired:    agy [run 2/3]: passed=True cost=$1.7039 turns=1 902s  
+19:55:11 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 1/3] (budget: 5400s)
+19:55:11 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+19:55:11 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 5.5 GB reported available], Disk limit=2, User override=None)
+19:55:12 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260924-194009/eval-datacurve_scc-bounded-memory-spilling-bare-fd053301/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+19:55:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: af7c49aa1c9f (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+19:55:13 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests for the agent phase
+19:55:13 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+20:07:16 [WARNING] superstate_eval.extractor: Task terminal-bench/build-cython-ext has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+20:07:21 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/build-cython-ext arm=bare: passed=True, reward=1.0, exit_code=0
+20:07:21 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7df8593c4dd1
+20:07:21 [INFO] superstate_eval.runner: Finished task 'terminal-bench/build-cython-ext' [Arm: bare]: Passed=True, WallClock=815.63s, Cost=$1.55, TotalGrantedBudget=900.0s
+20:07:21 [INFO] superstate_eval.paired:    agy [run 3/3]: passed=True cost=$1.5520 turns=1 816s  
+20:07:21 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 2/3] (budget: 5400s)
+20:07:21 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+20:07:21 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 5.1 GB reported available], Disk limit=2, User override=None)
+20:07:22 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260924-194009/eval-datacurve_scc-bounded-memory-spilling-bare-2df330a1/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+20:07:22 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 57a78ba3f724 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+20:07:22 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+20:19:01 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 3a1bbd0f': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+20:19:01 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 3a1bbd0f (prev=bc2796e0). Lease extended.
+20:19:17 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:860e27a28c03 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+20:19:17 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1fa873b40ec6 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:860e27a28c03)
+20:20:54 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1fa873b40ec6
+20:20:55 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:860e27a28c03
+20:20:55 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=False, reward=0.0, exit_code=0
+20:20:55 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: af7c49aa1c9f
+20:20:55 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=False, WallClock=1543.69s, Cost=$2.88, TotalGrantedBudget=6600.0s
+20:20:55 [INFO] superstate_eval.paired:    agy [run 1/3]: passed=False cost=$2.8757 turns=1 1544s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.59s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+20:20:55 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 3/3] (budget: 5400s)
+20:20:55 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+20:20:55 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=12, RAM limit=5 [24.0 GB total - 4.0 GB reserve, 4.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+20:20:56 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260924-194009/eval-datacurve_scc-bounded-memory-spilling-bare-c132acce/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+20:20:56 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 234c8b5ee172 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+20:20:56 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+20:34:57 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 4151ebeb': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+20:34:57 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 4151ebeb (prev=bc2796e0). Lease extended.
+20:35:12 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:882866c05542 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+20:35:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 925ea203c01e (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:882866c05542)
+20:36:49 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 925ea203c01e
+20:36:50 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:882866c05542
+20:36:50 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=False, reward=0.0, exit_code=0
+20:36:50 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 57a78ba3f724
+20:36:50 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=False, WallClock=1768.59s, Cost=$2.93, TotalGrantedBudget=6600.0s
+20:36:50 [INFO] superstate_eval.paired:    agy [run 2/3]: passed=False cost=$2.9346 turns=1 1769s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.60s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+20:44:48 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 989261c7': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+20:44:48 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 989261c7 (prev=bc2796e0). Lease extended.
+20:45:03 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:f7733e1f9b59 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+20:45:03 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 3738729df2b7 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:f7733e1f9b59)
+20:46:41 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 3738729df2b7
+20:46:42 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:f7733e1f9b59
+20:46:42 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=False, reward=0.0, exit_code=0
+20:46:42 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 234c8b5ee172
+20:46:42 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+20:46:42 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=False, WallClock=1546.86s, Cost=$2.79, TotalGrantedBudget=6600.0s
+20:46:42 [INFO] superstate_eval.paired:    agy [run 3/3]: passed=False cost=$2.7930 turns=1 1547s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.59s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+20:46:42 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| agy | 6 | 3 | 50.0% | 0 | $13.31 | $4.44 | 123.2m | 60.0m | 1876123 | 206128 |
+
+No paired results: no task was run by both `agy` and another harness.
+
+Results written to results/agy_repeats_20260924_194009.json
