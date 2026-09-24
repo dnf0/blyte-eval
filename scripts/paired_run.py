@@ -55,15 +55,15 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
     ap.add_argument("--driver", choices=["agy", "claude", "superstate"], default="agy",
                     help="Worker runtime: agy, claude, or the native superstate harness (default: agy)")
-    ap.add_argument("--context", choices=["state-only", "state-window", "conversational", "folded"], default="state-only",
-                    help="Native superstate driver only: context strategy (default: state-only)")
+    ap.add_argument("--context", choices=["state-only", "state-window", "conversational", "folded"], default="folded",
+                    help="Native superstate driver only: context strategy (default: folded)")
     ap.add_argument("--no-loop-breaker", action="store_true",
                     help="Native superstate driver only: disable the loop-breaker guards (ablation control)")
     ap.add_argument("--gate", choices=["none", "tdd"], default="none",
                     help="Native superstate driver only: 'tdd' gates by the harness's autonomous TDD (default: none)")
     ap.add_argument("--harnesses", nargs="+", default=None,
                     help="Harness-vs-harness mode: compare these harnesses on the bare task, first "
-                         "is the baseline, e.g. agy superstate[state-only] superstate[state-only,tdd]. "
+                         "is the baseline, e.g. agy superstate[folded] superstate[folded,tdd,review]. "
                          "Replaces --arms, --driver, --context, --gate and --no-loop-breaker")
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
@@ -184,7 +184,7 @@ def _run(args) -> int:
     if args.harnesses:
         if (
             args.driver != "agy"
-            or args.context != "state-only"
+            or args.context != "folded"
             or args.gate != "none"
             or args.no_loop_breaker
         ):

@@ -73,7 +73,7 @@ def test_parse_rejects_anything_else(spec: str) -> None:
 
 
 def test_superstate_specs_build_drivers_named_by_their_settings(superstate_stub: Path) -> None:
-    assert build_harness("superstate", MODEL).harness_name == "superstate[state-only]"
+    assert build_harness("superstate", MODEL).harness_name == "superstate[folded]"
     built = build_harness("superstate[conversational,no-loop-breaker,tdd]", MODEL)
     assert built.harness_name == "superstate[conversational,no-loop-breaker,tdd]"
     assert built.model == MODEL
@@ -177,3 +177,9 @@ def test_folded_is_a_superstate_context(superstate_stub: Path) -> None:
     assert build_harness("superstate[folded]", MODEL).harness_name == "superstate[folded]"
     with pytest.raises(HarnessSpecError, match="one context"):
         parse_harness_spec("superstate[folded,conversational]")
+
+
+def test_review_is_a_superstate_option(superstate_stub: Path) -> None:
+    built = build_harness("superstate[folded,tdd,review]", MODEL)
+    assert built.harness_name == "superstate[folded,tdd,review]"
+    assert build_harness("superstate[conversational]", MODEL).harness_name == "superstate[conversational]"

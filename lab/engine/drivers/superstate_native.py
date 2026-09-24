@@ -103,9 +103,10 @@ class SuperstateNativeDriver(AgentDriver):
     def __init__(
         self,
         model: str,
-        context: str = "state-only",
+        context: str = "folded",
         loop_breaker: bool = True,
         gate: Optional[str] = None,
+        review: bool = False,
         superstate_bin: Optional[str | Path] = None,
         report_dir: Optional[str | Path] = None,
     ) -> None:
@@ -124,6 +125,7 @@ class SuperstateNativeDriver(AgentDriver):
         self.context = context
         self.loop_breaker = loop_breaker
         self.gate = gate
+        self.review = review
         # Results are pooled by `harness` (runner.py records harness_name), so every
         # configuration that changes behaviour must be in the name. Otherwise a loop-breaker
         # ablation pools its control with its treatment.
@@ -131,6 +133,7 @@ class SuperstateNativeDriver(AgentDriver):
             [context]
             + ([] if loop_breaker else ["no-loop-breaker"])
             + ([gate] if gate else [])
+            + (["review"] if review else [])
         )
         self.harness_name = f"superstate[{','.join(config)}]"
         self.report_dir = Path(report_dir) if report_dir is not None else None
@@ -171,6 +174,8 @@ class SuperstateNativeDriver(AgentDriver):
             cmd.append("--no-loop-breaker")
         if self.gate == "tdd":
             cmd.append("--tdd")
+        if self.review:
+            cmd.append("--review")
         # `--` so an instruction that starts with a dash is never parsed as a flag.
         cmd += ["--", prompt]
         return cmd
