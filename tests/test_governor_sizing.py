@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from lab.benchmarks.task_loader import load_benchmark_tasks
-from lab.engine.governor import ConcurrencyGovernor
+from lab.engine.governor import ConcurrencyGovernor, SystemSpecs
 
 TASKS_ROOT = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
 
@@ -29,12 +29,15 @@ def test_heavier_tasks_lower_the_concurrency_ceiling() -> None:
     lost 12 of 54 runs that way, and the failures are indistinguishable from real ones in the
     results JSON unless you read the reason string.
     """
+    # A fixed machine: sized from the live host, the test failed whenever free disk (or CPU
+    # count) capped both ceilings at the same value, which says nothing about RAM sizing.
+    specs = SystemSpecs(logical_cpus=16, total_ram_gb=64.0, available_ram_gb=32.0, free_disk_gb=1000.0)
     flat = ConcurrencyGovernor(
         cpus_per_worker=1.0, ram_gb_per_worker=1.5, ram_headroom_gb=4.0
-    ).calculate_max_concurrency()
+    ).calculate_max_concurrency(specs)
     heavy = ConcurrencyGovernor(
         cpus_per_worker=1.0, ram_gb_per_worker=8.0, ram_headroom_gb=4.0
-    ).calculate_max_concurrency()
+    ).calculate_max_concurrency(specs)
     assert heavy < flat, (
         f"an 8 GB worker must yield a lower ceiling than a 1.5 GB one ({heavy} vs {flat})"
     )

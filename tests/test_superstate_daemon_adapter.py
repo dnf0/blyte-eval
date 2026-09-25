@@ -17,17 +17,6 @@ from lab.engine.adapters.superstate_daemon import (
 import pytest
 
 
-def derivation_on(monkeypatch):
-    """Gate derivation is opt-in: the daemon does not author its own contract by default.
-
-    These tests exercise that opt-in machinery, so they enable it explicitly rather than
-    relying on a default that would invert the handoff.
-    """
-    from lab.engine.adapters.superstate_daemon import GATE_DERIVATION_ENV_FLAG
-
-    monkeypatch.setenv(GATE_DERIVATION_ENV_FLAG, "1")
-
-
 def test_daemon_adapter_initialization() -> None:
     adapter = SuperstateDaemonAdapter(driver_preset="agy")
     assert adapter.name == "superstate_daemon"
