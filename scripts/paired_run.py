@@ -57,14 +57,12 @@ def build_parser() -> argparse.ArgumentParser:
                     help="Worker runtime: agy, claude, or the native superstate harness (default: agy)")
     ap.add_argument("--context", choices=["conversational", "folded"], default="folded",
                     help="Native superstate driver only: context strategy (default: folded)")
-    ap.add_argument("--no-loop-breaker", action="store_true",
-                    help="Native superstate driver only: disable the loop-breaker guards (ablation control)")
     ap.add_argument("--gate", choices=["none", "tdd"], default="none",
                     help="Native superstate driver only: 'tdd' gates by the harness's autonomous TDD (default: none)")
     ap.add_argument("--harnesses", nargs="+", default=None,
                     help="Harness-vs-harness mode: compare these harnesses on the bare task, first "
                          "is the baseline, e.g. agy superstate[folded] superstate[folded,tdd,review]. "
-                         "Replaces --arms, --driver, --context, --gate and --no-loop-breaker")
+                         "Replaces --arms, --driver, --context and --gate")
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
                     help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
@@ -187,12 +185,11 @@ def _run(args) -> int:
             args.driver != "agy"
             or args.context != "folded"
             or args.gate != "none"
-            or args.no_loop_breaker
         ):
             logger.error(
                 "--harnesses spells each harness's settings in its name "
                 "(e.g. superstate[conversational,tdd]); do not combine it with --driver, "
-                "--context, --gate or --no-loop-breaker."
+                "--context or --gate."
             )
             return 1
         report_dir = (
@@ -213,15 +210,14 @@ def _run(args) -> int:
         driver = SuperstateNativeDriver(
             model=args.model,
             context=args.context,
-            loop_breaker=not args.no_loop_breaker,
             gate=None if args.gate == "none" else args.gate,
             report_dir=report_dir,
         )
         logger.info(
             "Native superstate driver: bin=%s (sha256 %s, copied from %s), context=%s, "
-            "loop_breaker=%s, reports -> %s, gate=%s",
+            "reports -> %s, gate=%s",
             driver.superstate_bin, driver.superstate_bin_sha256[:12],
-            driver.superstate_bin_source, args.context, not args.no_loop_breaker, report_dir,
+            driver.superstate_bin_source, args.context, report_dir,
             args.gate,
         )
     else:

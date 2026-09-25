@@ -23,7 +23,7 @@ BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z0-9,-]*)\])?$")
 _SUPERSTATE_CONTEXTS = ("conversational", "folded")
-_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review")
+_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("tdd", "review")
 _FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
 
 
@@ -89,7 +89,6 @@ def build_harness(
     return SuperstateNativeDriver(
         model=model,
         context=next((o for o in opts if o in _SUPERSTATE_CONTEXTS), "folded"),
-        loop_breaker="no-loop-breaker" not in opts,
         gate="tdd" if "tdd" in opts else None,
         review="review" in opts,
         fold_budget=next(

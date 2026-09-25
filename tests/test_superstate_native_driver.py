@@ -36,7 +36,6 @@ def _report(**overrides: Any) -> dict[str, Any]:
         "model_requested": MODEL,
         "model_id": "gemini/gemini-3.8-flash",
         "context": "folded",
-        "loop_breaker": True,
         "gated": False,
         "container": "cnt-1",
         "container_workdir": "/app",
@@ -138,16 +137,14 @@ def test_command_pins_model_container_workdir_and_budget(tmp_path: Path) -> None
     assert flags[flags.index("--max-seconds") + 1] == "600"
     assert "--report" in flags
     assert "--gate" not in flags and "-g" not in flags
-    assert "--no-loop-breaker" not in flags
 
 
-def test_loop_breaker_ablation_and_context_are_passed(tmp_path: Path) -> None:
+def test_context_is_passed(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
-    driver = _driver(tmp_path, stub, context="conversational", loop_breaker=False)
+    driver = _driver(tmp_path, stub, context="conversational")
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
 
     [argv] = _calls(tmp_path)
-    assert "--no-loop-breaker" in argv
     assert argv[argv.index("--context") + 1] == "conversational"
 
 
@@ -260,21 +257,19 @@ def test_paired_run_accepts_the_superstate_driver() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     args = module.build_parser().parse_args(
-        ["--driver", "superstate", "--context", "conversational", "--no-loop-breaker"]
+        ["--driver", "superstate", "--context", "conversational"]
     )
     assert args.driver == "superstate"
     assert args.context == "conversational"
-    assert args.no_loop_breaker is True
     defaults = module.build_parser().parse_args([])
     assert defaults.context == "folded"
-    assert defaults.no_loop_breaker is False
 
 
 def test_harness_name_encodes_the_configuration(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     assert _driver(tmp_path, stub).harness_name == "blyte[folded]"
-    ablated = _driver(tmp_path, stub, context="conversational", loop_breaker=False)
-    assert ablated.harness_name == "blyte[conversational,no-loop-breaker]"
+    other = _driver(tmp_path, stub, context="conversational")
+    assert other.harness_name == "blyte[conversational]"
 
 
 def test_tdd_gate_passes_the_flag_and_names_the_harness(tmp_path: Path) -> None:
@@ -304,8 +299,8 @@ def test_rejects_an_unknown_gate(tmp_path: Path) -> None:
 
 def test_harness_name_orders_every_option(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
-    driver = _driver(tmp_path, stub, context="conversational", loop_breaker=False, gate="tdd")
-    assert driver.harness_name == "blyte[conversational,no-loop-breaker,tdd]"
+    driver = _driver(tmp_path, stub, context="conversational", gate="tdd")
+    assert driver.harness_name == "blyte[conversational,tdd]"
 
 
 def test_paired_run_accepts_the_tdd_gate() -> None:
