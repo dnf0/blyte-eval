@@ -2349,3 +2349,41 @@ worker re-fetches folded content. 3 runs per task (`results/adaptive_20260924_20
 **Consequence.** `folded` at 48K stays the default. Delete `adaptive`: it fails the
 earn-its-place rule. The harness's lead over agy on this model is now shown with repeats on two
 tasks: equal or better completion, 12–30% lower cost, and a third less wall time.
+
+### 13.46 Current blyte against agy on scc, 5 runs each: equal quality, 21% cheaper, about 45% faster (2026-09-25)
+
+The harness is now **blyte** (renamed from superstate). It was measured after #63–#67: persistent
+shell sessions, native ripgrep `grep`/`glob` (`.gitignore`-aware), and the loop-breaker, `note`,
+losing context strategies and bolt-on crates removed. The binary is `target/release/blyte` at
+superstate `5a8c4c1`. `scc-bounded-memory-spilling`, `gemini-3.8-flash-high`, sealed grader, all
+MCP servers stripped from agy, concurrency 1. Results: `results/confirm_scc_20260925_124543.*`.
+
+**Quality is measured as percentages from here on**, not pass/fail. The task has 31 target tests
+(F2P: the new behaviour asked for) and 286 regression tests (P2P).
+
+| harness | target tests (F2P) mean ± sd | all tests | runs at 100% | true cost | time* | output | thinking | turns |
+|---|---|---|---|---|---|---|---|---|
+| agy | 98.1 ± 4.3% | 99.81% | 4/5 | $3.31 ± 0.61 | 1,779 ± 229 s | 173K | 120K | — |
+| blyte `folded` | 96.1 ± 5.3% | 99.62% | 3/5 | **$2.60 ± 0.33** | **981 ± 138 s** | **32K** | 117K | 186 ± 34 |
+
+\* **Order confound:** this run executed all agy repeats before any blyte repeats (fixed for future
+runs in #42: repeats now interleave). API latency and machine load drift over hours. A 45% gap is
+far larger than that drift, but its exact size is not established.
+
+* **Quality is equal within noise.** Every failure, for both harnesses, is the **same 3 of 31 target
+  tests** (the csv-stream requirement), scoring 28/31 = 90.3%. There is one such run for agy and two
+  for blyte. No run of either harness broke a regression test. 4/5 against 3/5 is p ≈ 1.0 (Fisher).
+  Pooled with 13.44/13.45 (older blyte build), target-test means are **blyte 96.4% (n=8)** and
+  **agy 95.2% (n=8)**.
+* **blyte is 21% cheaper** ($2.60 against $3.31) with tighter spread. Thinking tokens are the same;
+  **agy writes 5.4× the output tokens** (173K against 32K), billed at the output rate and slow to
+  generate. That is most of agy's extra cost and time.
+* **13.45's "agy fails scc" did not replicate:** agy scored 90.3% on all three runs there, and 4/5
+  here reached 100%. The honest summary across both days: both harnesses solve over 90% of this task
+  every time, and full completion hinges on one requirement that each misses sometimes.
+* The prompt changes since 13.45 (the persistent `cd`, a `.gitignore`-aware glob, the loop-breaker
+  removed) did not measurably change quality.
+
+**Consequence.** On this model and task, blyte matches agy's quality at about four-fifths of the
+cost and about half the wall time. Claims of *better* quality need a larger sample or harder tasks.
+The remaining quality lever is the shared miss, a comprehension or completeness failure.
