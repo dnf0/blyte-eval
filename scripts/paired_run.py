@@ -23,18 +23,18 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from lab.benchmarks.gate_fixtures import is_unmeasurable
-from lab.engine import mcp_isolation
-from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir
-from lab.benchmarks.task_sets import is_canary, is_discriminating
-from lab.engine.drivers.agy_cli import AgyCliDriver
-from lab.engine.drivers.claude_cli import ClaudeCliDriver
-from lab.engine.drivers.superstate_native import SuperstateNativeDriver
-from lab.engine.harnesses import BARE_ARM, build_harness, by_harness, render_harness_comparison
-from lab.engine.governor import ConcurrencyGovernor
-from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table
-from lab.engine.runner import AblationRunner
-from lab.sandbox.answer_key import AnswerKeyGuard
+from lab.benchmarks.gate_fixtures import is_unmeasurable  # noqa: E402
+from lab.engine import mcp_isolation  # noqa: E402
+from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir  # noqa: E402
+from lab.benchmarks.task_sets import is_canary, is_discriminating  # noqa: E402
+from lab.engine.drivers.agy_cli import AgyCliDriver  # noqa: E402
+from lab.engine.drivers.claude_cli import ClaudeCliDriver  # noqa: E402
+from lab.engine.drivers.superstate_native import SuperstateNativeDriver  # noqa: E402
+from lab.engine.harnesses import BARE_ARM, build_harness, by_harness, render_harness_comparison  # noqa: E402
+from lab.engine.governor import ConcurrencyGovernor  # noqa: E402
+from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table  # noqa: E402
+from lab.engine.runner import AblationRunner  # noqa: E402
+from lab.sandbox.answer_key import AnswerKeyGuard  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,

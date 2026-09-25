@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import pathlib
 
+from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
+
 ADAPTERS = pathlib.Path("lab/engine/adapters")
 
 # Arms whose results are compared against each other in reports.
@@ -239,6 +241,8 @@ def test_read_cache_ablation_differs_by_exactly_one_flag():
     # The cache defaults OFF after EXP-081, so the TREATMENT is the arm carrying the flag.
     control = runner._get_adapter("superstate_daemon_full")
     treatment = runner._get_adapter("superstate_daemon_cache")
+    assert isinstance(control, SuperstateDaemonAdapter)
+    assert isinstance(treatment, SuperstateDaemonAdapter)
 
     assert control.read_cache is False, "the default arm must not run a measured regression"
     assert treatment.read_cache is True
@@ -272,5 +276,8 @@ def test_read_cache_state_reaches_the_results_provenance():
     from lab.engine.runner import AblationRunner
 
     runner = AblationRunner.__new__(AblationRunner)
-    assert runner._get_adapter("superstate_daemon_cache").get_provenance()["read_cache"] is True
-    assert runner._get_adapter("superstate_daemon_full").get_provenance()["read_cache"] is False
+    cache = runner._get_adapter("superstate_daemon_cache")
+    full = runner._get_adapter("superstate_daemon_full")
+    assert isinstance(cache, SuperstateDaemonAdapter) and isinstance(full, SuperstateDaemonAdapter)
+    assert cache.get_provenance()["read_cache"] is True
+    assert full.get_provenance()["read_cache"] is False
