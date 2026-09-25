@@ -50,9 +50,9 @@ def test_parse_accepts_bare_names_and_superstate_options() -> None:
     assert parse_harness_spec("agy") == ("agy", [])
     assert parse_harness_spec("claude") == ("claude", [])
     assert parse_harness_spec("superstate") == ("blyte", [])
-    assert parse_harness_spec("blyte[conversational,tdd]") == (
+    assert parse_harness_spec("blyte[conversational,fold-budget-16k]") == (
         "blyte",
-        ["conversational", "tdd"],
+        ["conversational", "fold-budget-16k"],
     )
 
 
@@ -74,8 +74,8 @@ def test_parse_rejects_anything_else(spec: str) -> None:
 
 def test_superstate_specs_build_drivers_named_by_their_settings(superstate_stub: Path) -> None:
     assert build_harness("superstate", MODEL).harness_name == "blyte[folded]"
-    built = build_harness("blyte[conversational,tdd]", MODEL)
-    assert built.harness_name == "blyte[conversational,tdd]"
+    built = build_harness("blyte[conversational,fold-budget-16k]", MODEL)
+    assert built.harness_name == "blyte[conversational,fold-budget-16k]"
     assert built.model == MODEL
 
 
@@ -147,9 +147,9 @@ def test_paired_run_accepts_harnesses() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     args = module.build_parser().parse_args(
-        ["--harnesses", "agy", "blyte[folded]", "blyte[folded,tdd]"]
+        ["--harnesses", "agy", "blyte[folded]", "blyte[folded,fold-budget-16k]"]
     )
-    assert args.harnesses == ["agy", "blyte[folded]", "blyte[folded,tdd]"]
+    assert args.harnesses == ["agy", "blyte[folded]", "blyte[folded,fold-budget-16k]"]
     assert module.build_parser().parse_args([]).harnesses is None
 
 
@@ -170,12 +170,6 @@ def test_folded_is_a_superstate_context(superstate_stub: Path) -> None:
         parse_harness_spec("blyte[folded,conversational]")
 
 
-def test_review_is_a_superstate_option(superstate_stub: Path) -> None:
-    built = build_harness("blyte[folded,tdd,review]", MODEL)
-    assert built.harness_name == "blyte[folded,tdd,review]"
-    assert build_harness("blyte[conversational]", MODEL).harness_name == "blyte[conversational]"
-
-
 def test_fold_budget_is_a_superstate_option(superstate_stub: Path) -> None:
     built = build_harness("blyte[folded,fold-budget-16k]", MODEL)
     assert built.harness_name == "blyte[folded,fold-budget-16k]"
@@ -188,7 +182,7 @@ def test_fold_budget_is_a_superstate_option(superstate_stub: Path) -> None:
 
 def test_superstate_is_an_alias_for_blyte(superstate_stub: Path) -> None:
     # Renamed 2026-09-24; results and FINDINGS before then use superstate[...].
-    assert parse_harness_spec("superstate[folded,tdd]") == ("blyte", ["folded", "tdd"])
+    assert parse_harness_spec("superstate[folded,fold-budget-16k]") == ("blyte", ["folded", "fold-budget-16k"])
     assert build_harness("superstate[folded]", MODEL).harness_name == "blyte[folded]"
 
 

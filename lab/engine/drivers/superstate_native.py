@@ -41,9 +41,6 @@ MAX_TURNS = 1000
 KILL_GRACE_SEC = 900.0
 REPORT_SCHEMA_VERSION = 1
 CONTEXTS = ("conversational", "folded")
-#: Gate sources the driver can ask the harness for. None is ungated, like agy under vanilla;
-#: "tdd" is the harness's own autonomous TDD (RED then GREEN), never a command we author.
-GATES = (None, "tdd")
 
 
 class SuperstateNativeDriverError(RuntimeError):
@@ -176,8 +173,6 @@ class SuperstateNativeDriver(AgentDriver):
         self,
         model: str,
         context: str = "folded",
-        gate: Optional[str] = None,
-        review: bool = False,
         fold_budget: Optional[int] = None,
         superstate_bin: Optional[str | Path] = None,
         report_dir: Optional[str | Path] = None,
@@ -186,8 +181,6 @@ class SuperstateNativeDriver(AgentDriver):
             raise SuperstateNativeDriverError(
                 f"context must be one of {CONTEXTS}, got {context!r}"
             )
-        if gate not in GATES:
-            raise SuperstateNativeDriverError(f"gate must be one of {GATES}, got {gate!r}")
         if not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
             raise SuperstateNativeDriverError(
                 "GEMINI_API_KEY (or GOOGLE_API_KEY) must be set: the native harness calls the "
@@ -195,16 +188,12 @@ class SuperstateNativeDriver(AgentDriver):
             )
         self.model = model
         self.context = context
-        self.gate = gate
-        self.review = review
         self.fold_budget = fold_budget
         # Results are pooled by `harness` (runner.py records harness_name), so every
         # configuration that changes behaviour must be in the name. Otherwise an
         # ablation pools its control with its treatment.
         config = (
             [context]
-            + ([gate] if gate else [])
-            + (["review"] if review else [])
             + ([f"fold-budget-{fold_budget // 1000}k"] if fold_budget else [])
         )
         self.harness_name = f"blyte[{','.join(config)}]"
@@ -224,7 +213,7 @@ class SuperstateNativeDriver(AgentDriver):
     def build_command(
         self, prompt: str, container_id: str, report_path: Path, timeout_sec: float
     ) -> list[str]:
-        """The argv for one task. Never a --gate: ungated, or the harness's own --tdd."""
+        """The argv for one task. Never a --gate: runs are ungated, and the sealed grader decides."""
         cmd = [
             str(self.superstate_bin),
             "--model",
@@ -242,10 +231,6 @@ class SuperstateNativeDriver(AgentDriver):
             "--report",
             str(report_path),
         ]
-        if self.gate == "tdd":
-            cmd.append("--tdd")
-        if self.review:
-            cmd.append("--review")
         if self.fold_budget:
             cmd += ["--fold-budget", str(self.fold_budget)]
         # `--` so an instruction that starts with a dash is never parsed as a flag.

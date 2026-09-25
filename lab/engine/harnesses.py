@@ -23,7 +23,7 @@ BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z0-9,-]*)\])?$")
 _SUPERSTATE_CONTEXTS = ("conversational", "folded")
-_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("tdd", "review")
+_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ()
 _FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
 
 
@@ -32,7 +32,7 @@ class HarnessSpecError(ValueError):
 
 
 def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
-    """Split `blyte[conversational,tdd]` into `("blyte", ["conversational", "tdd"])` (`superstate[...]` is an alias)."""
+    """Split `blyte[conversational,fold-budget-16k]` into `("blyte", ["conversational", "fold-budget-16k"])` (`superstate[...]` is an alias)."""
     m = _SPEC_RE.match(spec.strip())
     if not m:
         raise HarnessSpecError(
@@ -89,8 +89,6 @@ def build_harness(
     return SuperstateNativeDriver(
         model=model,
         context=next((o for o in opts if o in _SUPERSTATE_CONTEXTS), "folded"),
-        gate="tdd" if "tdd" in opts else None,
-        review="review" in opts,
         fold_budget=next(
             (int(m.group(1)) * 1000 for o in opts if (m := _FOLD_BUDGET_RE.fullmatch(o))), None
         ),
