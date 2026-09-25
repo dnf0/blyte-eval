@@ -35,7 +35,7 @@ def _report(**overrides: Any) -> dict[str, Any]:
         "error": None,
         "model_requested": MODEL,
         "model_id": "gemini/gemini-3.8-flash",
-        "context": "state-only",
+        "context": "folded",
         "loop_breaker": True,
         "gated": False,
         "container": "cnt-1",
@@ -359,16 +359,6 @@ def test_nothing_is_written_without_a_report_dir(tmp_path: Path) -> None:
     assert driver.last_events_path is None
 
 
-def test_state_window_context_is_passed_through(tmp_path: Path) -> None:
-    stub = _make_stub(tmp_path, _report())
-    driver = _driver(tmp_path, stub, context="state-window")
-    assert driver.harness_name == "blyte[state-window]"
-    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
-    [argv] = _calls(tmp_path)
-    assert argv[argv.index("--context") + 1] == "state-window"
-
-
-
 def test_review_is_passed_and_named(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub, gate="tdd", review=True)
@@ -377,15 +367,6 @@ def test_review_is_passed_and_named(tmp_path: Path) -> None:
     [argv] = _calls(tmp_path)
     flags = argv[: argv.index("--")]
     assert "--review" in flags and "--tdd" in flags
-
-
-def test_fold_notes_is_passed_and_named(tmp_path: Path) -> None:
-    stub = _make_stub(tmp_path, _report())
-    driver = _driver(tmp_path, stub, context="compact", fold_notes=True)
-    assert driver.harness_name == "blyte[compact,fold-notes]"
-    driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
-    [argv] = _calls(tmp_path)
-    assert "--fold-notes" in argv[: argv.index("--")]
 
 
 METRIC_EVENTS = (
@@ -412,9 +393,8 @@ TURN_USAGE = [
 def test_run_metrics_counts_rereads_repeats_and_splits_fresh_input() -> None:
     from lab.engine.drivers.superstate_native import run_metrics
 
-    m = run_metrics(_report(turns=3, fold_notes=2, fold_note_failures=1, turn_usage=TURN_USAGE), METRIC_EVENTS)
+    m = run_metrics(_report(turns=3, turn_usage=TURN_USAGE), METRIC_EVENTS)
     assert m["harness_turns"] == 3
-    assert (m["fold_notes"], m["fold_note_failures"]) == (2, 1)
     assert (m["reads"], m["unchanged_rereads"], m["changed_rereads"]) == (3, 1, 1)
     assert m["repeated_commands"] == 1
     assert (m["appended_turns"], m["rewritten_turns"]) == (2, 1)
@@ -427,53 +407,35 @@ def test_run_metrics_tolerates_an_old_report() -> None:
     from lab.engine.drivers.superstate_native import run_metrics
 
     m = run_metrics(_report(), "")
-    assert m["reads"] == 0 and m["appended_turns"] == 0 and m["fold_notes"] == 0
+    assert m["reads"] == 0 and m["appended_turns"] == 0
 
 
 def test_metrics_reach_the_task_result(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report(turns=3, turn_usage=TURN_USAGE), stdout=METRIC_EVENTS)
-    driver = _driver(tmp_path, stub, max_cost_usd=4.0)
+    driver = _driver(tmp_path, stub)
     result = VanillaAdapter().execute(
         tmp_path, _task(tmp_path), driver, timeout_sec=60.0, container=FakeContainer()
     )
     assert result.provenance["unchanged_rereads"] == 1
     assert result.provenance["harness_turns"] == 3
     assert result.provenance["cost_per_turn"] == pytest.approx(result.cost_usd / 3, rel=1e-3)
-    assert result.provenance["max_cost_usd"] == 4.0
 
 
-def test_fold_budget_and_cost_cap_are_passed(tmp_path: Path) -> None:
+def test_fold_budget_is_passed(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
-    driver = _driver(tmp_path, stub, context="compact", fold_budget=16000, max_cost_usd=2.5)
-    assert driver.harness_name == "blyte[compact,fold-budget-16k]"
+    driver = _driver(tmp_path, stub, context="folded", fold_budget=16000)
+    assert driver.harness_name == "blyte[folded,fold-budget-16k]"
     driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
     flags = argv[: argv.index("--")]
     assert flags[flags.index("--fold-budget") + 1] == "16000"
-    assert flags[flags.index("--max-cost-usd") + 1] == "2.5"
 
 
-def test_no_cap_and_no_budget_pass_no_flags(tmp_path: Path) -> None:
+def test_no_budget_passes_no_flag(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     _driver(tmp_path, stub).run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     [argv] = _calls(tmp_path)
-    assert "--fold-budget" not in argv and "--max-cost-usd" not in argv
-
-
-def test_paired_run_accepts_a_cost_cap() -> None:
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        "paired_run", Path(__file__).resolve().parent.parent / "scripts" / "paired_run.py"
-    )
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    args = module.build_parser().parse_args(
-        ["--harnesses", "blyte[compact]", "--max-cost-usd", "3"]
-    )
-    assert args.max_cost_usd == 3.0
-
+    assert "--fold-budget" not in argv
 
 
 def test_run_metrics_reports_the_final_fold_budget() -> None:
