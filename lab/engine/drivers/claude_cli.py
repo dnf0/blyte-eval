@@ -78,51 +78,9 @@ def _first(payload: dict[str, Any], *keys: str, default: Any = None) -> Any:
     return default
 
 
-def find_superstate_binary() -> Optional[Path | str]:
-    """Resolve the superstate executable binary for MCP tool exposure.
-
-    Checks explicit SUPERSTATE_BIN environment variable, candidate installation paths
-    via the MCP client resolver, known project build targets, and system PATH.
-
-    Returns:
-        Path or string to the verified executable binary, or None if not found.
-    """
-    # Priority 1: Explicit environment variable override
-    env_path = os.environ.get("SUPERSTATE_BIN")
-    if env_path and Path(env_path).is_file():
-        return Path(env_path)
-
-    # Priority 2: Standard MCP client candidate paths (cargo, local bin, PATH)
-    try:
-        from lab.engine.mcp.client import resolve_superstate_binary
-
-        return resolve_superstate_binary()
-    except Exception:
-        pass
-
-    # Priority 3: Fall back to Rust build targets or Python implementation
-    try:
-        from lab.engine.adapters.superstate import (
-            ENGINE_RUST,
-            find_superstate_binary as _find_superstate_binary,
-        )
-
-        return _find_superstate_binary(ENGINE_RUST) or _find_superstate_binary()
-    except Exception:
-        pass
-
-    # Priority 4: Direct system PATH lookup
-    which_bin = shutil.which("superstate")
-    if which_bin:
-        return Path(which_bin)
-
-    return None
-
-
 class ClaudeCliDriver(AgentDriver):
     harness_name: str = "claude-code"
     """Drives the Claude Code CLI in non-interactive mode."""
-
 
     def __init__(
         self,
@@ -133,8 +91,6 @@ class ClaudeCliDriver(AgentDriver):
         env: Optional[dict[str, str]] = None,
         container_exec: bool = True,
         mcp_python: Optional[str] = None,
-        superstate_mcp: bool = False,
-        superstate_bin: Optional[str] = None,
     ) -> None:
         if cli_path:
             # An explicit path must actually be runnable; failing here beats
@@ -158,8 +114,6 @@ class ClaudeCliDriver(AgentDriver):
         self.env = env
         self.container_exec = container_exec
         self.mcp_python = mcp_python or sys.executable
-        self.superstate_mcp = superstate_mcp
-        self.superstate_bin = superstate_bin
 
     @property
     def provides_isolated_execution(self) -> bool:
@@ -187,14 +141,6 @@ class ClaudeCliDriver(AgentDriver):
                     "SUPERSTATE_EVAL_CONTAINER": container_id,
                     "PYTHONPATH": str(REPO_ROOT),
                 },
-            }
-
-        # Configure Superstate MCP tool suite if enabled
-        if self.superstate_mcp:
-            bin_path = self.superstate_bin or find_superstate_binary() or "superstate"
-            servers["superstate"] = {
-                "command": str(bin_path),
-                "args": ["mcp"],
             }
 
         return json.dumps({"mcpServers": servers})
@@ -238,8 +184,8 @@ class ClaudeCliDriver(AgentDriver):
                 "Bash",
             ]
 
-        # Pass MCP configuration if container execution or Superstate tools are active
-        if container_id or self.superstate_mcp:
+        # Pass MCP configuration if container execution is active
+        if container_id:
             cmd += [
                 "--mcp-config",
                 self._mcp_config(container_id),

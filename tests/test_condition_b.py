@@ -34,7 +34,7 @@ def test_condition_a_remains_conversational() -> None:
 def test_no_condition_b_adapter_threads_conversation_directly() -> None:
     """Every carry-over must route through conversation_id_for, or the invariant leaks."""
     offenders = []
-    for name in ("superstate.py", "superstate_mcp.py"):
+    for name in ("superstate.py",):
         path = pathlib.Path("lab/engine/adapters") / name
         for num, line in enumerate(path.read_text().splitlines(), 1):
             stripped = line.strip()

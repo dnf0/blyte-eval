@@ -17,7 +17,7 @@ from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
 ADAPTERS = pathlib.Path("lab/engine/adapters")
 
 # Arms whose results are compared against each other in reports.
-COMPARED_ARMS = ("superstate.py", "superstate_mcp.py", "superstate_daemon.py")
+COMPARED_ARMS = ("superstate.py", "superstate_daemon.py")
 
 
 def test_no_compared_arm_consults_a_hand_authored_gate_table() -> None:
@@ -42,11 +42,11 @@ def test_no_compared_arm_consults_a_hand_authored_gate_table() -> None:
 def test_an_ungated_arm_says_so() -> None:
     """An arm that cannot gate must announce it rather than let `true` look like a verdict.
 
-    `superstate_mcp` and `superstate` are single-milestone by construction, so they cannot
-    run the RED/GREEN DAG that replaced the fixtures. On a task with no native runner they
-    are genuinely ungated, and an ungated run measures the fallback, not the execution model.
+    `superstate` is single-milestone by construction, so it cannot
+    run the RED/GREEN DAG that replaced the fixtures. On a task with no native runner it
+    is genuinely ungated, and an ungated run measures the fallback, not the execution model.
     """
-    for name in ("superstate.py", "superstate_mcp.py"):
+    for name in ("superstate.py",):
         text = (ADAPTERS / name).read_text()
         assert 'else "true"' in text, f"{name} no longer has the fallback this test guards"
         assert "UNGATED" in text, (
@@ -119,7 +119,6 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
 
     runner = AblationRunner.__new__(AblationRunner)
     pairs = [
-        ("superstate_mcp", "superstate_mcp_planned"),
         ("superstate_rust", "superstate_rust_planned"),
         ("superstate_daemon", "superstate_daemon_review"),
         ("superstate_daemon_review", "superstate_daemon_rollback"),
@@ -196,9 +195,8 @@ def test_every_arm_records_which_gating_regime_produced_its_numbers() -> None:
     """
     from lab.engine.adapters.superstate import SuperstateAdapter
     from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
-    from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
 
-    for adapter in (SuperstateDaemonAdapter(), SuperstateMcpAdapter(), SuperstateAdapter()):
+    for adapter in (SuperstateDaemonAdapter(), SuperstateAdapter()):
         provenance = adapter.get_provenance()
         assert "gate_source" in provenance, (
             f"{type(adapter).__name__} does not record its gating regime, so its results "
@@ -215,9 +213,8 @@ def test_the_superseded_arms_are_labelled_as_such() -> None:
     """
     from lab.engine.adapters.superstate import SuperstateAdapter
     from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
-    from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
 
-    for adapter in (SuperstateMcpAdapter(), SuperstateAdapter()):
+    for adapter in (SuperstateAdapter(),):
         assert adapter.get_provenance().get("deprecated_arm") is True
 
     assert "deprecated_arm" not in SuperstateDaemonAdapter().get_provenance(), (

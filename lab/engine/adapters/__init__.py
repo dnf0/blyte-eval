@@ -3,9 +3,7 @@
 from lab.engine.adapters.base import AgentAdapter, AgentDriver, DriverTelemetry, TaskRunResult
 from lab.engine.adapters.superpowers import SuperpowersAdapter
 from lab.engine.adapters.superstate import SuperstateAdapter
-from lab.engine.adapters.superstate_agent_mcp import SuperstateAgentMcpAdapter
 from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
-from lab.engine.adapters.superstate_mcp import SuperstateMcpAdapter
 from lab.engine.adapters.superstate_relay import SuperstateRelayAdapter
 from lab.engine.adapters.vanilla import VanillaAdapter
 
@@ -15,9 +13,7 @@ __all__ = [
     "DriverTelemetry",
     "SuperpowersAdapter",
     "SuperstateAdapter",
-    "SuperstateAgentMcpAdapter",
     "SuperstateDaemonAdapter",
-    "SuperstateMcpAdapter",
     "SuperstateRelayAdapter",
     "TaskRunResult",
     "VanillaAdapter",
