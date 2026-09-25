@@ -22,8 +22,8 @@ from lab.engine.budget_policy import RunTelemetry
 BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z0-9,-]*)\])?$")
-_SUPERSTATE_CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact", "adaptive")
-_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review", "fold-notes")
+_SUPERSTATE_CONTEXTS = ("conversational", "folded")
+_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ("no-loop-breaker", "tdd", "review")
 _FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
 
 
@@ -68,7 +68,6 @@ def build_harness(
     spec: str,
     model: str,
     report_dir: Optional[Path] = None,
-    max_cost_usd: Optional[float] = None,
 ) -> Any:
     """The driver for one harness spec. Every harness gets the same model string."""
     name, opts = parse_harness_spec(spec)
@@ -93,11 +92,9 @@ def build_harness(
         loop_breaker="no-loop-breaker" not in opts,
         gate="tdd" if "tdd" in opts else None,
         review="review" in opts,
-        fold_notes="fold-notes" in opts,
         fold_budget=next(
             (int(m.group(1)) * 1000 for o in opts if (m := _FOLD_BUDGET_RE.fullmatch(o))), None
         ),
-        max_cost_usd=max_cost_usd,
         report_dir=report_dir,
     )
 

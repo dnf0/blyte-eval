@@ -55,7 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
     ap.add_argument("--driver", choices=["agy", "claude", "superstate"], default="agy",
                     help="Worker runtime: agy, claude, or the native superstate harness (default: agy)")
-    ap.add_argument("--context", choices=["state-only", "state-window", "conversational", "folded", "compact", "adaptive"], default="folded",
+    ap.add_argument("--context", choices=["conversational", "folded"], default="folded",
                     help="Native superstate driver only: context strategy (default: folded)")
     ap.add_argument("--no-loop-breaker", action="store_true",
                     help="Native superstate driver only: disable the loop-breaker guards (ablation control)")
@@ -69,9 +69,6 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--budget-sec", type=float, default=None,
                     help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
     ap.add_argument("--repeats", type=int, default=1, help="Number of repetitions per task/arm")
-    ap.add_argument("--max-cost-usd", type=float, default=None,
-                    help="Per-run dollar cap passed to superstate harnesses (a safeguard; "
-                         "the run stops itself and reports budget_exhausted)")
     ap.add_argument("--concurrency", type=int, default=3, help="Max concurrent workers (default: 3)")
     ap.add_argument("--workspace-root", type=Path,
                     default=Path("/tmp/superstate_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
@@ -202,7 +199,7 @@ def _run(args) -> int:
             args.out.with_suffix(".native_reports") if args.out
             else args.workspace_root / "native_reports"
         )
-        drivers = [build_harness(s, args.model, report_dir, max_cost_usd=args.max_cost_usd) for s in args.harnesses]
+        drivers = [build_harness(s, args.model, report_dir) for s in args.harnesses]
         driver = drivers[0]
     elif args.driver == "claude":
         model = args.model if args.model != "gemini-3.8-flash-high" else "claude-3-7-sonnet-20250219"

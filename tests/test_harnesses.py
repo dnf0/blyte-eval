@@ -91,15 +91,15 @@ def test_the_bare_arm_is_the_pass_through_adapter() -> None:
 def test_harnesses_pair_by_task_against_the_baseline() -> None:
     runs = [
         _run("t1", "agy", True, cost=1.0),
-        _run("t1", "blyte[state-only]", True, cost=2.0),
+        _run("t1", "blyte[folded]", True, cost=2.0),
         _run("t2", "agy", False, cost=1.0),
-        _run("t2", "blyte[state-only]", True, cost=3.0),
+        _run("t2", "blyte[folded]", True, cost=3.0),
         # No baseline run for t3: excluded, never compared against nothing.
-        _run("t3", "blyte[state-only]", True, cost=5.0),
+        _run("t3", "blyte[folded]", True, cost=5.0),
     ]
     cmp = compare_harnesses(runs, baseline="agy")
-    assert list(cmp) == ["blyte[state-only]"]
-    e = cmp["blyte[state-only]"]
+    assert list(cmp) == ["blyte[folded]"]
+    e = cmp["blyte[folded]"]
     assert e["tasks"] == 2
     assert e["baseline_passes"] == 1
     assert e["passes"] == 2
@@ -112,10 +112,10 @@ def test_repeats_count_as_a_pass_rate_per_task() -> None:
     runs = [
         _run("t1", "agy", True),
         _run("t1", "agy", False),
-        _run("t1", "blyte[state-only]", True),
-        _run("t1", "blyte[state-only]", True),
+        _run("t1", "blyte[folded]", True),
+        _run("t1", "blyte[folded]", True),
     ]
-    e = compare_harnesses(runs, baseline="agy")["blyte[state-only]"]
+    e = compare_harnesses(runs, baseline="agy")["blyte[folded]"]
     assert e["baseline_passes"] == pytest.approx(0.5)
     assert e["passes"] == pytest.approx(1.0)
     assert (e["gained"], e["lost"]) == (1, 0)
@@ -129,10 +129,10 @@ def test_by_harness_relabels_copies_and_leaves_results_untouched() -> None:
 
 
 def test_render_names_the_baseline_and_says_so_when_nothing_pairs() -> None:
-    runs = [_run("t1", "agy", True), _run("t1", "blyte[state-only]", False)]
+    runs = [_run("t1", "agy", True), _run("t1", "blyte[folded]", False)]
     text = render_harness_comparison(runs, baseline="agy")
     assert "against `agy`" in text
-    assert "| blyte[state-only] | 1 |" in text
+    assert "| blyte[folded] | 1 |" in text
     empty = render_harness_comparison([_run("t1", "agy", True)], baseline="agy")
     assert empty.startswith("No paired results")
 
@@ -147,25 +147,16 @@ def test_paired_run_accepts_harnesses() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     args = module.build_parser().parse_args(
-        ["--harnesses", "agy", "blyte[state-only]", "blyte[state-only,tdd]"]
+        ["--harnesses", "agy", "blyte[folded]", "blyte[folded,tdd]"]
     )
-    assert args.harnesses == ["agy", "blyte[state-only]", "blyte[state-only,tdd]"]
+    assert args.harnesses == ["agy", "blyte[folded]", "blyte[folded,tdd]"]
     assert module.build_parser().parse_args([]).harnesses is None
-
-
-def test_state_window_is_a_superstate_context(superstate_stub: Path) -> None:
-    assert parse_harness_spec("blyte[state-window,tdd]") == (
-        "blyte",
-        ["state-window", "tdd"],
-    )
-    assert build_harness("blyte[state-window]", MODEL).harness_name == "blyte[state-window]"
 
 
 @pytest.mark.parametrize(
     "spec",
     [
-        "blyte[state-window,state-only]",
-        "blyte[state-window,conversational]",
+        "blyte[folded,conversational]",
     ],
 )
 def test_only_one_context_per_harness(spec: str) -> None:
@@ -185,40 +176,17 @@ def test_review_is_a_superstate_option(superstate_stub: Path) -> None:
     assert build_harness("blyte[conversational]", MODEL).harness_name == "blyte[conversational]"
 
 
-def test_fold_notes_is_a_superstate_option(superstate_stub: Path) -> None:
-    built = build_harness("blyte[compact,fold-notes]", MODEL)
-    assert built.harness_name == "blyte[compact,fold-notes]"
-    assert built.fold_notes
-
-
-def test_compact_is_a_superstate_context(superstate_stub: Path) -> None:
-    assert build_harness("blyte[compact,tdd]", MODEL).harness_name == "blyte[compact,tdd]"
-
-
 def test_fold_budget_is_a_superstate_option(superstate_stub: Path) -> None:
-    built = build_harness("blyte[compact,fold-notes,fold-budget-16k]", MODEL)
-    assert built.harness_name == "blyte[compact,fold-notes,fold-budget-16k]"
+    built = build_harness("blyte[folded,fold-budget-16k]", MODEL)
+    assert built.harness_name == "blyte[folded,fold-budget-16k]"
     assert built.fold_budget == 16000
     with pytest.raises(HarnessSpecError, match="one fold budget"):
-        parse_harness_spec("blyte[compact,fold-budget-16k,fold-budget-8k]")
+        parse_harness_spec("blyte[folded,fold-budget-16k,fold-budget-8k]")
     with pytest.raises(HarnessSpecError, match="unknown blyte option"):
-        parse_harness_spec("blyte[compact,fold-budget-lots]")
-
-
-def test_the_cost_cap_reaches_superstate_harnesses_only(superstate_stub: Path) -> None:
-    assert build_harness("blyte[compact]", MODEL, max_cost_usd=2.0).max_cost_usd == 2.0
-    assert build_harness("blyte[compact]", MODEL).max_cost_usd is None
-
-
-
-
-def test_adaptive_is_a_superstate_context(superstate_stub: Path) -> None:
-    built = build_harness("blyte[adaptive,fold-budget-16k]", MODEL)
-    assert built.harness_name == "blyte[adaptive,fold-budget-16k]"
-    assert built.context == "adaptive"
+        parse_harness_spec("blyte[folded,fold-budget-lots]")
 
 
 def test_superstate_is_an_alias_for_blyte(superstate_stub: Path) -> None:
     # Renamed 2026-09-24; results and FINDINGS before then use superstate[...].
     assert parse_harness_spec("superstate[folded,tdd]") == ("blyte", ["folded", "tdd"])
-    assert build_harness("superstate[compact]", MODEL).harness_name == "blyte[compact]"
+    assert build_harness("superstate[folded]", MODEL).harness_name == "blyte[folded]"

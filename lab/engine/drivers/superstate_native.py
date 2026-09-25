@@ -40,7 +40,7 @@ MAX_TURNS = 1000
 #: this grace. A kill loses the report, and with it the tokens (FINDINGS 13.5).
 KILL_GRACE_SEC = 900.0
 REPORT_SCHEMA_VERSION = 1
-CONTEXTS = ("state-only", "state-window", "conversational", "folded", "compact", "adaptive")
+CONTEXTS = ("conversational", "folded")
 #: Gate sources the driver can ask the harness for. None is ungated, like agy under vanilla;
 #: "tdd" is the harness's own autonomous TDD (RED then GREEN), never a command we author.
 GATES = (None, "tdd")
@@ -136,8 +136,6 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
     )
     return {
         "harness_turns": int(report.get("turns") or 0),
-        "fold_notes": int(report.get("fold_notes") or 0),
-        "fold_note_failures": int(report.get("fold_note_failures") or 0),
         "reads": reads,
         "unchanged_rereads": unchanged,
         "changed_rereads": changed,
@@ -147,7 +145,7 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
         "fresh_on_appended": sum(int(t.get("input", 0)) for t in appended),
         "new_tokens_est_on_appended": sum(int(t.get("new_chars", 0)) for t in appended) // 4,
         "fresh_on_rewritten": sum(int(t.get("input", 0)) for t in rewritten),
-        # The fold budget in force on the last call: an adaptive context's grown budget.
+        # The fold budget in force on the last call.
         "final_fold_budget": next(
             (t.get("fold_budget") for t in reversed(usage) if t.get("fold_budget")), None
         ),
@@ -169,9 +167,7 @@ class SuperstateNativeDriver(AgentDriver):
         loop_breaker: bool = True,
         gate: Optional[str] = None,
         review: bool = False,
-        fold_notes: bool = False,
         fold_budget: Optional[int] = None,
-        max_cost_usd: Optional[float] = None,
         superstate_bin: Optional[str | Path] = None,
         report_dir: Optional[str | Path] = None,
     ) -> None:
@@ -191,9 +187,7 @@ class SuperstateNativeDriver(AgentDriver):
         self.loop_breaker = loop_breaker
         self.gate = gate
         self.review = review
-        self.fold_notes = fold_notes
         self.fold_budget = fold_budget
-        self.max_cost_usd = max_cost_usd
         # Results are pooled by `harness` (runner.py records harness_name), so every
         # configuration that changes behaviour must be in the name. Otherwise a loop-breaker
         # ablation pools its control with its treatment.
@@ -202,7 +196,6 @@ class SuperstateNativeDriver(AgentDriver):
             + ([] if loop_breaker else ["no-loop-breaker"])
             + ([gate] if gate else [])
             + (["review"] if review else [])
-            + (["fold-notes"] if fold_notes else [])
             + ([f"fold-budget-{fold_budget // 1000}k"] if fold_budget else [])
         )
         self.harness_name = f"blyte[{','.join(config)}]"
@@ -246,12 +239,8 @@ class SuperstateNativeDriver(AgentDriver):
             cmd.append("--tdd")
         if self.review:
             cmd.append("--review")
-        if self.fold_notes:
-            cmd.append("--fold-notes")
         if self.fold_budget:
             cmd += ["--fold-budget", str(self.fold_budget)]
-        if self.max_cost_usd is not None:
-            cmd += ["--max-cost-usd", str(self.max_cost_usd)]
         # `--` so an instruction that starts with a dash is never parsed as a flag.
         cmd += ["--", prompt]
         return cmd
@@ -344,7 +333,6 @@ class SuperstateNativeDriver(AgentDriver):
         metrics = run_metrics(report, _text(stdout))
         if metrics["harness_turns"]:
             metrics["cost_per_turn"] = round(cost_usd / metrics["harness_turns"], 6)
-        metrics["max_cost_usd"] = self.max_cost_usd
         success = report.get("outcome") == "verified"
         error_message = None
         if not success:
