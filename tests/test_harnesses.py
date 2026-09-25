@@ -190,3 +190,18 @@ def test_superstate_is_an_alias_for_blyte(superstate_stub: Path) -> None:
     # Renamed 2026-09-24; results and FINDINGS before then use superstate[...].
     assert parse_harness_spec("superstate[folded,tdd]") == ("blyte", ["folded", "tdd"])
     assert build_harness("superstate[folded]", MODEL).harness_name == "blyte[folded]"
+
+
+def test_harness_repeats_are_interleaved_not_blocked() -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "paired_run", Path(__file__).resolve().parent.parent / "scripts" / "paired_run.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    jobs = module.harness_jobs(["t"], ["agy", "blyte"], 3)
+    assert [(rep, drv) for _, _, rep, _, drv in jobs] == [
+        (1, "agy"), (1, "blyte"), (2, "agy"), (2, "blyte"), (3, "agy"), (3, "blyte"),
+    ]

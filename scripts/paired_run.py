@@ -46,6 +46,19 @@ logger = logging.getLogger("superstate_eval.paired")
 DEFAULT_TASKS = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
 
 
+def harness_jobs(tasks: list, drivers: list, repeats: int) -> list:
+    """Jobs for a harness comparison, interleaved (A1 B1 A2 B2 ...) rather than blocked
+    (A1..An then B1..Bn). API latency and machine load drift over hours, and a blocked order
+    charges that drift to whichever harness runs later. Found 2026-09-25, when a 5x5 comparison
+    ran every agy repeat before any blyte one."""
+    return [
+        (task, BARE_ARM, rep, repeats, drv)
+        for task in tasks
+        for rep in range(1, repeats + 1)
+        for drv in drivers
+    ]
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Paired control-plane evaluation")
     ap.add_argument("--task", type=Path, help="Single task directory")
@@ -292,10 +305,7 @@ def _run(args) -> int:
 
     jobs = []
     if drivers:
-        for task in tasks:
-            for drv in drivers:
-                for rep in range(1, args.repeats + 1):
-                    jobs.append((task, BARE_ARM, rep, args.repeats, drv))
+        jobs = harness_jobs(tasks, drivers, args.repeats)
     else:
         for task in tasks:
             for arm, reps in parsed_arms:
