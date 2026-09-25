@@ -50,9 +50,9 @@ def test_parse_accepts_bare_names_and_superstate_options() -> None:
     assert parse_harness_spec("agy") == ("agy", [])
     assert parse_harness_spec("claude") == ("claude", [])
     assert parse_harness_spec("superstate") == ("blyte", [])
-    assert parse_harness_spec("blyte[conversational,no-loop-breaker,tdd]") == (
+    assert parse_harness_spec("blyte[conversational,tdd]") == (
         "blyte",
-        ["conversational", "no-loop-breaker", "tdd"],
+        ["conversational", "tdd"],
     )
 
 
@@ -74,8 +74,8 @@ def test_parse_rejects_anything_else(spec: str) -> None:
 
 def test_superstate_specs_build_drivers_named_by_their_settings(superstate_stub: Path) -> None:
     assert build_harness("superstate", MODEL).harness_name == "blyte[folded]"
-    built = build_harness("blyte[conversational,no-loop-breaker,tdd]", MODEL)
-    assert built.harness_name == "blyte[conversational,no-loop-breaker,tdd]"
+    built = build_harness("blyte[conversational,tdd]", MODEL)
+    assert built.harness_name == "blyte[conversational,tdd]"
     assert built.model == MODEL
 
 

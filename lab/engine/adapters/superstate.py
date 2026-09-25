@@ -115,9 +115,10 @@ ENGINE_PATHS: dict[str, tuple[Path, ...]] = {
         # `agent-rules` is the real Python entrypoint and exposes the same `state` verbs.
         Path.home() / ".local/bin/agent-rules",
     ),
+    # The legacy Rust state engine (`superstate state ...`). Its subcommands were removed with
+    # the bolt-on era on 2026-09-25 (superstate #66); only pre-rename `superstate` builds have
+    # them. The native harness, `blyte`, is resolved by the native driver instead.
     ENGINE_RUST: (
-        Path.home() / "repos/superstate/target/release/blyte",
-        Path.home() / "repos/superstate/target/debug/blyte",
         Path.home() / "repos/superstate/target/release/superstate",
         Path.home() / "repos/superstate/target/debug/superstate",
     ),
@@ -134,11 +135,9 @@ def find_superstate_binary(engine: str = DEFAULT_ENGINE) -> Optional[Path]:
     share the name `superstate`, and picking the wrong one is undetectable in the
     results.
     """
-    # The harness was renamed superstate -> blyte on 2026-09-24; BLYTE_BIN is preferred.
-    for var in ("BLYTE_BIN", "SUPERSTATE_BIN"):
-        env_path = os.environ.get(var)
-        if env_path and Path(env_path).is_file():
-            return Path(env_path)
+    env_path = os.environ.get("SUPERSTATE_BIN")
+    if env_path and Path(env_path).is_file():
+        return Path(env_path)
 
     # Prefer the most recently built artefact. A stale release build silently
     # shadows a freshly compiled debug one, and the run then measures old code

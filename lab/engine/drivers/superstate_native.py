@@ -50,17 +50,29 @@ class SuperstateNativeDriverError(RuntimeError):
     """The driver cannot be configured to produce a valid measurement."""
 
 
-def _resolve_binary() -> Path:
-    # Imported here: drivers -> adapters -> superstate_daemon -> drivers is already a cycle.
-    from lab.engine.adapters.superstate import ENGINE_RUST, find_superstate_binary
+#: Where the native harness is built. The most recently built one wins, so a stale release build
+#: never shadows a fresh debug one.
+BLYTE_BUILDS = (
+    Path.home() / "repos/superstate/target/release/blyte",
+    Path.home() / "repos/superstate/target/debug/blyte",
+)
 
-    found = find_superstate_binary(ENGINE_RUST)
-    if found is None:
+
+def _resolve_binary() -> Path:
+    """The `blyte` binary: BLYTE_BIN, else SUPERSTATE_BIN (older commands), else the newest
+    build. Kept apart from the legacy state engine's resolution, which needs pre-rename
+    `superstate` builds (its subcommands no longer exist in `blyte`)."""
+    for var in ("BLYTE_BIN", "SUPERSTATE_BIN"):
+        env_path = os.environ.get(var)
+        if env_path and Path(env_path).is_file():
+            return Path(env_path)
+    existing = [c for c in BLYTE_BUILDS if c.is_file()]
+    if not existing:
         raise SuperstateNativeDriverError(
-            "No superstate binary found. Build it (`cargo build --release` in the superstate "
-            "repo) or set BLYTE_BIN."
+            "No blyte binary found. Build it (`cargo build --release` in the superstate repo) "
+            "or set BLYTE_BIN."
         )
-    return found
+    return max(existing, key=lambda c: c.stat().st_mtime)
 
 
 def _tail(text: Optional[str | bytes], limit: int = 800) -> str:
@@ -164,7 +176,6 @@ class SuperstateNativeDriver(AgentDriver):
         self,
         model: str,
         context: str = "folded",
-        loop_breaker: bool = True,
         gate: Optional[str] = None,
         review: bool = False,
         fold_budget: Optional[int] = None,
@@ -184,16 +195,14 @@ class SuperstateNativeDriver(AgentDriver):
             )
         self.model = model
         self.context = context
-        self.loop_breaker = loop_breaker
         self.gate = gate
         self.review = review
         self.fold_budget = fold_budget
         # Results are pooled by `harness` (runner.py records harness_name), so every
-        # configuration that changes behaviour must be in the name. Otherwise a loop-breaker
+        # configuration that changes behaviour must be in the name. Otherwise an
         # ablation pools its control with its treatment.
         config = (
             [context]
-            + ([] if loop_breaker else ["no-loop-breaker"])
             + ([gate] if gate else [])
             + (["review"] if review else [])
             + ([f"fold-budget-{fold_budget // 1000}k"] if fold_budget else [])
@@ -233,8 +242,6 @@ class SuperstateNativeDriver(AgentDriver):
             "--report",
             str(report_path),
         ]
-        if not self.loop_breaker:
-            cmd.append("--no-loop-breaker")
         if self.gate == "tdd":
             cmd.append("--tdd")
         if self.review:
