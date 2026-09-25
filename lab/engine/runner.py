@@ -20,9 +20,7 @@ from lab.engine.adapters import (
     AgentDriver,
     SuperpowersAdapter,
     SuperstateAdapter,
-    SuperstateAgentMcpAdapter,
     SuperstateDaemonAdapter,
-    SuperstateMcpAdapter,
     SuperstateRelayAdapter,
     VanillaAdapter,
 )
@@ -127,23 +125,6 @@ class AblationRunner:
             "superstate_solo", "superstate-solo", "solo",
         ):
             return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
-        elif arm in ("superstate_mcp", "superstate-mcp", "superstate_rust_mcp", "superstate-rust-mcp", "mcp"):
-            return SuperstateMcpAdapter(no_worktree=True, zero_turn_planning=True)
-        elif arm in ("superstate_mcp_worktree", "superstate-mcp-worktree", "mcp_worktree"):
-            return SuperstateMcpAdapter(no_worktree=False, worktree=True, zero_turn_planning=True)
-        elif arm in ("superstate_mcp_planned", "superstate-mcp-planned"):
-            # The name MUST differ from superstate_mcp: TaskRunResult.harness_name is what
-            # lands in the results JSON, so sharing a name would pool a multi-milestone arm
-            # with a single-milestone one and make the comparison invisible.
-            return SuperstateMcpAdapter(
-                no_worktree=True, zero_turn_planning=False, name="superstate_mcp_planned"
-            )
-        elif arm in ("superstate_agent_mcp", "superstate-agent-mcp", "agent_mcp", "agent-mcp"):
-            return SuperstateAgentMcpAdapter()
-        elif arm in ("superstate_agent_mcp_worktree", "superstate-agent-mcp-worktree", "agent_mcp_worktree"):
-            return SuperstateAgentMcpAdapter(worktree=True)
-        elif arm in ("superstate_agent_mcp_inplace", "superstate-agent-mcp-inplace", "agent_mcp_inplace"):
-            return SuperstateAgentMcpAdapter(no_worktree=True)
         # Cross-agent relay: chat-driven handoff between agents, Python-supervised.
         elif arm in ("superstate_relay", "superstate-relay", "relay"):
             return SuperstateRelayAdapter()
