@@ -1,0 +1,221 @@
+12:45:43 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+12:45:43 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+12:45:43 [INFO] superstate_eval.paired: ==============================================================================
+12:45:43 [INFO] superstate_eval.paired: Harness=agy  model=gemini-3.8-flash-high  tasks=1  arms=bare x agy, blyte[folded]  concurrency=1
+12:45:43 [INFO] superstate_eval.paired: Runs=10  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260925-124543
+12:45:43 [INFO] superstate_eval.paired: ==============================================================================
+12:45:43 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 1/5] (budget: 5400s)
+12:45:43 [INFO] superstate_eval.docker_manager: Host disk check: 36.92 GB free on /
+12:45:43 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+12:45:43 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.7 GB reported available], Disk limit=1, User override=None)
+12:45:45 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-7c1ac476/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+12:45:45 [INFO] superstate_eval.docker_manager: Spawned sandbox container: f53c94750153 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+12:45:45 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests for the agent phase
+12:45:45 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+13:18:03 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 4a259045': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+13:18:03 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 4a259045 (prev=bc2796e0). Lease extended.
+13:18:41 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:6af0c5eeb953 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+13:18:41 [INFO] superstate_eval.docker_manager: Spawned sandbox container: cbf4849f4f96 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:6af0c5eeb953)
+13:20:23 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: cbf4849f4f96
+13:20:23 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:6af0c5eeb953
+13:20:23 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+13:20:23 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: f53c94750153
+13:20:23 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+13:20:23 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=2079.96s, Cost=$4.01, TotalGrantedBudget=6600.0s
+13:20:23 [INFO] superstate_eval.paired:    agy [run 1/5]: passed=True cost=$4.0137 turns=1 2080s  
+13:20:23 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 2/5] (budget: 5400s)
+13:20:23 [INFO] superstate_eval.docker_manager: Host disk check: 39.65 GB free on /
+13:20:23 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+13:20:23 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.9 GB reported available], Disk limit=1, User override=None)
+13:20:24 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-36cf2eaa/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+13:20:24 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e003a67bfeb4 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+13:20:25 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests for the agent phase
+13:20:25 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+13:43:41 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 7f7d703b': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+13:43:41 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 7f7d703b (prev=bc2796e0). Lease extended.
+13:43:58 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:e4a18c7adfc5 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+13:43:58 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 868920427e69 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:e4a18c7adfc5)
+13:45:39 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 868920427e69
+13:45:39 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:e4a18c7adfc5
+13:45:39 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+13:45:39 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e003a67bfeb4
+13:45:39 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+13:45:39 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=1515.88s, Cost=$2.68, TotalGrantedBudget=6600.0s
+13:45:39 [INFO] superstate_eval.paired:    agy [run 2/5]: passed=True cost=$2.6753 turns=1 1516s  
+13:45:39 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 3/5] (budget: 5400s)
+13:45:39 [INFO] superstate_eval.docker_manager: Host disk check: 38.82 GB free on /
+13:45:39 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+13:45:39 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.4 GB reported available], Disk limit=1, User override=None)
+13:45:40 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-7f2ea47e/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+13:45:40 [INFO] superstate_eval.docker_manager: Spawned sandbox container: b4c06852fe89 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+13:45:41 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests for the agent phase
+13:45:41 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:14:40 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 85487084': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+14:14:40 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 85487084 (prev=bc2796e0). Lease extended.
+14:14:55 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:47190f2c0c4b from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+14:14:55 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 5db94efec08f (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:47190f2c0c4b)
+14:16:33 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 5db94efec08f
+14:16:33 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:47190f2c0c4b
+14:16:33 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+14:16:33 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: b4c06852fe89
+14:16:33 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+14:16:33 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=1853.89s, Cost=$3.77, TotalGrantedBudget=6600.0s
+14:16:33 [INFO] superstate_eval.paired:    agy [run 3/5]: passed=True cost=$3.7714 turns=1 1854s  
+14:16:33 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 4/5] (budget: 5400s)
+14:16:33 [INFO] superstate_eval.docker_manager: Host disk check: 41.57 GB free on /
+14:16:33 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+14:16:33 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=2, User override=None)
+14:16:34 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-f4cbce02/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+14:16:34 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e53096f23e73 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+14:16:34 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests for the agent phase
+14:16:34 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+14:41:04 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 18dd7011': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+14:41:04 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 18dd7011 (prev=bc2796e0). Lease extended.
+14:41:20 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:55cdafcfdf63 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+14:41:20 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0b8db5582074 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:55cdafcfdf63)
+14:42:58 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0b8db5582074
+14:42:59 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:55cdafcfdf63
+14:42:59 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=False, reward=0.0, exit_code=0
+14:42:59 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e53096f23e73
+14:42:59 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+14:42:59 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=False, WallClock=1585.82s, Cost=$2.70, TotalGrantedBudget=6600.0s
+14:42:59 [INFO] superstate_eval.paired:    agy [run 4/5]: passed=False cost=$2.6955 turns=1 1586s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.59s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+14:42:59 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [agy] [run 5/5] (budget: 5400s)
+14:42:59 [INFO] superstate_eval.docker_manager: Host disk check: 38.7 GB free on /
+14:42:59 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+14:42:59 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.3 GB reported available], Disk limit=1, User override=None)
+14:43:00 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-ad760979/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+14:43:00 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ca13bf7176ec (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+14:43:00 [INFO] superstate_eval.answer_key: Sealed held-out tests at /Users/danielfisher/.cache/agent-rules/frontier-eval/tasks/scc-bounded-memory-spilling/tests for the agent phase
+14:43:00 [INFO] superstate_eval.drivers.agy_cli: Executing agy turn (model=gemini-3.8-flash-high, timeout=5400.0s, conversation_id=None)
+15:11:58 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: d9824f43': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+15:11:58 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: d9824f43 (prev=bc2796e0). Lease extended.
+15:12:20 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:2ab0b983496b from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+15:12:20 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 3112e6246332 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:2ab0b983496b)
+15:14:00 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 3112e6246332
+15:14:00 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:2ab0b983496b
+15:14:00 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+15:14:00 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ca13bf7176ec
+15:14:00 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+15:14:00 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=1861.35s, Cost=$3.39, TotalGrantedBudget=6600.0s
+15:14:00 [INFO] superstate_eval.paired:    agy [run 5/5]: passed=True cost=$3.3895 turns=1 1861s  
+15:14:00 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [blyte[folded]] [run 1/5] (budget: 5400s)
+15:14:00 [INFO] superstate_eval.docker_manager: Host disk check: 38.23 GB free on /
+15:14:00 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+15:14:00 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.0 GB reported available], Disk limit=1, User override=None)
+15:14:01 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-c71a398d/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+15:14:02 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 31ec0f7908a8 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+15:27:08 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: b933d1a6': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+15:27:08 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: b933d1a6 (prev=bc2796e0). Lease extended.
+15:27:23 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:ca26e1309b76 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+15:27:24 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 7ee55951f983 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:ca26e1309b76)
+15:29:03 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 7ee55951f983
+15:29:04 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:ca26e1309b76
+15:29:04 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+15:29:04 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 31ec0f7908a8
+15:29:04 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+15:29:04 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=903.62s, Cost=$2.76, TotalGrantedBudget=6600.0s
+15:29:04 [INFO] superstate_eval.paired:    blyte[folded] [run 1/5]: passed=True cost=$2.7629 turns=1 903s  
+15:29:04 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [blyte[folded]] [run 2/5] (budget: 5400s)
+15:29:04 [INFO] superstate_eval.docker_manager: Host disk check: 37.78 GB free on /
+15:29:04 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+15:29:04 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.0 GB reported available], Disk limit=1, User override=None)
+15:29:05 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-2affd8e7/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+15:29:05 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 3de4791cb277 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+15:41:59 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: c66fdccc': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+15:41:59 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: c66fdccc (prev=bc2796e0). Lease extended.
+15:42:19 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:ccdd4ec21b3f from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+15:42:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ccb3d50d7fc3 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:ccdd4ec21b3f)
+15:44:01 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ccb3d50d7fc3
+15:44:01 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:ccdd4ec21b3f
+15:44:01 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=False, reward=0.0, exit_code=0
+15:44:01 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 3de4791cb277
+15:44:01 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+15:44:01 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=False, WallClock=897.20s, Cost=$2.23, TotalGrantedBudget=6600.0s
+15:44:01 [INFO] superstate_eval.paired:    blyte[folded] [run 2/5]: passed=False cost=$2.2253 turns=1 897s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.60s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+15:44:01 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [blyte[folded]] [run 3/5] (budget: 5400s)
+15:44:01 [INFO] superstate_eval.docker_manager: Host disk check: 36.51 GB free on /
+15:44:01 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+15:44:01 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.9 GB reported available], Disk limit=1, User override=None)
+15:44:02 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-ae7d4ffc/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+15:44:02 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1568a343f41d (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+16:01:59 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 8a67b5db': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+16:01:59 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 8a67b5db (prev=bc2796e0). Lease extended.
+16:02:22 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:bb1b2330ecc2 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+16:02:22 [INFO] superstate_eval.docker_manager: Spawned sandbox container: bac5a6e1b217 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:bb1b2330ecc2)
+16:04:06 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: bac5a6e1b217
+16:04:06 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:bb1b2330ecc2
+16:04:06 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+16:04:06 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1568a343f41d
+16:04:07 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+16:04:07 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=1205.43s, Cost=$2.95, TotalGrantedBudget=6600.0s
+16:04:07 [INFO] superstate_eval.paired:    blyte[folded] [run 3/5]: passed=True cost=$2.9450 turns=1 1205s  
+16:04:07 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [blyte[folded]] [run 4/5] (budget: 5400s)
+16:04:07 [INFO] superstate_eval.docker_manager: Host disk check: 36.31 GB free on /
+16:04:07 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+16:04:07 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.5 GB reported available], Disk limit=1, User override=None)
+16:04:08 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-b0ccab89/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+16:04:08 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e4a4218588a4 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+16:19:16 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 24e39648': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+16:19:16 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 24e39648 (prev=bc2796e0). Lease extended.
+16:19:33 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:a8ae0eeaa369 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+16:19:33 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 34b04ac330fd (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:a8ae0eeaa369)
+16:21:09 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 34b04ac330fd
+16:21:10 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:a8ae0eeaa369
+16:21:10 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+16:21:10 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e4a4218588a4
+16:21:10 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+16:21:10 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=1023.06s, Cost=$2.79, TotalGrantedBudget=6600.0s
+16:21:10 [INFO] superstate_eval.paired:    blyte[folded] [run 4/5]: passed=True cost=$2.7875 turns=1 1023s  
+16:21:10 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [blyte[folded]] [run 5/5] (budget: 5400s)
+16:21:10 [INFO] superstate_eval.docker_manager: Host disk check: 36.25 GB free on /
+16:21:10 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+16:21:10 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.0 GB reported available], Disk limit=1, User override=None)
+16:21:11 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260925-124543/eval-datacurve_scc-bounded-memory-spilling-bare-a3614400/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+16:21:11 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 2b6ec864cdf4 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+16:33:52 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 021d8b14': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+16:33:52 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 021d8b14 (prev=bc2796e0). Lease extended.
+16:34:07 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:2d052ce90713 from /Users/danielfisher/.cache/superstate-eval/staged/scc-bounded-memory-spilling/tests
+16:34:07 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 95155cba98ce (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:2d052ce90713)
+16:35:45 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 95155cba98ce
+16:35:45 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:2d052ce90713
+16:35:45 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=False, reward=0.0, exit_code=0
+16:35:45 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 2b6ec864cdf4
+16:35:45 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+16:35:45 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=False, WallClock=875.80s, Cost=$2.26, TotalGrantedBudget=6600.0s
+16:35:45 [INFO] superstate_eval.paired:    blyte[folded] [run 5/5]: passed=False cost=$2.2588 turns=1 876s  Verification failed: Reward was 0.0 < 1.0
+Output: emory_FormatMulti_CsvStream_WritesToFile
+        bounded_memory_test.go:576: expected bounded csv-stream file output to match unbounded csv-stream stdout output
+    --- FAIL: TestBoundedMemory_FormatMulti_CsvStream_WritesToFile (0.58s)
+P2P 286/286 pass 0 fail; F2P 28/31 pass 3 fail; PARTIAL 0.9905362776025236; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 31, "f2p_passed": 28, "p2p_total": 286, "p2p_passed": 286, "f2p": 0.9032258064516129, "p2p": 1.0, "partial": 0.9905362776025236}
+
+16:35:46 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| agy | 5 | 4 | 80.0% | 0 | $16.55 | $4.14 | 148.3m | 100.0m | 1754551 | 216818 |
+| blyte[folded] | 5 | 3 | 60.0% | 0 | $12.98 | $4.33 | 81.8m | 100.0m | 1834961 | 52918 |
+
+## Harnesses against `agy` (paired by task; same model, prompt and grader)
+
+| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| blyte[folded] | 1 | 0.8 | 0.6 | 0 | 1 | 3.31 | 2.60 |
+
+Small n cannot support a claim: report the paired rows, not a headline rate.
+
+Results written to results/confirm_scc_20260925_124543.json
