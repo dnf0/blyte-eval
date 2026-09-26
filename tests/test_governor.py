@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from lab.engine.governor import ConcurrencyGovernor, SystemSpecs
 
 
@@ -103,6 +105,7 @@ def test_governor_slot_context_manager() -> None:
     assert governor._active_slots == 0
 
 
+@pytest.mark.live_specs
 def test_get_live_system_specs() -> None:
     governor = ConcurrencyGovernor()
     specs = governor.get_system_specs()

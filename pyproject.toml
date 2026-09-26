@@ -31,6 +31,7 @@ packages = ["lab"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+markers = ["live_specs: the test checks live hardware detection, so it sees the real machine"]
 pythonpath = ["."]
 
 [tool.ruff]
