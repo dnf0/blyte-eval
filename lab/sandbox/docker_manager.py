@@ -133,6 +133,13 @@ class DockerManager:
 
         container = self.client.containers.run(**run_kwargs)
         logger.info(f"Spawned sandbox container: {container.id[:12]} ({image})")
+        # On a Linux host the bind-mounted repository is owned by the host user while the container
+        # runs as root, and git refuses to work in it ("dubious ownership"); Docker Desktop hides
+        # this on macOS. Patch collection and the held-out grader both run git in /app. Found by CI.
+        try:
+            container.exec_run(["git", "config", "--global", "--add", "safe.directory", "*"])
+        except Exception as e:
+            logger.warning(f"Could not mark /app safe for git in {container.id[:12]}: {e}")
         try:
             yield container
         finally:
