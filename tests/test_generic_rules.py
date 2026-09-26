@@ -54,14 +54,11 @@ def test_generic_rules_exclude_every_superstate_anchored_rule() -> None:
         )
 
 
-def test_the_two_legs_are_independently_switchable() -> None:
-    """Conflating the flags would make neither hypothesis answerable."""
-    from lab.engine.prompt_contracts import ENV_FLAG, contracts_enabled
-
+def test_apply_generic_rules() -> None:
+    with patch.dict(os.environ, {}, clear=True):
+        assert apply_generic_rules("P", "vanilla") == "P"
     with patch.dict(os.environ, {GENERIC_RULES_ENV_FLAG: "1"}, clear=True):
-        assert generic_rules_enabled() is True
-        assert contracts_enabled() is False
-    with patch.dict(os.environ, {ENV_FLAG: "1"}, clear=True):
-        assert contracts_enabled() is True
-        assert generic_rules_enabled() is False
-    assert apply_generic_rules("P", "vanilla") == "P"
+        assert "EXECUTION DISCIPLINE" in apply_generic_rules("P", "vanilla")
+
+
+

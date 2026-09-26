@@ -282,7 +282,7 @@ def test_agent_failure_is_diagnosed_before_the_grading_symptom(tmp_path) -> None
         docker_manager=mock_docker, workspace_root=tmp_path / "ws",
         default_driver=TimingOutDriver(),
     ).run_task(
-        task_id="org/t", arm="superstate", image="img", base_budget_sec=600.0,
+        task_id="org/t", arm="vanilla", image="img", base_budget_sec=600.0,
         task_spec=TaskSpec(id="org/t", name="t", instruction="go", docker_image="img"),
     )
 

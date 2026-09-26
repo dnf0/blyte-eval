@@ -1,6 +1,6 @@
 """Ablation and efficacy benchmark runner.
 
-Executes evaluation arms (Vanilla, Superpowers, Superstate) against benchmark tasks
+Executes evaluation arms (Vanilla, Superpowers) against benchmark tasks
 with progress-earned budget leases and strict Docker/disk resource protection.
 """
 
@@ -19,10 +19,8 @@ from lab.engine.adapters import (
     AgentAdapter,
     AgentDriver,
     SuperpowersAdapter,
-    SuperstateAdapter,
     VanillaAdapter,
 )
-from lab.engine.adapters.superstate import ENGINE_PYTHON, ENGINE_RUST
 from lab.engine.void import is_void
 from lab.engine.budget_policy import BudgetPolicy, RunTelemetry
 from lab.engine.extractor import compute_test_metrics, extract_and_grade
@@ -103,26 +101,6 @@ class AblationRunner:
             return VanillaAdapter()
         elif arm == "superpowers":
             return SuperpowersAdapter()
-        elif arm in ("superstate", "superstate_python", "superstate-python"):
-            return SuperstateAdapter(engine=ENGINE_PYTHON)
-        elif arm in ("superstate_rust", "superstate-rust", "rust", "arm_d", "arm-d"):
-            return SuperstateAdapter(engine=ENGINE_RUST, zero_turn_planning=True)
-        elif arm in ("superstate_rust_planned", "superstate_rust_2phase"):
-            return SuperstateAdapter(
-                engine=ENGINE_RUST, zero_turn_planning=False, name="superstate_rust_planned"
-            )
-        # These names are ALIASES of one configuration, not distinct conditions. Benchmarking
-        # two of them against each other compares a config with itself. `superstate_solo` is
-        # included here: it is the interactive turn-based baseline (Python turn loop driving
-        # the superstate CLI directly -- no gateway, no daemon), which is exactly this config.
-        elif arm in (
-            "superstate_rust_inplace", "superstate-rust-inplace", "rust_inplace",
-            "arm_d_inplace", "arm-d-inplace",
-            "superstate_rust_fast", "superstate-rust-fast", "rust_fast",
-            "superstate_fast", "superstate_rust_direct",
-            "superstate_solo", "superstate-solo", "solo",
-        ):
-            return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(

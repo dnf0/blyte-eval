@@ -1,4 +1,4 @@
-"""Pilot showdown runner executing end-to-end task runs across Vanilla, Superpowers, and Superstate."""
+"""Pilot showdown runner executing end-to-end task runs across Vanilla and Superpowers."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ import uuid
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentAdapter, AgentDriver, DriverTelemetry
 from lab.engine.adapters.superpowers import SuperpowersAdapter
-from lab.engine.adapters.superstate import SuperstateAdapter
 from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.extractor import extract_and_grade
 from lab.sandbox.docker_manager import DockerManager
@@ -42,24 +41,6 @@ class PilotMockDriver(AgentDriver):
         mod_file.write_text(
             f"# Solution for {task.id} by {self.arm} (turn {self.turn})\n", encoding="utf-8"
         )
-
-        if self.arm == "superstate" and self.turn == 1:
-            # The superstate arm refuses to run undecomposed, so the mock must
-            # actually plan -- as a real agent would.
-            (workspace_path / "plan.md").write_text(
-                "### Task 1: Implement the change\n- Verification Command: true\n\n"
-                "### Task 2: Verify the change\n- Verification Command: true\n",
-                encoding="utf-8",
-            )
-            return DriverTelemetry(
-                success=True,
-                raw_response="Wrote plan.md with two milestones.",
-                duration_seconds=2.0,
-                input_tokens=120,
-                output_tokens=40,
-                cost_usd=0.001,
-                conversation_id="conv-pilot-ss",
-            )
 
         if self.arm == "superpowers" and self.turn == 1:
             # Superpowers asks for approval on Turn 1
@@ -120,16 +101,6 @@ class PilotShowdownRunner:
             return VanillaAdapter()
         elif arm == "superpowers":
             return SuperpowersAdapter()
-        elif arm in ("superstate", "superstate_python", "superstate-python"):
-            return SuperstateAdapter(engine="agent-rules-python")
-        elif arm in ("superstate_rust", "superstate-rust", "rust"):
-            return SuperstateAdapter(engine="superstate-rust", zero_turn_planning=True)
-        elif arm in ("superstate_rust_planned", "superstate_rust_2phase"):
-            return SuperstateAdapter(engine="superstate-rust", zero_turn_planning=False)
-        elif arm in ("superstate_rust_inplace", "superstate-rust-inplace", "rust_inplace"):
-            return SuperstateAdapter(engine="superstate-rust", no_worktree=True, zero_turn_planning=True)
-        elif arm in ("superstate_rust_fast", "superstate-rust-fast", "rust_fast", "superstate_fast", "superstate_rust_direct"):
-            return SuperstateAdapter(engine="superstate-rust", no_worktree=True, zero_turn_planning=True)
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     @contextmanager
@@ -170,7 +141,7 @@ class PilotShowdownRunner:
                 "run_pilot called with mock_mode=True: verification outcomes are simulated "
                 "and must not be reported as evaluation results."
             )
-        selected_arms = arms or ["vanilla", "superpowers", "superstate"]
+        selected_arms = arms or ["vanilla", "superpowers"]
         summary: dict[str, Any] = {
             "task_id": task.id,
             "image": task.docker_image,
