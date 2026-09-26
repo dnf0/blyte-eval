@@ -77,6 +77,8 @@ class TaskSpec:
             if (td / "Dockerfile").is_file():
                 self._cached_has_verifier_dockerfile = True
                 return True
+            self._cached_has_verifier_dockerfile = False
+            return False
         except OSError:
             pass
 
