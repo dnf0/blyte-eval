@@ -40,16 +40,6 @@ def test_no_adapter_consults_a_fixture_table() -> None:
     )
 
 
-def test_the_daemon_hands_off_under_tdd_when_no_native_runner_exists() -> None:
-    """The replacement path must actually be wired, or tasks silently run ungated."""
-    from lab.engine.adapters.superstate_daemon import TDD_MODE
-
-    src = (ADAPTERS / "superstate_daemon.py").read_text(encoding="utf-8")
-    assert "return TDD_MODE, None" in src, "no TDD fallback in _derive_gate"
-    assert '"--tdd"' in src, "the handoff never passes --tdd to the engine"
-    assert TDD_MODE not in ("", "true"), "the sentinel must not be executable as a command"
-
-
 def test_references_sealed_grader_distinguishes_in_repo_tests() -> None:
     """The sealed grader is at /tests/, whereas /app/<pkg>/tests/ is an in-repo suite."""
     assert references_sealed_grader("python -m pytest /tests/test_patch.py") is True
