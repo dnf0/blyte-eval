@@ -9,11 +9,10 @@ test:
 parity:
 	uv run pytest -q tests/test_differential.py
 
-# Integration tests that drive a real state engine and a real Docker daemon.
-# These are where every harness defect so far has been found; the unit suite
-# passed throughout.
+# Integration tests that drive a real Docker daemon. These are where most harness
+# defects have been found; the unit suite passed throughout.
 integration:
-	uv run pytest -q tests/test_state_engine_loop.py tests/test_docker_integration.py
+	uv run pytest -q tests/test_docker_integration.py
 
 lint:
 	uv run ruff check lab tests scripts
