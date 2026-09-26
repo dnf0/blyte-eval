@@ -122,6 +122,7 @@ def compare_harnesses(runs: List[RunTelemetry], baseline: str) -> Dict[str, Dict
             continue
         b_rate = sum(x.passed for x in base) / len(base)
         b_cost = sum(x.cost_usd for x in base) / len(base)
+        b_sec = sum(x.wall_clock_sec for x in base) / len(base)
         for h, h_runs in by_h.items():
             if h == baseline:
                 continue
@@ -136,6 +137,8 @@ def compare_harnesses(runs: List[RunTelemetry], baseline: str) -> Dict[str, Dict
                     "lost": 0,
                     "baseline_cost_usd": 0.0,
                     "cost_usd": 0.0,
+                    "baseline_seconds": 0.0,
+                    "seconds": 0.0,
                 },
             )
             e["tasks"] += 1
@@ -145,6 +148,8 @@ def compare_harnesses(runs: List[RunTelemetry], baseline: str) -> Dict[str, Dict
             e["lost"] += int(h_rate < b_rate)
             e["baseline_cost_usd"] += b_cost
             e["cost_usd"] += sum(x.cost_usd for x in h_runs) / len(h_runs)
+            e["baseline_seconds"] += b_sec
+            e["seconds"] += sum(x.wall_clock_sec for x in h_runs) / len(h_runs)
     return out
 
 
@@ -155,14 +160,15 @@ def render_harness_comparison(runs: List[RunTelemetry], baseline: str) -> str:
     lines = [
         f"## Harnesses against `{baseline}` (paired by task; same model, prompt and grader)",
         "",
-        "| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) | Baseline time (s) | Time (s) |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for h in sorted(cmp):
         e = cmp[h]
         lines.append(
             f"| {h} | {e['tasks']} | {e['baseline_passes']:g} | {e['passes']:g} | "
-            f"{e['gained']} | {e['lost']} | {e['baseline_cost_usd']:.2f} | {e['cost_usd']:.2f} |"
+            f"{e['gained']} | {e['lost']} | {e['baseline_cost_usd']:.2f} | {e['cost_usd']:.2f} | "
+            f"{e['baseline_seconds']:.0f} | {e['seconds']:.0f} |"
         )
     lines += [
         "",

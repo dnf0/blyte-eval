@@ -143,6 +143,12 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
     repeated = sum(
         c - 1 for (tool, _), c in counts.items() if c > 1 and tool in ("bash", "grep", "glob")
     )
+    model_seconds = report.get("model_seconds")
+    tools_seconds = report.get("tools_seconds")
+    gate_seconds = report.get("gate_seconds")
+    gate_attempts = report.get("gate_attempts")
+    harness_build = report.get("harness_build")
+    tool_counts = report.get("tool_counts")
     return {
         "harness_turns": int(report.get("turns") or 0),
         "reads": reads,
@@ -158,6 +164,12 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
         "final_fold_budget": next(
             (t.get("fold_budget") for t in reversed(usage) if t.get("fold_budget")), None
         ),
+        "model_seconds": float(model_seconds) if model_seconds is not None else None,
+        "tools_seconds": float(tools_seconds) if tools_seconds is not None else None,
+        "gate_seconds": float(gate_seconds) if gate_seconds is not None else None,
+        "gate_attempts": int(gate_attempts) if gate_attempts is not None else None,
+        "harness_build": str(harness_build) if harness_build is not None else None,
+        "tool_counts": dict(tool_counts) if isinstance(tool_counts, dict) else {},
     }
 
 
