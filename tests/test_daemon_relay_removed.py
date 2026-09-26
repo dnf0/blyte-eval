@@ -32,10 +32,16 @@ def test_removed_arms_no_longer_resolve(arm: str) -> None:
 @pytest.mark.parametrize("module", [
     "lab.engine.adapters.superstate_daemon",
     "lab.engine.adapters.superstate_relay",
-    "lab.engine.mcp",
+    # The client module, not the package: a stale lab/engine/mcp/__pycache__ left in an existing
+    # checkout makes the bare package importable as a namespace package.
+    "lab.engine.mcp.client",
 ])
 def test_removed_modules_are_gone(module: str) -> None:
-    assert importlib.util.find_spec(module) is None
+    try:
+        spec = importlib.util.find_spec(module)
+    except ModuleNotFoundError:  # its parent package is gone too
+        spec = None
+    assert spec is None
 
 
 def test_no_live_code_imports_the_removed_modules() -> None:
