@@ -12,12 +12,10 @@ from __future__ import annotations
 
 import pathlib
 
-from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
-
 ADAPTERS = pathlib.Path("lab/engine/adapters")
 
 # Arms whose results are compared against each other in reports.
-COMPARED_ARMS = ("superstate.py", "superstate_daemon.py")
+COMPARED_ARMS = ("superstate.py",)
 
 
 def test_no_compared_arm_consults_a_hand_authored_gate_table() -> None:
@@ -55,74 +53,13 @@ def test_an_ungated_arm_says_so() -> None:
         )
 
 
-def test_the_daemon_arm_gates_every_task_one_way_or_the_other() -> None:
-    """The daemon must never reach the `true` fallback: it has TDD for the ungated case."""
-    text = (ADAPTERS / "superstate_daemon.py").read_text()
-    assert "return TDD_MODE, None" in text, (
-        "the daemon's gate resolution must end in autonomous TDD, not a no-op gate"
-    )
-    resolve = text[text.index("def _derive_gate"):text.index("return TDD_MODE, None")]
-    assert 'return "true"' not in resolve, (
-        "the daemon still has a path that hands over an ungated contract"
-    )
-
-
-def test_daemon_worker_invocation_matches_the_shared_driver() -> None:
-    """The daemon spawns its own worker, bypassing AgyCliDriver.
-
-    Each flag AgyCliDriver sets and the wrapper omits has produced a false architectural
-    finding: --model (ran a different model), --output-format json (lost all telemetry),
-    --print-timeout (truncated every turn at agy's 5-minute default, which read as the
-    daemon being unable to do long tasks).
-    """
-    wrapper_src = (ADAPTERS / "superstate_daemon.py").read_text()
-    for flag in ("--model", "--output-format", "--print-timeout", "--add-dir"):
-        assert flag in wrapper_src, (
-            f"the daemon's worker wrapper omits {flag}, which AgyCliDriver sets for every "
-            "other arm. Differences here look like architectural weaknesses."
-        )
-
-
-def test_daemon_reports_driver_turns_not_state_steps() -> None:
-    """`turns` must count worker invocations in every arm, or arms cannot be compared.
-
-    The daemon once reported its state-machine `step` counter as `turns`. A step
-    advances on a transition whether or not the worker ran, so every gated daemon run
-    recorded turns=2 while the wrapper had captured a single driver invocation in 19
-    of 20 -- making a dormant iteration loop look active.
-    """
-    src = (
-        pathlib.Path(__file__).resolve().parents[1]
-        / "lab/engine/adapters/superstate_daemon.py"
-    ).read_text(encoding="utf-8")
-
-    assert "turns=max(1, driver_turns)" in src, (
-        "daemon must report driver invocations as `turns`"
-    )
-    assert "turns=max(1, self.step_count)" not in src, (
-        "daemon must not report state-machine steps as `turns`"
-    )
-    assert '"daemon_steps": self.step_count' in src, (
-        "step count is still worth recording -- under its own name, in provenance"
-    )
-
-
 def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
-    """Two configurations must never report the same name, or results pool them silently.
-
-    `superstate_mcp_planned` is the multi-milestone configuration and `superstate_mcp` the
-    zero-turn one. Both returned harness_name="superstate_mcp" until 2026-09-17, so running
-    them together would have written one indistinguishable set of rows and the comparison
-    the run existed to make would have been invisible.
-    """
+    """Two configurations must never report the same name, or results pool them silently."""
     from lab.engine.runner import AblationRunner
 
     runner = AblationRunner.__new__(AblationRunner)
     pairs = [
         ("superstate_rust", "superstate_rust_planned"),
-        ("superstate_daemon", "superstate_daemon_review"),
-        ("superstate_daemon_review", "superstate_daemon_rollback"),
-        ("superstate_daemon_rollback", "superstate_daemon_full"),
     ]
     for zero_turn, planned in pairs:
         a = runner._get_adapter(zero_turn)  # noqa: SLF001
@@ -131,17 +68,7 @@ def test_every_arm_name_resolves_to_a_distinct_adapter_name() -> None:
             f"{zero_turn!r} and {planned!r} both report {a.name!r}; "
             "results from the two would be pooled"
         )
-        if "full" in planned:
-            suffix = "full"
-            assert getattr(b, "impact_slicing", False) is True, f"{planned!r} must have impact_slicing=True"
-            assert getattr(b, "auto_rollback", False) is True, f"{planned!r} must have auto_rollback=True"
-        elif "rollback" in planned:
-            suffix = "rollback"
-        elif "review" in planned:
-            suffix = "review"
-        else:
-            suffix = "planned"
-        assert suffix in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"
+        assert "planned" in b.name, f"{planned!r} must be identifiable in results, got {b.name!r}"
 
 
 def test_no_adapter_synthesizes_milestones_or_harness_prompts() -> None:
@@ -183,7 +110,6 @@ def test_no_adapter_uses_raw_substring_matching_for_sealed_grader() -> None:
         )
 
 
-
 def test_every_arm_records_which_gating_regime_produced_its_numbers() -> None:
     """A results file must be able to answer "how many of these tasks were gated?".
 
@@ -194,9 +120,8 @@ def test_every_arm_records_which_gating_regime_produced_its_numbers() -> None:
     not interpretable without knowing which produced it.
     """
     from lab.engine.adapters.superstate import SuperstateAdapter
-    from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
 
-    for adapter in (SuperstateDaemonAdapter(), SuperstateAdapter()):
+    for adapter in (SuperstateAdapter(),):
         provenance = adapter.get_provenance()
         assert "gate_source" in provenance, (
             f"{type(adapter).__name__} does not record its gating regime, so its results "
@@ -205,76 +130,12 @@ def test_every_arm_records_which_gating_regime_produced_its_numbers() -> None:
 
 
 def test_the_superseded_arms_are_labelled_as_such() -> None:
-    """The daemon is the approach under development; the MCP arms are kept, not developed.
+    """The state-engine arms are kept, not developed.
 
-    No MCP arm has run since EXP-065 and `superstate_mcp_planned` has run once (EXP-055).
     They are retained so the results they produced stay reproducible, which is why the label
     lives in provenance rather than the arms being deleted.
     """
     from lab.engine.adapters.superstate import SuperstateAdapter
-    from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
 
     for adapter in (SuperstateAdapter(),):
         assert adapter.get_provenance().get("deprecated_arm") is True
-
-    assert "deprecated_arm" not in SuperstateDaemonAdapter().get_provenance(), (
-        "the daemon is the active arm and must not be labelled superseded"
-    )
-
-
-def test_read_cache_ablation_differs_by_exactly_one_flag():
-    """`superstate_daemon_nocache` must differ from `superstate_daemon_full` only in the cache.
-
-    Six false findings in this project were an arm receiving something its counterpart did
-    not: an unpinned --model, a missing --output-format, absent container guidance, a missing
-    --print-timeout, a strict gate on one side only, and a hardcoded TDD scaffold. An ablation
-    whose arms differ in two ways measures neither.
-    """
-    from pathlib import Path
-
-    from lab.engine.runner import AblationRunner
-
-    runner = AblationRunner.__new__(AblationRunner)
-    # The cache defaults OFF after EXP-081, so the TREATMENT is the arm carrying the flag.
-    control = runner._get_adapter("superstate_daemon_full")
-    treatment = runner._get_adapter("superstate_daemon_cache")
-    assert isinstance(control, SuperstateDaemonAdapter)
-    assert isinstance(treatment, SuperstateDaemonAdapter)
-
-    assert control.read_cache is False, "the default arm must not run a measured regression"
-    assert treatment.read_cache is True
-
-    ws = Path("/tmp/parity-probe")
-    t_cmd = treatment._build_daemon_spawn_cmd(ws)
-    c_cmd = control._build_daemon_spawn_cmd(ws)
-
-    # The ONLY difference in the spawn command may be the ablation flag itself.
-    assert [a for a in t_cmd if a not in c_cmd] == ["--read-cache", "true"], (
-        f"control carries unexpected extra arguments:\n  treatment={t_cmd}\n  control={c_cmd}"
-    )
-    assert [a for a in c_cmd if a not in t_cmd] == [], (
-        f"control carries arguments the treatment does not:\n  treatment={t_cmd}\n  control={c_cmd}"
-    )
-
-
-def test_read_cache_ablation_is_named_apart_from_the_treatment():
-    """Pooling both under one harness_name would make the comparison invisible in results."""
-    from lab.engine.runner import AblationRunner
-
-    runner = AblationRunner.__new__(AblationRunner)
-    treatment = runner._get_adapter("superstate_daemon_cache")
-    control = runner._get_adapter("superstate_daemon_full")
-    assert treatment.name != control.name
-    assert treatment.name == "superstate_daemon_cache"
-
-
-def test_read_cache_state_reaches_the_results_provenance():
-    """A results file must say which side of the ablation produced it."""
-    from lab.engine.runner import AblationRunner
-
-    runner = AblationRunner.__new__(AblationRunner)
-    cache = runner._get_adapter("superstate_daemon_cache")
-    full = runner._get_adapter("superstate_daemon_full")
-    assert isinstance(cache, SuperstateDaemonAdapter) and isinstance(full, SuperstateDaemonAdapter)
-    assert cache.get_provenance()["read_cache"] is True
-    assert full.get_provenance()["read_cache"] is False

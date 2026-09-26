@@ -858,16 +858,12 @@ def test_superstate_zero_turn_init_without_verification_cmd(tmp_path: Path) -> N
     assert state_data["completed_tasks"][0]["verification_cmd"] == "true"
 
 
-def test_runner_resolves_daemon_and_solo_adapters() -> None:
-    """Verify AblationRunner resolves superstate_daemon and superstate_solo adapters."""
-    from lab.engine.adapters import SuperstateAdapter, SuperstateDaemonAdapter
+def test_runner_resolves_solo_adapter() -> None:
+    """Verify AblationRunner resolves superstate_solo adapter."""
+    from lab.engine.adapters import SuperstateAdapter
     from lab.engine.runner import AblationRunner
 
     runner = AblationRunner(workspace_root=Path("/tmp"))
-
-    # Test resolution of superstate_daemon
-    adapter_daemon = runner._get_adapter("superstate_daemon")
-    assert isinstance(adapter_daemon, SuperstateDaemonAdapter)
 
     # Test resolution of superstate_solo
     adapter_solo = runner._get_adapter("superstate_solo")

@@ -86,39 +86,3 @@ def test_cost_still_counts_every_run_attempted():
     summary = generate_comparison_summary(runs)["superstate_daemon_full"]
     assert summary["total_cost_usd"] == 2.5
 
-
-def test_adapter_marks_an_ungateable_run_and_runner_does_not_relabel_it(tmp_path):
-    """End to end through the two places the old behaviour went wrong.
-
-    The adapter must emit the marker when TDD handoff fails, and the runner must not wrap it
-    in "Agent run failed:" -- that wrapping is what made seven runs that never started read as
-    seven runs the agent lost.
-    """
-    from unittest.mock import patch
-
-    from lab.benchmarks.task_loader import TaskSpec
-    from lab.engine.adapters.superstate_daemon import SuperstateDaemonAdapter
-
-    adapter = SuperstateDaemonAdapter(driver_preset="agy", poll_interval_sec=0.01)
-
-    task = TaskSpec(
-        id="build-cython-ext",
-        name="build-cython-ext",
-        instruction="clone pyknotid into /app and build the extension",
-        docker_image="test:latest",
-        verification_cmd="bash /tests/test.sh",
-    )
-
-    # Stand in for the real failure: `tdd.rs` refusing to emit a gate it cannot derive.
-    def _fail(*_a, **_k):
-        adapter._ungateable_reason = f"{UNGATEABLE_PREFIX} could not identify a test runner"
-        return False
-
-    with patch.object(adapter, "_init_daemon_state", side_effect=_fail):
-        result = adapter.execute(tmp_path, task)
-
-    assert result.success is False
-    assert is_void(result.error_message), (
-        f"an ungateable handoff must be marked void, got {result.error_message!r}"
-    )
-    assert void_kind(result.error_message) == "ungateable"

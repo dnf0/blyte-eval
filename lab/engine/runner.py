@@ -20,8 +20,6 @@ from lab.engine.adapters import (
     AgentDriver,
     SuperpowersAdapter,
     SuperstateAdapter,
-    SuperstateDaemonAdapter,
-    SuperstateRelayAdapter,
     VanillaAdapter,
 )
 from lab.engine.adapters.superstate import ENGINE_PYTHON, ENGINE_RUST
@@ -125,91 +123,6 @@ class AblationRunner:
             "superstate_solo", "superstate-solo", "solo",
         ):
             return SuperstateAdapter(engine=ENGINE_RUST, no_worktree=True, zero_turn_planning=True)
-        # Cross-agent relay: chat-driven handoff between agents, Python-supervised.
-        elif arm in ("superstate_relay", "superstate-relay", "relay"):
-            return SuperstateRelayAdapter()
-        # Detached Autonomous Daemon: hands off task execution entirely to native Rust DaemonRunner
-        elif arm in ("superstate_daemon", "superstate-daemon", "daemon"):
-            return SuperstateDaemonAdapter()
-        elif arm in ("superstate_daemon_review", "superstate-daemon-review", "daemon_review"):
-            return SuperstateDaemonAdapter(
-                advisory_review=True, auto_rollback=False, name="superstate_daemon_review"
-            )
-        elif arm in (
-            "superstate_daemon_sliced",
-            "superstate-daemon-sliced",
-            "daemon_sliced",
-        ):
-            return SuperstateDaemonAdapter(
-                advisory_review=True, auto_rollback=True, impact_slicing=True, name="superstate_daemon_sliced"
-            )
-        elif arm in (
-            "superstate_daemon_rollback",
-            "superstate-daemon-rollback",
-            "daemon_rollback",
-            "superstate_daemon_full",
-            "superstate-daemon-full",
-            "daemon_full",
-        ):
-            arm_name = "superstate_daemon_full" if "full" in arm else "superstate_daemon_rollback"
-            return SuperstateDaemonAdapter(
-                advisory_review=True,
-                auto_rollback=True,
-                impact_slicing=True if "full" in arm else None,
-                name=arm_name,
-            )
-        elif arm in (
-            "superstate_daemon_stall",
-            "superstate-daemon-stall",
-            "daemon_stall",
-            "superstate_daemon_regression",
-            "superstate-daemon-regression",
-            "daemon_regression",
-        ):
-            # Rollback-policy ablation arms. The name MUST differ from superstate_daemon_full,
-            # because harness_name is what lands in the results JSON and pooling two policies
-            # under one name would make the comparison invisible -- the same reason
-            # superstate_mcp_planned is named apart from superstate_mcp.
-            policy = "on-regression" if "regression" in arm else "on-stall"
-            return SuperstateDaemonAdapter(
-                advisory_review=True,
-                auto_rollback=True,
-                impact_slicing=True,
-                rollback_policy=policy,
-                name=f"superstate_daemon_{policy.replace('-', '_')}",
-            )
-        elif arm in (
-            "superstate_daemon_cache",
-            "superstate-daemon-cache",
-            "daemon_cache",
-            # Retained so EXP-081's arm name still resolves. That run used _nocache as the
-            # CONTROL, when the cache was still default-on; the default is now off, so the
-            # same configuration is what _full gives you and the deviation has swapped sides.
-            "superstate_daemon_nocache",
-            "superstate-daemon-nocache",
-            "daemon_nocache",
-        ):
-            # The read-cache arm. Identical to superstate_daemon_full in EVERY other respect --
-            # advisory review, rollback, impact slicing -- so the pair differs by one flag and
-            # nothing else. Six false findings here came from an arm receiving something its
-            # counterpart did not.
-            #
-            # EXP-081 measured this configuration at +37%/+55% input tokens, so it is now the
-            # deviation rather than the baseline: read_cache defaults OFF, and this arm turns
-            # it ON. Anyone re-opening the question needs the treatment to be the thing that
-            # carries a flag. See FINDINGS 13.25.
-            if "nocache" in arm:
-                return SuperstateDaemonAdapter(
-                    advisory_review=True, auto_rollback=True, impact_slicing=True,
-                    read_cache=False, name="superstate_daemon_nocache",
-                )
-            return SuperstateDaemonAdapter(
-                advisory_review=True,
-                auto_rollback=True,
-                impact_slicing=True,
-                read_cache=True,
-                name="superstate_daemon_cache",
-            )
         raise ValueError(f"Unknown evaluation arm: {arm}")
 
     def run_task(
