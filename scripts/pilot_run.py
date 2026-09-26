@@ -37,7 +37,7 @@ def main() -> None:
     parser.add_argument(
         "--arms",
         nargs="+",
-        default=["vanilla", "superpowers", "superstate"],
+        default=["vanilla", "superpowers"],
         help="Evaluation arms to execute",
     )
     parser.add_argument(

@@ -65,7 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--tasks-root", type=Path, default=DEFAULT_TASKS)
     ap.add_argument("--only-with-verifier", action="store_true",
                     help="Skip tasks that ship no held-out verifier")
-    ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers", "superstate"])
+    ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers"])
     ap.add_argument("--driver", choices=["agy", "claude", "superstate"], default="agy",
                     help="Worker runtime: agy, claude, or the native superstate harness (default: agy)")
     ap.add_argument("--context", choices=["conversational", "folded"], default="folded",

@@ -56,6 +56,6 @@ def test_no_live_code_imports_the_removed_modules() -> None:
     assert offenders == []
 
 
-@pytest.mark.parametrize("arm", ["vanilla", "superpowers", "superstate", "superstate_solo"])
+@pytest.mark.parametrize("arm", ["vanilla", "superpowers"])
 def test_the_remaining_arms_still_resolve(arm: str) -> None:
     assert AblationRunner(workspace_root=Path("/tmp"))._get_adapter(arm) is not None
