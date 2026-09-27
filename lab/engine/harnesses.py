@@ -158,6 +158,9 @@ def compare_harnesses(runs: List[RunTelemetry], baseline: str) -> Dict[str, Dict
                     "lost": 0,
                     "baseline_cost_usd": 0.0,
                     "cost_usd": 0.0,
+                    "frontier_cost_usd": None,
+                    "implementer_cost_usd": None,
+                    "dispatches": None,
                     "baseline_seconds": 0.0,
                     "seconds": 0.0,
                 },
@@ -169,6 +172,11 @@ def compare_harnesses(runs: List[RunTelemetry], baseline: str) -> Dict[str, Dict
             e["lost"] += int(h_rate < b_rate)
             e["baseline_cost_usd"] += b_cost
             e["cost_usd"] += sum(x.cost_usd for x in h_runs) / len(h_runs)
+            for key in ("frontier_cost_usd", "implementer_cost_usd", "dispatches"):
+                vals = [x.extra[key] for x in h_runs if x.extra is not None and key in x.extra]
+                if vals:
+                    mean_val = sum(vals) / len(vals)
+                    e[key] = mean_val if e[key] is None else e[key] + mean_val
             e["baseline_seconds"] += b_sec
             e["seconds"] += sum(x.wall_clock_sec for x in h_runs) / len(h_runs)
     return out
@@ -181,14 +189,20 @@ def render_harness_comparison(runs: List[RunTelemetry], baseline: str) -> str:
     lines = [
         f"## Harnesses against `{baseline}` (paired by task; same model, prompt and grader)",
         "",
-        "| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) | Baseline time (s) | Time (s) |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) | Frontier cost ($) | Implementer cost ($) | Dispatches | Baseline time (s) | Time (s) |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for h in sorted(cmp):
         e = cmp[h]
+        frontier = f"{e['frontier_cost_usd']:.2f}" if e["frontier_cost_usd"] is not None else ""
+        implementer = (
+            f"{e['implementer_cost_usd']:.2f}" if e["implementer_cost_usd"] is not None else ""
+        )
+        dispatches = f"{e['dispatches']:g}" if e["dispatches"] is not None else ""
         lines.append(
             f"| {h} | {e['tasks']} | {e['baseline_passes']:g} | {e['passes']:g} | "
             f"{e['gained']} | {e['lost']} | {e['baseline_cost_usd']:.2f} | {e['cost_usd']:.2f} | "
+            f"{frontier} | {implementer} | {dispatches} | "
             f"{e['baseline_seconds']:.0f} | {e['seconds']:.0f} |"
         )
     lines += [
