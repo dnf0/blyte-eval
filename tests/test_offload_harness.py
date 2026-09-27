@@ -98,7 +98,10 @@ def test_parse_harness_spec_multiple_options(spec: str) -> None:
 # --- Build harness tests ---
 
 
-def test_build_harness_claude_blyte(tmp_path: Path) -> None:
+def test_build_harness_claude_blyte(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The driver resolves the `claude` CLI when built; CI has none, so point it at a stub.
+    stub = _make_stub(tmp_path, {"result": "ok"})
+    monkeypatch.setattr("lab.engine.drivers.claude_cli.shutil.which", lambda name: str(stub))
     driver = build_harness(
         "claude+blyte[gemini-3.8-flash-high]",
         "claude-sonnet-5",
