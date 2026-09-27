@@ -1,0 +1,30 @@
+00:06:58 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+00:06:58 [WARNING] superstate_eval.paired: 1 selected task(s) cannot be graded and will score zero for every arm:
+00:06:58 [WARNING] superstate_eval.paired:     modernize-scientific-stack -- no held-out tests/; grading would run the agent's own tests
+00:06:58 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+00:06:58 [INFO] superstate_eval.paired: ==============================================================================
+00:06:58 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+00:06:58 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260927-000658
+00:06:58 [INFO] superstate_eval.paired: ==============================================================================
+00:06:58 [INFO] superstate_eval.paired: -> modernize-scientific-stack [blyte[folded]] (budget: 600s)
+00:06:58 [INFO] superstate_eval.docker_manager: Host disk check: 47.43 GB free on /
+00:06:58 [INFO] superstate_eval.runner: Starting task 'terminal-bench/modernize-scientific-stack' [Arm: bare] (Base budget: 600.0s)
+00:06:58 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 4.3 GB reported available], Disk limit=2, User override=None)
+00:07:00 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260927-000658/eval-terminal-bench_modernize-scientific-stack-bare-87d01cb6/workspace from alexgshaw/modernize-scientific-stack:20251031:/app (6 entries)
+00:07:00 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ce71b0ac1338 (alexgshaw/modernize-scientific-stack:20251031)
+00:09:58 [WARNING] superstate_eval.extractor: Task terminal-bench/modernize-scientific-stack has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+00:10:09 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/modernize-scientific-stack arm=bare: passed=True, reward=1.0, exit_code=0
+00:10:09 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ce71b0ac1338
+00:10:10 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+00:10:10 [INFO] superstate_eval.runner: Finished task 'terminal-bench/modernize-scientific-stack' [Arm: bare]: Passed=True, WallClock=191.66s, Cost=$0.33, TotalGrantedBudget=600.0s
+00:10:10 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$0.3258 turns=1 192s  
+00:10:10 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $0.33 | $0.33 | 3.2m | 0.0m | 203867 | 4781 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/modernize-scientific-stack.json

@@ -1,0 +1,63 @@
+[
+  {
+    "task_id": "terminal-bench/merge-diff-arc-agi-task",
+    "arm": "bare",
+    "passed": false,
+    "wall_clock_sec": 118.47,
+    "cost_usd": 0.223281975,
+    "input_tokens": 221173,
+    "output_tokens": 1148,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": "Verification failed: Reward was 0.0 < 1.0\nOutput: =============\nFAILED ../tests/test_outputs.py::test_git_repo_init - AssertionError: Git rep...\nFAILED ../tests/test_outputs.py::test_both_bundles_fetched - FileNotFoundErro...\nFAILED ../tests/test_outputs.py::test_algo_py_exists - AssertionError: algo.p...\nFAILED ../tests/test_outputs.py::test_algo_py_has_map_function - FileNotFound...\nFAILED ../tests/test_outputs.py::test_algo_map_function_with_test_input - Fil...\n============================== 5 failed in 0.10s ===============================\n",
+    "extra": {
+      "run_id": "eval-terminal-bench_merge-diff-arc-agi-task-bare-1167a50b",
+      "harness": "blyte[folded]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": "none",
+      "nano_cpus": 1000000000,
+      "mem_limit": "4096m",
+      "turns": 1,
+      "cached_input_tokens": 253813,
+      "thinking_tokens": 9083,
+      "cost_basis": "fresh+cached+thinking",
+      "agent_succeeded": true,
+      "reward": 0.0,
+      "test_stats": {
+        "tests_total": 5,
+        "tests_passed": 0
+      },
+      "test_pass_fraction": 0.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 0,
+      "tests_total": 5,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260927-014925/eval-terminal-bench_merge-diff-arc-agi-task-bare-1167a50b/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": [],
+      "harness_turns": 38,
+      "reads": 0,
+      "unchanged_rereads": 0,
+      "changed_rereads": 0,
+      "repeated_commands": 0,
+      "appended_turns": 37,
+      "rewritten_turns": 1,
+      "fresh_on_appended": 219577,
+      "new_tokens_est_on_appended": 14433,
+      "fresh_on_rewritten": 1596,
+      "final_fold_budget": 48000,
+      "model_seconds": 70.726,
+      "tools_seconds": 11.208,
+      "gate_seconds": 0.01,
+      "gate_attempts": 1,
+      "harness_build": "9f7cdd0",
+      "tool_counts": {
+        "bash": 37
+      },
+      "cost_per_turn": 0.005876
+    }
+  }
+]

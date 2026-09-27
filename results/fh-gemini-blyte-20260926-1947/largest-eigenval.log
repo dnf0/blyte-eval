@@ -1,0 +1,30 @@
+23:23:11 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+23:23:11 [WARNING] superstate_eval.paired: 1 selected task(s) cannot be graded and will score zero for every arm:
+23:23:11 [WARNING] superstate_eval.paired:     largest-eigenval -- no held-out tests/; grading would run the agent's own tests
+23:23:12 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+23:23:12 [INFO] superstate_eval.paired: ==============================================================================
+23:23:12 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+23:23:12 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260926-232311
+23:23:12 [INFO] superstate_eval.paired: ==============================================================================
+23:23:12 [INFO] superstate_eval.paired: -> largest-eigenval [blyte[folded]] (budget: 900s)
+23:23:12 [INFO] superstate_eval.docker_manager: Host disk check: 48.94 GB free on /
+23:23:12 [INFO] superstate_eval.runner: Starting task 'terminal-bench/largest-eigenval' [Arm: bare] (Base budget: 900.0s)
+23:23:12 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 4.2 GB reported available], Disk limit=2, User override=None)
+23:23:12 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260926-232311/eval-terminal-bench_largest-eigenval-bare-40bada17/workspace from alexgshaw/largest-eigenval:20251031:/app (2 entries)
+23:23:12 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d9f9ff5ec477 (alexgshaw/largest-eigenval:20251031)
+23:34:43 [WARNING] superstate_eval.extractor: Task terminal-bench/largest-eigenval has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+23:34:46 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/largest-eigenval arm=bare: passed=True, reward=1.0, exit_code=0
+23:34:46 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d9f9ff5ec477
+23:34:46 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+23:34:46 [INFO] superstate_eval.runner: Finished task 'terminal-bench/largest-eigenval' [Arm: bare]: Passed=True, WallClock=694.64s, Cost=$0.81, TotalGrantedBudget=900.0s
+23:34:46 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$0.8110 turns=1 695s  
+23:34:46 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $0.81 | $0.81 | 11.6m | 0.0m | 480440 | 24118 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/largest-eigenval.json

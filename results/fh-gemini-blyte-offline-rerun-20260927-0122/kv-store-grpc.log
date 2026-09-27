@@ -1,0 +1,36 @@
+01:33:31 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+01:33:31 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+01:33:31 [INFO] superstate_eval.paired: ==============================================================================
+01:33:31 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+01:33:31 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260927-013331
+01:33:31 [INFO] superstate_eval.paired: ==============================================================================
+01:33:31 [INFO] superstate_eval.paired: -> kv-store-grpc [blyte[folded]] (budget: 900s)
+01:33:31 [INFO] superstate_eval.docker_manager: Host disk check: 48.46 GB free on /
+01:33:31 [INFO] superstate_eval.runner: Starting task 'terminal-bench/kv-store-grpc' [Arm: bare] (Base budget: 900.0s)
+01:33:31 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+01:33:31 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/kv-store-grpc:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260927-013331/eval-terminal-bench_kv-store-grpc-bare-d4c74656/workspace
+01:33:31 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 66e693eee947 (alexgshaw/kv-store-grpc:20251031)
+01:35:38 [WARNING] superstate_eval.extractor: Task terminal-bench/kv-store-grpc has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+01:35:40 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/kv-store-grpc arm=bare: passed=False, reward=0.0, exit_code=0
+01:35:40 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 66e693eee947
+01:35:41 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+01:35:41 [INFO] superstate_eval.runner: Finished task 'terminal-bench/kv-store-grpc' [Arm: bare]: Passed=False, WallClock=129.82s, Cost=$0.31, TotalGrantedBudget=900.0s
+01:35:41 [INFO] superstate_eval.paired:    blyte[folded]: passed=False cost=$0.3101 turns=1 130s  Verification failed: Reward was 0.0 < 1.0
+Output: ertionErro...
+FAILED ../tests/test_outputs.py::test_protobuf_generation - AssertionError: G...
+FAILED ../tests/test_outputs.py::test_server_file_creation - AssertionError: ...
+FAILED ../tests/test_outputs.py::test_real_grpc_server_running - AssertionErr...
+FAILED ../tests/test_outputs.py::test_grpc_protocol_handshake - ModuleNotFoun...
+FAILED ../tests/test_outputs.py::test_grpc_server_functionality - ModuleNotFo...
+============================== 7 failed in 0.05s ===============================
+
+01:35:41 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 0 | 0.0% | 0 | $0.31 | N/A | 2.2m | 0.0m | N/A | N/A |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-offline-rerun-20260927-0122/kv-store-grpc.json

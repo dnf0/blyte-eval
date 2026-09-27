@@ -1,0 +1,30 @@
+00:10:19 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+00:10:19 [WARNING] superstate_eval.paired: 1 selected task(s) cannot be graded and will score zero for every arm:
+00:10:19 [WARNING] superstate_eval.paired:     multi-source-data-merger -- no held-out tests/; grading would run the agent's own tests
+00:10:19 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+00:10:19 [INFO] superstate_eval.paired: ==============================================================================
+00:10:19 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+00:10:19 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260927-001019
+00:10:19 [INFO] superstate_eval.paired: ==============================================================================
+00:10:19 [INFO] superstate_eval.paired: -> multi-source-data-merger [blyte[folded]] (budget: 900s)
+00:10:19 [INFO] superstate_eval.docker_manager: Host disk check: 47.49 GB free on /
+00:10:19 [INFO] superstate_eval.runner: Starting task 'terminal-bench/multi-source-data-merger' [Arm: bare] (Base budget: 900.0s)
+00:10:19 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 5.0 GB reported available], Disk limit=2, User override=None)
+00:10:19 [INFO] superstate_eval.docker_manager: Image 'alexgshaw/multi-source-data-merger:20251031' has an empty '/app' directory; workspace initialized empty at /tmp/superstate_eval_runs/20260927-001019/eval-terminal-bench_multi-source-data-merger-bare-c115e695/workspace
+00:10:19 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ba64cb4e762f (alexgshaw/multi-source-data-merger:20251031)
+00:15:19 [WARNING] superstate_eval.extractor: Task terminal-bench/multi-source-data-merger has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+00:15:32 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/multi-source-data-merger arm=bare: passed=True, reward=1.0, exit_code=0
+00:15:32 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ba64cb4e762f
+00:15:32 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+00:15:32 [INFO] superstate_eval.runner: Finished task 'terminal-bench/multi-source-data-merger' [Arm: bare]: Passed=True, WallClock=313.30s, Cost=$0.60, TotalGrantedBudget=900.0s
+00:15:32 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$0.6000 turns=1 313s  
+00:15:32 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $0.6 | $0.6 | 5.2m | 0.0m | 265764 | 7883 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/multi-source-data-merger.json

