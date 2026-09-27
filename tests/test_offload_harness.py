@@ -12,6 +12,7 @@ import pytest
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.drivers.claude_cli import (
+    AUTONOMY_SYSTEM_PROMPT,
     CONTAINER_EXEC_SYSTEM_PROMPT,
     OFFLOAD_SYSTEM_PROMPT,
     ClaudeCliDriver,
@@ -33,7 +34,8 @@ def _make_stub(tmp_path: Path, payload: dict[str, Any] | str, exit_code: int = 0
     stub = tmp_path / "claude-stub"
     stub.write_text(
         "#!/bin/sh\n"
-        f'for a in "$@"; do echo "$a"; done > "{tmp_path}/argv.txt"\n'
+        # NUL-separated: the appended system prompt spans several lines.
+        f'printf "%s\\0" "$@" > "{tmp_path}/argv.txt"\n'
         f'cat > "{tmp_path}/stdin.txt"\n'
         f'if [ ! -s "{tmp_path}/stdin.txt" ]; then\n'
         '  echo "Error: Input must be provided either through stdin or as a prompt argument" >&2\n'
@@ -45,6 +47,10 @@ def _make_stub(tmp_path: Path, payload: dict[str, Any] | str, exit_code: int = 0
     )
     stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
     return stub
+
+
+def _argv(tmp_path: Path) -> list[str]:
+    return (tmp_path / "argv.txt").read_text(encoding="utf-8").split("\0")[:-1]
 
 
 def _task(tmp_path: Path) -> TaskSpec:
@@ -132,11 +138,11 @@ def test_plain_claude_arm_argv_and_env(tmp_path: Path) -> None:
 
     driver.run(task=_task(tmp_path), workspace_path=tmp_path, container=FakeContainer())
 
-    argv = (tmp_path / "argv.txt").read_text(encoding="utf-8").splitlines()
-    assert "--append-system-prompt" in argv
-    idx = argv.index("--append-system-prompt")
-    assert argv[idx + 1] == CONTAINER_EXEC_SYSTEM_PROMPT
-    assert OFFLOAD_SYSTEM_PROMPT not in argv
+    argv = _argv(tmp_path)
+    assert argv.count("--append-system-prompt") == 1
+    prompt = argv[argv.index("--append-system-prompt") + 1]
+    assert AUTONOMY_SYSTEM_PROMPT in prompt and CONTAINER_EXEC_SYSTEM_PROMPT in prompt
+    assert OFFLOAD_SYSTEM_PROMPT not in prompt
 
     mcp_cfg_idx = argv.index("--mcp-config")
     config = json.loads(argv[mcp_cfg_idx + 1])
@@ -161,13 +167,12 @@ def test_claude_blyte_arm_argv_and_env(tmp_path: Path) -> None:
 
     driver.run(task=_task(tmp_path), workspace_path=tmp_path, container=FakeContainer())
 
-    argv = (tmp_path / "argv.txt").read_text(encoding="utf-8").splitlines()
-    prompt_indices = [i for i, a in enumerate(argv) if a == "--append-system-prompt"]
-    assert len(prompt_indices) == 2, "Expected container prompt and offload prompt"
-    assert argv[prompt_indices[0] + 1] == CONTAINER_EXEC_SYSTEM_PROMPT
-    assert argv[prompt_indices[1] + 1] == OFFLOAD_SYSTEM_PROMPT
-    # Offload prompt appears after the container prompt
-    assert prompt_indices[1] > prompt_indices[0]
+    argv = _argv(tmp_path)
+    # One append: the CLI keeps only the last of several, which dropped the container prompt.
+    assert argv.count("--append-system-prompt") == 1
+    prompt = argv[argv.index("--append-system-prompt") + 1]
+    parts = [AUTONOMY_SYSTEM_PROMPT, CONTAINER_EXEC_SYSTEM_PROMPT, OFFLOAD_SYSTEM_PROMPT]
+    assert prompt == "\n\n".join(parts)
 
     mcp_cfg_idx = argv.index("--mcp-config")
     config = json.loads(argv[mcp_cfg_idx + 1])
@@ -276,6 +281,6 @@ def test_both_arms_leave_the_operators_claude_setup_out(tmp_path: Path, implemen
     stub = _make_stub(tmp_path, {"result": "ok", "total_cost_usd": 0.1})
     driver = ClaudeCliDriver(cli_path=str(stub), model="claude-sonnet-5", implementer_model=implementer)
     driver.run(task=_task(tmp_path), workspace_path=tmp_path, container=FakeContainer())
-    argv = (tmp_path / "argv.txt").read_text(encoding="utf-8").splitlines()
+    argv = _argv(tmp_path)
     assert argv[argv.index("--setting-sources") + 1] == "project,local"
     assert "--disable-slash-commands" in argv

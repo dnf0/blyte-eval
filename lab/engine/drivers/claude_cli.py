@@ -66,6 +66,14 @@ CONTAINER_EXEC_SYSTEM_PROMPT = (
     "the workspace directory and the container's /app are the same files."
 )
 
+# Both arms get this. Headless, with the operator's setup left out, Haiku answered the task
+# text with "what would you like me to do?" and stopped (offload smoke run, 2026-09-27).
+AUTONOMY_SYSTEM_PROMPT = (
+    "You are running non-interactively: nobody will read or answer questions. Treat the "
+    "request as a task to complete in this repository. Implement it, check it, and stop "
+    "when it is done."
+)
+
 OFFLOAD_SYSTEM_PROMPT = (
     "You can delegate implementation to `dispatch_blyte`. Do the understanding, "
     "planning and review yourself; hand well-specified implementation work to blyte "
@@ -220,6 +228,15 @@ class ClaudeCliDriver(AgentDriver):
         ident = getattr(container, "id", None) or getattr(container, "name", None)
         return str(ident) if ident else None
 
+    def _system_prompt(self, container_id: Optional[str]) -> str:
+        """Everything this run appends to Claude Code's system prompt, as one string."""
+        parts = [AUTONOMY_SYSTEM_PROMPT]
+        if container_id:
+            parts.append(CONTAINER_EXEC_SYSTEM_PROMPT)
+            if self.implementer_model:
+                parts.append(OFFLOAD_SYSTEM_PROMPT)
+        return "\n\n".join(parts)
+
     def _build_command(
         self,
         workspace_path: Path,
@@ -264,17 +281,9 @@ class ClaudeCliDriver(AgentDriver):
                 "--strict-mcp-config",
             ]
 
-        # Append container environment prompt if container sandbox is active
-        if container_id:
-            cmd += [
-                "--append-system-prompt",
-                CONTAINER_EXEC_SYSTEM_PROMPT,
-            ]
-            if self.implementer_model:
-                cmd += [
-                    "--append-system-prompt",
-                    OFFLOAD_SYSTEM_PROMPT,
-                ]
+        # One --append-system-prompt: the CLI keeps only the last when it is repeated, so the
+        # offload arm silently lost its container instructions (found 2026-09-27).
+        cmd += ["--append-system-prompt", self._system_prompt(container_id)]
 
         if conversation_id:
             cmd += ["--resume", conversation_id]
