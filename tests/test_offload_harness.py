@@ -267,3 +267,15 @@ def test_cost_aggregation_zero_dispatches(tmp_path: Path) -> None:
     assert telemetry.metrics["implementer_cost_usd"] == pytest.approx(0.0)
     assert telemetry.metrics["dispatches"] == 0
     assert telemetry.metrics["dispatch_outcomes"] == []
+
+
+@pytest.mark.parametrize("implementer", [None, "gemini-3.8-flash-high"])
+def test_both_arms_leave_the_operators_claude_setup_out(tmp_path: Path, implementer: str | None) -> None:
+    # The offload smoke run (2026-09-27) loaded the operator's plugins, skills and global
+    # CLAUDE.md into both arms; neither measured the harness.
+    stub = _make_stub(tmp_path, {"result": "ok", "total_cost_usd": 0.1})
+    driver = ClaudeCliDriver(cli_path=str(stub), model="claude-sonnet-5", implementer_model=implementer)
+    driver.run(task=_task(tmp_path), workspace_path=tmp_path, container=FakeContainer())
+    argv = (tmp_path / "argv.txt").read_text(encoding="utf-8").splitlines()
+    assert argv[argv.index("--setting-sources") + 1] == "project,local"
+    assert "--disable-slash-commands" in argv
