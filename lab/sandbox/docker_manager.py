@@ -20,6 +20,8 @@ from docker.models.containers import Container
 
 logger = logging.getLogger("superstate_eval.docker_manager")
 
+OFFLINE_NETWORK = "superstate-eval-offline"
+
 
 class DiskSpaceError(RuntimeError):
     """Raised when host disk space falls below the critical emergency threshold."""
@@ -77,6 +79,16 @@ class DockerManager:
             self._client = docker.from_env()
         return self._client
 
+    def ensure_offline_network(self) -> str:
+        """Ensure the offline internal network exists and return its name."""
+        if not self.client.networks.list(names=[OFFLINE_NETWORK]):
+            self.client.networks.create(OFFLINE_NETWORK, driver="bridge", internal=True)
+        return OFFLINE_NETWORK
+
+    def connect_for_grading(self, container: Any) -> None:
+        """Connect container to the default bridge network for grading."""
+        self.client.networks.get("bridge").connect(container)
+
     @contextmanager
     def run_sandbox(
         self,
@@ -90,6 +102,7 @@ class DockerManager:
         mem_limit: str | None = "4g",
         logs_dir: Path | str | None = None,
         container_name: str | None = None,
+        network: str | None = None,
     ) -> Generator[Container, None, None]:
         """Run a container with guaranteed teardown upon context exit.
 
@@ -124,6 +137,8 @@ class DockerManager:
             "detach": True,
             "remove": False,  # We manage removal explicitly in the finally block
         }
+        if network is not None:
+            run_kwargs["network"] = network
         if nano_cpus is not None:
             run_kwargs["nano_cpus"] = nano_cpus
         if mem_limit is not None:

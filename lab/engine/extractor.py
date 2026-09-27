@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 import shutil
 import tarfile
-from typing import Any
+from typing import Any, Callable
 
 from lab.engine.void import UNMEASURABLE_PREFIX
 
@@ -233,6 +233,7 @@ def extract_and_grade(
     workspace_path: Path | None = None,
     recorder: Any | None = None,
     verifier: Any | None = None,
+    enable_network: Callable[[], None] | None = None,
 ) -> EvaluationResult:
     """Extract patch, run verification, and record structured evaluation artifacts."""
     task_id = getattr(task, "id", None) or getattr(task, "task_id", "unknown_task")
@@ -283,6 +284,12 @@ def extract_and_grade(
             exit_code = 1
             output_str = f"Held-out verifier could not run: {err}"
     else:
+        if enable_network is not None:
+            try:
+                enable_network()
+            except Exception as err:
+                logger.error("Failed to enable network for grading %s: %s", task_id, err)
+
         if tests_dir is not None and getattr(tests_dir, "is_dir", lambda: False)() and hasattr(container, "put_archive"):
             try:
                 _inject_tests_to_container(container, tests_dir)

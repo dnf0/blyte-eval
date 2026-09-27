@@ -218,26 +218,33 @@ class AblationRunner:
                         f"{active_task.memory_mb}m" if active_task.memory_mb else self.mem_limit
                     )
                     network_mode = resolve_network_mode(active_task.agent_network_mode)
+                    offline_in_container = (
+                        network_mode == "none" and active_task.has_verifier_dockerfile is False
+                    )
 
-                    with self.docker_manager.run_sandbox(
-                        image=run_image,
-                        logs_dir=logs_dir,
-                        container_name=run_id,
+                    sandbox_kwargs: dict[str, Any] = {
+                        "image": run_image,
+                        "logs_dir": logs_dir,
+                        "container_name": run_id,
                         # The host workspace is mounted at CONTAINER_MOUNT_ROOT, and CONTAINER_WORKSPACE
                         # (/app) is symlinked to it. This allows active worktrees (.wt/task-N)
                         # to be dynamically symlinked to /app during isolation turns.
-                        volumes={
+                        "volumes": {
                             str(workspace_dir.resolve()): {
                                 "bind": CONTAINER_MOUNT_ROOT,
                                 "mode": "rw",
                             }
                         },
-                        working_dir=CONTAINER_MOUNT_ROOT,
-                        network_mode=network_mode,
-                        environment=active_task.env,
-                        nano_cpus=nano_cpus,
-                        mem_limit=mem_limit,
-                    ) as container:
+                        "working_dir": CONTAINER_MOUNT_ROOT,
+                        "network_mode": None if offline_in_container else network_mode,
+                        "environment": active_task.env,
+                        "nano_cpus": nano_cpus,
+                        "mem_limit": mem_limit,
+                    }
+                    if offline_in_container:
+                        sandbox_kwargs["network"] = self.docker_manager.ensure_offline_network()
+
+                    with self.docker_manager.run_sandbox(**sandbox_kwargs) as container:
                         # Initialize /app as a dynamic symlink to /workspace_root
                         container.exec_run(
                             [
@@ -285,15 +292,21 @@ class AblationRunner:
                                 recorder=recorder,
                             )
 
-                        grade_res = extract_and_grade(
-                            container=container,
-                            task=active_task,
-                            arm=arm,
-                            logs_dir=logs_dir,
-                            workspace_path=workspace_dir,
-                            recorder=recorder,
-                            verifier=self.verifier,
-                        )
+                        grade_kwargs: dict[str, Any] = {
+                            "container": container,
+                            "task": active_task,
+                            "arm": arm,
+                            "logs_dir": logs_dir,
+                            "workspace_path": workspace_dir,
+                            "recorder": recorder,
+                            "verifier": self.verifier,
+                        }
+                        if offline_in_container:
+                            grade_kwargs["enable_network"] = (
+                                lambda: self.docker_manager.connect_for_grading(container)
+                            )
+
+                        grade_res = extract_and_grade(**grade_kwargs)
 
                         # Compute granular test metrics and pass fraction from verifier stats
                         test_metrics = compute_test_metrics(grade_res.stats, grade_res.passed)
