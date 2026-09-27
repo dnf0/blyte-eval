@@ -21,7 +21,7 @@ from lab.engine.budget_policy import RunTelemetry
 #: The pass-through arm every harness runs under. An alias of the legacy `vanilla` adapter.
 BARE_ARM = "bare"
 
-_SPEC_RE = re.compile(r"^(?P<name>[a-z]+)(?:\[(?P<opts>[a-z0-9,-]*)\])?$")
+_SPEC_RE = re.compile(r"^(?P<name>[a-z+]+)(?:\[(?P<opts>[a-zA-Z0-9,._-]*)\])?$")
 _SUPERSTATE_CONTEXTS = ("conversational", "folded")
 _SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ()
 _FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
@@ -46,6 +46,12 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
         if opts:
             raise HarnessSpecError(f"{name} takes no options, got {opts}")
         return name, opts
+    if name == "claude+blyte":
+        if len(opts) != 1:
+            raise HarnessSpecError(
+                f"claude+blyte requires exactly one implementer model option, got {opts}"
+            )
+        return name, opts
     if name == "blyte":
         unknown = [o for o in opts if o not in _SUPERSTATE_OPTIONS and not _FOLD_BUDGET_RE.fullmatch(o)]
         if unknown:
@@ -61,7 +67,9 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
         if len(budgets) > 1:
             raise HarnessSpecError(f"choose one fold budget, got {budgets}")
         return name, opts
-    raise HarnessSpecError(f"unknown harness {name!r}; known: agy, claude, blyte (alias: superstate)")
+    raise HarnessSpecError(
+        f"unknown harness {name!r}; known: agy, claude, claude+blyte, blyte (alias: superstate)"
+    )
 
 
 def build_harness(
@@ -84,6 +92,19 @@ def build_harness(
         from lab.engine.drivers.claude_cli import ClaudeCliDriver
 
         return ClaudeCliDriver(model=model)
+    if name == "claude+blyte":
+        if model.startswith("gemini"):
+            raise HarnessSpecError(
+                f"claude+blyte needs a Claude model, got {model!r}; compare it in a separate run "
+                "with --model claude-…, since harnesses in one run share a model"
+            )
+        from lab.engine.drivers.claude_cli import ClaudeCliDriver
+
+        return ClaudeCliDriver(
+            model=model,
+            implementer_model=opts[0],
+            report_dir=report_dir,
+        )
     from lab.engine.drivers.superstate_native import SuperstateNativeDriver
 
     return SuperstateNativeDriver(

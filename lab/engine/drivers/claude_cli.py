@@ -21,11 +21,14 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from typing import Any, Optional
+import uuid
 
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry
@@ -55,6 +58,37 @@ CONTAINER_EXEC_SYSTEM_PROMPT = (
     f"`mcp__{MCP_SERVER_NAME}__run_in_container` tool. Read and edit files normally — "
     "the workspace directory and the container's /app are the same files."
 )
+
+OFFLOAD_SYSTEM_PROMPT = (
+    "You can delegate implementation to `dispatch_blyte`. Do the understanding, "
+    "planning and review yourself; hand well-specified implementation work to blyte "
+    "with a precise task (files, expected behaviour, the tests that must pass) and "
+    "a gate command that checks it. Review what it changed before you finish. "
+    "Doing work yourself is allowed when delegating would not help."
+)
+
+
+def _natural_sort_key(path: Path) -> tuple[int, str]:
+    m = re.search(r"(\d+)", path.stem)
+    return (int(m.group(1)) if m else 0, path.name)
+
+
+def _aggregate_dispatches(dispatch_dir: Optional[Path]) -> tuple[float, int, list[str]]:
+    if dispatch_dir is None or not dispatch_dir.is_dir():
+        return 0.0, 0, []
+    cost = 0.0
+    outcomes: list[str] = []
+    report_files = sorted(dispatch_dir.glob("*.json"), key=_natural_sort_key)
+    for rf in report_files:
+        try:
+            data = json.loads(rf.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                cost += float(data.get("cost_usd", 0.0) or 0.0)
+                if "outcome" in data and data["outcome"] is not None:
+                    outcomes.append(str(data["outcome"]))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return cost, len(report_files), outcomes
 
 
 class ClaudeCliDriverError(RuntimeError):
@@ -91,6 +125,9 @@ class ClaudeCliDriver(AgentDriver):
         env: Optional[dict[str, str]] = None,
         container_exec: bool = True,
         mcp_python: Optional[str] = None,
+        implementer_model: Optional[str] = None,
+        report_dir: Optional[Path | str] = None,
+        dispatch_dir: Optional[Path | str] = None,
     ) -> None:
         if cli_path:
             # An explicit path must actually be runnable; failing here beats
@@ -114,17 +151,28 @@ class ClaudeCliDriver(AgentDriver):
         self.env = env
         self.container_exec = container_exec
         self.mcp_python = mcp_python or sys.executable
+        self.implementer_model = implementer_model
+        self.report_dir = Path(report_dir) if report_dir is not None else None
+        self.dispatch_dir = Path(dispatch_dir) if dispatch_dir is not None else None
+        self.last_dispatch_dir: Optional[Path] = None
+        if implementer_model is not None:
+            self.harness_name = "claude+blyte"
 
     @property
     def provides_isolated_execution(self) -> bool:
         """Isolated only with container_exec on: that is what removes host Bash."""
         return self.container_exec
 
-    def _mcp_config(self, container_id: Optional[str]) -> str:
+    def _mcp_config(
+        self,
+        container_id: Optional[str],
+        dispatch_dir: Optional[Path] = None,
+    ) -> str:
         """Inline MCP config launching configured MCP servers for this run.
 
         Parameters:
             container_id: Optional Docker container identifier for container_exec server.
+            dispatch_dir: Optional directory for blyte dispatch reports.
 
         Returns:
             JSON-encoded string suitable for --mcp-config argument.
@@ -133,14 +181,27 @@ class ClaudeCliDriver(AgentDriver):
 
         # Configure container execution MCP server if running in sandbox
         if container_id:
+            env = {
+                "SUPERSTATE_EVAL_CONTAINER": container_id,
+                "PYTHONPATH": str(REPO_ROOT),
+            }
+            if self.implementer_model:
+                env["BLYTE_IMPLEMENTER_MODEL"] = self.implementer_model
+                effective_dispatch_dir = (
+                    dispatch_dir
+                    or self.dispatch_dir
+                    or (self.report_dir / "dispatches" if self.report_dir else None)
+                )
+                if effective_dispatch_dir is None:
+                    effective_dispatch_dir = Path(tempfile.gettempdir()) / "blyte-dispatches"
+                effective_dispatch_dir.mkdir(parents=True, exist_ok=True)
+                env["BLYTE_DISPATCH_DIR"] = str(effective_dispatch_dir)
+
             servers[MCP_SERVER_NAME] = {
                 "command": self.mcp_python,
                 "args": ["-m", "lab.engine.drivers.container_exec_mcp"],
                 "cwd": str(REPO_ROOT),
-                "env": {
-                    "SUPERSTATE_EVAL_CONTAINER": container_id,
-                    "PYTHONPATH": str(REPO_ROOT),
-                },
+                "env": env,
             }
 
         return json.dumps({"mcpServers": servers})
@@ -157,6 +218,7 @@ class ClaudeCliDriver(AgentDriver):
         workspace_path: Path,
         conversation_id: Optional[str],
         container: Any = None,
+        dispatch_dir: Optional[Path] = None,
     ) -> list[str]:
         """Build the argv. The prompt is NOT included: it goes on stdin.
 
@@ -188,7 +250,7 @@ class ClaudeCliDriver(AgentDriver):
         if container_id:
             cmd += [
                 "--mcp-config",
-                self._mcp_config(container_id),
+                self._mcp_config(container_id, dispatch_dir=dispatch_dir),
                 "--strict-mcp-config",
             ]
 
@@ -198,6 +260,11 @@ class ClaudeCliDriver(AgentDriver):
                 "--append-system-prompt",
                 CONTAINER_EXEC_SYSTEM_PROMPT,
             ]
+            if self.implementer_model:
+                cmd += [
+                    "--append-system-prompt",
+                    OFFLOAD_SYSTEM_PROMPT,
+                ]
 
         if conversation_id:
             cmd += ["--resume", conversation_id]
@@ -217,7 +284,39 @@ class ClaudeCliDriver(AgentDriver):
         container: Any = None,
     ) -> DriverTelemetry:
         prompt = prompt_override or task.instruction
-        cmd = self._build_command(workspace_path, conversation_id, container)
+
+        run_dispatch_dir: Optional[Path] = None
+        if self.implementer_model:
+            if self.dispatch_dir is not None:
+                run_dispatch_dir = self.dispatch_dir
+            elif self.report_dir is not None:
+                task_name = getattr(task, "name", "task")
+                run_dispatch_dir = self.report_dir / f"dispatches-{task_name}-{uuid.uuid4().hex[:8]}"
+            else:
+                task_name = getattr(task, "name", "task")
+                run_dispatch_dir = Path(tempfile.mkdtemp(prefix=f"blyte-dispatches-{task_name}-"))
+            run_dispatch_dir.mkdir(parents=True, exist_ok=True)
+            self.last_dispatch_dir = run_dispatch_dir
+
+        cmd = self._build_command(
+            workspace_path, conversation_id, container, dispatch_dir=run_dispatch_dir
+        )
+
+        def _telemetry_metrics(cli_cost: float) -> tuple[float, dict[str, Any]]:
+            if not self.implementer_model:
+                return cli_cost, {}
+            frontier_cost_usd = cli_cost
+            implementer_cost_usd, dispatches, dispatch_outcomes = _aggregate_dispatches(
+                run_dispatch_dir
+            )
+            total = frontier_cost_usd + implementer_cost_usd
+            metrics = {
+                "frontier_cost_usd": frontier_cost_usd,
+                "implementer_cost_usd": implementer_cost_usd,
+                "dispatches": dispatches,
+                "dispatch_outcomes": dispatch_outcomes,
+            }
+            return total, metrics
 
         run_env = dict(os.environ)
         run_env.update(task.env or {})
@@ -236,41 +335,65 @@ class ClaudeCliDriver(AgentDriver):
                 env=run_env,
             )
         except subprocess.TimeoutExpired:
-            return DriverTelemetry(
+            cost_usd, metrics = _telemetry_metrics(0.0)
+            telem = DriverTelemetry(
                 success=False,
                 raw_response="",
                 duration_seconds=time.monotonic() - started,
+                cost_usd=cost_usd,
                 error_message=f"Agent turn exceeded {timeout_sec:.0f}s and was terminated",
+                metrics=metrics,
             )
+            if self.implementer_model:
+                telem.extra = metrics  # type: ignore[attr-defined]
+            return telem
         except OSError as err:
-            return DriverTelemetry(
+            cost_usd, metrics = _telemetry_metrics(0.0)
+            telem = DriverTelemetry(
                 success=False,
                 raw_response="",
                 duration_seconds=time.monotonic() - started,
+                cost_usd=cost_usd,
                 error_message=f"Failed to invoke the Claude CLI: {err}",
+                metrics=metrics,
             )
+            if self.implementer_model:
+                telem.extra = metrics  # type: ignore[attr-defined]
+            return telem
 
         duration = time.monotonic() - started
 
         if proc.returncode != 0:
-            return DriverTelemetry(
+            cost_usd, metrics = _telemetry_metrics(0.0)
+            telem = DriverTelemetry(
                 success=False,
                 raw_response=proc.stdout or "",
                 duration_seconds=duration,
+                cost_usd=cost_usd,
                 error_message=(
                     f"Claude CLI exited {proc.returncode}: {(proc.stderr or '').strip()[:500]}"
                 ),
+                metrics=metrics,
             )
+            if self.implementer_model:
+                telem.extra = metrics  # type: ignore[attr-defined]
+            return telem
 
         try:
             payload = json.loads(proc.stdout)
         except json.JSONDecodeError as err:
-            return DriverTelemetry(
+            cost_usd, metrics = _telemetry_metrics(0.0)
+            telem = DriverTelemetry(
                 success=False,
                 raw_response=proc.stdout,
                 duration_seconds=duration,
+                cost_usd=cost_usd,
                 error_message=f"Could not parse Claude CLI JSON output: {err}",
+                metrics=metrics,
             )
+            if self.implementer_model:
+                telem.extra = metrics  # type: ignore[attr-defined]
+            return telem
 
         if isinstance(payload, list):  # defensive: some formats emit an event array
             payload = next(
@@ -282,17 +405,18 @@ class ClaudeCliDriver(AgentDriver):
         input_tokens = int(_first(usage, "input_tokens", "inputTokens", default=0) or 0)
         output_tokens = int(_first(usage, "output_tokens", "outputTokens", default=0) or 0)
         cost = _first(payload, "total_cost_usd", "cost_usd", "totalCostUsd")
-        cost_usd = (
+        cli_cost = (
             float(cost)
             if cost is not None
             else estimate_cost_usd(self.model, input_tokens, output_tokens)
         )
+        cost_usd, metrics = _telemetry_metrics(cli_cost)
 
         is_error = bool(_first(payload, "is_error", "isError", default=False))
         text = _first(payload, "result", "text", default="") or ""
         session_id = _first(payload, "session_id", "sessionId")
 
-        return DriverTelemetry(
+        telem = DriverTelemetry(
             success=not is_error,
             raw_response=str(text),
             duration_seconds=duration,
@@ -301,4 +425,8 @@ class ClaudeCliDriver(AgentDriver):
             cost_usd=cost_usd,
             conversation_id=str(session_id) if session_id else conversation_id,
             error_message=(str(text)[:500] if is_error else None),
+            metrics=metrics,
         )
+        if self.implementer_model:
+            telem.extra = metrics  # type: ignore[attr-defined]
+        return telem
