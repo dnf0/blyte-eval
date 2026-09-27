@@ -1,0 +1,38 @@
+20:14:16 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+20:14:16 [WARNING] superstate_eval.paired: 1 selected task(s) cannot be graded and will score zero for every arm:
+20:14:16 [WARNING] superstate_eval.paired:     sanitize-git-repo -- no held-out tests/; grading would run the agent's own tests
+20:14:16 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+20:14:16 [INFO] superstate_eval.paired: ==============================================================================
+20:14:16 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+20:14:16 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260927-201416
+20:14:16 [INFO] superstate_eval.paired: ==============================================================================
+20:14:16 [INFO] superstate_eval.paired: -> sanitize-git-repo [blyte[folded]] (budget: 900s)
+20:14:16 [INFO] superstate_eval.docker_manager: Host disk check: 33.35 GB free on /
+20:14:16 [INFO] superstate_eval.runner: Starting task 'terminal-bench/sanitize-git-repo' [Arm: bare] (Base budget: 900.0s)
+20:14:16 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 6.2 GB reported available], Disk limit=1, User override=None)
+20:14:18 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260927-201416/eval-terminal-bench_sanitize-git-repo-bare-0ce37af2/workspace from alexgshaw/sanitize-git-repo:20251031:/app (625 entries)
+20:14:18 [INFO] superstate_eval.docker_manager: Spawned sandbox container: a4b6af5729d1 (alexgshaw/sanitize-git-repo:20251031)
+20:19:19 [WARNING] superstate_eval.extractor: Task terminal-bench/sanitize-git-repo has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+20:19:29 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/sanitize-git-repo arm=bare: passed=False, reward=0.0, exit_code=0
+20:19:29 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: a4b6af5729d1
+20:19:29 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+20:19:29 [INFO] superstate_eval.runner: Finished task 'terminal-bench/sanitize-git-repo' [Arm: bare]: Passed=False, WallClock=312.86s, Cost=$1.26, TotalGrantedBudget=900.0s
+20:19:29 [INFO] superstate_eval.paired:    blyte[folded]: passed=False cost=$1.2571 turns=1 313s  Verification failed: Reward was 0.0 < 1.0
+Output: test_outputs.py:57: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED ../tests/test_outputs.py::test_no_other_files_changed
+FAILED ../tests/test_outputs.py::test_removal_of_secret_information - assert ...
+FAILED ../tests/test_outputs.py::test_correct_replacement_of_secret_information
+========================= 2 failed, 1 passed in 0.65s ==========================
+
+20:19:29 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 0 | 0.0% | 0 | $1.26 | N/A | 5.2m | 0.0m | N/A | N/A |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-sanitize-rerun-20260927-2014/sanitize-git-repo.json
