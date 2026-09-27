@@ -13,6 +13,13 @@ disallows the CLI's Bash tool and supplies `run_in_container` over MCP instead
 (see container_exec_mcp), which can only exec in this run's container.
 `--strict-mcp-config` also keeps the operator's own MCP servers out of the run,
 which would otherwise vary between arms.
+
+The operator's own Claude Code setup stays out as well: `--setting-sources project,local`
+skips the user-level settings, plugins, hooks and `~/.claude/CLAUDE.md`, and
+`--disable-slash-commands` removes skills. Without them, the offload smoke run (2026-09-27)
+measured the operator's plugins, not the harness: one arm stopped to ask clarifying
+questions and the other spent its time writing a plan. `--bare` would isolate more but
+requires an API key; these flags keep the CLI's own login.
 """
 
 from __future__ import annotations
@@ -235,6 +242,9 @@ class ClaudeCliDriver(AgentDriver):
             self.model,
             "--permission-mode",
             self.permission_mode,
+            "--setting-sources",
+            "project,local",
+            "--disable-slash-commands",
         ]
 
         # Restrict host execution if container sandbox is active
