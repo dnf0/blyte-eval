@@ -17,12 +17,17 @@ Environment:
     SUPERSTATE_EVAL_WORKDIR     optional, default /app
     SUPERSTATE_EVAL_EXEC_TIMEOUT optional seconds, default 600
     SUPERSTATE_EVAL_MAX_OUTPUT  optional chars, default 30000
+    BLYTE_IMPLEMENTER_MODEL     optional, enables dispatch_blyte tool when set
+    BLYTE_DISPATCH_DIR          required when dispatch_blyte is enabled
+    BLYTE_BIN                   optional path to blyte binary (default: blyte on PATH)
 """
 
 from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
+import subprocess
 import sys
 from typing import Any
 
@@ -55,6 +60,36 @@ TOOL_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
+DISPATCH_TOOL_NAME = "dispatch_blyte"
+DISPATCH_TOOL_DESCRIPTION = (
+    "Hand one well-specified implementation task to blyte, a cheaper implementer model "
+    "working in this same container. It edits files, runs commands, and stops when `gate` "
+    "(a shell command, e.g. the relevant test command) exits 0 or its budget runs out. "
+    "Returns the outcome and any gate failures. You remain responsible for the result: "
+    "review the changes with run_in_container afterwards."
+)
+
+DISPATCH_TOOL_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "task": {
+            "type": "string",
+            "description": "Task description for the implementer model to perform in the container",
+        },
+        "gate": {
+            "type": "string",
+            "description": "Shell command to verify completion (stops when it exits 0)",
+        },
+        "max_seconds": {
+            "type": "integer",
+            "description": "Maximum seconds for the implementer run (optional, default 1200)",
+            "default": 1200,
+        },
+    },
+    "required": ["task", "gate"],
+    "additionalProperties": False,
+}
+
 
 def log(message: str) -> None:
     """Diagnostics go to stderr; stdout carries protocol messages only."""
@@ -70,6 +105,7 @@ class ContainerExec:
         self.timeout = int(os.environ.get("SUPERSTATE_EVAL_EXEC_TIMEOUT", "600"))
         self.max_output = int(os.environ.get("SUPERSTATE_EVAL_MAX_OUTPUT", "30000"))
         self._container: Any = None
+        self.dispatch_count: int = 0
 
     def _resolve(self) -> Any:
         if self._container is None:
@@ -106,6 +142,105 @@ class ContainerExec:
         # A non-zero exit is a legitimate result (a failing test), not a tool error.
         return (f"exit_code={exit_code}\n{output}", False)
 
+    def dispatch(
+        self,
+        task: str,
+        gate: str,
+        max_seconds: int = 1200,
+    ) -> tuple[str, bool]:
+        """Dispatch an implementation task to blyte in the container; return (json_text, is_error)."""
+        if not self.container_id:
+            return (
+                json.dumps({"outcome": "error", "error": "SUPERSTATE_EVAL_CONTAINER is not set; no container to execute in."}),
+                False,
+            )
+        model = os.environ.get("BLYTE_IMPLEMENTER_MODEL", "").strip()
+        if not model:
+            return (
+                json.dumps({"outcome": "error", "error": "BLYTE_IMPLEMENTER_MODEL is not set."}),
+                False,
+            )
+        dispatch_dir = os.environ.get("BLYTE_DISPATCH_DIR", "").strip()
+        if not dispatch_dir:
+            return (
+                json.dumps({"outcome": "error", "error": "BLYTE_DISPATCH_DIR is not set."}),
+                False,
+            )
+
+        self.dispatch_count = getattr(self, "dispatch_count", 0) + 1
+        reports_dir = Path(dispatch_dir)
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        report_path = reports_dir / f"dispatch-{self.dispatch_count}.json"
+
+        blyte_bin = os.environ.get("BLYTE_BIN", "").strip() or "blyte"
+        cmd = [
+            blyte_bin,
+            "--container",
+            self.container_id,
+            "--container-workdir",
+            self.default_workdir,
+            "--model",
+            model,
+            "--gate",
+            gate,
+            "--rollback=false",
+            "--max-seconds",
+            str(max_seconds),
+            "--report",
+            str(report_path),
+            "--",
+            task,
+        ]
+
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+            )
+        except Exception as err:
+            return (
+                json.dumps({"outcome": "error", "error": f"Failed to execute blyte: {err}"}),
+                False,
+            )
+
+        if not report_path.is_file():
+            err_msg = (proc.stderr or "").strip() or f"Dispatch report not found at {report_path}"
+            return (
+                json.dumps({"outcome": "error", "error": err_msg}),
+                False,
+            )
+
+        try:
+            with open(report_path, "r", encoding="utf-8") as f:
+                report_data = json.load(f)
+        except Exception as err:
+            return (
+                json.dumps({"outcome": "error", "error": f"Failed to parse dispatch report: {err}"}),
+                False,
+            )
+
+        raw_gf = report_data.get("gate_failures")
+        gate_failures = [
+            str(f)[:1000]
+            for f in raw_gf
+        ] if isinstance(raw_gf, list) else []
+
+        summary = {
+            "outcome": report_data.get("outcome"),
+            "gate_attempts": report_data.get("gate_attempts"),
+            "gate_failures": gate_failures,
+            "turns": report_data.get("turns"),
+            "cost_usd": report_data.get("cost_usd"),
+            "seconds": (
+                report_data.get("seconds")
+                if report_data.get("seconds") is not None
+                else report_data.get("duration_seconds")
+            ),
+            "report": report_data.get("report") or str(report_path),
+        }
+        return (json.dumps(summary), False)
+
 
 def _result(request_id: Any, payload: dict[str, Any]) -> dict[str, Any]:
     return {"jsonrpc": "2.0", "id": request_id, "result": payload}
@@ -136,32 +271,62 @@ def handle(message: dict[str, Any], executor: ContainerExec) -> dict[str, Any] |
         return None
 
     if method == "tools/list":
+        tools = [
+            {
+                "name": TOOL_NAME,
+                "description": TOOL_DESCRIPTION,
+                "inputSchema": TOOL_SCHEMA,
+            }
+        ]
+        if os.environ.get("BLYTE_IMPLEMENTER_MODEL", "").strip():
+            tools.append(
+                {
+                    "name": DISPATCH_TOOL_NAME,
+                    "description": DISPATCH_TOOL_DESCRIPTION,
+                    "inputSchema": DISPATCH_TOOL_SCHEMA,
+                }
+            )
         return _result(
             request_id,
-            {
-                "tools": [
-                    {
-                        "name": TOOL_NAME,
-                        "description": TOOL_DESCRIPTION,
-                        "inputSchema": TOOL_SCHEMA,
-                    }
-                ]
-            },
+            {"tools": tools},
         )
 
     if method == "tools/call":
         params = message.get("params") or {}
-        if params.get("name") != TOOL_NAME:
-            return _error(request_id, -32602, f"Unknown tool: {params.get('name')}")
-        args = params.get("arguments") or {}
-        command = args.get("command")
-        if not isinstance(command, str) or not command.strip():
-            return _error(request_id, -32602, "'command' must be a non-empty string")
-        text, is_error = executor.run(command, args.get("workdir"))
-        return _result(
-            request_id,
-            {"content": [{"type": "text", "text": text}], "isError": is_error},
-        )
+        tool_name = params.get("name")
+        if tool_name == TOOL_NAME:
+            args = params.get("arguments") or {}
+            command = args.get("command")
+            if not isinstance(command, str) or not command.strip():
+                return _error(request_id, -32602, "'command' must be a non-empty string")
+            text, is_error = executor.run(command, args.get("workdir"))
+            return _result(
+                request_id,
+                {"content": [{"type": "text", "text": text}], "isError": is_error},
+            )
+        if tool_name == DISPATCH_TOOL_NAME and os.environ.get("BLYTE_IMPLEMENTER_MODEL", "").strip():
+            args = params.get("arguments") or {}
+            task = args.get("task")
+            if not isinstance(task, str) or not task.strip():
+                return _error(request_id, -32602, "'task' must be a non-empty string")
+            gate = args.get("gate")
+            if not isinstance(gate, str) or not gate.strip():
+                return _error(request_id, -32602, "'gate' must be a non-empty string")
+            raw_max_seconds = args.get("max_seconds", 1200)
+            try:
+                if isinstance(raw_max_seconds, bool):
+                    raise ValueError
+                max_seconds = int(raw_max_seconds)
+                if max_seconds <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                return _error(request_id, -32602, "'max_seconds' must be a positive integer")
+            text, is_error = executor.dispatch(task, gate, max_seconds)
+            return _result(
+                request_id,
+                {"content": [{"type": "text", "text": text}], "isError": is_error},
+            )
+        return _error(request_id, -32602, f"Unknown tool: {tool_name}")
 
     if method == "ping":
         return _result(request_id, {})
