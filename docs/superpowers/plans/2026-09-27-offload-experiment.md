@@ -71,12 +71,80 @@ Commit: `feat(eval): a claude+blyte harness: Claude Code orchestrates, blyte imp
 
 ### Task 3: frontier and implementer cost in the comparison
 
-**Files:** `lab/engine/harnesses.py` (`render_harness_comparison`), its test file.
+**Files:** `lab/engine/harnesses.py` (`compare_harnesses`, `render_harness_comparison`),
+`tests/test_harness_offload_cost.py` (new).
 
-Add columns `frontier $` and `implementer $` (from `extra`, blank when absent) and a `dispatches`
-column to the harness comparison table. Existing columns and their order are unchanged.
+**What to build:**
 
-Commit: `feat(eval): the harness comparison splits frontier and implementer cost`
+- `compare_harnesses`: each harness entry gains `frontier_cost_usd`, `implementer_cost_usd` and
+  `dispatches`, initialised to `None`. For each paired task, for each of the three keys, take the
+  runs of that harness on that task whose `extra` contains the key (`extra` may be `None`); if
+  there are any, add the mean of their values to the entry (treating `None` as 0 before the first
+  addition). A harness none of whose paired runs carries a key keeps `None` for it. The baseline
+  side gets no such fields. Nothing else in the entry changes.
+- `render_harness_comparison`: three columns inserted **after** `Cost ($)` and before
+  `Baseline time (s)`: `Frontier cost ($)`, `Implementer cost ($)` (both `:.2f`) and `Dispatches`
+  (`:g`), each an empty cell when the value is `None`. The separator row gains three `---:`. All
+  other columns keep their order.
+
+- [ ] **Step 1: Write the failing test.** Create `tests/test_harness_offload_cost.py`:
+
+```python
+"""The offload experiment compares Claude alone with Claude + blyte, so the harness comparison
+splits the orchestrator's (frontier) cost from blyte's (implementer) cost (2026-09-27)."""
+
+import pytest
+
+from lab.engine.budget_policy import RunTelemetry
+from lab.engine.harnesses import BARE_ARM, compare_harnesses, render_harness_comparison
+
+
+def _run(task: str, harness: str, cost: float, **extra: float) -> RunTelemetry:
+    return RunTelemetry(
+        task_id=task, arm=BARE_ARM, passed=True, wall_clock_sec=10.0, cost_usd=cost,
+        input_tokens=100, output_tokens=10, extra={"harness": harness, **extra},
+    )
+
+
+RUNS = [
+    _run("t1", "claude", 3.0),
+    _run("t1", "claude+blyte[g]", 2.0, frontier_cost_usd=1.5, implementer_cost_usd=0.5, dispatches=2),
+    _run("t2", "claude", 4.0),
+    _run("t2", "claude+blyte[g]", 1.0, frontier_cost_usd=0.75, implementer_cost_usd=0.25, dispatches=1),
+    _run("t2", "claude+blyte[g]", 3.0, frontier_cost_usd=2.25, implementer_cost_usd=0.75, dispatches=3),
+    _run("t1", "blyte", 1.0),
+]
+
+
+def test_the_comparison_sums_mean_split_cost_per_paired_task() -> None:
+    cmp = compare_harnesses(RUNS, baseline="claude")
+    e = cmp["claude+blyte[g]"]
+    assert e["frontier_cost_usd"] == pytest.approx(1.5 + 1.5)
+    assert e["implementer_cost_usd"] == pytest.approx(0.5 + 0.5)
+    assert e["dispatches"] == pytest.approx(2 + 2)
+    assert cmp["blyte"]["frontier_cost_usd"] is None
+    assert cmp["blyte"]["dispatches"] is None
+
+
+def test_the_table_shows_split_cost_before_time_and_blanks_without_it() -> None:
+    text = render_harness_comparison(RUNS, baseline="claude")
+    assert "| Cost ($) | Frontier cost ($) | Implementer cost ($) | Dispatches | Baseline time (s) |" in text
+    rows = {line.split(" | ")[0]: line for line in text.splitlines() if line.startswith("| ")}
+    assert "| 3.00 | 1.00 | 4 | 20 | 20 |" in rows["| claude+blyte[g]"]
+    assert "| 1.00 |  |  |  | 10 | 10 |" in rows["| blyte"]
+    sep = next(line for line in text.splitlines() if line.startswith("|---"))
+    assert sep.count("|") == 14
+```
+
+- [ ] **Step 2: Run to confirm it fails.** `uv run pytest tests/test_harness_offload_cost.py -q`.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Verify.** `make lint && make test`; existing tests pass unmodified.
+- [ ] **Step 5: Commit.**
+
+```bash
+git add lab/engine/harnesses.py tests/test_harness_offload_cost.py
+git commit --no-gpg-sign -m "feat(eval): the harness comparison splits frontier and implementer cost"
+```
 
 ### Task 4 (HUMAN approval required): the run
 
