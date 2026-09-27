@@ -1,0 +1,63 @@
+[
+  {
+    "task_id": "terminal-bench/db-wal-recovery",
+    "arm": "bare",
+    "passed": true,
+    "wall_clock_sec": 152.45,
+    "cost_usd": 0.35203927500000004,
+    "input_tokens": 282797,
+    "output_tokens": 6575,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": null,
+    "extra": {
+      "run_id": "eval-terminal-bench_db-wal-recovery-bare-320d0677",
+      "harness": "blyte[folded]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": null,
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "cached_input_tokens": 757337,
+      "thinking_tokens": 15596,
+      "cost_basis": "fresh+cached+thinking",
+      "agent_succeeded": true,
+      "reward": 1.0,
+      "test_stats": {
+        "tests_total": 7,
+        "tests_passed": 7
+      },
+      "test_pass_fraction": 1.0,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 7,
+      "tests_total": 7,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260926-212616/eval-terminal-bench_db-wal-recovery-bare-320d0677/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": [],
+      "harness_turns": 56,
+      "reads": 0,
+      "unchanged_rereads": 0,
+      "changed_rereads": 0,
+      "repeated_commands": 7,
+      "appended_turns": 55,
+      "rewritten_turns": 1,
+      "fresh_on_appended": 281560,
+      "new_tokens_est_on_appended": 8413,
+      "fresh_on_rewritten": 1237,
+      "final_fold_budget": 48000,
+      "model_seconds": 134.246,
+      "tools_seconds": 4.535,
+      "gate_seconds": 0.014,
+      "gate_attempts": 1,
+      "harness_build": "9f7cdd0",
+      "tool_counts": {
+        "bash": 55
+      },
+      "cost_per_turn": 0.006286
+    }
+  }
+]

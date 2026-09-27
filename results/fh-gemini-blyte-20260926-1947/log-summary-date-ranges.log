@@ -1,0 +1,30 @@
+23:34:49 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+23:34:49 [WARNING] superstate_eval.paired: 1 selected task(s) cannot be graded and will score zero for every arm:
+23:34:49 [WARNING] superstate_eval.paired:     log-summary-date-ranges -- no held-out tests/; grading would run the agent's own tests
+23:34:49 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+23:34:49 [INFO] superstate_eval.paired: ==============================================================================
+23:34:49 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+23:34:49 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260926-233449
+23:34:49 [INFO] superstate_eval.paired: ==============================================================================
+23:34:49 [INFO] superstate_eval.paired: -> log-summary-date-ranges [blyte[folded]] (budget: 900s)
+23:34:49 [INFO] superstate_eval.docker_manager: Host disk check: 48.95 GB free on /
+23:34:49 [INFO] superstate_eval.runner: Starting task 'terminal-bench/log-summary-date-ranges' [Arm: bare] (Base budget: 900.0s)
+23:34:49 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 4.5 GB reported available], Disk limit=2, User override=None)
+23:34:49 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260926-233449/eval-terminal-bench_log-summary-date-ranges-bare-b5a73ebd/workspace from alexgshaw/log-summary-date-ranges:20251031:/app (165 entries)
+23:34:49 [INFO] superstate_eval.docker_manager: Spawned sandbox container: b98a2d503536 (alexgshaw/log-summary-date-ranges:20251031)
+23:38:00 [WARNING] superstate_eval.extractor: Task terminal-bench/log-summary-date-ranges has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+23:38:08 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/log-summary-date-ranges arm=bare: passed=True, reward=1.0, exit_code=0
+23:38:08 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: b98a2d503536
+23:38:08 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+23:38:08 [INFO] superstate_eval.runner: Finished task 'terminal-bench/log-summary-date-ranges' [Arm: bare]: Passed=True, WallClock=199.55s, Cost=$0.53, TotalGrantedBudget=900.0s
+23:38:08 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$0.5344 turns=1 200s  
+23:38:08 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $0.53 | $0.53 | 3.3m | 0.0m | 327513 | 4689 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/log-summary-date-ranges.json

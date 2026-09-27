@@ -1,0 +1,39 @@
+21:18:18 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+21:18:18 [INFO] superstate_eval.paired: Sizing workers at 2.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+21:18:18 [INFO] superstate_eval.paired: ==============================================================================
+21:18:18 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+21:18:18 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260926-211818
+21:18:18 [INFO] superstate_eval.paired: ==============================================================================
+21:18:18 [INFO] superstate_eval.paired: -> constraints-scheduling [blyte[folded]] (budget: 1200s)
+21:18:18 [INFO] superstate_eval.docker_manager: Host disk check: 47.01 GB free on /
+21:18:18 [INFO] superstate_eval.runner: Starting task 'terminal-bench/constraints-scheduling' [Arm: bare] (Base budget: 1200.0s)
+21:18:18 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=8 [24.0 GB total - 8.0 GB reserve, 2.0 GB per worker; 5.2 GB reported available], Disk limit=2, User override=None)
+21:18:18 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260926-211818/eval-terminal-bench_constraints-scheduling-bare-008b60b6/workspace from alexgshaw/constraints-scheduling:20251031:/app (3 entries)
+21:18:18 [INFO] superstate_eval.docker_manager: Spawned sandbox container: c42390f81d96 (alexgshaw/constraints-scheduling:20251031)
+21:25:58 [WARNING] superstate_eval.extractor: Task terminal-bench/constraints-scheduling has no base_commit; skipping patch extraction for arm bare (set metadata.base_commit_hash in task.toml to capture patches).
+21:26:06 [INFO] superstate_eval.extractor: Evaluation finished for task=terminal-bench/constraints-scheduling arm=bare: passed=False, reward=None, exit_code=1
+21:26:06 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: c42390f81d96
+21:26:06 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+21:26:06 [INFO] superstate_eval.runner: Finished task 'terminal-bench/constraints-scheduling' [Arm: bare]: Passed=False, WallClock=468.21s, Cost=$0.37, TotalGrantedBudget=1200.0s
+21:26:06 [INFO] superstate_eval.paired:    blyte[folded]: passed=False cost=$0.3724 turns=1 468s  Verification failed: Verification exit code 1, Missing or invalid verifier/reward.json or reward.txt
+Output: mporary failure resolving 'security.ubuntu.com'
+W: Some index files failed to download. They have been ignored, or old ones used instead.
+Reading package lists...
+Building dependency tree...
+Reading state information...
+E: Unable to locate package curl
+/tests/test.sh: line 8: curl: command not found
+/tests/test.sh: line 10: /root/.local/bin/env: No such file or directory
+/tests/test.sh: line 19: uvx: command not found
+/tests/test.sh: line 28: /logs/verifier/reward.txt: No such file or directory
+
+21:26:06 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 0 | 0.0% | 0 | $0.37 | N/A | 7.8m | 0.0m | N/A | N/A |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/fh-gemini-blyte-20260926-1947/constraints-scheduling.json

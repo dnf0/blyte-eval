@@ -1,0 +1,63 @@
+[
+  {
+    "task_id": "terminal-bench/build-cython-ext",
+    "arm": "bare",
+    "passed": false,
+    "wall_clock_sec": 128.67,
+    "cost_usd": 0.37623090000000003,
+    "input_tokens": 385069,
+    "output_tokens": 5673,
+    "milestones_completed": 0,
+    "lease_extensions_earned_sec": 0.0,
+    "total_granted_budget_sec": 900.0,
+    "failure_reason": "Verification failed: Reward was 0.0 < 1.0\nOutput: - ModuleNo...\nFAILED ../tests/test_outputs.py::test_chelpers - ModuleNotFoundError: No modu...\nFAILED ../tests/test_outputs.py::test_ccomplexity - ModuleNotFoundError: No m...\nFAILED ../tests/test_outputs.py::test_cinvariants_python_vs_cython - ModuleNo...\nFAILED ../tests/test_outputs.py::test_example_usage - ModuleNotFoundError: No...\nFAILED ../tests/test_outputs.py::test_pyknotid_repository_tests - FileNotFoun...\n========================= 10 failed, 1 passed in 1.35s =========================\n",
+    "extra": {
+      "run_id": "eval-terminal-bench_build-cython-ext-bare-cea3def4",
+      "harness": "blyte[folded]",
+      "model": "gemini-3.8-flash-high",
+      "network_mode": "none",
+      "nano_cpus": 1000000000,
+      "mem_limit": "2048m",
+      "turns": 1,
+      "cached_input_tokens": 496272,
+      "thinking_tokens": 7716,
+      "cost_basis": "fresh+cached+thinking",
+      "agent_succeeded": true,
+      "reward": 0.0,
+      "test_stats": {
+        "tests_total": 11,
+        "tests_passed": 1
+      },
+      "test_pass_fraction": 0.09090909090909091,
+      "f2p_fraction": null,
+      "p2p_fraction": null,
+      "tests_passed": 1,
+      "tests_total": 11,
+      "patch_path": null,
+      "logs_dir": "/tmp/superstate_eval_runs/20260927-012222/eval-terminal-bench_build-cython-ext-bare-cea3def4/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": [],
+      "harness_turns": 62,
+      "reads": 0,
+      "unchanged_rereads": 0,
+      "changed_rereads": 0,
+      "repeated_commands": 1,
+      "appended_turns": 61,
+      "rewritten_turns": 1,
+      "fresh_on_appended": 383392,
+      "new_tokens_est_on_appended": 12584,
+      "fresh_on_rewritten": 1677,
+      "final_fold_budget": 48000,
+      "model_seconds": 92.862,
+      "tools_seconds": 31.398,
+      "gate_seconds": 0.011,
+      "gate_attempts": 1,
+      "harness_build": "9f7cdd0",
+      "tool_counts": {
+        "bash": 61
+      },
+      "cost_per_turn": 0.006068
+    }
+  }
+]
