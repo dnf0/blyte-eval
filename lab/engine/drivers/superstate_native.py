@@ -343,7 +343,8 @@ class SuperstateNativeDriver(AgentDriver):
             error_message = report.get("error") or f"superstate outcome: {report.get('outcome')}"
         return DriverTelemetry(
             success=success,
-            raw_response="",
+            # blyte's last message: the plan, in a plan-first planning run (offload v2).
+            raw_response=str(report.get("final_message") or ""),
             duration_seconds=elapsed,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
