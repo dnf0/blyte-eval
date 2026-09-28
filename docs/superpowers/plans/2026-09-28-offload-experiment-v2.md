@@ -157,3 +157,31 @@ about $10–20), then the user decides whether to run the rest.
 Two tasks; one orchestrator model; one implementer model; the plan comes from Sonnet, so a weak plan
 limits both arms equally. It measures offloading implementation, which is the pattern blyte's docs
 promote, not whether Claude should delegate unprompted.
+
+## First-step result (2026-09-28)
+
+Task `python-statemachine-state-data-scoping`, Sonnet (Claude Code login, so Claude cost is
+notional), Gemini 3.8 Flash for blyte, one shared plan (16 min, $2.50), 2 runs per arm, interleaved.
+Results: `results/offload-v2-sonnet-20260928-1028/` (`plan.md`, `ab-1`, `c-1`, `ab-2`, `c-2`).
+
+| arm | passed | Sonnet | Gemini | total | time |
+|---|---|---|---|---|---|
+| A: Sonnet + plan | 2/2 | $5.63, $5.49 | – | $5.56 mean | 17, 21 min |
+| B: Sonnet + plan + blyte | 2/2 | $1.22, $2.42 | $2.56, $2.19 | $4.20 mean | 37, 60 min |
+| C: pure Sonnet, no plan | 0/2 (69/72, 67/72 target tests) | $7.03, $5.27 | – | $6.15 mean | 38, 26 min |
+
+- **B vs A (offloading implementation):** Sonnet 67% lower ($1.82 vs $5.56), total 24% lower,
+  about 2.5× slower; the ranges do not overlap on any of the three. Quality equal (all passed).
+- **End to end:** planning first decided quality (4/4 with the plan, 0/2 without). Sonnet spent:
+  plan + B $4.32, pure Claude Code $6.15 (failed), plan + A $8.06. Pure Claude Code was cheapest in
+  total ($6.15 vs plan + B $6.70) but did not complete the task.
+- **Limits:** one task, two runs per arm; a very detailed plan (the best case for offloading);
+  B has a review layer A lacks (B's quality includes Sonnet reviewing blyte's work: attributable to
+  the workflow, not to blyte alone); some runs restored the repository's `AGENTS.md`, which the eval
+  strips (model's choice, either arm: noise, not bias); the eval's MCP server runs dispatches one at a
+  time, so dispatches Sonnet issued together queued (B1: about 7 minutes), which inflates B's time;
+  B's gates each ended with the full suite (about 2 minutes each), which Sonnet chose.
+- **Found along the way:** Gemini's implicit cache misses about 23% of blyte's turns (block-aware),
+  and Gemini made one tool call per turn on nearly every turn; see blyte's
+  `2026-09-28-gemini-cache-hits.md` and `2026-09-28-gemini-vertex.md`.
+- **Next, if approved:** 2 tasks × 3 runs per arm (about $30–55 of Sonnet usage).

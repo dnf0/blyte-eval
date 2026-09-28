@@ -1,0 +1,40 @@
+13:52:15 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+13:52:15 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+13:52:15 [INFO] superstate_eval.paired: ==============================================================================
+13:52:15 [INFO] superstate_eval.paired: Harness=claude-code  model=sonnet  tasks=1  arms=bare x claude-code  concurrency=1
+13:52:15 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260928-135215
+13:52:15 [INFO] superstate_eval.paired: ==============================================================================
+13:52:15 [INFO] superstate_eval.paired: -> python-statemachine-state-data-scoping [claude-code] (budget: 5400s)
+13:52:15 [INFO] superstate_eval.docker_manager: Host disk check: 45.77 GB free on /
+13:52:15 [INFO] superstate_eval.runner: Starting task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare] (Base budget: 5400.0s)
+13:52:15 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.7 GB reported available], Disk limit=2, User override=None)
+13:52:15 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260928-135215/eval-datacurve_python-statemachine-state-data-scoping-bare-6cdd9c04/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1:/app (611 entries)
+13:52:15 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 777c388a4559 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1)
+14:17:29 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: c9603441': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+14:17:29 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: c9603441 (prev=8d17ba9f). Lease extended.
+14:17:46 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:9e0d72b0a873 from /Users/danielfisher/.cache/blyte-fh/tasks/python-statemachine-state-data-scoping/tests
+14:17:46 [INFO] superstate_eval.docker_manager: Spawned sandbox container: a8268eaa1652 (superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:9e0d72b0a873)
+14:18:11 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: a8268eaa1652
+14:18:11 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:9e0d72b0a873
+14:18:11 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/python-statemachine-state-data-scoping arm=bare: passed=False, reward=0.0, exit_code=0
+14:18:11 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 777c388a4559
+14:18:11 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+14:18:11 [INFO] superstate_eval.runner: Finished task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare]: Passed=False, WallClock=1556.83s, Cost=$5.27, TotalGrantedBudget=6600.0s
+14:18:11 [INFO] superstate_eval.paired:    claude-code: passed=False cost=$5.2717 turns=1 1557s  Verification failed: Reward was 0.0 < 1.0
+Output: ata
+    E        +    and   State('S1', id='s1', value='s1', initial=True, final=False, parallel=False) = SM(model=Model(state=s1), state_field='state', configuration=['s1']).s1
+    
+    tests/test_state_data.py:428: AssertionError
+P2P 1286/1286 pass 0 fail; F2P 67/72 pass 5 fail; PARTIAL 0.9963181148748159; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 72, "f2p_passed": 67, "p2p_total": 1286, "p2p_passed": 1286, "f2p": 0.9305555555555556, "p2p": 1.0, "partial": 0.9963181148748159}
+
+14:18:11 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| claude-code | 1 | 0 | 0.0% | 0 | $5.27 | N/A | 25.9m | 20.0m | N/A | N/A |
+
+No paired results: no task was run by both `claude-code` and another harness.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/offload-v2-sonnet-20260928-1028/c-2.json
