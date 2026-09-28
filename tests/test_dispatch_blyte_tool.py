@@ -129,6 +129,10 @@ def test_argv_contains_required_flags(monkeypatch: pytest.MonkeyPatch, tmp_path:
     seconds_idx = captured_cmd.index("--max-seconds")
     assert captured_cmd[seconds_idx + 1] == "600"
 
+    # blyte's headless default of 25 turns ended every dispatch before its gate.
+    turns_idx = captured_cmd.index("--max-turns")
+    assert captured_cmd[turns_idx + 1] == "300"
+
     report_idx = captured_cmd.index("--report")
     report_arg = captured_cmd[report_idx + 1]
     assert report_arg.startswith(str(dispatch_dir))
