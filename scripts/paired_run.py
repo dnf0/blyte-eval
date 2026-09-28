@@ -319,6 +319,7 @@ def _run(args) -> int:
             task_budget,
         )
         logger.info("=" * 78)
+        started = time.monotonic()
         tel = runner.run_task(
             task_id=ptask.id,
             arm=BARE_ARM,
@@ -327,6 +328,8 @@ def _run(args) -> int:
             task_spec=ptask,
             driver=driver,
         )
+        # The plan's cost is charged to neither arm, so it is reported here on its own.
+        logger.info("   Planning run: cost=$%.4f %.0fs", tel.cost_usd, time.monotonic() - started)
         logs_dir = Path(tel.extra["logs_dir"]) if tel.extra and "logs_dir" in tel.extra else None
         plan = final_response(logs_dir) if logs_dir is not None else None
         if plan is None:
