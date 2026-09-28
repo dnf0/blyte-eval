@@ -80,14 +80,16 @@ AUTONOMY_SYSTEM_PROMPT = (
 
 # The offload arm is told to delegate, as the blyte-implementer skill tells Claude Code. With
 # delegation merely allowed, Haiku did everything itself in the smoke run (2026-09-27), so the
-# arm measured nothing about offloading.
+# arm measured nothing about offloading. The last two sentences match blyte's skill ("do not split
+# work artificially"): offload v2 run B2 split one coupled change into 5 dispatches (2026-09-28).
 OFFLOAD_SYSTEM_PROMPT = (
     "Delegate implementation to `dispatch_blyte`. Your part is to understand the task, plan "
     "it, and write each implementation task precisely (the files, the expected behaviour, the "
     "tests that must pass) with a gate command that checks it; then review what blyte "
     "changed. Do not write the implementation yourself. If a dispatch falls short, dispatch a "
     "follow-up that says what is missing. Keep for yourself only one-line fixes found in "
-    "review."
+    "review. Keep a change whose parts depend on one another in one dispatch: each dispatch "
+    "starts fresh and re-reads the code it touches. Split only parts that are independent."
 )
 
 
