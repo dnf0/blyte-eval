@@ -1,0 +1,1658 @@
+[
+ {
+  "run": "E13-eval-rename-blyte.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.1279,
+  "p_loop": 0.3259,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "E13-eval-rename-blyte.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.1339,
+  "p_loop": 0.2259,
+  "rep": 0.0
+ },
+ {
+  "run": "E13-eval-rename-blyte.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.1361,
+  "p_loop": 0.2088,
+  "rep": 0.0
+ },
+ {
+  "run": "S15-macos-sandbox-blyte.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.3254,
+  "p_loop": 0.743,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S15-macos-sandbox-blyte.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.3256,
+  "p_loop": 0.4698,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "S15-macos-sandbox-blyte.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.7895,
+  "p_loop": 0.7698,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-238a150a98634af8b3e6983ca9363836.events.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.5368,
+  "p_loop": 0.6899,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-238a150a98634af8b3e6983ca9363836.events.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.3849,
+  "p_loop": 0.4199,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-238a150a98634af8b3e6983ca9363836.events.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.2234,
+  "p_loop": 0.3512,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-db3a89c95a814b01ae383037b9f041a8.events.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.311,
+  "p_loop": 0.4587,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-db3a89c95a814b01ae383037b9f041a8.events.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.641,
+  "p_loop": 0.7273,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-db3a89c95a814b01ae383037b9f041a8.events.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.4664,
+  "p_loop": 0.6283,
+  "rep": 0.33333333333333337
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-beeb5e6e5c344167a3493114ed41f41e.events.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.6168,
+  "p_loop": 0.6561,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-beeb5e6e5c344167a3493114ed41f41e.events.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.498,
+  "p_loop": 0.5353,
+  "rep": 0.0
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-beeb5e6e5c344167a3493114ed41f41e.events.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.5532,
+  "p_loop": 0.6302,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "build-cython-ext-report-6ee08fe485bb464ca75b0953816d541b.events.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.6455,
+  "p_loop": 0.5393,
+  "rep": 0.0
+ },
+ {
+  "run": "build-cython-ext-report-6ee08fe485bb464ca75b0953816d541b.events.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.6695,
+  "p_loop": 0.6367,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "build-cython-ext-report-6ee08fe485bb464ca75b0953816d541b.events.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.6335,
+  "p_loop": 0.6864,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-5cbe9954895f4c0583815571f623ca6f.events.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.176,
+  "p_loop": 0.2848,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-5cbe9954895f4c0583815571f623ca6f.events.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.3918,
+  "p_loop": 0.632,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-5cbe9954895f4c0583815571f623ca6f.events.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.5566,
+  "p_loop": 0.6245,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "build-cython-ext-report-a073c22bc5144d98bf8abe2f04d30c20.events.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.8005,
+  "p_loop": 0.7817,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-a073c22bc5144d98bf8abe2f04d30c20.events.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.305,
+  "p_loop": 0.6916,
+  "rep": 0.4
+ },
+ {
+  "run": "build-cython-ext-report-a073c22bc5144d98bf8abe2f04d30c20.events.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.5855,
+  "p_loop": 0.5801,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "build-cython-ext-report-6298c17cca6f48e0bca3adb70634082e.events.log",
+  "failed": 1,
+  "frac": 0.3,
+  "p_circles": 0.1141,
+  "p_loop": 0.3016,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "build-cython-ext-report-6298c17cca6f48e0bca3adb70634082e.events.log",
+  "failed": 1,
+  "frac": 0.6,
+  "p_circles": 0.1141,
+  "p_loop": 0.3016,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "build-cython-ext-report-6298c17cca6f48e0bca3adb70634082e.events.log",
+  "failed": 1,
+  "frac": 0.9,
+  "p_circles": 0.2445,
+  "p_loop": 0.2101,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-32c1a76174bc4d06872fdd4931170156.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3288,
+  "p_loop": 0.5722,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-32c1a76174bc4d06872fdd4931170156.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1048,
+  "p_loop": 0.2374,
+  "rep": 0.0
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-32c1a76174bc4d06872fdd4931170156.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0963,
+  "p_loop": 0.171,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "expr-try-catch-errors-report-fef2b5eccf7446db8c36906fe774115a.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.306,
+  "p_loop": 0.289,
+  "rep": 0.0
+ },
+ {
+  "run": "expr-try-catch-errors-report-fef2b5eccf7446db8c36906fe774115a.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.3862,
+  "p_loop": 0.5603,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "expr-try-catch-errors-report-fef2b5eccf7446db8c36906fe774115a.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1796,
+  "p_loop": 0.2562,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "vulnerable-secret-report-01b25f61f7564593923ab62b5d95701c.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3767,
+  "p_loop": 0.5771,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "vulnerable-secret-report-01b25f61f7564593923ab62b5d95701c.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.3767,
+  "p_loop": 0.5771,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "vulnerable-secret-report-01b25f61f7564593923ab62b5d95701c.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.097,
+  "p_loop": 0.2048,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "S18-session-self-heal-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0642,
+  "p_loop": 0.1519,
+  "rep": 0.0
+ },
+ {
+  "run": "S18-session-self-heal-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0763,
+  "p_loop": 0.2486,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "S18-session-self-heal-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1442,
+  "p_loop": 0.2367,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "build-cython-ext-report-82b84c3dcca64dd0baaf75e5474136d0.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2807,
+  "p_loop": 0.2695,
+  "rep": 0.0
+ },
+ {
+  "run": "build-cython-ext-report-82b84c3dcca64dd0baaf75e5474136d0.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2745,
+  "p_loop": 0.4929,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "build-cython-ext-report-82b84c3dcca64dd0baaf75e5474136d0.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3829,
+  "p_loop": 0.6112,
+  "rep": 0.4
+ },
+ {
+  "run": "log-summary-date-ranges-report-6ed23f55633a4455892a2d43497aa632.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.4311,
+  "p_loop": 0.5282,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "log-summary-date-ranges-report-6ed23f55633a4455892a2d43497aa632.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.3307,
+  "p_loop": 0.5553,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "log-summary-date-ranges-report-6ed23f55633a4455892a2d43497aa632.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.5066,
+  "p_loop": 0.7804,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "build-cython-ext-report-372ed01e0baa4aed80942fc2c21bbad7.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2979,
+  "p_loop": 0.2743,
+  "rep": 0.0
+ },
+ {
+  "run": "build-cython-ext-report-372ed01e0baa4aed80942fc2c21bbad7.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2557,
+  "p_loop": 0.3145,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-372ed01e0baa4aed80942fc2c21bbad7.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3054,
+  "p_loop": 0.4024,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "polyglot-c-py-report-345139f715184f72b447fea55aa06571.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0877,
+  "p_loop": 0.171,
+  "rep": 0.0
+ },
+ {
+  "run": "polyglot-c-py-report-345139f715184f72b447fea55aa06571.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1945,
+  "p_loop": 0.3633,
+  "rep": 0.0
+ },
+ {
+  "run": "polyglot-c-py-report-345139f715184f72b447fea55aa06571.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.521,
+  "p_loop": 0.6679,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "dna-insert-report-e142dcef88ea4e7ba62d7a0c987bff9b.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.5423,
+  "p_loop": 0.7492,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "dna-insert-report-e142dcef88ea4e7ba62d7a0c987bff9b.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4658,
+  "p_loop": 0.6942,
+  "rep": 0.6
+ },
+ {
+  "run": "dna-insert-report-e142dcef88ea4e7ba62d7a0c987bff9b.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.7734,
+  "p_loop": 0.946,
+  "rep": 0.8666666666666667
+ },
+ {
+  "run": "S22-report-security-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1742,
+  "p_loop": 0.4141,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S22-report-security-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1061,
+  "p_loop": 0.3259,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S22-report-security-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1382,
+  "p_loop": 0.257,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "modernize-scientific-stack-report-062198c44b634970a26d117162468476.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.7897,
+  "p_loop": 0.8358,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "modernize-scientific-stack-report-062198c44b634970a26d117162468476.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.7488,
+  "p_loop": 0.8912,
+  "rep": 0.4
+ },
+ {
+  "run": "modernize-scientific-stack-report-062198c44b634970a26d117162468476.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1486,
+  "p_loop": 0.2411,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "E9-offload-harness-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1122,
+  "p_loop": 0.2616,
+  "rep": 0.0
+ },
+ {
+  "run": "E9-offload-harness-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.282,
+  "p_loop": 0.3821,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "E9-offload-harness-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2009,
+  "p_loop": 0.1762,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "build-cython-ext-report-01c397652e66463e88da0bb4611138be.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2498,
+  "p_loop": 0.2735,
+  "rep": 0.0
+ },
+ {
+  "run": "build-cython-ext-report-01c397652e66463e88da0bb4611138be.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2199,
+  "p_loop": 0.2259,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-01c397652e66463e88da0bb4611138be.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3308,
+  "p_loop": 0.3531,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-a5605f3a676f43ae923df50b7ba72160.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3822,
+  "p_loop": 0.4111,
+  "rep": 0.0
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-a5605f3a676f43ae923df50b7ba72160.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1881,
+  "p_loop": 0.2632,
+  "rep": 0.0
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-a5605f3a676f43ae923df50b7ba72160.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3647,
+  "p_loop": 0.3642,
+  "rep": 0.0
+ },
+ {
+  "run": "db-wal-recovery-report-48690e9137f242bf8795e581b5c0e3d7.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.6815,
+  "p_loop": 0.7384,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "db-wal-recovery-report-48690e9137f242bf8795e581b5c0e3d7.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4834,
+  "p_loop": 0.7727,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "db-wal-recovery-report-48690e9137f242bf8795e581b5c0e3d7.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.5126,
+  "p_loop": 0.7769,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "VX-vertex-2.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2553,
+  "p_loop": 0.3633,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "VX-vertex-2.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2553,
+  "p_loop": 0.4259,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "VX-vertex-2.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0935,
+  "p_loop": 0.1864,
+  "rep": 0.0
+ },
+ {
+  "run": "S17-read-deny-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0649,
+  "p_loop": 0.1733,
+  "rep": 0.0
+ },
+ {
+  "run": "S17-read-deny-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0359,
+  "p_loop": 0.1864,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "S17-read-deny-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0874,
+  "p_loop": 0.1733,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "httpx-multipart-response-parsing-report-ec243f5ced8e471d9a77a077dcf6975f.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.5362,
+  "p_loop": 0.7741,
+  "rep": 0.6
+ },
+ {
+  "run": "httpx-multipart-response-parsing-report-ec243f5ced8e471d9a77a077dcf6975f.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2156,
+  "p_loop": 0.2687,
+  "rep": 0.0
+ },
+ {
+  "run": "httpx-multipart-response-parsing-report-ec243f5ced8e471d9a77a077dcf6975f.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2593,
+  "p_loop": 0.2973,
+  "rep": 0.4
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-81c7f38eda6b477d8b5613a9ddc93b0b.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2045,
+  "p_loop": 0.3033,
+  "rep": 0.0
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-81c7f38eda6b477d8b5613a9ddc93b0b.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2685,
+  "p_loop": 0.4131,
+  "rep": 0.33333333333333337
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-81c7f38eda6b477d8b5613a9ddc93b0b.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2012,
+  "p_loop": 0.2695,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "multi-source-data-merger-report-139ec795889a467d85f31d214ffe15c9.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.5175,
+  "p_loop": 0.7454,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "multi-source-data-merger-report-139ec795889a467d85f31d214ffe15c9.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4914,
+  "p_loop": 0.7838,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "multi-source-data-merger-report-139ec795889a467d85f31d214ffe15c9.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1498,
+  "p_loop": 0.3321,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "sqlite-db-truncate-report-176184ba29f74911874770667ce76640.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3372,
+  "p_loop": 0.615,
+  "rep": 0.4
+ },
+ {
+  "run": "sqlite-db-truncate-report-176184ba29f74911874770667ce76640.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4969,
+  "p_loop": 0.7407,
+  "rep": 0.4
+ },
+ {
+  "run": "sqlite-db-truncate-report-176184ba29f74911874770667ce76640.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3766,
+  "p_loop": 0.689,
+  "rep": 0.33333333333333337
+ },
+ {
+  "run": "build-cython-ext-report-35d3508295fc4450bc93e3401f3d3f0c.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3496,
+  "p_loop": 0.4121,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-35d3508295fc4450bc93e3401f3d3f0c.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1017,
+  "p_loop": 0.1626,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "build-cython-ext-report-35d3508295fc4450bc93e3401f3d3f0c.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.576,
+  "p_loop": 0.7184,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "S8-read-long-lines-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1025,
+  "p_loop": 0.2624,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "S8-read-long-lines-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1025,
+  "p_loop": 0.2624,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "S8-read-long-lines-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0912,
+  "p_loop": 0.2493,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "build-cython-ext-report-4eb030febafb4726af25ce77ba6f84e2.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0912,
+  "p_loop": 0.2035,
+  "rep": 0.0
+ },
+ {
+  "run": "build-cython-ext-report-4eb030febafb4726af25ce77ba6f84e2.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1637,
+  "p_loop": 0.2624,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-4eb030febafb4726af25ce77ba6f84e2.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1814,
+  "p_loop": 0.4929,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "arktype-json-schema-refs-dependencies-report-61d7e5c54ba44d3b85b581af2643c528.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1486,
+  "p_loop": 0.2546,
+  "rep": 0.0
+ },
+ {
+  "run": "arktype-json-schema-refs-dependencies-report-61d7e5c54ba44d3b85b581af2643c528.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2119,
+  "p_loop": 0.2865,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "arktype-json-schema-refs-dependencies-report-61d7e5c54ba44d3b85b581af2643c528.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2398,
+  "p_loop": 0.4131,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-02a57ab64d144b8eb3e5470af25a4efd.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.4345,
+  "p_loop": 0.4758,
+  "rep": 0.0
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-02a57ab64d144b8eb3e5470af25a4efd.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2407,
+  "p_loop": 0.2824,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-02a57ab64d144b8eb3e5470af25a4efd.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1711,
+  "p_loop": 0.4417,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-55153a36d5e942b9818aa3ca9cd6f858.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3318,
+  "p_loop": 0.3586,
+  "rep": 0.0
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-55153a36d5e942b9818aa3ca9cd6f858.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.3768,
+  "p_loop": 0.5212,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-55153a36d5e942b9818aa3ca9cd6f858.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2646,
+  "p_loop": 0.5986,
+  "rep": 0.4
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-a68473b9e77c404da02309eeb23029c2.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2421,
+  "p_loop": 0.4447,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-a68473b9e77c404da02309eeb23029c2.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.3088,
+  "p_loop": 0.5312,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-a68473b9e77c404da02309eeb23029c2.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2985,
+  "p_loop": 0.4507,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "regex-log-report-68872dd6150c4ac092c4a0659ef00732.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.7615,
+  "p_loop": 0.9206,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "regex-log-report-68872dd6150c4ac092c4a0659ef00732.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.9036,
+  "p_loop": 0.9814,
+  "rep": 0.9333333333333333
+ },
+ {
+  "run": "regex-log-report-68872dd6150c4ac092c4a0659ef00732.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.8697,
+  "p_loop": 0.9726,
+  "rep": 0.8666666666666667
+ },
+ {
+  "run": "S37-slots-nesting-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.4415,
+  "p_loop": 0.4748,
+  "rep": 0.0
+ },
+ {
+  "run": "S37-slots-nesting-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0647,
+  "p_loop": 0.2418,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "S37-slots-nesting-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0869,
+  "p_loop": 0.1852,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "E2-remove-daemon-relay-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2128,
+  "p_loop": 0.2832,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "E2-remove-daemon-relay-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.178,
+  "p_loop": 0.2217,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "E2-remove-daemon-relay-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1418,
+  "p_loop": 0.3093,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "build-cython-ext-report-7dfec91186374f789da22cd5c16c8135.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3118,
+  "p_loop": 0.3093,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "build-cython-ext-report-7dfec91186374f789da22cd5c16c8135.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1208,
+  "p_loop": 0.2022,
+  "rep": 0.33333333333333337
+ },
+ {
+  "run": "build-cython-ext-report-7dfec91186374f789da22cd5c16c8135.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.4425,
+  "p_loop": 0.5976,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "E7-offline-until-grading-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2807,
+  "p_loop": 0.583,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "E7-offline-until-grading-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.258,
+  "p_loop": 0.325,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "E7-offline-until-grading-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2029,
+  "p_loop": 0.4427,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "dna-insert-report-13f00798dbc6480eb6bf6336bf7ea4ce.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2297,
+  "p_loop": 0.4268,
+  "rep": 0.0
+ },
+ {
+  "run": "dna-insert-report-13f00798dbc6480eb6bf6336bf7ea4ce.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.7075,
+  "p_loop": 0.8645,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "dna-insert-report-13f00798dbc6480eb6bf6336bf7ea4ce.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.4329,
+  "p_loop": 0.7438,
+  "rep": 0.8
+ },
+ {
+  "run": "merge-diff-arc-agi-task-report-3faf60a5808448038e8f905de523c8fd.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.5304,
+  "p_loop": 0.7817,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "merge-diff-arc-agi-task-report-3faf60a5808448038e8f905de523c8fd.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.5529,
+  "p_loop": 0.736,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "merge-diff-arc-agi-task-report-3faf60a5808448038e8f905de523c8fd.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.8671,
+  "p_loop": 0.9042,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "fastapi-deprecation-response-headers-report-2001fb076835431ab64708011b99b4bd.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0677,
+  "p_loop": 0.171,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "fastapi-deprecation-response-headers-report-2001fb076835431ab64708011b99b4bd.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.5386,
+  "p_loop": 0.7184,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "fastapi-deprecation-response-headers-report-2001fb076835431ab64708011b99b4bd.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.4684,
+  "p_loop": 0.5081,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "sanitize-git-repo-report-9ff63e1e421c4b00994f77b85e3352b7.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.6955,
+  "p_loop": 0.8036,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "sanitize-git-repo-report-9ff63e1e421c4b00994f77b85e3352b7.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4361,
+  "p_loop": 0.5722,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "sanitize-git-repo-report-9ff63e1e421c4b00994f77b85e3352b7.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.5502,
+  "p_loop": 0.6984,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "constraints-scheduling-report-60cb261164d74a8fa32f2f1dacbd7893.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.4441,
+  "p_loop": 0.8124,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "constraints-scheduling-report-60cb261164d74a8fa32f2f1dacbd7893.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4506,
+  "p_loop": 0.7384,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "constraints-scheduling-report-60cb261164d74a8fa32f2f1dacbd7893.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.253,
+  "p_loop": 0.4259,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-080a7438fb3c47a59992173555a6d980.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1537,
+  "p_loop": 0.2189,
+  "rep": 0.0
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-080a7438fb3c47a59992173555a6d980.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.6302,
+  "p_loop": 0.7313,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-080a7438fb3c47a59992173555a6d980.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.651,
+  "p_loop": 0.8502,
+  "rep": 0.6
+ },
+ {
+  "run": "S38-gemini-vertex-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1092,
+  "p_loop": 0.2593,
+  "rep": 0.0
+ },
+ {
+  "run": "S38-gemini-vertex-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1229,
+  "p_loop": 0.2957,
+  "rep": 0.33333333333333337
+ },
+ {
+  "run": "S38-gemini-vertex-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3065,
+  "p_loop": 0.496,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "dispatch-2.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3469,
+  "p_loop": 0.3304,
+  "rep": 0.0
+ },
+ {
+  "run": "dispatch-2.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0633,
+  "p_loop": 0.0832,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "dispatch-2.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3414,
+  "p_loop": 0.4004,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S24-skill-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0429,
+  "p_loop": 0.0667,
+  "rep": 0.0
+ },
+ {
+  "run": "S24-skill-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1734,
+  "p_loop": 0.221,
+  "rep": 0.0
+ },
+ {
+  "run": "S24-skill-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0996,
+  "p_loop": 0.2539,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "E5-harness-time-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0682,
+  "p_loop": 0.1327,
+  "rep": 0.0
+ },
+ {
+  "run": "E5-harness-time-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2004,
+  "p_loop": 0.305,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "E5-harness-time-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.7403,
+  "p_loop": 0.8636,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-fd6199d78b4046c4a3aa6714e27b60d6.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.4348,
+  "p_loop": 0.4869,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-fd6199d78b4046c4a3aa6714e27b60d6.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1326,
+  "p_loop": 0.1413,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-fd6199d78b4046c4a3aa6714e27b60d6.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2694,
+  "p_loop": 0.5312,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-684ca0e3b36f45c1b53ff5e8fd9048ec.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2304,
+  "p_loop": 0.3215,
+  "rep": 0.0
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-684ca0e3b36f45c1b53ff5e8fd9048ec.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.054,
+  "p_loop": 0.1038,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-684ca0e3b36f45c1b53ff5e8fd9048ec.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1654,
+  "p_loop": 0.2155,
+  "rep": 0.4666666666666667
+ },
+ {
+  "run": "S13-gate-failures-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0806,
+  "p_loop": 0.2426,
+  "rep": 0.0
+ },
+ {
+  "run": "S13-gate-failures-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4048,
+  "p_loop": 0.7305,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S13-gate-failures-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2583,
+  "p_loop": 0.3448,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-8eecc3b004d144d78e59cfba71c6d186.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3609,
+  "p_loop": 0.305,
+  "rep": 0.0
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-8eecc3b004d144d78e59cfba71c6d186.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1649,
+  "p_loop": 0.2501,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-8eecc3b004d144d78e59cfba71c6d186.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1973,
+  "p_loop": 0.3485,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-cc94e980020d417fa9245bb7662bc161.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1224,
+  "p_loop": 0.2288,
+  "rep": 0.0
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-cc94e980020d417fa9245bb7662bc161.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1199,
+  "p_loop": 0.3058,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-cc94e980020d417fa9245bb7662bc161.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3773,
+  "p_loop": 0.3503,
+  "rep": 0.0
+ },
+ {
+  "run": "build-cython-ext-report-86859483ad544cafa1bca0a85f2aceae.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3662,
+  "p_loop": 0.5413,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "build-cython-ext-report-86859483ad544cafa1bca0a85f2aceae.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0957,
+  "p_loop": 0.178,
+  "rep": 0.4
+ },
+ {
+  "run": "build-cython-ext-report-86859483ad544cafa1bca0a85f2aceae.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.4234,
+  "p_loop": 0.6679,
+  "rep": 0.4
+ },
+ {
+  "run": "S3-read-from-top-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0897,
+  "p_loop": 0.1882,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S3-read-from-top-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0897,
+  "p_loop": 0.1882,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S3-read-from-top-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0897,
+  "p_loop": 0.1882,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-52d4f65126554185bce9b21a02eefa03.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.4437,
+  "p_loop": 0.4919,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-52d4f65126554185bce9b21a02eefa03.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.149,
+  "p_loop": 0.2441,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-52d4f65126554185bce9b21a02eefa03.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1338,
+  "p_loop": 0.3007,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "build-cython-ext-report-f552d83293cd4e84bc8ba1353913b0c7.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0889,
+  "p_loop": 0.1206,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "build-cython-ext-report-f552d83293cd4e84bc8ba1353913b0c7.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0716,
+  "p_loop": 0.1648,
+  "rep": 0.5333333333333333
+ },
+ {
+  "run": "build-cython-ext-report-f552d83293cd4e84bc8ba1353913b0c7.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.4745,
+  "p_loop": 0.4839,
+  "rep": 0.33333333333333337
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-c6fa14cd6a984a8d8c7e7ff3f5850a45.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3234,
+  "p_loop": 0.3689,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-c6fa14cd6a984a8d8c7e7ff3f5850a45.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.167,
+  "p_loop": 0.2973,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-c6fa14cd6a984a8d8c7e7ff3f5850a45.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.0591,
+  "p_loop": 0.1027,
+  "rep": 0.0
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-ef33975362e5444088dc5fac307c64e2.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.3208,
+  "p_loop": 0.318,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-ef33975362e5444088dc5fac307c64e2.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1985,
+  "p_loop": 0.3689,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "scc-bounded-memory-spilling-report-ef33975362e5444088dc5fac307c64e2.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1044,
+  "p_loop": 0.1478,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "S17-chatgpt-provider-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.0269,
+  "p_loop": 0.0779,
+  "rep": 0.0
+ },
+ {
+  "run": "S17-chatgpt-provider-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.0479,
+  "p_loop": 0.1561,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "S17-chatgpt-provider-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1493,
+  "p_loop": 0.2169,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-36ffc2aefd6a4259acbb582a22b9a1a1.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.1749,
+  "p_loop": 0.167,
+  "rep": 0.0
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-36ffc2aefd6a4259acbb582a22b9a1a1.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1866,
+  "p_loop": 0.3119,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "python-statemachine-state-data-scoping-report-36ffc2aefd6a4259acbb582a22b9a1a1.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.1785,
+  "p_loop": 0.2108,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-8bd6c9bfc02e4df884eff3badb75c3d8.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.4041,
+  "p_loop": 0.5889,
+  "rep": 0.19999999999999996
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-8bd6c9bfc02e4df884eff3badb75c3d8.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.2766,
+  "p_loop": 0.333,
+  "rep": 0.1333333333333333
+ },
+ {
+  "run": "katex-multicolumn-array-spans-report-8bd6c9bfc02e4df884eff3badb75c3d8.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.3793,
+  "p_loop": 0.5533,
+  "rep": 0.8666666666666667
+ },
+ {
+  "run": "kv-store-grpc-report-270c7e69ec754b47bb163279921ed84f.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.6483,
+  "p_loop": 0.8238,
+  "rep": 0.33333333333333337
+ },
+ {
+  "run": "kv-store-grpc-report-270c7e69ec754b47bb163279921ed84f.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.5226,
+  "p_loop": 0.7484,
+  "rep": 0.4
+ },
+ {
+  "run": "kv-store-grpc-report-270c7e69ec754b47bb163279921ed84f.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.2993,
+  "p_loop": 0.4397,
+  "rep": 0.4
+ },
+ {
+  "run": "build-cython-ext-report-f6d82cbcd5e842bcbd97edec0753a809.events.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2994,
+  "p_loop": 0.6226,
+  "rep": 0.0
+ },
+ {
+  "run": "build-cython-ext-report-f6d82cbcd5e842bcbd97edec0753a809.events.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.4662,
+  "p_loop": 0.7648,
+  "rep": 0.4
+ },
+ {
+  "run": "build-cython-ext-report-f6d82cbcd5e842bcbd97edec0753a809.events.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.4548,
+  "p_loop": 0.736,
+  "rep": 0.2666666666666667
+ },
+ {
+  "run": "S30-gate-slots-blyte.log",
+  "failed": 0,
+  "frac": 0.3,
+  "p_circles": 0.2196,
+  "p_loop": 0.6006,
+  "rep": 0.0
+ },
+ {
+  "run": "S30-gate-slots-blyte.log",
+  "failed": 0,
+  "frac": 0.6,
+  "p_circles": 0.1492,
+  "p_loop": 0.385,
+  "rep": 0.06666666666666665
+ },
+ {
+  "run": "S30-gate-slots-blyte.log",
+  "failed": 0,
+  "frac": 0.9,
+  "p_circles": 0.215,
+  "p_loop": 0.4527,
+  "rep": 0.1333333333333333
+ }
+]

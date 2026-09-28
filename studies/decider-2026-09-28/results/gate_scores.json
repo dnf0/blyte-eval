@@ -1,0 +1,186 @@
+[
+ {
+  "id": "rs-assert",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.884,
+  "p_label": 0.884
+ },
+ {
+  "id": "rs-compile",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.99,
+  "p_label": 0.99
+ },
+ {
+  "id": "rs-clippy",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.989,
+  "p_label": 0.989
+ },
+ {
+  "id": "rs-fmt",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.971,
+  "p_label": 0.971
+ },
+ {
+  "id": "rs-borrow",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.987,
+  "p_label": 0.987
+ },
+ {
+  "id": "py-assert",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.885,
+  "p_label": 0.885
+ },
+ {
+  "id": "py-ruff",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.985,
+  "p_label": 0.985
+ },
+ {
+  "id": "py-import",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.747,
+  "p_label": 0.747
+ },
+ {
+  "id": "py-syntax",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.99,
+  "p_label": 0.99
+ },
+ {
+  "id": "py-type",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.988,
+  "p_label": 0.988
+ },
+ {
+  "id": "py-typeerror",
+  "label": "code",
+  "rule": "code",
+  "decider": "code",
+  "p": 0.972,
+  "p_label": 0.972
+ },
+ {
+  "id": "rs-no-cargo",
+  "label": "environment",
+  "rule": "environment",
+  "decider": "environment",
+  "p": 0.987,
+  "p_label": 0.987
+ },
+ {
+  "id": "py-no-uv",
+  "label": "environment",
+  "rule": "environment",
+  "decider": "environment",
+  "p": 0.983,
+  "p_label": 0.983
+ },
+ {
+  "id": "rs-no-network",
+  "label": "environment",
+  "rule": "code",
+  "decider": "environment",
+  "p": 0.962,
+  "p_label": 0.962
+ },
+ {
+  "id": "py-no-network",
+  "label": "environment",
+  "rule": "code",
+  "decider": "environment",
+  "p": 0.981,
+  "p_label": 0.981
+ },
+ {
+  "id": "rs-permission",
+  "label": "environment",
+  "rule": "environment",
+  "decider": "environment",
+  "p": 0.943,
+  "p_label": 0.943
+ },
+ {
+  "id": "rs-disk-full",
+  "label": "environment",
+  "rule": "environment",
+  "decider": "environment",
+  "p": 0.992,
+  "p_label": 0.992
+ },
+ {
+  "id": "py-disk-full",
+  "label": "environment",
+  "rule": "environment",
+  "decider": "environment",
+  "p": 0.954,
+  "p_label": 0.954
+ },
+ {
+  "id": "py-db-down",
+  "label": "environment",
+  "rule": "environment",
+  "decider": "environment",
+  "p": 0.892,
+  "p_label": 0.892
+ },
+ {
+  "id": "docker-down",
+  "label": "environment",
+  "rule": "code",
+  "decider": "environment",
+  "p": 0.969,
+  "p_label": 0.969
+ },
+ {
+  "id": "aws-profile",
+  "label": "environment",
+  "rule": "environment",
+  "decider": "environment",
+  "p": 0.971,
+  "p_label": 0.971
+ },
+ {
+  "id": "rs-timeout",
+  "label": "flaky",
+  "rule": "flaky",
+  "decider": "environment",
+  "p": 0.466,
+  "p_label": 0.411
+ },
+ {
+  "id": "py-net-timeout",
+  "label": "flaky",
+  "rule": "flaky",
+  "decider": "environment",
+  "p": 0.913,
+  "p_label": 0.063
+ }
+]
