@@ -13,12 +13,14 @@ is what would let them carry a number.
 
 ## Design
 
-- **Arms** (one Claude model for both, chosen at run time; `claude-sonnet-5` suggested):
+- **Arms** (one Claude model for both: Haiku, chosen by the user 2026-09-27 to spare usage limits):
   - **A: `claude`**, Claude Code alone (the existing harness).
   - **B: `claude+blyte[gemini-3.8-flash-high]`**, Claude Code as orchestrator with one extra tool,
     `dispatch_blyte`, that runs blyte inside the task's container on the named implementer model.
-    Claude still has `run_in_container` for exploring and reviewing, so arm B is a superset of A:
-    the question is whether Claude chooses to delegate and whether that pays.
+    Claude still has `run_in_container` for exploring and reviewing, and is **told to delegate
+    implementation** (plan, write tasks, review; one-line fixes only), as the
+    `blyte-implementer` skill tells Claude Code. Changed 2026-09-27 from "may delegate": in the
+    Haiku smoke run Claude did everything itself, so the arm measured nothing about offloading.
 - **Tasks:** the 9 DeepSWE tasks of FrontierHarness v1.0 (real repositories, held-out tests,
   objective grading; blyte alone on Gemini already has results for them).
 - **Conditions:** agent offline (as FrontierHarness), graded by the held-out tests as today;
