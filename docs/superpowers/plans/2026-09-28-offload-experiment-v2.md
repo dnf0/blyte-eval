@@ -185,3 +185,26 @@ Results: `results/offload-v2-sonnet-20260928-1028/` (`plan.md`, `ab-1`, `c-1`, `
   and Gemini made one tool call per turn on nearly every turn; see blyte's
   `2026-09-28-gemini-cache-hits.md` and `2026-09-28-gemini-vertex.md`.
 - **Next, if approved:** 2 tasks × 3 runs per arm (about $30–55 of Sonnet usage).
+
+## blyte arms (2026-09-28): who writes the plan matters most
+
+Same task, Gemini 3.8 Flash only (no Claude usage), 2 runs each, interleaved. Results: `results/offload-v3-blyte-20260928-1754/`.
+
+| arm | passed | cost each | time |
+|---|---|---|---|
+| E: blyte alone, raw task | 2/2 | $4.10, $3.83 | 29, 31 min |
+| D: blyte writes the plan ($1.03, 8 min), blyte implements | 0/2 (65/72, 68/72) | $2.91, $3.39 | 25, 20 min |
+| F: Sonnet's plan, blyte implements, no Claude review | 2/2 | $1.80, $2.18 | 15, 17 min |
+
+Against the Claude arms above: pure Sonnet 0/2; Sonnet's plan + Sonnet 2/2 at $5.56; Sonnet's plan +
+blyte + Sonnet review (B) 2/2 at $1.82 Sonnet + $2.38 Gemini, 48 min.
+
+- **A frontier plan with blyte implementing is the best combination:** F was the cheapest and
+  fastest pass (about $2 of Gemini per implementation, 16 min), on top of a one-off plan.
+- **A weak plan is worse than none:** blyte from its own plan failed both runs; blyte with no plan
+  passed both.
+- **Sonnet's review added no quality here:** B and F had the same result; B cost about twice as much
+  and took three times as long. The gate did the checking.
+- **blyte alone beat Sonnet alone on this task** (2/2 vs 0/2). In FrontierHarness it passed 5 of 9
+  DeepSWE tasks, so this is task-dependent.
+- **Limits:** one task, two runs per arm, an unusually detailed Sonnet plan.

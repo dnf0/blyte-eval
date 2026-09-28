@@ -1,0 +1,33 @@
+18:02:26 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+18:02:26 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+18:02:26 [INFO] superstate_eval.paired: ==============================================================================
+18:02:26 [INFO] superstate_eval.paired: Harness=blyte[folded]  model=gemini-3.8-flash-high  tasks=1  arms=bare x blyte[folded]  concurrency=1
+18:02:26 [INFO] superstate_eval.paired: Runs=1  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260928-180226
+18:02:26 [INFO] superstate_eval.paired: ==============================================================================
+18:02:26 [INFO] superstate_eval.paired: -> python-statemachine-state-data-scoping [blyte[folded]] (budget: 5400s)
+18:02:26 [INFO] superstate_eval.docker_manager: Host disk check: 53.09 GB free on /
+18:02:26 [INFO] superstate_eval.runner: Starting task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare] (Base budget: 5400.0s)
+18:02:26 [INFO] superstate_eval.governor: Calculated concurrency: 3 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.1 GB reported available], Disk limit=3, User override=None)
+18:02:27 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260928-180226/eval-datacurve_python-statemachine-state-data-scoping-bare-560814e4/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1:/app (611 entries)
+18:02:27 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 89706b9afa68 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1)
+18:30:17 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 8da2b1be': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+18:30:17 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 8da2b1be (prev=8d17ba9f). Lease extended.
+18:30:37 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:817b709226a8 from /Users/danielfisher/.cache/blyte-fh/tasks/python-statemachine-state-data-scoping/tests
+18:30:37 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e8ba7ea891ab (superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:817b709226a8)
+18:31:03 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e8ba7ea891ab
+18:31:03 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:817b709226a8
+18:31:03 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/python-statemachine-state-data-scoping arm=bare: passed=True, reward=1.0, exit_code=0
+18:31:03 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 89706b9afa68
+18:31:03 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+18:31:03 [INFO] superstate_eval.runner: Finished task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare]: Passed=True, WallClock=1716.49s, Cost=$4.10, TotalGrantedBudget=6600.0s
+18:31:03 [INFO] superstate_eval.paired:    blyte[folded]: passed=True cost=$4.0984 turns=1 1716s  
+18:31:03 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| blyte[folded] | 1 | 1 | 100.0% | 0 | $4.1 | $4.1 | 28.6m | 20.0m | 2152855 | 51283 |
+
+No paired results: no task was run by both `blyte[folded]` and another harness.
+
+Results written to /Users/danielfisher/repos/blyte-eval/results/offload-v3-blyte-20260928-1754/e-1.json
