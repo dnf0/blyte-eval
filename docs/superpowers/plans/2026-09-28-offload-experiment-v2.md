@@ -60,18 +60,97 @@ Otherwise, report "no difference detected at this size". A null or negative resu
 
 ## Build tasks (no spend; A/B dispatched as usual)
 
-1. A plan-first mode in the runner: a planning run per task whose final message is the plan,
-   stored with the results; `--plan-from <file>` to reuse a stored plan; the plan appended to the
-   task text for both arms.
-2. `--disallowedTools Agent ScheduleWakeup` for both claude arms (with a test).
-3. Repeats and interleaving in `paired_run.py` (`--repeats 3`), and within-arm range in the
-   comparison table.
+> **For agentic workers:** implement exactly one task. Do NOT `git push`, open PRs, start any benchmark or paid run, or call any model API; commit locally only. Do not edit `FINDINGS.md`, `EXPERIMENTS.md`, `CLAUDE.md`/`AGENTS.md` or `results/`. Existing tests must pass unmodified. Checks: `make lint && make test`. Commit with `--no-gpg-sign` and the exact message given.
+
+`paired_run.py --repeats` already interleaves arms (A1 B1 A2 B2), so no repeats work is needed.
+
+### Task 1: plan-first mode
+
+**Files:** `lab/engine/plan_first.py` (new), `scripts/paired_run.py`, `tests/test_plan_first.py` (new).
+
+`lab/engine/plan_first.py`:
+
+- `PLANNING_PROMPT: str`, exactly:
+  `"This run only plans; it does not implement. Explore the repository as much as you need, but do not create, modify or delete any file. Your final message is the plan, and it goes to an engineer who has not seen the repository. Include: the files to change and what to change in each; the required behaviour, including every edge case the task describes; the tests to add or update; and one shell command, run from the repository root, that checks the work. Be precise and complete. Do not ask questions."`
+- `PLAN_HEADER: str`, exactly: `"## Plan\n\nA plan for this task has already been written. Follow it."`
+- `def planning_task(task: TaskSpec) -> TaskSpec`: `dataclasses.replace(task, instruction=f"{PLANNING_PROMPT}\n\n## Task\n\n{task.instruction}")`.
+- `def with_plan(task: TaskSpec, plan: str) -> TaskSpec`: `dataclasses.replace(task, instruction=f"{task.instruction}\n\n{PLAN_HEADER}\n\n{plan.strip()}")`.
+- `def final_response(logs_dir: Path) -> Optional[str]`: reads `logs_dir / "transcript.jsonl"` (one JSON object per line); returns the last non-empty `"response"` value, stripped, or `None` when the file is missing or has none.
+
+`scripts/paired_run.py`, two new options:
+
+- `--plan-only PATH`: requires exactly one task and exactly one `--harnesses` entry, else log an error and return 2. Runs `planning_task(task)` once (`--repeats` ignored), then reads `final_response(Path(tel.extra["logs_dir"]))`; if it is `None`, log an error and return 1; otherwise write it to PATH (creating parents) and log the path. The grader's verdict is irrelevant to a planning run and is not printed as a result table.
+- `--plan-from PATH`: requires exactly one task, else error and return 2. Reads PATH and applies `with_plan` to the task before building jobs; the run then proceeds as usual.
+- The two options are mutually exclusive (argparse group).
+
+- [ ] **Step 1: tests.** `tests/test_plan_first.py`:
+
+```python
+"""Offload v2 gives both arms the same plan, written once by a planning run (2026-09-28)."""
+
+import json
+from pathlib import Path
+
+from lab.benchmarks.task_loader import TaskSpec
+from lab.engine.plan_first import PLAN_HEADER, PLANNING_PROMPT, final_response, planning_task, with_plan
+
+
+def _task(tmp_path: Path) -> TaskSpec:
+    return TaskSpec(id="org/t", name="t", instruction="Add a feature.", docker_image="img", task_dir=tmp_path)
+
+
+def test_planning_task_prefixes_the_prompt(tmp_path: Path) -> None:
+    t = planning_task(_task(tmp_path))
+    assert t.instruction == f"{PLANNING_PROMPT}\n\n## Task\n\nAdd a feature."
+    assert "do not create, modify or delete any file" in PLANNING_PROMPT
+
+
+def test_with_plan_appends_the_plan(tmp_path: Path) -> None:
+    t = with_plan(_task(tmp_path), "  1. change x\n")
+    assert t.instruction == f"Add a feature.\n\n{PLAN_HEADER}\n\n1. change x"
+
+
+def test_final_response_is_the_last_non_empty_one(tmp_path: Path) -> None:
+    lines = [{"turn": 1, "response": "first"}, {"turn": 2, "response": "  the plan  "}, {"turn": 3, "response": ""}]
+    (tmp_path / "transcript.jsonl").write_text("\n".join(json.dumps(x) for x in lines) + "\n", encoding="utf-8")
+    assert final_response(tmp_path) == "the plan"
+
+
+def test_final_response_missing(tmp_path: Path) -> None:
+    assert final_response(tmp_path) is None
+```
+
+- [ ] **Step 2:** run them; they fail (no module). **Step 3:** implement. **Step 4:** `make lint && make test`.
+- [ ] **Step 5: Commit.** `git add lab/engine/plan_first.py scripts/paired_run.py tests/test_plan_first.py && git commit --no-gpg-sign -m "feat(eval): plan-first mode: one planning run, and the same plan for every arm"`
+
+### Task 2: no subagents or wake-ups in the claude arms
+
+**Files:** `lab/engine/drivers/claude_cli.py`, `tests/test_offload_harness.py`.
+
+In `_build_command`, both arms always get one `--disallowedTools` flag followed by `Agent` and `ScheduleWakeup`, plus `Bash` when a container is active (keep the existing comment about Bash). Replace the current container-only `--disallowedTools Bash` so the flag appears exactly once. Add a module-level constant `DISALLOWED_TOOLS = ("Agent", "ScheduleWakeup")` with a comment: in the offload v1 run (2026-09-28) arm B spent about 120 s waiting on its own background Explore subagent through repeated ScheduleWakeup calls; that is harness noise, not delegation.
+
+- [ ] **Step 1: test** (append to `tests/test_offload_harness.py`):
+
+```python
+@pytest.mark.parametrize("implementer", [None, "gemini-3.8-flash-high"])
+def test_both_arms_disallow_subagents_and_wakeups(tmp_path: Path, implementer: str | None) -> None:
+    stub = _make_stub(tmp_path, {"result": "ok", "total_cost_usd": 0.1})
+    driver = ClaudeCliDriver(cli_path=str(stub), model="claude-sonnet-5", implementer_model=implementer)
+    driver.run(task=_task(tmp_path), workspace_path=tmp_path, container=FakeContainer())
+    argv = _argv(tmp_path)
+    assert argv.count("--disallowedTools") == 1
+    i = argv.index("--disallowedTools")
+    assert argv[i + 1 : i + 4] == ["Agent", "ScheduleWakeup", "Bash"]
+```
+
+- [ ] **Step 2–4** as above. **Step 5: Commit.** `git add lab/engine/drivers/claude_cli.py tests/test_offload_harness.py && git commit --no-gpg-sign -m "feat(eval): the claude arms get no subagents or wake-ups"`
 
 ## Cost (user's usage, needs approval)
 
 2 planning runs + 12 arm runs on Sonnet, about $2–4 notional each: roughly $30–55 of usage, plus
-about $5 of Gemini. A smaller first step: 1 task, 2 repeats per arm (1 + 4 runs, about $10–20),
-then decide whether to run the rest.
+about $5 of Gemini. **Approved 2026-09-28: the smaller first step only**: 1 task
+(`python-statemachine-state-data-scoping`), 1 planning run and 2 repeats per arm (5 Sonnet runs,
+about $10–20), then the user decides whether to run the rest.
 
 ## Limits, to state with the result
 

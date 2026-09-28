@@ -284,3 +284,15 @@ def test_both_arms_leave_the_operators_claude_setup_out(tmp_path: Path, implemen
     argv = _argv(tmp_path)
     assert argv[argv.index("--setting-sources") + 1] == "project,local"
     assert "--disable-slash-commands" in argv
+
+
+@pytest.mark.parametrize("implementer", [None, "gemini-3.8-flash-high"])
+def test_both_arms_disallow_subagents_and_wakeups(tmp_path: Path, implementer: str | None) -> None:
+    stub = _make_stub(tmp_path, {"result": "ok", "total_cost_usd": 0.1})
+    driver = ClaudeCliDriver(cli_path=str(stub), model="claude-sonnet-5", implementer_model=implementer)
+    driver.run(task=_task(tmp_path), workspace_path=tmp_path, container=FakeContainer())
+    argv = _argv(tmp_path)
+    assert argv.count("--disallowedTools") == 1
+    i = argv.index("--disallowedTools")
+    assert argv[i + 1 : i + 4] == ["Agent", "ScheduleWakeup", "Bash"]
+
