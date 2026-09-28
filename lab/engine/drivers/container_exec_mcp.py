@@ -61,6 +61,9 @@ TOOL_SCHEMA: dict[str, Any] = {
 }
 
 DISPATCH_TOOL_NAME = "dispatch_blyte"
+# `blyte dispatch`'s own default. Without it blyte used the headless default of 25 turns: all
+# three dispatches of the first offload task stopped there before reaching the gate (2026-09-28).
+DISPATCH_MAX_TURNS = 300
 DISPATCH_TOOL_DESCRIPTION = (
     "Hand one well-specified implementation task to blyte, a cheaper implementer model "
     "working in this same container. It edits files, runs commands, and stops when `gate` "
@@ -186,6 +189,8 @@ class ContainerExec:
             "--rollback=false",
             "--max-seconds",
             str(max_seconds),
+            "--max-turns",
+            str(DISPATCH_MAX_TURNS),
             "--report",
             str(report_path),
             "--",
