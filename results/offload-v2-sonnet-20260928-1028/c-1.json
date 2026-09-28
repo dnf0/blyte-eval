@@ -1,0 +1,49 @@
+[
+  {
+    "task_id": "datacurve/python-statemachine-state-data-scoping",
+    "arm": "bare",
+    "passed": false,
+    "wall_clock_sec": 2305.88,
+    "cost_usd": 7.0261645999999995,
+    "input_tokens": 282,
+    "output_tokens": 95086,
+    "milestones_completed": 1,
+    "lease_extensions_earned_sec": 1200.0,
+    "total_granted_budget_sec": 6600.0,
+    "failure_reason": "Verification failed: Reward was 0.0 < 1.0\nOutput:   +    and   State('S1', id='s1', value='s1', initial=True, final=False, parallel=False) = SM(model=Model(state=s1), state_field='state', configuration=['s1']).s1\n    \n    tests/test_state_data.py:428: AssertionError\nP2P 1283/1286 pass 3 fail; F2P 69/72 pass 3 fail; PARTIAL 0.9955817378497791; BINARY 0\n[verifier] reward.json={\"reward\": 0, \"f2p_total\": 72, \"f2p_passed\": 69, \"p2p_total\": 1286, \"p2p_passed\": 1283, \"f2p\": 0.9583333333333334, \"p2p\": 0.9976671850699844, \"partial\": 0.9955817378497791}\n",
+    "extra": {
+      "run_id": "eval-datacurve_python-statemachine-state-data-scoping-bare-e46558a2",
+      "harness": "claude-code",
+      "model": "sonnet",
+      "network_mode": "none",
+      "nano_cpus": 2000000000,
+      "mem_limit": "8192m",
+      "turns": 1,
+      "cached_input_tokens": 0,
+      "thinking_tokens": 0,
+      "cost_basis": "fresh+cached+thinking",
+      "agent_succeeded": true,
+      "reward": 0.0,
+      "test_stats": {
+        "reward": 0,
+        "f2p_total": 72,
+        "f2p_passed": 69,
+        "p2p_total": 1286,
+        "p2p_passed": 1283,
+        "f2p": 0.9583333333333334,
+        "p2p": 0.9976671850699844,
+        "partial": 0.9955817378497791
+      },
+      "test_pass_fraction": 0.9955817378497791,
+      "f2p_fraction": 0.9583333333333334,
+      "p2p_fraction": 0.9976671850699844,
+      "tests_passed": 1352,
+      "tests_total": 1358,
+      "patch_path": "/tmp/superstate_eval_runs/20260928-115259/eval-datacurve_python-statemachine-state-data-scoping-bare-e46558a2/logs/artifacts/model.patch",
+      "logs_dir": "/tmp/superstate_eval_runs/20260928-115259/eval-datacurve_python-statemachine-state-data-scoping-bare-e46558a2/logs",
+      "held_out_verifier": true,
+      "isolated_execution": true,
+      "answer_key_sealed": []
+    }
+  }
+]
