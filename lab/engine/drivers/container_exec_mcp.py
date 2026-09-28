@@ -174,6 +174,10 @@ class ContainerExec:
         reports_dir = Path(dispatch_dir)
         reports_dir.mkdir(parents=True, exist_ok=True)
         report_path = reports_dir / f"dispatch-{self.dispatch_count}.json"
+        # blyte's event stream (one line per tool call, with the command). The report says how
+        # long commands took but not which ones; without this, how often a dispatch ran the full
+        # test suite could only be estimated (offload v2, 2026-09-28).
+        events_path = reports_dir / f"dispatch-{self.dispatch_count}.events.log"
 
         blyte_bin = os.environ.get("BLYTE_BIN", "").strip() or "blyte"
         cmd = [
@@ -209,6 +213,14 @@ class ContainerExec:
                 False,
             )
 
+        events = proc.stdout or ""
+        if proc.stderr:
+            events += f"\n--- stderr ---\n{proc.stderr}"
+        try:
+            events_path.write_text(events, encoding="utf-8")
+        except OSError as err:
+            log(f"could not write {events_path}: {err}")
+
         if not report_path.is_file():
             err_msg = (proc.stderr or "").strip() or f"Dispatch report not found at {report_path}"
             return (
@@ -243,6 +255,7 @@ class ContainerExec:
                 else report_data.get("duration_seconds")
             ),
             "report": report_data.get("report") or str(report_path),
+            "events_log": str(events_path),
         }
         return (json.dumps(summary), False)
 

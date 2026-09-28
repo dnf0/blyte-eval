@@ -411,3 +411,36 @@ def test_dispatch_invalid_arguments_rejected(monkeypatch: pytest.MonkeyPatch, ba
     assert resp is not None
     assert "error" in resp
     assert resp["error"]["code"] == -32602
+
+
+def test_dispatch_keeps_blytes_event_log(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Each dispatch saves blyte's event stream, so the commands it ran can be counted."""
+    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
+    dispatch_dir = tmp_path / "reports"
+    monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))
+    events = "[Turn 1] \n● bash python -m pytest -q -> exit 0\n"
+
+    def mock_run(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        report_file = Path(cmd[cmd.index("--report") + 1])
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        report_file.write_text(json.dumps({"outcome": "verified"}))
+        return subprocess.CompletedProcess(cmd, returncode=0, stdout=events, stderr="blyte: note")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    resp = handle(
+        {
+            "jsonrpc": "2.0",
+            "id": 12,
+            "method": "tools/call",
+            "params": {"name": DISPATCH_TOOL_NAME, "arguments": {"task": "t", "gate": "g"}},
+        },
+        ContainerExec(),
+    )
+    assert resp is not None
+    summary = json.loads(resp["result"]["content"][0]["text"])
+    log_path = dispatch_dir / "dispatch-1.events.log"
+    assert summary["events_log"] == str(log_path)
+    text = log_path.read_text(encoding="utf-8")
+    assert "● bash python -m pytest -q -> exit 0" in text
+    assert "--- stderr ---\nblyte: note" in text
