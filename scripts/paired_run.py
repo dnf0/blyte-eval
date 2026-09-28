@@ -31,6 +31,7 @@ from lab.engine.drivers.agy_cli import AgyCliDriver  # noqa: E402
 from lab.engine.drivers.claude_cli import ClaudeCliDriver  # noqa: E402
 from lab.engine.drivers.superstate_native import SuperstateNativeDriver  # noqa: E402
 from lab.engine.harnesses import BARE_ARM, build_harness, by_harness, render_harness_comparison  # noqa: E402
+from lab.engine.plan_first import final_response, planning_task, with_plan  # noqa: E402
 from lab.engine.governor import ConcurrencyGovernor  # noqa: E402
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table  # noqa: E402
 from lab.engine.runner import AblationRunner  # noqa: E402
@@ -95,6 +96,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not strip unrelated MCP servers for this run. They cost ~13,288 fresh input "
              "tokens on EVERY agy invocation (FINDINGS 13.17) and no benchmark task uses "
              "github/notion/slack, so this is only for debugging the harness itself.",
+    )
+    plan_group = ap.add_mutually_exclusive_group()
+    plan_group.add_argument(
+        "--plan-only",
+        type=Path,
+        metavar="PATH",
+        help="Planning run only: execute planning on one task with one harness, write the plan to PATH and exit",
+    )
+    plan_group.add_argument(
+        "--plan-from",
+        type=Path,
+        metavar="PATH",
+        help="Read plan from PATH and inject it into the task instruction before running",
     )
     return ap
 
@@ -186,6 +200,24 @@ def _run(args) -> int:
         for name, reason in ungradeable:
             logger.warning("    %s -- %s", name, reason)
 
+    if args.plan_only:
+        if len(tasks) != 1 or not args.harnesses or len(args.harnesses) != 1:
+            logger.error(
+                "--plan-only requires exactly one task and exactly one --harnesses entry"
+            )
+            return 2
+
+    if args.plan_from:
+        if len(tasks) != 1:
+            logger.error("--plan-from requires exactly one task")
+            return 2
+        try:
+            plan_text = args.plan_from.read_text(encoding="utf-8")
+        except OSError as e:
+            logger.error("Could not read plan from %s: %s", args.plan_from, e)
+            return 2
+        tasks = [with_plan(tasks[0], plan_text)]
+
     if not tasks:
         logger.error("No tasks selected")
         return 1
@@ -275,6 +307,38 @@ def _run(args) -> int:
         default_driver=driver,
         governor=governor,
     )
+
+    if args.plan_only:
+        ptask = planning_task(tasks[0])
+        task_budget = args.budget_sec or ptask.agent_timeout_sec or 3600.0
+        logger.info("=" * 78)
+        logger.info(
+            "Planning run: task=%s  harness=%s  budget=%.0fs",
+            ptask.name,
+            driver.harness_name,
+            task_budget,
+        )
+        logger.info("=" * 78)
+        started = time.monotonic()
+        tel = runner.run_task(
+            task_id=ptask.id,
+            arm=BARE_ARM,
+            image=ptask.docker_image,
+            base_budget_sec=task_budget,
+            task_spec=ptask,
+            driver=driver,
+        )
+        # The plan's cost is charged to neither arm, so it is reported here on its own.
+        logger.info("   Planning run: cost=$%.4f %.0fs", tel.cost_usd, time.monotonic() - started)
+        logs_dir = Path(tel.extra["logs_dir"]) if tel.extra and "logs_dir" in tel.extra else None
+        plan = final_response(logs_dir) if logs_dir is not None else None
+        if plan is None:
+            logger.error("Planning run produced no plan in %s", logs_dir)
+            return 1
+        args.plan_only.parent.mkdir(parents=True, exist_ok=True)
+        args.plan_only.write_text(plan, encoding="utf-8")
+        logger.info("Plan written to %s", args.plan_only)
+        return 0
 
     parsed_arms: list[tuple[str, int]] = []
     for arm_spec in args.arms:
