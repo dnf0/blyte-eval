@@ -169,7 +169,7 @@ def test_no_container_leaves_bash_alone(tmp_path: Path) -> None:
     driver.run(task=_task(tmp_path), workspace_path=tmp_path)
 
     argv = (tmp_path / "argv.txt").read_text(encoding="utf-8").splitlines()
-    assert "--disallowedTools" not in argv
+    assert "Bash" not in argv
     assert "--mcp-config" not in argv
 
 
@@ -182,7 +182,7 @@ def test_container_exec_can_be_disabled(tmp_path: Path) -> None:
     driver.run(task=_task(tmp_path), workspace_path=tmp_path, container=FakeContainer())
 
     argv = (tmp_path / "argv.txt").read_text(encoding="utf-8").splitlines()
-    assert "--disallowedTools" not in argv
+    assert "Bash" not in argv
 
 
 def test_driver_times_out_without_claiming_success(tmp_path: Path) -> None:

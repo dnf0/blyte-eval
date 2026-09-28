@@ -58,6 +58,10 @@ DEFAULT_MODEL = "claude-opus-5"
 MCP_SERVER_NAME = "task"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
+# In the offload v1 run (2026-09-28) arm B spent about 120 s waiting on its own background
+# Explore subagent through repeated ScheduleWakeup calls; that is harness noise, not delegation.
+DISALLOWED_TOOLS: tuple[str, ...] = ("Agent", "ScheduleWakeup")
+
 CONTAINER_EXEC_SYSTEM_PROMPT = (
     "Command execution: this workspace is mounted into a Docker container that holds "
     "the project's toolchain and dependencies. The host has neither, and you have no "
@@ -270,12 +274,11 @@ class ClaudeCliDriver(AgentDriver):
 
         # Restrict host execution if container sandbox is active
         container_id = self._container_id(container) if self.container_exec else None
+        disallowed = list(DISALLOWED_TOOLS)
         if container_id:
-            cmd += [
-                # No host shell: it lacks the toolchain and can reach the Docker daemon.
-                "--disallowedTools",
-                "Bash",
-            ]
+            # No host shell: it lacks the toolchain and can reach the Docker daemon.
+            disallowed.append("Bash")
+        cmd += ["--disallowedTools", *disallowed]
 
         # Pass MCP configuration if container execution is active
         if container_id:
