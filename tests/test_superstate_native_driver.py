@@ -399,3 +399,11 @@ def test_run_metrics_reports_the_final_fold_budget() -> None:
     usage = [dict(TURN_USAGE[0], fold_budget=16000), dict(TURN_USAGE[1], fold_budget=24000)]
     assert run_metrics(_report(turn_usage=usage), "")["final_fold_budget"] == 24000
     assert run_metrics(_report(turn_usage=TURN_USAGE), "")["final_fold_budget"] is None
+
+
+def test_blytes_final_message_is_the_response(tmp_path: Path) -> None:
+    # A plan-first planning run by blyte saves its plan from this (offload v2, 2026-09-28).
+    stub = _make_stub(tmp_path, _report(final_message="  the plan  "))
+    driver = _driver(tmp_path, stub)
+    t = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    assert t.raw_response.strip() == "the plan"
