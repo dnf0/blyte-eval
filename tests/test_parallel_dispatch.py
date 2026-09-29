@@ -16,7 +16,7 @@ import pytest
 
 from lab.engine.drivers import container_exec_mcp as mcp
 
-# A fake blyte: waits, then writes `<text>` to `<file>` in the dispatch's workdir, for the task
+# A fake blyte: waits 3 s, then writes `<text>` to `<file>` in the dispatch's workdir, for the task
 # "write <file> <text>", and writes a verified report.
 STUB = """#!/usr/bin/env python3
 import json, sys, time
@@ -25,7 +25,7 @@ a = sys.argv[1:]
 work = Path(a[a.index("--container-workdir") + 1])
 report = Path(a[a.index("--report") + 1])
 _, name, text = a[-1].split(" ", 2)
-time.sleep(1.5)
+time.sleep(3.0)
 (work / name).write_text(text + "\\n")
 report.parent.mkdir(parents=True, exist_ok=True)
 report.write_text(json.dumps({"outcome": "verified", "turns": 1, "gate_attempts": 1}))
@@ -85,12 +85,14 @@ def _dispatch_all(ex: mcp.ContainerExec, tasks: list[str]) -> list[dict[str, Any
 
 
 def test_parallel_dispatches_run_at_once_in_their_own_copies_and_land(executor: mcp.ContainerExec) -> None:
+    # Two 3 s dispatches: at once about 3 s plus copying (up to ~1.4 s seen under load, E17); one
+    # after another 6 s or more. The 5 s limit tells them apart (2.8 s against 1.5 s ones flaked).
     work = Path(executor.default_workdir)
     start = time.monotonic()
     results = _dispatch_all(executor, ["write a.txt from-a", "write b.txt from-b"])
     elapsed = time.monotonic() - start
 
-    assert elapsed < 2.8, f"the dispatches ran one after another ({elapsed:.1f}s)"
+    assert elapsed < 5.0, f"the dispatches ran one after another ({elapsed:.1f}s)"
     assert [r["merge"] for r in results] == ["applied", "applied"]
     assert (work / "a.txt").read_text() == "from-a\n"
     assert (work / "b.txt").read_text() == "from-b\n"
@@ -130,3 +132,39 @@ def test_a_running_dispatch_does_not_hold_up_other_tool_calls(monkeypatch: pytes
     out = io.StringIO()
     mcp.serve(lines, out, Slow())
     assert [json.loads(line)["id"] for line in out.getvalue().splitlines()] == [2, 1]
+
+
+def test_started_dispatches_run_at_the_same_time_and_wait_collects_them(executor: mcp.ContainerExec) -> None:
+    # Claude Code runs an MCP server's calls one after another, so each start must return at once.
+    work = Path(executor.default_workdir)
+    start = time.monotonic()
+    ids = []
+    for task in ("write a.txt from-a", "write b.txt from-b"):
+        t0 = time.monotonic()
+        started = json.loads(executor.start_dispatch(task, "true")[0])
+        assert time.monotonic() - t0 < 1.0, "a start blocked until its dispatch finished"
+        assert started["status"] == "started"
+        ids.append(started["dispatch_id"])
+    results = json.loads(executor.wait_dispatches(ids)[0])["results"]
+    elapsed = time.monotonic() - start
+
+    assert elapsed < 5.0, f"the started dispatches ran one after another ({elapsed:.1f}s)"
+    assert [r["dispatch_id"] for r in results] == ids
+    assert [r["merge"] for r in results] == ["applied", "applied"]
+    assert (work / "a.txt").read_text() == "from-a\n"
+    assert (work / "b.txt").read_text() == "from-b\n"
+    assert json.loads(executor.wait_dispatches([ids[0]])[0])["results"][0]["outcome"] == "error"
+
+
+def test_start_and_wait_are_offered_with_the_implementer(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-test")
+    resp = mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}, mcp.ContainerExec())
+    assert resp is not None
+    names = [t["name"] for t in resp["result"]["tools"]]
+    assert names == [mcp.TOOL_NAME, mcp.DISPATCH_TOOL_NAME, mcp.DISPATCH_START_TOOL_NAME, mcp.DISPATCH_WAIT_TOOL_NAME]
+    bad = mcp.handle(
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+         "params": {"name": mcp.DISPATCH_WAIT_TOOL_NAME, "arguments": {"dispatch_ids": ["x"]}}},
+        mcp.ContainerExec(),
+    )
+    assert bad is not None and "error" in bad
