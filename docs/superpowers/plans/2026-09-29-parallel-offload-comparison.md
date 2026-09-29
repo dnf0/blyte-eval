@@ -99,3 +99,33 @@ def planning_task(task: TaskSpec, parallel: bool = False) -> TaskSpec:
 git add lab/engine/plan_first.py scripts/paired_run.py tests/test_plan_first.py
 git commit --no-gpg-sign -m "feat(eval): --plan-parallel asks the planner for independent parts"
 ```
+
+## Result (2026-09-29), scc only
+
+**Changed from the design (user, 2026-09-29):** no arm A (Sonnet implements) runs; instead arm B
+with parallel dispatch against arm B with serial dispatch (eval `ac2ae9f`, before #83). Then, after
+the first four runs showed no overlap, two more with start-then-wait dispatches (#85). Same shared
+plan (Sonnet, 4 min, $0.32; 3 parts, part 1 the core). Results:
+`results/parallel-offload-scc-bounded-memory-spilling-20260929-1340/`.
+
+| run | dispatch | how Sonnet split it | target tests | Gemini | Sonnet | wall |
+|---|---|---|---|---|---|---|
+| ser-1 | serial (old eval) | 1 dispatch | 28/31 | $1.70 | $0.16 | 16 min |
+| ser-2 | serial (old eval) | 1 dispatch | 28/31 | $1.64 | $0.16 | 15 min |
+| par-1 | parallel (#83) | 2, one after the other | **31/31 (passed)** | $2.21 | $0.16 | 21 min |
+| par-2 | parallel (#83) | 3, one after the other | 28/31 | $4.14 | $0.16 | 33 min |
+| par-3 | start-then-wait (#85) | 3: part 1, then parts 2 and 3 **at once** | 30/31 | $4.25 | $0.23 | 36 min |
+| par-4 | start-then-wait (#85) | 1 dispatch | 28/31 | $1.86 | $0.12 | 14 min |
+
+- **Parallelism now works end to end:** in par-3, parts 2 and 3 started together (15:53:10) and
+  both applied without a conflict. Before #85, Claude Code ran the MCP server's calls one after
+  another, so #83's server-side parallelism was never used (par-2: dispatch 3 started 2 s after 2).
+- **On this task, one dispatch was fastest and cheapest** (14–16 min, $1.6–1.9 of Gemini). Splitting
+  cost 30–160% more Gemini and was slower even with overlap: each dispatch re-reads the code, and
+  the overlap saved only the shorter part (par-3: part 3 took 6 min beside part 2's 18).
+- **Splitting may help quality** (31, 28, 30 target tests against 28, 28, 28 for one dispatch; the
+  only pass was split) — three runs each, so a hint, not a result.
+- **Sonnet's cost is small in every run** ($0.12–0.23): with a full plan, blyte does the work.
+- **Limits:** one task, whose parts are uneven and coupled through part 1; Sonnet chose the split
+  itself (twice one dispatch, four times several), so the arms differ in splitting as well as in
+  parallelism. A task with several independent parts of similar size is the fair test.
