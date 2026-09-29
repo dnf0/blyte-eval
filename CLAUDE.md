@@ -503,6 +503,6 @@ Gate-strength and daemon-vs-mcp questions are settled within the superstate arms
 no gate and contributes nothing to either. The lift is banked at EXP-049 (67.5% vs 45%, n=40,
 p=0.037) and does not need re-measuring.
 
-## Working model: Claude orchestrates; blyte and agy implement, A/B
+## Working model: Claude orchestrates; blyte implements, with a sampled A/B against agy
 
-When executing a plan, follow the `agy-orchestration` skill (`~/.claude/skills/agy-orchestration/`; repo rules in `.claude/agy-rules.md`): dispatch one task at a time as an A/B shadow run (headless `blyte` and `agy` side by side, each in its own worktree (`../superstate-eval--<task>`), validate independently, then merge. The implementer never starts a paid run; benchmark runs are Claude's, and only with a named decision (see above).
+When executing a plan, follow the `agy-orchestration` skill (`~/.claude/skills/agy-orchestration/`; repo rules in `.claude/agy-rules.md`): dispatch one task at a time with `dispatch-auto.sh` (headless `blyte`, with an A/B against `agy` every Nth task; each in its own worktree, `../blyte-eval--<task>`), validate independently, then merge. The implementer never starts a paid run; benchmark runs are Claude's, and only with a named decision (see above).
