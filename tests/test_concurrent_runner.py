@@ -8,7 +8,7 @@ from lab.engine.runner import AblationRunner
 
 
 def test_ablation_runner_universal_lease_extension() -> None:
-    # Verify that all arms (vanilla, superpowers, superstate) can grow their budget on progress
+    # Verify that all arms (vanilla, superpowers, blyte) can grow their budget on progress
     runner = AblationRunner(docker_manager=MagicMock())
 
     def fake_executor(policy):
@@ -45,7 +45,7 @@ def test_run_cohort_concurrency_governor_dispatch() -> None:
         {"task_id": f"task-{i}", "image": "ubuntu:latest", "base_budget_sec": 900.0}
         for i in range(5)
     ]
-    arms = ["vanilla", "superpowers", "superstate"]
+    arms = ["vanilla", "superpowers", "blyte"]
 
     with patch.object(runner, "run_task") as mock_run_task:
         mock_run_task.return_value = MagicMock(passed=True, cost_usd=0.5)

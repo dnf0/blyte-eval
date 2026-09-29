@@ -1,7 +1,7 @@
 [project]
-name = "superstate-eval"
+name = "blyte-eval"
 version = "0.1.0"
-description = "Local assessment, differential testing, and ablation lab for Superstate and agent-rules state engines"
+description = "Local assessment, differential testing, and ablation lab for Blyte and agent-rules state engines"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

@@ -56,10 +56,10 @@ def test_generate_comparison_summary() -> None:
             output_tokens=2500,
             total_granted_budget_sec=900.0,
         ),
-        # Arm 3: Superstate (earned lease extension)
+        # Arm 3: Blyte (earned lease extension)
         RunTelemetry(
             task_id="task-1",
-            arm="superstate",
+            arm="blyte",
             passed=True,
             wall_clock_sec=1400.0,
             cost_usd=1.10,
@@ -71,7 +71,7 @@ def test_generate_comparison_summary() -> None:
         ),
         RunTelemetry(
             task_id="task-2",
-            arm="superstate",
+            arm="blyte",
             passed=True,
             wall_clock_sec=650.0,
             cost_usd=0.70,
@@ -100,8 +100,8 @@ def test_generate_comparison_summary() -> None:
     assert sp["pass_rate_pct"] == 100.0
     assert sp["total_cost_usd"] == 1.40
 
-    # Check superstate metrics
-    ss = summary["superstate"]
+    # Check blyte metrics
+    ss = summary["blyte"]
     assert ss["total_tasks"] == 2
     assert ss["passes"] == 2
     assert ss["pass_rate_pct"] == 100.0
@@ -121,7 +121,7 @@ def test_ablation_runner_execution_and_cleanup() -> None:
 
     telemetry = runner.run_task(
         task_id="mock-task-1",
-        arm="superstate",
+        arm="blyte",
         image="mock:latest",
         base_budget_sec=900.0,
         lease_extension_sec=1200.0,
@@ -314,8 +314,8 @@ def test_summarize_failures_clusters_like_failures() -> None:
     from lab.engine.reporter import summarize_failures
 
     runs = [
-        _failed("superstate", "Verification gate failed for milestone 'Task 2: Wire adapter'"),
-        _failed("superstate", "Verification gate failed for milestone 'Task 9: Add CLI'"),
+        _failed("blyte", "Verification gate failed for milestone 'Task 2: Wire adapter'"),
+        _failed("blyte", "Verification gate failed for milestone 'Task 9: Add CLI'"),
         _failed("vanilla", "Exhausted maximum turns (50) without completion"),
         RunTelemetry(
             task_id="t",
@@ -330,7 +330,7 @@ def test_summarize_failures_clusters_like_failures() -> None:
     clusters = summarize_failures(runs)
 
     # Two gate failures differing only by milestone name must collapse to one cluster.
-    assert clusters["superstate"] == [
+    assert clusters["blyte"] == [
         {"signature": "Verification gate failed for milestone '...'", "count": 2}
     ]
     assert clusters["vanilla"][0]["count"] == 1
@@ -377,11 +377,11 @@ def test_lift_is_measured_per_harness_and_task_pair() -> None:
     from lab.engine.reporter import compute_control_plane_lift
 
     runs = [
-        _paired("t1", "vanilla", False, 0.1), _paired("t1", "superstate", True, 0.2),
-        _paired("t2", "vanilla", True, 0.1), _paired("t2", "superstate", True, 0.2),
-        _paired("t3", "vanilla", True, 0.1), _paired("t3", "superstate", False, 0.2),
+        _paired("t1", "vanilla", False, 0.1), _paired("t1", "blyte", True, 0.2),
+        _paired("t2", "vanilla", True, 0.1), _paired("t2", "blyte", True, 0.2),
+        _paired("t3", "vanilla", True, 0.1), _paired("t3", "blyte", False, 0.2),
     ]
-    lift = compute_control_plane_lift(runs)["agy+superstate"]
+    lift = compute_control_plane_lift(runs)["agy+blyte"]
 
     assert lift["paired_tasks"] == 3
     assert lift["gained"] == ["t1"]
@@ -396,7 +396,7 @@ def test_lift_never_compares_across_different_harnesses() -> None:
 
     runs = [
         _paired("t1", "vanilla", False, 0.1, harness="claude-code"),
-        _paired("t1", "superstate", True, 0.2, harness="agy"),
+        _paired("t1", "blyte", True, 0.2, harness="agy"),
     ]
     assert compute_control_plane_lift(runs) == {}
 
@@ -404,13 +404,13 @@ def test_lift_never_compares_across_different_harnesses() -> None:
 def test_runs_without_a_baseline_partner_are_excluded() -> None:
     from lab.engine.reporter import compute_control_plane_lift
 
-    runs = [_paired("t1", "superstate", True, 0.2)]  # no vanilla partner
+    runs = [_paired("t1", "blyte", True, 0.2)]  # no vanilla partner
     assert compute_control_plane_lift(runs) == {}
 
 
 def test_small_sample_warning_is_shown() -> None:
     from lab.engine.reporter import render_lift_report
 
-    runs = [_paired("t1", "vanilla", False, 0.1), _paired("t1", "superstate", True, 0.2)]
+    runs = [_paired("t1", "vanilla", False, 0.1), _paired("t1", "blyte", True, 0.2)]
     report = render_lift_report(runs)
     assert "one task is worth 100.0pp" in report

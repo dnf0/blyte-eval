@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, Optional
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.approval import resolve_next_turn_prompt
 
-logger = logging.getLogger("superstate_eval.adapters")
+logger = logging.getLogger("blyte_eval.adapters")
 
 # Guidance a repository may already carry. Every arm strips these before applying
 # its own layer, so the three arms start from an identical workspace and the only
@@ -200,7 +200,7 @@ class TurnBasedAdapter(AgentAdapter):
         """Provide initial instruction prompt for the task.
 
         Baseline arms (vanilla, superpowers) reach the driver through here. The portable
-        discipline rules are appended only when SUPERSTATE_EVAL_GENERIC_RULES=1, so the
+        discipline rules are appended only when BLYTE_EVAL_GENERIC_RULES=1, so the
         default measurement still gives the baselines the bare instruction -- and the
         third experimental leg can ask whether that discipline is portable or only pays
         off alongside a verification gate. See lab/engine/prompt_contracts.py.

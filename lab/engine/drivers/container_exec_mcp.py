@@ -13,10 +13,10 @@ choose a different container, start one, or enumerate images.
 
 Run as: python -m lab.engine.drivers.container_exec_mcp
 Environment:
-    SUPERSTATE_EVAL_CONTAINER   required, the container id or name to exec in
-    SUPERSTATE_EVAL_WORKDIR     optional, default /app
-    SUPERSTATE_EVAL_EXEC_TIMEOUT optional seconds, default 600
-    SUPERSTATE_EVAL_MAX_OUTPUT  optional chars, default 30000
+    BLYTE_EVAL_CONTAINER   required, the container id or name to exec in
+    BLYTE_EVAL_WORKDIR     optional, default /app
+    BLYTE_EVAL_EXEC_TIMEOUT optional seconds, default 600
+    BLYTE_EVAL_MAX_OUTPUT  optional chars, default 30000
     BLYTE_IMPLEMENTER_MODEL     optional, enables dispatch_blyte tool when set
     BLYTE_DISPATCH_DIR          required when dispatch_blyte is enabled
     BLYTE_BIN                   optional path to blyte binary (default: blyte on PATH)
@@ -32,7 +32,7 @@ import sys
 from typing import Any
 
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_NAME = "superstate-eval-container-exec"
+SERVER_NAME = "blyte-eval-container-exec"
 SERVER_VERSION = "1.0.0"
 
 TOOL_NAME = "run_in_container"
@@ -103,10 +103,10 @@ class ContainerExec:
     """Execs commands in a single, fixed container."""
 
     def __init__(self) -> None:
-        self.container_id = os.environ.get("SUPERSTATE_EVAL_CONTAINER", "").strip()
-        self.default_workdir = os.environ.get("SUPERSTATE_EVAL_WORKDIR", "/app")
-        self.timeout = int(os.environ.get("SUPERSTATE_EVAL_EXEC_TIMEOUT", "600"))
-        self.max_output = int(os.environ.get("SUPERSTATE_EVAL_MAX_OUTPUT", "30000"))
+        self.container_id = os.environ.get("BLYTE_EVAL_CONTAINER", "").strip()
+        self.default_workdir = os.environ.get("BLYTE_EVAL_WORKDIR", "/app")
+        self.timeout = int(os.environ.get("BLYTE_EVAL_EXEC_TIMEOUT", "600"))
+        self.max_output = int(os.environ.get("BLYTE_EVAL_MAX_OUTPUT", "30000"))
         self._container: Any = None
         self.dispatch_count: int = 0
 
@@ -120,7 +120,7 @@ class ContainerExec:
     def run(self, command: str, workdir: str | None = None) -> tuple[str, bool]:
         """Execute `command`; return (text, is_error)."""
         if not self.container_id:
-            return ("SUPERSTATE_EVAL_CONTAINER is not set; no container to execute in.", True)
+            return ("BLYTE_EVAL_CONTAINER is not set; no container to execute in.", True)
         try:
             container = self._resolve()
             exec_res = container.exec_run(
@@ -154,7 +154,7 @@ class ContainerExec:
         """Dispatch an implementation task to blyte in the container; return (json_text, is_error)."""
         if not self.container_id:
             return (
-                json.dumps({"outcome": "error", "error": "SUPERSTATE_EVAL_CONTAINER is not set; no container to execute in."}),
+                json.dumps({"outcome": "error", "error": "BLYTE_EVAL_CONTAINER is not set; no container to execute in."}),
                 False,
             )
         model = os.environ.get("BLYTE_IMPLEMENTER_MODEL", "").strip()

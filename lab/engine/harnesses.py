@@ -1,6 +1,6 @@
 """Harness-vs-harness comparison: the evaluation's current question.
 
-Superstate is a harness in its own right, so the question is no longer "what does a layer add to
+Blyte is a harness in its own right, so the question is no longer "what does a layer add to
 agy" (the arm table in CLAUDE.md, kept for reproducing bolt-on-era results) but "how do harnesses
 compare on the same bare task, model and sealed grader". Every harness runs through the `bare`
 pass-through arm: the task instruction untouched, guidance files stripped, no gate from the
@@ -22,8 +22,8 @@ from lab.engine.budget_policy import RunTelemetry
 BARE_ARM = "bare"
 
 _SPEC_RE = re.compile(r"^(?P<name>[a-z+]+)(?:\[(?P<opts>[a-zA-Z0-9,._-]*)\])?$")
-_SUPERSTATE_CONTEXTS = ("conversational", "folded")
-_SUPERSTATE_OPTIONS = _SUPERSTATE_CONTEXTS + ()
+_BLYTE_CONTEXTS = ("conversational", "folded")
+_BLYTE_OPTIONS = _BLYTE_CONTEXTS + ()
 _FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
 
 
@@ -53,15 +53,15 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
             )
         return name, opts
     if name == "blyte":
-        unknown = [o for o in opts if o not in _SUPERSTATE_OPTIONS and not _FOLD_BUDGET_RE.fullmatch(o)]
+        unknown = [o for o in opts if o not in _BLYTE_OPTIONS and not _FOLD_BUDGET_RE.fullmatch(o)]
         if unknown:
             raise HarnessSpecError(
-                f"unknown blyte option(s) {unknown}; known: {list(_SUPERSTATE_OPTIONS)}"
+                f"unknown blyte option(s) {unknown}; known: {list(_BLYTE_OPTIONS)}"
             )
-        contexts = [o for o in opts if o in _SUPERSTATE_CONTEXTS]
+        contexts = [o for o in opts if o in _BLYTE_CONTEXTS]
         if len(contexts) > 1:
             raise HarnessSpecError(
-                f"choose one context, got {contexts}; one of {list(_SUPERSTATE_CONTEXTS)}"
+                f"choose one context, got {contexts}; one of {list(_BLYTE_CONTEXTS)}"
             )
         budgets = [o for o in opts if _FOLD_BUDGET_RE.fullmatch(o)]
         if len(budgets) > 1:
@@ -105,11 +105,11 @@ def build_harness(
             implementer_model=opts[0],
             report_dir=report_dir,
         )
-    from lab.engine.drivers.superstate_native import SuperstateNativeDriver
+    from lab.engine.drivers.blyte_native import BlyteNativeDriver
 
-    return SuperstateNativeDriver(
+    return BlyteNativeDriver(
         model=model,
-        context=next((o for o in opts if o in _SUPERSTATE_CONTEXTS), "folded"),
+        context=next((o for o in opts if o in _BLYTE_CONTEXTS), "folded"),
         fold_budget=next(
             (int(m.group(1)) * 1000 for o in opts if (m := _FOLD_BUDGET_RE.fullmatch(o))), None
         ),

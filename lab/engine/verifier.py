@@ -24,7 +24,7 @@ import uuid
 from lab.sandbox.answer_key import AnswerKeyGuard
 from lab.sandbox.docker_manager import DockerManager, ImageBuildError
 
-logger = logging.getLogger("superstate_eval.verifier")
+logger = logging.getLogger("blyte_eval.verifier")
 
 VERIFIER_ENTRYPOINT = "bash /tests/test.sh"
 # test.sh writes this sentinel when it crashes before producing a reward.
@@ -113,7 +113,7 @@ class HeldOutVerifier:
         # answer key sitting on the host: any later agent with a shell can run
         # `docker run <image> cat /tests/test.patch`. Unique tag + removal after
         # grading means it exists only while grading is actually happening.
-        tag = f"superstate-eval-verifier/{_sanitize_tag(str(task.id))}:{uuid.uuid4().hex[:12]}"
+        tag = f"blyte-eval-verifier/{_sanitize_tag(str(task.id))}:{uuid.uuid4().hex[:12]}"
         guard = AnswerKeyGuard()
         with guard.temporarily_readable(tests_dir) as readable_tests:
             return self.docker_manager.build_image(

@@ -16,7 +16,7 @@ from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.extractor import extract_and_grade
 from lab.sandbox.docker_manager import DockerManager
 
-logger = logging.getLogger("superstate_eval.pilot")
+logger = logging.getLogger("blyte_eval.pilot")
 
 
 class PilotMockDriver(AgentDriver):
@@ -93,7 +93,7 @@ class PilotShowdownRunner:
         logs_root: Optional[Path] = None,
     ) -> None:
         self.docker_manager = docker_manager or DockerManager()
-        self.logs_root = logs_root or Path("/tmp/superstate_pilot_logs")
+        self.logs_root = logs_root or Path("/tmp/blyte_pilot_logs")
         self.logs_root.mkdir(parents=True, exist_ok=True)
 
     def _get_adapter(self, arm: str) -> AgentAdapter:

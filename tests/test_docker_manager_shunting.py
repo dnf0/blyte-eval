@@ -1,4 +1,4 @@
-"""Tests for mounting static Linux superstate binary into sandbox containers."""
+"""Tests for mounting static Linux blyte binary into sandbox containers."""
 
 from __future__ import annotations
 
@@ -8,13 +8,13 @@ import pytest
 
 from lab.sandbox.docker_manager import (
     DockerManager,
-    find_static_superstate_binary,
+    find_static_blyte_binary,
 )
 
 
-def test_spawn_sandbox_mounts_static_superstate_when_file_exists(tmp_path: Path) -> None:
-    """Verify spawn_sandbox bind-mounts /usr/local/bin/superstate when static binary is present."""
-    fake_bin = tmp_path / "superstate-linux-x86_64"
+def test_spawn_sandbox_mounts_static_blyte_when_file_exists(tmp_path: Path) -> None:
+    """Verify spawn_sandbox bind-mounts /usr/local/bin/blyte when static binary is present."""
+    fake_bin = tmp_path / "blyte-linux-x86_64"
     fake_bin.write_bytes(b"\x7fELFfakebinary")
 
     mock_docker_client = MagicMock()
@@ -23,7 +23,7 @@ def test_spawn_sandbox_mounts_static_superstate_when_file_exists(tmp_path: Path)
     mock_docker_client.containers.run.return_value = mock_container
 
     with patch(
-        "lab.sandbox.docker_manager.find_static_superstate_binary",
+        "lab.sandbox.docker_manager.find_static_blyte_binary",
         return_value=fake_bin,
     ):
         with patch("lab.sandbox.docker_manager.docker.from_env", return_value=mock_docker_client):
@@ -36,7 +36,7 @@ def test_spawn_sandbox_mounts_static_superstate_when_file_exists(tmp_path: Path)
             resolved_fake_path = str(fake_bin.resolve())
             assert resolved_fake_path in volumes
             assert volumes[resolved_fake_path] == {
-                "bind": "/usr/local/bin/superstate",
+                "bind": "/usr/local/bin/blyte",
                 "mode": "ro",
             }
 
@@ -49,7 +49,7 @@ def test_spawn_sandbox_omits_mount_when_binary_absent() -> None:
     mock_docker_client.containers.run.return_value = mock_container
 
     with patch(
-        "lab.sandbox.docker_manager.find_static_superstate_binary",
+        "lab.sandbox.docker_manager.find_static_blyte_binary",
         return_value=None,
     ):
         with patch("lab.sandbox.docker_manager.docker.from_env", return_value=mock_docker_client):
@@ -60,14 +60,14 @@ def test_spawn_sandbox_omits_mount_when_binary_absent() -> None:
             call_kwargs = mock_docker_client.containers.run.call_args.kwargs
             volumes = call_kwargs.get("volumes", {})
             assert not any(
-                isinstance(mount_cfg, dict) and mount_cfg.get("bind") == "/usr/local/bin/superstate"
+                isinstance(mount_cfg, dict) and mount_cfg.get("bind") == "/usr/local/bin/blyte"
                 for mount_cfg in volumes.values()
             )
 
 
-def test_spawn_sandbox_does_not_duplicate_existing_superstate_mount(tmp_path: Path) -> None:
-    """Verify spawn_sandbox does not override or duplicate an existing superstate mount."""
-    fake_bin = tmp_path / "superstate-linux-x86_64"
+def test_spawn_sandbox_does_not_duplicate_existing_blyte_mount(tmp_path: Path) -> None:
+    """Verify spawn_sandbox does not override or duplicate an existing blyte mount."""
+    fake_bin = tmp_path / "blyte-linux-x86_64"
     fake_bin.write_bytes(b"\x7fELFfakebinary")
     custom_bin = tmp_path / "custom-binary"
     custom_bin.write_bytes(b"\x7fELFcustom")
@@ -77,13 +77,13 @@ def test_spawn_sandbox_does_not_duplicate_existing_superstate_mount(tmp_path: Pa
     mock_docker_client.containers.run.return_value = mock_container
 
     with patch(
-        "lab.sandbox.docker_manager.find_static_superstate_binary",
+        "lab.sandbox.docker_manager.find_static_blyte_binary",
         return_value=fake_bin,
     ):
         with patch("lab.sandbox.docker_manager.docker.from_env", return_value=mock_docker_client):
             manager = DockerManager()
             existing_volumes = {
-                str(custom_bin): {"bind": "/usr/local/bin/superstate", "mode": "rw"}
+                str(custom_bin): {"bind": "/usr/local/bin/blyte", "mode": "rw"}
             }
             with manager.spawn_sandbox(
                 image="dummy-image", command="sleep 10", volumes=existing_volumes
@@ -97,33 +97,33 @@ def test_spawn_sandbox_does_not_duplicate_existing_superstate_mount(tmp_path: Pa
             assert str(fake_bin.resolve()) not in volumes
 
 
-def test_find_static_superstate_binary_env_var(
+def test_find_static_blyte_binary_env_var(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Verify find_static_superstate_binary respects SUPERSTATE_LINUX_BIN when file exists."""
-    fake_bin = tmp_path / "custom-superstate-bin"
+    """Verify find_static_blyte_binary respects BLYTE_LINUX_BIN when file exists."""
+    fake_bin = tmp_path / "custom-blyte-bin"
     fake_bin.write_bytes(b"\x7fELFcustombinary")
 
-    monkeypatch.setenv("SUPERSTATE_LINUX_BIN", str(fake_bin))
-    assert find_static_superstate_binary() == fake_bin
+    monkeypatch.setenv("BLYTE_LINUX_BIN", str(fake_bin))
+    assert find_static_blyte_binary() == fake_bin
 
 
-def test_find_static_superstate_binary_env_var_nonexistent(
+def test_find_static_blyte_binary_env_var_nonexistent(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Verify find_static_superstate_binary falls back when SUPERSTATE_LINUX_BIN does not exist."""
+    """Verify find_static_blyte_binary falls back when BLYTE_LINUX_BIN does not exist."""
     nonexistent = tmp_path / "does-not-exist"
-    monkeypatch.setenv("SUPERSTATE_LINUX_BIN", str(nonexistent))
+    monkeypatch.setenv("BLYTE_LINUX_BIN", str(nonexistent))
 
     # Mock candidate checks to return False so we verify fallback returns None
     with patch.object(Path, "is_file", return_value=False):
-        assert find_static_superstate_binary() is None
+        assert find_static_blyte_binary() is None
 
 
-def test_find_static_superstate_binary_none_when_no_candidates_exist(
+def test_find_static_blyte_binary_none_when_no_candidates_exist(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify find_static_superstate_binary returns None when no binaries exist."""
-    monkeypatch.delenv("SUPERSTATE_LINUX_BIN", raising=False)
+    """Verify find_static_blyte_binary returns None when no binaries exist."""
+    monkeypatch.delenv("BLYTE_LINUX_BIN", raising=False)
     with patch.object(Path, "is_file", return_value=False):
-        assert find_static_superstate_binary() is None
+        assert find_static_blyte_binary() is None

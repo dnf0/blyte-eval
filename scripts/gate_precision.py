@@ -9,7 +9,7 @@ EXP-047 found: the gate ran 20 times, passed 20 times, and was wrong on 8. Preci
 Reads the milestone records each arm writes alongside its run, so it needs a run
 directory rather than just the results JSON.
 
-    scripts/gate_precision.py /tmp/superstate_eval_runs/<stamp> results/<run>.json
+    scripts/gate_precision.py /tmp/blyte_eval_runs/<stamp> results/<run>.json
 """
 
 from __future__ import annotations

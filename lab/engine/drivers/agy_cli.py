@@ -21,7 +21,7 @@ from typing import Any, Optional
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry
 
-logger = logging.getLogger("superstate_eval.drivers.agy_cli")
+logger = logging.getLogger("blyte_eval.drivers.agy_cli")
 
 DEFAULT_MODEL = "gemini-3.8-flash-high"
 
@@ -158,19 +158,19 @@ class AgyCliDriver(AgentDriver):
         """Create a `./run-in-container` wrapper script in workspace pointing to container.
 
         Generates a transparent bridge script that routes commands through
-        `superstate shunt` when available to bound token context growth while
+        `blyte shunt` when available to bound token context growth while
         preserving exit codes and fallback semantics.
         """
         # Determine container identifier from container object or string representation
         container_id = getattr(container, "id", None) or getattr(container, "name", str(container))
         script_path = workspace_path / "run-in-container"
 
-        # Build wrapper script checking for superstate availability and shunting toggle
+        # Build wrapper script checking for blyte availability and shunting toggle
         script_content = (
             "#!/usr/bin/env bash\n"
             "set -o pipefail\n\n"
-            'if [ "${SUPERSTATE_SHUNT_ENABLED:-1}" = "1" ] && command -v superstate >/dev/null 2>&1; then\n'
-            f'    exec superstate shunt --threshold-lines 50 -- docker exec -i -w /app "{container_id}" "$@"\n'
+            'if [ "${BLYTE_SHUNT_ENABLED:-1}" = "1" ] && command -v blyte >/dev/null 2>&1; then\n'
+            f'    exec blyte shunt --threshold-lines 50 -- docker exec -i -w /app "{container_id}" "$@"\n'
             "else\n"
             f'    exec docker exec -i -w /app "{container_id}" "$@"\n'
             "fi\n"

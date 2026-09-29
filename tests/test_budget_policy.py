@@ -59,7 +59,7 @@ def test_budget_policy_respects_max_extensions() -> None:
 def test_run_telemetry_serialization() -> None:
     telemetry = RunTelemetry(
         task_id="datacurve/scc-bounded-memory-spilling",
-        arm="superstate",
+        arm="blyte",
         passed=True,
         wall_clock_sec=142.5,
         cost_usd=0.34,
@@ -71,7 +71,7 @@ def test_run_telemetry_serialization() -> None:
     )
     data = telemetry.to_dict()
     assert data["task_id"] == "datacurve/scc-bounded-memory-spilling"
-    assert data["arm"] == "superstate"
+    assert data["arm"] == "blyte"
     assert data["passed"] is True
     assert data["cost_usd"] == 0.34
     assert data["milestones_completed"] == 3

@@ -72,8 +72,8 @@ def test_the_generic_rules_survive() -> None:
 
 
 def test_the_native_harness_path_is_untouched() -> None:
-    from lab.engine.drivers.superstate_native import SuperstateNativeDriver
+    from lab.engine.drivers.blyte_native import BlyteNativeDriver
     from lab.engine.harnesses import parse_harness_spec
 
-    assert SuperstateNativeDriver is not None
+    assert BlyteNativeDriver is not None
     assert parse_harness_spec("blyte[folded]")[0] == "blyte"

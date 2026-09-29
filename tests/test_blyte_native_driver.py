@@ -1,8 +1,8 @@
-"""Tests for the native superstate harness driver.
+"""Tests for the native blyte harness driver.
 
-Driven against a stub `superstate` that honours the --report contract, so nothing here spends
+Driven against a stub `blyte` that honours the --report contract, so nothing here spends
 money, needs credentials, or launches Docker. Contract:
-superstate/docs/superpowers/specs/2026-09-23-native-harness-eval-surface-design.md
+blyte/docs/superpowers/specs/2026-09-23-native-harness-eval-surface-design.md
 """
 
 from __future__ import annotations
@@ -18,11 +18,11 @@ import pytest
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.drivers.agy_cli import estimate_cost_usd
-from lab.engine.drivers.superstate_native import (
+from lab.engine.drivers.blyte_native import (
     CONTAINER_WORKDIR,
     MAX_TURNS,
-    SuperstateNativeDriver,
-    SuperstateNativeDriverError,
+    BlyteNativeDriver,
+    BlyteNativeDriverError,
 )
 
 MODEL = "gemini-3.8-flash-high"
@@ -61,8 +61,8 @@ def _make_stub(
     stderr: str = "",
     stdout: str = "",
 ) -> Path:
-    """A fake `superstate` that logs its argv, prints `stdout`, and writes `report`."""
-    stub = tmp_path / "superstate-stub"
+    """A fake `blyte` that logs its argv, prints `stdout`, and writes `report`."""
+    stub = tmp_path / "blyte-stub"
     calls = tmp_path / "calls.jsonl"
     payload = json.dumps(report)
     stub.write_text(
@@ -117,8 +117,8 @@ def _api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-real")
 
 
-def _driver(tmp_path: Path, stub: Path, **kwargs: Any) -> SuperstateNativeDriver:
-    return SuperstateNativeDriver(model=MODEL, superstate_bin=stub, **kwargs)
+def _driver(tmp_path: Path, stub: Path, **kwargs: Any) -> BlyteNativeDriver:
+    return BlyteNativeDriver(model=MODEL, blyte_bin=stub, **kwargs)
 
 
 def test_command_pins_model_container_workdir_and_budget(tmp_path: Path) -> None:
@@ -209,7 +209,7 @@ def test_refuses_to_run_without_a_sandbox(tmp_path: Path) -> None:
 
 def test_rejects_an_unknown_context(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
-    with pytest.raises(SuperstateNativeDriverError):
+    with pytest.raises(BlyteNativeDriverError):
         _driver(tmp_path, stub, context="stateless")
 
 
@@ -219,15 +219,15 @@ def test_requires_a_gemini_key_before_any_run(
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     stub = _make_stub(tmp_path, _report())
-    with pytest.raises(SuperstateNativeDriverError, match="GEMINI_API_KEY"):
+    with pytest.raises(BlyteNativeDriverError, match="GEMINI_API_KEY"):
         _driver(tmp_path, stub)
 
 
 def test_binary_is_copied_to_a_run_scoped_path(tmp_path: Path) -> None:
     stub = _make_stub(tmp_path, _report())
     driver = _driver(tmp_path, stub)
-    assert driver.superstate_bin != stub
-    assert driver.superstate_bin.read_bytes() == stub.read_bytes()
+    assert driver.blyte_bin != stub
+    assert driver.blyte_bin.read_bytes() == stub.read_bytes()
     # A rebuild of the source mid-run must not change what this run executes (EXP-073).
     stub.write_text("#!/bin/sh\nexit 3\n")
     t = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
@@ -247,7 +247,7 @@ def test_vanilla_arm_makes_exactly_one_driver_call(tmp_path: Path) -> None:
     assert (result.cached_input_tokens, result.thinking_tokens) == (5000, 300)
 
 
-def test_paired_run_accepts_the_superstate_driver() -> None:
+def test_paired_run_accepts_the_blyte_driver() -> None:
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -257,9 +257,9 @@ def test_paired_run_accepts_the_superstate_driver() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     args = module.build_parser().parse_args(
-        ["--driver", "superstate", "--context", "conversational"]
+        ["--driver", "blyte", "--context", "conversational"]
     )
-    assert args.driver == "superstate"
+    assert args.driver == "blyte"
     assert args.context == "conversational"
     defaults = module.build_parser().parse_args([])
     assert defaults.context == "folded"
@@ -346,7 +346,7 @@ TURN_USAGE = [
 
 
 def test_run_metrics_counts_rereads_repeats_and_splits_fresh_input() -> None:
-    from lab.engine.drivers.superstate_native import run_metrics
+    from lab.engine.drivers.blyte_native import run_metrics
 
     m = run_metrics(_report(turns=3, turn_usage=TURN_USAGE), METRIC_EVENTS)
     assert m["harness_turns"] == 3
@@ -359,7 +359,7 @@ def test_run_metrics_counts_rereads_repeats_and_splits_fresh_input() -> None:
 
 
 def test_run_metrics_tolerates_an_old_report() -> None:
-    from lab.engine.drivers.superstate_native import run_metrics
+    from lab.engine.drivers.blyte_native import run_metrics
 
     m = run_metrics(_report(), "")
     assert m["reads"] == 0 and m["appended_turns"] == 0
@@ -394,7 +394,7 @@ def test_no_budget_passes_no_flag(tmp_path: Path) -> None:
 
 
 def test_run_metrics_reports_the_final_fold_budget() -> None:
-    from lab.engine.drivers.superstate_native import run_metrics
+    from lab.engine.drivers.blyte_native import run_metrics
 
     usage = [dict(TURN_USAGE[0], fold_budget=16000), dict(TURN_USAGE[1], fold_budget=24000)]
     assert run_metrics(_report(turn_usage=usage), "")["final_fold_budget"] == 24000

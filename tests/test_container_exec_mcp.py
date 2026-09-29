@@ -118,7 +118,7 @@ def test_unknown_tool_is_rejected() -> None:
 
 
 def test_server_refuses_to_run_without_a_bound_container(monkeypatch: Any) -> None:
-    monkeypatch.delenv("SUPERSTATE_EVAL_CONTAINER", raising=False)
+    monkeypatch.delenv("BLYTE_EVAL_CONTAINER", raising=False)
     executor = ContainerExec()
     text, is_error = executor.run("echo hi")
     assert is_error is True
@@ -127,7 +127,7 @@ def test_server_refuses_to_run_without_a_bound_container(monkeypatch: Any) -> No
 
 def test_container_is_fixed_at_launch(monkeypatch: Any) -> None:
     # The agent must not be able to choose which container it executes in.
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-fixed")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-fixed")
     executor = ContainerExec()
     assert executor.container_id == "cnt-fixed"
     schema_props = set()

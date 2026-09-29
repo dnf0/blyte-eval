@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a pilot benchmark showdown across Vanilla, Superpowers, and Superstate.
+"""Run a pilot benchmark showdown across Vanilla, Superpowers, and Blyte.
 
 Verifies end-to-end task loading, container isolation, adapter workflows,
 mechanical continuation, and blind patch/reward extraction.
@@ -22,7 +22,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-logger = logging.getLogger("superstate_eval.pilot_cli")
+logger = logging.getLogger("blyte_eval.pilot_cli")
 
 
 def main() -> None:
@@ -48,7 +48,7 @@ def main() -> None:
     parser.add_argument(
         "--logs-dir",
         type=Path,
-        default=Path("/tmp/superstate_pilot_logs"),
+        default=Path("/tmp/blyte_pilot_logs"),
         help="Root directory for isolated host log volumes",
     )
     args = parser.parse_args()
@@ -59,7 +59,7 @@ def main() -> None:
         sys.exit(1)
 
     logger.info("=" * 80)
-    logger.info("SUPERSTATE-EVAL PILOT SHOWDOWN")
+    logger.info("BLYTE-EVAL PILOT SHOWDOWN")
     logger.info("=" * 80)
 
     task = load_task_from_dir(task_dir)

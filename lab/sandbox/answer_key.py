@@ -28,9 +28,9 @@ import stat
 import threading
 from typing import Generator, Iterable
 
-logger = logging.getLogger("superstate_eval.answer_key")
+logger = logging.getLogger("blyte_eval.answer_key")
 
-DEFAULT_STATE_FILE = Path.home() / ".cache" / "superstate-eval" / "sealed-paths.json"
+DEFAULT_STATE_FILE = Path.home() / ".cache" / "blyte-eval" / "sealed-paths.json"
 
 
 class AnswerKeyGuard:

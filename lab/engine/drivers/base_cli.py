@@ -20,7 +20,7 @@ from typing import Any, Optional
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry
 
-logger = logging.getLogger("superstate_eval.drivers")
+logger = logging.getLogger("blyte_eval.drivers")
 
 
 class CliDriverError(RuntimeError):

@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-logger = logging.getLogger("superstate_eval.approval")
+logger = logging.getLogger("blyte_eval.approval")
 
 MECHANICAL_APPROVAL_PROMPT = (
     "Proceed with the recommended option (Option 1). Do not pause for human feedback or approval. "

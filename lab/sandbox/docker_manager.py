@@ -18,9 +18,9 @@ from typing import Any, Generator, Mapping
 import docker
 from docker.models.containers import Container
 
-logger = logging.getLogger("superstate_eval.docker_manager")
+logger = logging.getLogger("blyte_eval.docker_manager")
 
-OFFLINE_NETWORK = "superstate-eval-offline"
+OFFLINE_NETWORK = "blyte-eval-offline"
 
 
 class DiskSpaceError(RuntimeError):
@@ -35,16 +35,17 @@ class ImageBuildError(RuntimeError):
     """Raised when an image (typically the held-out verifier) cannot be built."""
 
 
-def find_static_superstate_binary() -> Path | None:
-    """Locate pre-compiled static Linux superstate binary if available on host.
+def find_static_blyte_binary() -> Path | None:
+    """Locate pre-compiled static Linux blyte binary if available on host.
 
-    Checks the SUPERSTATE_LINUX_BIN environment variable first, then standard candidate
+    Checks the BLYTE_LINUX_BIN environment variable first, then standard candidate
     paths within the repository or user cache directory.
 
     Returns:
-        Path to the static Linux superstate binary if found on the host, otherwise None.
+        Path to the static Linux blyte binary if found on the host, otherwise None.
     """
-    env_path = os.environ.get("SUPERSTATE_LINUX_BIN")
+    # SUPERSTATE_LINUX_BIN: deprecated pre-rename name, still read when BLYTE_LINUX_BIN is unset.
+    env_path = os.environ.get("BLYTE_LINUX_BIN") or os.environ.get("SUPERSTATE_LINUX_BIN")
     # If explicitly configured in environment, verify it points to an existing file
     if env_path:
         p = Path(env_path)
@@ -54,11 +55,11 @@ def find_static_superstate_binary() -> Path | None:
     # Fall back to known candidate paths relative to repository root and home cache
     repo_root = Path(__file__).resolve().parent.parent.parent
     candidates = [
-        repo_root / "bin" / "superstate-linux-x86_64",
-        repo_root / "bin" / "superstate-linux",
+        repo_root / "bin" / "blyte-linux-x86_64",
+        repo_root / "bin" / "blyte-linux",
     ]
     try:
-        candidates.append(Path.home() / ".cache" / "superstate" / "superstate-linux-x86_64")
+        candidates.append(Path.home() / ".cache" / "blyte" / "blyte-linux-x86_64")
     except RuntimeError:
         pass
     for c in candidates:
@@ -115,15 +116,15 @@ class DockerManager:
             logs_path.mkdir(parents=True, exist_ok=True)
             combined_volumes[str(logs_path)] = {"bind": "/logs", "mode": "rw"}
 
-        # Mount pre-compiled static Linux superstate binary into container when available
-        has_superstate_mount = any(
-            isinstance(cfg, Mapping) and cfg.get("bind") == "/usr/local/bin/superstate"
+        # Mount pre-compiled static Linux blyte binary into container when available
+        has_blyte_mount = any(
+            isinstance(cfg, Mapping) and cfg.get("bind") == "/usr/local/bin/blyte"
             for cfg in combined_volumes.values()
         )
-        static_bin = find_static_superstate_binary()
-        if static_bin is not None and not has_superstate_mount:
+        static_bin = find_static_blyte_binary()
+        if static_bin is not None and not has_blyte_mount:
             combined_volumes[str(static_bin.resolve())] = {
-                "bind": "/usr/local/bin/superstate",
+                "bind": "/usr/local/bin/blyte",
                 "mode": "ro",
             }
 
@@ -297,7 +298,7 @@ class DockerManager:
             # the in-memory one looks empty, which re-invokes the helpers. A
             # single inert entry keeps it non-empty and helper-free.
             api._auth_configs = docker_auth.AuthConfig(
-                {"auths": {"superstate-eval.invalid": {}}}
+                {"auths": {"blyte-eval.invalid": {}}}
             )
         except Exception as err:  # pragma: no cover - defensive
             logger.debug("Could not suppress registry auth: %s", err)

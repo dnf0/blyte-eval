@@ -1,6 +1,6 @@
 """Tests for container bridge script generation and transparent shunting.
 
-Validates that `./run-in-container` correctly routes commands through `superstate shunt`
+Validates that `./run-in-container` correctly routes commands through `blyte shunt`
 when available and enabled, falls back gracefully when disabled or absent, and faithfully
 preserves exit codes and stdin streaming.
 """
@@ -61,11 +61,11 @@ def _create_fake_docker(bin_dir: Path) -> Path:
     return docker_bin
 
 
-def _create_fake_superstate(bin_dir: Path, log_file: Path) -> Path:
-    """Create a mock superstate executable that logs its arguments and forwards the command."""
+def _create_fake_blyte(bin_dir: Path, log_file: Path) -> Path:
+    """Create a mock blyte executable that logs its arguments and forwards the command."""
     bin_dir.mkdir(parents=True, exist_ok=True)
-    superstate_bin = bin_dir / "superstate"
-    superstate_bin.write_text(
+    blyte_bin = bin_dir / "blyte"
+    blyte_bin.write_text(
         "#!/usr/bin/env bash\n"
         "set -eu\n"
         f'echo "$@" >> "{log_file}"\n'
@@ -81,9 +81,9 @@ def _create_fake_superstate(bin_dir: Path, log_file: Path) -> Path:
         'exec "$@"\n',
         encoding="utf-8",
     )
-    current_mode = superstate_bin.stat().st_mode
-    superstate_bin.chmod(current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    return superstate_bin
+    current_mode = blyte_bin.stat().st_mode
+    blyte_bin.chmod(current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    return blyte_bin
 
 
 def test_setup_container_bridge_generates_shunting_script(tmp_path: Path) -> None:
@@ -107,8 +107,8 @@ def test_setup_container_bridge_generates_shunting_script(tmp_path: Path) -> Non
 
     # Verify transparent shunting logic and flags
     assert "set -o pipefail" in content
-    assert 'if [ "${SUPERSTATE_SHUNT_ENABLED:-1}" = "1" ] && command -v superstate >/dev/null 2>&1;' in content
-    assert 'exec superstate shunt --threshold-lines 50 -- docker exec -i -w /app "cnt-shunting-42" "$@"' in content
+    assert 'if [ "${BLYTE_SHUNT_ENABLED:-1}" = "1" ] && command -v blyte >/dev/null 2>&1;' in content
+    assert 'exec blyte shunt --threshold-lines 50 -- docker exec -i -w /app "cnt-shunting-42" "$@"' in content
     assert 'exec docker exec -i -w /app "cnt-shunting-42" "$@"' in content
 
 
@@ -126,7 +126,7 @@ def test_container_bridge_preserves_exit_code_and_fallback(tmp_path: Path) -> No
 
     test_env = os.environ.copy()
     test_env["PATH"] = f"{bin_dir}:{test_env.get('PATH', '')}"
-    test_env["SUPERSTATE_SHUNT_ENABLED"] = "0"
+    test_env["BLYTE_SHUNT_ENABLED"] = "0"
 
     # Execute a command that exits with code 42
     result = subprocess.run(
@@ -152,7 +152,7 @@ def test_container_bridge_preserves_stdin_piping(tmp_path: Path) -> None:
 
     test_env = os.environ.copy()
     test_env["PATH"] = f"{bin_dir}:{test_env.get('PATH', '')}"
-    test_env["SUPERSTATE_SHUNT_ENABLED"] = "0"
+    test_env["BLYTE_SHUNT_ENABLED"] = "0"
 
     stdin_payload = "first line\nsecond line\nthird line with special chars: $*!@\n"
 
@@ -169,23 +169,23 @@ def test_container_bridge_preserves_stdin_piping(tmp_path: Path) -> None:
     assert stdin_payload in result.stdout
 
 
-def test_container_bridge_routes_through_superstate_shunt_when_available(tmp_path: Path) -> None:
-    """Verify that when superstate is present and shunting enabled, superstate shunt is invoked."""
+def test_container_bridge_routes_through_blyte_shunt_when_available(tmp_path: Path) -> None:
+    """Verify that when blyte is present and shunting enabled, blyte shunt is invoked."""
     driver = AgyCliDriver(cli_path=sys.executable)
     container = FakeContainer("cnt-routed-77")
     driver._setup_container_bridge(workspace_path=tmp_path, container=container)
 
     script_path = tmp_path / "run-in-container"
 
-    # Set up fake docker and fake superstate on PATH
+    # Set up fake docker and fake blyte on PATH
     bin_dir = tmp_path / "bin"
     _create_fake_docker(bin_dir)
-    log_file = tmp_path / "superstate.log"
-    _create_fake_superstate(bin_dir, log_file)
+    log_file = tmp_path / "blyte.log"
+    _create_fake_blyte(bin_dir, log_file)
 
     test_env = os.environ.copy()
     test_env["PATH"] = f"{bin_dir}:{test_env.get('PATH', '')}"
-    test_env["SUPERSTATE_SHUNT_ENABLED"] = "1"
+    test_env["BLYTE_SHUNT_ENABLED"] = "1"
 
     result = subprocess.run(
         [str(script_path), "echo", "executed inside container"],
@@ -197,6 +197,6 @@ def test_container_bridge_routes_through_superstate_shunt_when_available(tmp_pat
     assert result.returncode == 0
     assert "executed inside container" in result.stdout.strip()
 
-    # Verify superstate shunt was called with correct parameters
+    # Verify blyte shunt was called with correct parameters
     log_content = log_file.read_text(encoding="utf-8")
     assert "shunt --threshold-lines 50 -- docker exec -i -w /app cnt-routed-77 echo executed inside container" in log_content

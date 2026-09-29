@@ -21,7 +21,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-logger = logging.getLogger("superstate_eval.trace")
+logger = logging.getLogger("blyte_eval.trace")
 
 # Generous per-field cap: enough to diagnose a stall, small enough that a
 # pathological agent cannot fill the disk.

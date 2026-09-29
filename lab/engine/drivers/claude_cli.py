@@ -40,7 +40,7 @@ import uuid
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry
 
-logger = logging.getLogger("superstate_eval.drivers.claude_cli")
+logger = logging.getLogger("blyte_eval.drivers.claude_cli")
 
 # Per-MTok USD, from the current model table. Used only when the CLI does not
 # report a cost itself.
@@ -207,7 +207,7 @@ class ClaudeCliDriver(AgentDriver):
         # Configure container execution MCP server if running in sandbox
         if container_id:
             env = {
-                "SUPERSTATE_EVAL_CONTAINER": container_id,
+                "BLYTE_EVAL_CONTAINER": container_id,
                 "PYTHONPATH": str(REPO_ROOT),
             }
             if self.implementer_model:
