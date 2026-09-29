@@ -73,8 +73,10 @@ DISPATCH_TOOL_DESCRIPTION = (
     "working in this same container. It edits files, runs commands, and stops when `gate` "
     "(a shell command, e.g. the relevant test command) exits 0 or its budget runs out. "
     "Each dispatch works in its own copy of the repository, taken from its current state "
-    "(uncommitted changes included). For several independent tasks that touch different "
-    "files, use dispatch_blyte_start for each and then dispatch_blyte_wait: they run at the same "
+    "(uncommitted changes included). Keep one feature, or any change whose parts depend on one "
+    "another, in one dispatch: each dispatch re-reads the code it touches, so splitting costs "
+    "more and is often slower. Only for tasks that are truly independent and of similar size, "
+    "use dispatch_blyte_start for each and then dispatch_blyte_wait, so they run at the same "
     "time (calls to this tool run one after another). When a "
     "dispatch ends, its changes are applied to the repository; if they clash with changes "
     "applied since it started, nothing is applied and `merge` is \"conflict\", with the copy's "
@@ -106,12 +108,15 @@ DISPATCH_TOOL_SCHEMA: dict[str, Any] = {
 
 # Start-then-wait (2026-09-29): Claude Code runs an MCP server's tool calls one after another, so
 # parallel dispatch_blyte calls still ran in sequence. A start returns at once; wait collects.
+# The wording discourages splitting one feature: on scc, split runs cost 30-160% more Gemini and
+# were slower than one dispatch, even with real overlap (results in the comparison plan, #86).
 DISPATCH_START_TOOL_NAME = "dispatch_blyte_start"
 DISPATCH_START_TOOL_DESCRIPTION = (
     "Start one implementation task on blyte in the background and return at once with its "
     "`dispatch_id`. Same arguments and behaviour as dispatch_blyte (its own copy of the "
-    "repository, applied back when it ends). Start every independent task this way, then call "
-    "dispatch_blyte_wait to collect their results: the started tasks run at the same time."
+    "repository, applied back when it ends). Use it only for tasks that are truly independent "
+    "and of similar size: start each this way, then call dispatch_blyte_wait to collect their "
+    "results, and the started tasks run at the same time. Keep one feature in one dispatch."
 )
 DISPATCH_WAIT_TOOL_NAME = "dispatch_blyte_wait"
 DISPATCH_WAIT_TOOL_DESCRIPTION = (
