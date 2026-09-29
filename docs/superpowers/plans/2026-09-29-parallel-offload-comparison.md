@@ -129,3 +129,56 @@ plan (Sonnet, 4 min, $0.32; 3 parts, part 1 the core). Results:
 - **Limits:** one task, whose parts are uneven and coupled through part 1; Sonnet chose the split
   itself (twice one dispatch, four times several), so the arms differ in splitting as well as in
   parallelism. A task with several independent parts of similar size is the fair test.
+
+## Result (2026-09-29), katex
+
+Two experiments on `katex-multicolumn-array-spans` (TypeScript), run one after the other.
+blyte `b965bb1`, eval `14e25a3`. The user's measure is Claude usage (Gemini is an acceptable cost).
+
+### 1. The Sonnet saving, v2 on a second task
+
+Results: `results/offload-v2-katex-20260929-1654/`. One shared plan (3 min, $0.30).
+
+| run | who implements | target tests | Sonnet | Gemini | total | wall |
+|---|---|---|---|---|---|---|
+| a-1 | Sonnet | 94/94 (passed) | $0.96 | – | $0.96 | 8 min |
+| b-1 | Sonnet hands off to blyte | 94/94 (passed) | $0.12 | $2.05 | $2.17 | 21 min |
+| a-2 | Sonnet | 92/94 | $0.84 | – | $0.84 | 6 min |
+| b-2 | Sonnet hands off to blyte | 94/94 (passed) | $0.13 | $3.31 | $3.44 | 27 min |
+
+- **The Claude saving holds: 86% less Sonnet** ($0.13 against $0.90, means), beyond the within-arm
+  ranges. v2's task: 67% less.
+- **Quality:** blyte's arm passed 2/2, Sonnet's 1/2 (two target tests short). Small numbers.
+- **Total cost and time go the other way on this task:** Sonnet alone was cheap and quick here, so
+  the Gemini spend made the hand-off arm about 3× dearer in total and about 3.5× slower. On v2's
+  task, where Sonnet implementing cost $5.56, the hand-off was also cheaper in total.
+
+### 2. A fair parallel test: not achieved
+
+Results: `results/parallel-fair-katex-20260929-1654/`. A shared parallel plan (3 parts: the core;
+unit tests; styles and docs), with a closing "How to dispatch" section: part 1, then the others at
+once (PAR), or the parts one after another (SEQ).
+
+| run | told to | what Sonnet did | target tests | Sonnet | Gemini | wall |
+|---|---|---|---|---|---|---|
+| par-1 | parts 2–3 at once | 3 dispatches; parts 2 and 3 **ran together** (18:24:28) | 94/94 (passed) | $0.17 | $4.42 | 31 min |
+| seq-1 | one after another | 1 dispatch | 92/94 | $0.12 | $2.49 | 21 min |
+| par-2 | parts 2–3 at once | 1 dispatch (ran out of budget) | 92/94 | $0.16 | $3.15 | 25 min |
+| seq-2 | one after another | 1 dispatch | 94/94 (passed) | $0.13 | $3.02 | 22 min |
+
+- **Sonnet ignored the dispatch instructions in 3 of 4 runs** and sent the whole plan as one
+  dispatch, so the two arms are not comparable; only par-1 used the split.
+- **The parts were not of similar size:** part 1 (the core) took 15 min, parts 2 and 3 about 7 min
+  each. Overlapping them saved about 6 minutes, less than the extra dispatches cost.
+- **As on scc, one dispatch was quicker and cheaper** for one feature (21–25 min, $2.5–3.2 of Gemini,
+  against par-1's 31 min and $4.42), with the same pass rate here.
+
+### What the two tasks together say
+
+- Handing off to blyte cuts Claude usage by two thirds to 86% on both tasks, with equal or better
+  quality. That is the saving the user is after.
+- Within one feature, splitting into parallel dispatches does not pay: the parts are rarely
+  independent and of similar size, and each dispatch re-reads the code. Parallelism pays across
+  separate tasks (the dispatch ledger: about 2× wall time with several at once).
+- A fair within-feature parallel test would need a task built of several independent parts of
+  similar size; none of the benchmark tasks is. Not worth building for now.
