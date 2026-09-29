@@ -18,6 +18,20 @@ from lab.engine.drivers.container_exec_mcp import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _no_container_copy(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Dispatches copy the workdir and apply their changes back through the container
+    (ContainerExec._sh); these tests have no container, so every script succeeds silently."""
+    scripts: list[str] = []
+
+    def fake_sh(self: ContainerExec, script: str) -> tuple[int, str]:
+        scripts.append(script)
+        return (0, "")
+
+    monkeypatch.setattr(ContainerExec, "_sh", fake_sh)
+    return scripts
+
+
 def test_tool_absent_without_implementer_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """The tool is absent from tools/list and rejected in tools/call without BLYTE_IMPLEMENTER_MODEL."""
     monkeypatch.delenv("BLYTE_IMPLEMENTER_MODEL", raising=False)
@@ -115,8 +129,9 @@ def test_argv_contains_required_flags(monkeypatch: pytest.MonkeyPatch, tmp_path:
     container_idx = captured_cmd.index("--container")
     assert captured_cmd[container_idx + 1] == "cnt-test-123"
 
+    # blyte works in the dispatch's own copy of /workspace, not in /workspace itself.
     workdir_idx = captured_cmd.index("--container-workdir")
-    assert captured_cmd[workdir_idx + 1] == "/workspace"
+    assert captured_cmd[workdir_idx + 1] == "/tmp/blyte-dispatch-1"
 
     model_idx = captured_cmd.index("--model")
     assert captured_cmd[model_idx + 1] == "gemini-3.8-flash-high"
