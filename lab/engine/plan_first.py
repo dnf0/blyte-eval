@@ -18,11 +18,21 @@ PLANNING_PROMPT: str = (
     "the work. Be precise and complete. Do not ask questions."
 )
 
+# The parallel offload comparison (2026-09-29): a plan whose parts can be dispatched at once.
+PARALLEL_PLAN_PROMPT: str = (
+    "Divide the work into numbered parts. Put everything the other parts depend on (shared types, "
+    "interfaces, the core logic) in part 1. Make the remaining parts independent of one another: "
+    "each changes different files and can be implemented and checked on its own, at the same time "
+    "as the others, once part 1 is done. For each part give its files, its behaviour and its own "
+    "check command."
+)
+
 PLAN_HEADER: str = "## Plan\n\nA plan for this task has already been written. Follow it."
 
 
-def planning_task(task: TaskSpec) -> TaskSpec:
-    return dataclasses.replace(task, instruction=f"{PLANNING_PROMPT}\n\n## Task\n\n{task.instruction}")
+def planning_task(task: TaskSpec, parallel: bool = False) -> TaskSpec:
+    prompt = f"{PLANNING_PROMPT} {PARALLEL_PLAN_PROMPT}" if parallel else PLANNING_PROMPT
+    return dataclasses.replace(task, instruction=f"{prompt}\n\n## Task\n\n{task.instruction}")
 
 
 def with_plan(task: TaskSpec, plan: str) -> TaskSpec:
