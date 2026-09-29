@@ -29,7 +29,8 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-from typing import Any
+import threading
+from typing import Any, Iterable, TextIO
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "blyte-eval-container-exec"
@@ -64,12 +65,21 @@ DISPATCH_TOOL_NAME = "dispatch_blyte"
 # `blyte dispatch`'s own default. Without it blyte used the headless default of 25 turns: all
 # three dispatches of the first offload task stopped there before reaching the gate (2026-09-28).
 DISPATCH_MAX_TURNS = 300
+# Git as the dispatch copies use it: any owner (the copy is root's), and an identity for the
+# snapshot commits, which exist only in the copy.
+DISPATCH_GIT = "git -c safe.directory='*' -c user.name=dispatch -c user.email=dispatch@local"
 DISPATCH_TOOL_DESCRIPTION = (
     "Hand one well-specified implementation task to blyte, a cheaper implementer model "
     "working in this same container. It edits files, runs commands, and stops when `gate` "
     "(a shell command, e.g. the relevant test command) exits 0 or its budget runs out. "
-    "Returns the outcome and any gate failures. You remain responsible for the result: "
-    "review the changes with run_in_container afterwards."
+    "Each dispatch works in its own copy of the repository, taken from its current state "
+    "(uncommitted changes included), so several dispatches can run at the same time: call the "
+    "tool more than once in one turn for independent tasks that touch different files. When a "
+    "dispatch ends, its changes are applied to the repository; if they clash with changes "
+    "applied since it started, nothing is applied and `merge` is \"conflict\", with the copy's "
+    "path for you to inspect. The gate runs in the copy, so give it relative paths. Returns the "
+    "outcome, any gate failures and `merge`. You remain responsible for the result: review the "
+    "changes with run_in_container afterwards."
 )
 
 DISPATCH_TOOL_SCHEMA: dict[str, Any] = {
@@ -109,6 +119,11 @@ class ContainerExec:
         self.max_output = int(os.environ.get("BLYTE_EVAL_MAX_OUTPUT", "30000"))
         self._container: Any = None
         self.dispatch_count: int = 0
+        # Parallel dispatches (2026-09-29): each works in a copy under copy_root, as `blyte dispatch`
+        # gives each task its own worktree, and lands in the workdir one at a time.
+        self.copy_root = os.environ.get("BLYTE_DISPATCH_COPY_ROOT", "/tmp")
+        self._count_lock = threading.Lock()
+        self._merge_lock = threading.Lock()
 
     def _resolve(self) -> Any:
         if self._container is None:
@@ -145,6 +160,39 @@ class ContainerExec:
         # A non-zero exit is a legitimate result (a failing test), not a tool error.
         return (f"exit_code={exit_code}\n{output}", False)
 
+    def _sh(self, script: str) -> tuple[int, str]:
+        """Run a shell script in the container; return (exit code, output)."""
+        exec_res = self._resolve().exec_run(["/bin/sh", "-c", script], workdir="/", demux=False)
+        if isinstance(exec_res, tuple):
+            code, raw = exec_res[0], exec_res[1]
+        else:
+            code = getattr(exec_res, "exit_code", 1)
+            raw = getattr(exec_res, "output", b"")
+        out = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw or "")
+        return (1 if code is None else int(code), out)
+
+    def _merge_back(self, copy: str) -> dict[str, Any]:
+        """Apply a finished dispatch's changes to the workdir. Dispatches land one at a time; one
+        whose changes clash with changes applied since it started is reported, not forced, and
+        its copy is kept for the orchestrator to inspect."""
+        patch = f"{copy}.patch"
+        code, out = self._sh(
+            f"cd {copy} && {DISPATCH_GIT} add -A && "
+            f"{DISPATCH_GIT} commit -q --allow-empty --no-verify -m dispatch-result && "
+            f"{DISPATCH_GIT} diff --binary refs/dispatch/base HEAD > {patch}"
+        )
+        if code != 0:
+            return {"merge": "error", "merge_detail": out[-500:], "copy": copy}
+        with self._merge_lock:
+            code, out = self._sh(
+                f"if [ ! -s {patch} ]; then echo no-changes; exit 0; fi; cd {self.default_workdir} && "
+                f"{DISPATCH_GIT} apply --check {patch} && {DISPATCH_GIT} apply {patch} && echo applied"
+            )
+        if code != 0:
+            return {"merge": "conflict", "merge_detail": out[-1000:], "copy": copy, "patch": patch}
+        self._sh(f"rm -rf {copy}")
+        return {"merge": "no changes" if "no-changes" in out else "applied"}
+
     def dispatch(
         self,
         task: str,
@@ -170,14 +218,29 @@ class ContainerExec:
                 False,
             )
 
-        self.dispatch_count = getattr(self, "dispatch_count", 0) + 1
+        with self._count_lock:
+            self.dispatch_count += 1
+            n = self.dispatch_count
         reports_dir = Path(dispatch_dir)
         reports_dir.mkdir(parents=True, exist_ok=True)
-        report_path = reports_dir / f"dispatch-{self.dispatch_count}.json"
+        report_path = reports_dir / f"dispatch-{n}.json"
         # blyte's event stream (one line per tool call, with the command). The report says how
         # long commands took but not which ones; without this, how often a dispatch ran the full
         # test suite could only be estimated (offload v2, 2026-09-28).
-        events_path = reports_dir / f"dispatch-{self.dispatch_count}.events.log"
+        events_path = reports_dir / f"dispatch-{n}.events.log"
+
+        # The dispatch's own copy, snapshotted so its changes can be applied back as one patch.
+        copy = f"{self.copy_root}/blyte-dispatch-{n}"
+        code, out = self._sh(
+            f"rm -rf {copy} && cp -a {self.default_workdir}/. {copy} && cd {copy} && "
+            f"{DISPATCH_GIT} add -A && {DISPATCH_GIT} commit -q --allow-empty --no-verify -m dispatch-base && "
+            f"{DISPATCH_GIT} update-ref refs/dispatch/base HEAD"
+        )
+        if code != 0:
+            return (
+                json.dumps({"outcome": "error", "error": f"Could not copy {self.default_workdir} for the dispatch: {out[-500:]}"}),
+                False,
+            )
 
         blyte_bin = os.environ.get("BLYTE_BIN", "").strip() or "blyte"
         cmd = [
@@ -185,7 +248,7 @@ class ContainerExec:
             "--container",
             self.container_id,
             "--container-workdir",
-            self.default_workdir,
+            copy,
             "--model",
             model,
             "--gate",
@@ -209,7 +272,7 @@ class ContainerExec:
             )
         except Exception as err:
             return (
-                json.dumps({"outcome": "error", "error": f"Failed to execute blyte: {err}"}),
+                json.dumps({"outcome": "error", "error": f"Failed to execute blyte: {err}", **self._merge_back(copy)}),
                 False,
             )
 
@@ -221,10 +284,11 @@ class ContainerExec:
         except OSError as err:
             log(f"could not write {events_path}: {err}")
 
+        merge = self._merge_back(copy)
         if not report_path.is_file():
             err_msg = (proc.stderr or "").strip() or f"Dispatch report not found at {report_path}"
             return (
-                json.dumps({"outcome": "error", "error": err_msg}),
+                json.dumps({"outcome": "error", "error": err_msg, **merge}),
                 False,
             )
 
@@ -233,7 +297,7 @@ class ContainerExec:
                 report_data = json.load(f)
         except Exception as err:
             return (
-                json.dumps({"outcome": "error", "error": f"Failed to parse dispatch report: {err}"}),
+                json.dumps({"outcome": "error", "error": f"Failed to parse dispatch report: {err}", **merge}),
                 False,
             )
 
@@ -256,6 +320,7 @@ class ContainerExec:
             ),
             "report": report_data.get("report") or str(report_path),
             "events_log": str(events_path),
+            **merge,
         }
         return (json.dumps(summary), False)
 
@@ -354,11 +419,25 @@ def handle(message: dict[str, Any], executor: ContainerExec) -> dict[str, Any] |
     return _error(request_id, -32601, f"Method not found: {method}")
 
 
-def main() -> int:
-    executor = ContainerExec()
-    log(f"serving exec for container {executor.container_id or '<unset>'}")
+def serve(lines: Iterable[str], out: TextIO, executor: ContainerExec) -> int:
+    """Answer each message. Tool calls are answered from their own threads, so parallel dispatches
+    run at the same time and other tool calls are not held up behind one (2026-09-29: the server
+    answered one message at a time, so a turn's parallel dispatches ran one after another)."""
+    write_lock = threading.Lock()
+    threads: list[threading.Thread] = []
 
-    for line in sys.stdin:
+    def answer(message: dict[str, Any]) -> None:
+        try:
+            response = handle(message, executor)
+        except Exception as err:  # never take the transport down
+            log(f"handler error: {err}")
+            response = _error(message.get("id"), -32603, str(err))
+        if response is not None:
+            with write_lock:
+                out.write(json.dumps(response) + "\n")
+                out.flush()
+
+    for line in lines:
         line = line.strip()
         if not line:
             continue
@@ -367,15 +446,21 @@ def main() -> int:
         except json.JSONDecodeError as err:
             log(f"malformed message: {err}")
             continue
-        try:
-            response = handle(message, executor)
-        except Exception as err:  # never take the transport down
-            log(f"handler error: {err}")
-            response = _error(message.get("id"), -32603, str(err))
-        if response is not None:
-            sys.stdout.write(json.dumps(response) + "\n")
-            sys.stdout.flush()
+        if message.get("method") == "tools/call":
+            thread = threading.Thread(target=answer, args=(message,), daemon=True)
+            thread.start()
+            threads.append(thread)
+        else:
+            answer(message)
+    for thread in threads:
+        thread.join()
     return 0
+
+
+def main() -> int:
+    executor = ContainerExec()
+    log(f"serving exec for container {executor.container_id or '<unset>'}")
+    return serve(sys.stdin, sys.stdout, executor)
 
 
 if __name__ == "__main__":
