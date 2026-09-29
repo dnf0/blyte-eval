@@ -30,3 +30,12 @@ def test_final_response_is_the_last_non_empty_one(tmp_path: Path) -> None:
 
 def test_final_response_missing(tmp_path: Path) -> None:
     assert final_response(tmp_path) is None
+
+
+def test_a_parallel_plan_asks_for_independent_parts(tmp_path: Path) -> None:
+    from lab.engine.plan_first import PARALLEL_PLAN_PROMPT
+
+    t = planning_task(_task(tmp_path), parallel=True)
+    assert t.instruction == f"{PLANNING_PROMPT} {PARALLEL_PLAN_PROMPT}\n\n## Task\n\nAdd a feature."
+    assert planning_task(_task(tmp_path)).instruction == f"{PLANNING_PROMPT}\n\n## Task\n\nAdd a feature."
+

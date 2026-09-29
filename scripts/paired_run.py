@@ -110,6 +110,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Read plan from PATH and inject it into the task instruction before running",
     )
+    ap.add_argument(
+        "--plan-parallel",
+        action="store_true",
+        help="With --plan-only: ask the planner for a shared first part and independent parts that can be dispatched at once",
+    )
     return ap
 
 
@@ -309,7 +314,7 @@ def _run(args) -> int:
     )
 
     if args.plan_only:
-        ptask = planning_task(tasks[0])
+        ptask = planning_task(tasks[0], parallel=args.plan_parallel)
         task_budget = args.budget_sec or ptask.agent_timeout_sec or 3600.0
         logger.info("=" * 78)
         logger.info(
