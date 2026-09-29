@@ -160,7 +160,7 @@ def test_container_mode_removes_host_bash_and_wires_mcp(tmp_path: Path) -> None:
     config = json.loads(argv[argv.index("--mcp-config") + 1])
     server = config["mcpServers"]["task"]
     assert server["args"] == ["-m", "lab.engine.drivers.container_exec_mcp"]
-    assert server["env"]["SUPERSTATE_EVAL_CONTAINER"] == "cnt-abc123"
+    assert server["env"]["BLYTE_EVAL_CONTAINER"] == "cnt-abc123"
 
 
 def test_no_container_leaves_bash_alone(tmp_path: Path) -> None:

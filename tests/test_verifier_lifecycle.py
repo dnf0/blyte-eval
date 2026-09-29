@@ -39,7 +39,7 @@ def test_verifier_image_tag_is_unique_per_run(tmp_path: Path) -> None:
     second = verifier.build(task)
 
     assert first != second, "a reused tag leaves a cached answer key on the host"
-    assert first.startswith("superstate-eval-verifier/")
+    assert first.startswith("blyte-eval-verifier/")
 
 
 def test_verifier_image_is_removed_after_grading(tmp_path: Path) -> None:

@@ -26,11 +26,11 @@ from typing import Any, Optional
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry
 
-logger = logging.getLogger("superstate_eval.drivers.in_container")
+logger = logging.getLogger("blyte_eval.drivers.in_container")
 
 DEFAULT_MODEL = "claude-opus-5"
 AGENT_CLI = "/opt/agent/bin/claude"
-PROMPT_PATH = "/tmp/superstate-eval-prompt"
+PROMPT_PATH = "/tmp/blyte-eval-prompt"
 
 # Per-MTok USD. Used only when the CLI reports no cost of its own; never guessed.
 MODEL_PRICING: dict[str, tuple[float, float]] = {

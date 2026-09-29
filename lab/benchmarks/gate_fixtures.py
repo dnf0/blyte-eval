@@ -25,7 +25,7 @@ command, and `lab/engine/adapters/superstate_daemon.py::_derive_gate` chooses be
 
   1. The repository's own test runner, when the task ships one that is not the sealed
      grader -- the broken-on-turn-0 case, where the native suite already discriminates.
-  2. Autonomous TDD, otherwise: `superstate state handoff --tdd` derives a RED/GREEN DAG
+  2. Autonomous TDD, otherwise: `blyte state handoff --tdd` derives a RED/GREEN DAG
      from the repository inside the engine. The worker authors its own reproduction test;
      the gate proves it compiles and FAILS, then that it and the existing suite PASS.
 

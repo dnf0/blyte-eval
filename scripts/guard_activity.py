@@ -10,7 +10,7 @@ arm produces no tool-call transcript.
 The guards see every read and every command, so they are the cheapest place to record it.
 `guard-activity.jsonl` is that record; this reads it back.
 
-    scripts/guard_activity.py /tmp/superstate_eval_runs/<stamp>/eval-.../workspace
+    scripts/guard_activity.py /tmp/blyte_eval_runs/<stamp>/eval-.../workspace
 """
 
 from __future__ import annotations

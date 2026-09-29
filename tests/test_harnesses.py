@@ -37,19 +37,19 @@ def _run(task: str, harness: str, passed: bool, cost: float = 1.0) -> RunTelemet
 
 
 @pytest.fixture
-def superstate_stub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    stub = tmp_path / "superstate"
+def blyte_stub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    stub = tmp_path / "blyte"
     stub.write_text("#!/bin/sh\nexit 0\n")
     stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv("SUPERSTATE_BIN", str(stub))
+    monkeypatch.setenv("BLYTE_BIN", str(stub))
     monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-real")
     return stub
 
 
-def test_parse_accepts_bare_names_and_superstate_options() -> None:
+def test_parse_accepts_bare_names_and_blyte_options() -> None:
     assert parse_harness_spec("agy") == ("agy", [])
     assert parse_harness_spec("claude") == ("claude", [])
-    assert parse_harness_spec("superstate") == ("blyte", [])
+    assert parse_harness_spec("blyte") == ("blyte", [])
     assert parse_harness_spec("blyte[conversational,fold-budget-16k]") == (
         "blyte",
         ["conversational", "fold-budget-16k"],
@@ -63,7 +63,7 @@ def test_parse_accepts_bare_names_and_superstate_options() -> None:
         "agy[tdd]",
         "blyte[fast]",
         "blyte[state-only,conversational]",
-        "superstate state-only",
+        "blyte state-only",
         "",
     ],
 )
@@ -72,8 +72,8 @@ def test_parse_rejects_anything_else(spec: str) -> None:
         parse_harness_spec(spec)
 
 
-def test_superstate_specs_build_drivers_named_by_their_settings(superstate_stub: Path) -> None:
-    assert build_harness("superstate", MODEL).harness_name == "blyte[folded]"
+def test_blyte_specs_build_drivers_named_by_their_settings(blyte_stub: Path) -> None:
+    assert build_harness("blyte", MODEL).harness_name == "blyte[folded]"
     built = build_harness("blyte[conversational,fold-budget-16k]", MODEL)
     assert built.harness_name == "blyte[conversational,fold-budget-16k]"
     assert built.model == MODEL
@@ -164,13 +164,13 @@ def test_only_one_context_per_harness(spec: str) -> None:
         parse_harness_spec(spec)
 
 
-def test_folded_is_a_superstate_context(superstate_stub: Path) -> None:
+def test_folded_is_a_blyte_context(blyte_stub: Path) -> None:
     assert build_harness("blyte[folded]", MODEL).harness_name == "blyte[folded]"
     with pytest.raises(HarnessSpecError, match="one context"):
         parse_harness_spec("blyte[folded,conversational]")
 
 
-def test_fold_budget_is_a_superstate_option(superstate_stub: Path) -> None:
+def test_fold_budget_is_a_blyte_option(blyte_stub: Path) -> None:
     built = build_harness("blyte[folded,fold-budget-16k]", MODEL)
     assert built.harness_name == "blyte[folded,fold-budget-16k]"
     assert built.fold_budget == 16000
@@ -180,7 +180,7 @@ def test_fold_budget_is_a_superstate_option(superstate_stub: Path) -> None:
         parse_harness_spec("blyte[folded,fold-budget-lots]")
 
 
-def test_superstate_is_an_alias_for_blyte(superstate_stub: Path) -> None:
+def test_superstate_is_an_alias_for_blyte(blyte_stub: Path) -> None:
     # Renamed 2026-09-24; results and FINDINGS before then use superstate[...].
     assert parse_harness_spec("superstate[folded,fold-budget-16k]") == ("blyte", ["folded", "fold-budget-16k"])
     assert build_harness("superstate[folded]", MODEL).harness_name == "blyte[folded]"

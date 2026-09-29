@@ -1,4 +1,4 @@
-"""The generic-rules leg tests whether execution discipline is portable off superstate."""
+"""The generic-rules leg tests whether execution discipline is portable off blyte."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def test_generic_rules_reach_the_baseline_arm_when_enabled() -> None:
     assert "ZERO GLOBAL EXPLORATION" in prompt
 
 
-def test_generic_rules_exclude_every_superstate_anchored_rule() -> None:
+def test_generic_rules_exclude_every_blyte_anchored_rule() -> None:
     """Half of TARGETED_EXECUTION_CONTRACT is scaffolding for the state machine.
 
     Rule 7 in particular ("the orchestrator automatically snapshots and commits upon
@@ -50,7 +50,7 @@ def test_generic_rules_exclude_every_superstate_anchored_rule() -> None:
         "targeted test command",
     ):
         assert anchored.lower() not in GENERIC_EXECUTION_RULES.lower(), (
-            f"generic rules must not reference superstate machinery: {anchored}"
+            f"generic rules must not reference blyte machinery: {anchored}"
         )
 
 

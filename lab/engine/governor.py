@@ -12,7 +12,7 @@ import threading
 import time
 from typing import Generator
 
-logger = logging.getLogger("superstate_eval.governor")
+logger = logging.getLogger("blyte_eval.governor")
 
 
 @dataclass(frozen=True)

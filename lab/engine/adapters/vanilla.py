@@ -1,7 +1,7 @@
 """Arm A: Vanilla (Control) Adapter.
 
 Runs unguided SWE-bench baseline execution with NO markdown rules,
-NO skills, and NO agent-rules or superstate steering.
+NO skills, and NO agent-rules or blyte steering.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import shutil
 
 from lab.engine.adapters.base import TurnBasedAdapter
 
-logger = logging.getLogger("superstate_eval.adapters.vanilla")
+logger = logging.getLogger("blyte_eval.adapters.vanilla")
 
 
 class VanillaAdapter(TurnBasedAdapter):

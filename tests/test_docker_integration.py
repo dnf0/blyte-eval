@@ -21,7 +21,7 @@ import pytest
 
 from lab.sandbox.docker_manager import DockerManager, WorkspaceSeedError
 
-IMAGE_TAG = "superstate-eval-itest"
+IMAGE_TAG = "blyte-eval-itest"
 
 DOCKERFILE = """FROM alpine:latest
 RUN apk add --no-cache git bash >/dev/null && mkdir -p /app && cd /app && \\
@@ -120,7 +120,7 @@ def test_seeding_fails_loudly_when_image_is_missing(tmp_path: Path) -> None:
     manager = DockerManager()
     with pytest.raises(WorkspaceSeedError, match="unavailable"):
         manager.seed_workspace_from_image(
-            image="superstate-eval-no-such-image:v0", dest=tmp_path / "ws"
+            image="blyte-eval-no-such-image:v0", dest=tmp_path / "ws"
         )
 
 
@@ -219,7 +219,7 @@ def test_container_exec_mcp_runs_in_the_container_not_the_host(
 
     subprocess.run(
         [
-            "docker", "build", "-q", "-t", "superstate-eval-mcp-itest", "-",
+            "docker", "build", "-q", "-t", "blyte-eval-mcp-itest", "-",
         ],
         input=(
             f"FROM {task_image}\n"
@@ -234,7 +234,7 @@ def test_container_exec_mcp_runs_in_the_container_not_the_host(
     manager = DockerManager()
     try:
         with manager.run_sandbox(
-            image="superstate-eval-mcp-itest",
+            image="blyte-eval-mcp-itest",
             volumes={str(workspace.resolve()): {"bind": "/app", "mode": "rw"}},
             working_dir="/app",
             network_mode="none",
@@ -260,7 +260,7 @@ def test_container_exec_mcp_runs_in_the_container_not_the_host(
                 cwd=str(Path(__file__).parent.parent),
                 env={
                     **os.environ,
-                    "SUPERSTATE_EVAL_CONTAINER": str(container.id),
+                    "BLYTE_EVAL_CONTAINER": str(container.id),
                     "PYTHONPATH": str(Path(__file__).parent.parent),
                 },
                 timeout=120,
@@ -276,5 +276,5 @@ def test_container_exec_mcp_runs_in_the_container_not_the_host(
         assert shutil.which("taskonly") is None, "host must not have the tool"
     finally:
         subprocess.run(
-            ["docker", "rmi", "-f", "superstate-eval-mcp-itest"], capture_output=True
+            ["docker", "rmi", "-f", "blyte-eval-mcp-itest"], capture_output=True
         )

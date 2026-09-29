@@ -13,7 +13,7 @@ from typing import Any, Dict
 
 from lab.engine.adapters.base import TurnBasedAdapter, strip_preexisting_guidance
 
-logger = logging.getLogger("superstate_eval.adapters.superpowers")
+logger = logging.getLogger("blyte_eval.adapters.superpowers")
 
 SUPERPOWERS_AGENTS_MD = """# Engineering Guidance (Superpowers)
 
@@ -43,7 +43,7 @@ class SuperpowersAdapter(TurnBasedAdapter):
         """Install markdown guidance and copy superpowers skills into workspace."""
         # 0. Start from the same blank slate as the other arms. Without this, a repo
         #    that ships its own CLAUDE.md or GEMINI.md would be stripped for Vanilla
-        #    and Superstate but kept here -- a difference between arms that is not
+        #    and Blyte but kept here -- a difference between arms that is not
         #    the treatment.
         strip_preexisting_guidance(workspace_path)
 

@@ -2,9 +2,9 @@
 
 from lab.engine.drivers.agy_cli import AgyCliDriver, AgyCliDriverError
 from lab.engine.drivers.claude_cli import ClaudeCliDriver, ClaudeCliDriverError
-from lab.engine.drivers.superstate_native import (
-    SuperstateNativeDriver,
-    SuperstateNativeDriverError,
+from lab.engine.drivers.blyte_native import (
+    BlyteNativeDriver,
+    BlyteNativeDriverError,
 )
 
 __all__ = [
@@ -12,6 +12,6 @@ __all__ = [
     "AgyCliDriverError",
     "ClaudeCliDriver",
     "ClaudeCliDriverError",
-    "SuperstateNativeDriver",
-    "SuperstateNativeDriverError",
+    "BlyteNativeDriver",
+    "BlyteNativeDriverError",
 ]

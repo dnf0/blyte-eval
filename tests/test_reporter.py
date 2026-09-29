@@ -34,7 +34,7 @@ def test_reporter_economic_metrics() -> None:
             output_tokens=200,
             extra={"harness": "agy"},
         ),
-        # Arm: Superstate MCP (2 passes, 0 fails)
+        # Arm: Blyte MCP (2 passes, 0 fails)
         RunTelemetry(
             task_id="t1",
             arm="superstate_agent_mcp",

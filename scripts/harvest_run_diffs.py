@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Harvest labelled diffs and execution telemetry from /tmp/superstate_eval_runs.
+"""Harvest labelled diffs and execution telemetry from /tmp/blyte_eval_runs.
 
 This script saves the perishable execution history before the 12GB temporary
 directory is wiped between benchmark runs.
@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-RUNS_DIR = Path("/tmp/superstate_eval_runs")
+RUNS_DIR = Path("/tmp/blyte_eval_runs")
 OUTPUT_FILE = Path(__file__).resolve().parent.parent / "data" / "harvested_run_diffs_20260917.json"
 
 

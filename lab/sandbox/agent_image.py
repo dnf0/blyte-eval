@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:  # pragma: no cover
     from lab.sandbox.docker_manager import DockerManager
 
-logger = logging.getLogger("superstate_eval.agent_image")
+logger = logging.getLogger("blyte_eval.agent_image")
 
 # Installed outside /app so it can never appear in the graded diff.
 AGENT_PREFIX = "/opt/agent"
@@ -66,7 +66,7 @@ class AgentImageBuilder:
         CLI. Caching it avoids re-installing on every task.
         """
         digest = hashlib.sha256(base_image.encode("utf-8")).hexdigest()[:12]
-        return f"superstate-eval-agent/{_slug(cli)}-{_slug(version)}-{digest}:latest"
+        return f"blyte-eval-agent/{_slug(cli)}-{_slug(version)}-{digest}:latest"
 
     def build_claude_code(self, base_image: str, version: str = "latest") -> str:
         """Build (or reuse) an image with the Claude Code CLI on top of `base_image`."""

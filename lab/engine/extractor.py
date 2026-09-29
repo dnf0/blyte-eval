@@ -1,6 +1,6 @@
 """Blind patch extraction and held-out verifier scoring.
 
-Executes uniformly across Vanilla, Superpowers, and Superstate arms.
+Executes uniformly across Vanilla, Superpowers, and Blyte arms.
 Extracts git diff patches against the task base commit and grades
 using the held-out verification command and verifier/reward.json.
 """
@@ -18,10 +18,10 @@ from typing import Any, Callable
 
 from lab.engine.void import UNMEASURABLE_PREFIX
 
-logger = logging.getLogger("superstate_eval.extractor")
+logger = logging.getLogger("blyte_eval.extractor")
 
 # Files the harness itself writes into the workspace. They differ by arm
-# (Superpowers installs AGENTS.md and a skills library, Superstate writes plan.md
+# (Superpowers installs AGENTS.md and a skills library, Blyte writes plan.md
 # and .agent-state), so leaving them in the diff makes the archived patch an
 # arm-dependent artifact rather than a comparable record of the agent's work.
 HARNESS_ARTIFACTS = (

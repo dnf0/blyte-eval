@@ -31,7 +31,7 @@ vanilla solves it 22 times out of 22, so no arm can separate from another on it.
 
 **This set is SELECTED ON THE DEPENDENT VARIABLE, so it can never carry a headline claim.**
 Membership was decided partly by reading how the arms performed -- a task is excluded when
-*no arm* varies, which consults superstate's own results. Selecting on the outcome you are
+*no arm* varies, which consults blyte's own results. Selecting on the outcome you are
 about to test guarantees some of the result you find. Measured on the same paired runs:
 
     everything (incl. ungradeable)      n=55   vanilla 56%   mcp 85%   +29pp
@@ -53,7 +53,7 @@ WHAT COUNTS AS SAFE SELECTION
                                                       regression to the mean
     reads EITHER arm's results                 UNSAFE selection on the dependent variable
 
-The cleanest new evidence therefore comes from tasks carrying **no superstate result at all**,
+The cleanest new evidence therefore comes from tasks carrying **no blyte result at all**,
 since they cannot have been chosen for their outcome. As of 2026-09-16 six of the nine
 datacurve tasks qualify: expr-try-catch-errors, httpx-multipart-response-parsing,
 katex-multicolumn-array-spans, meriyah-explicit-resource-declarations,
@@ -68,7 +68,7 @@ CAVEAT ON THE RATES BELOW
 -------------------------
 Membership here was decided by pooling runs with different models, budgets and prompt
 settings, so the pooled pass rates are sound for spotting a ceiling or a floor and are NOT
-effect-size estimates. Several tasks show vanilla ahead of superstate purely because early
+effect-size estimates. Several tasks show vanilla ahead of blyte purely because early
 runs carried the prompt-contract confound. Do not quote them as lift.
 """
 

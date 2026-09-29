@@ -21,7 +21,7 @@ from lab.engine.drivers.container_exec_mcp import (
 def test_tool_absent_without_implementer_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """The tool is absent from tools/list and rejected in tools/call without BLYTE_IMPLEMENTER_MODEL."""
     monkeypatch.delenv("BLYTE_IMPLEMENTER_MODEL", raising=False)
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     executor = ContainerExec()
 
     # Absent from tools/list
@@ -52,7 +52,7 @@ def test_tool_absent_without_implementer_model(monkeypatch: pytest.MonkeyPatch) 
 def test_tool_present_with_implementer_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """The tool is present in tools/list with correct schema when BLYTE_IMPLEMENTER_MODEL is set."""
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     executor = ContainerExec()
 
     resp = handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}, executor)
@@ -70,8 +70,8 @@ def test_tool_present_with_implementer_model(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_argv_contains_required_flags(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The argv contains --container, model, gate, --rollback=false and report path under BLYTE_DISPATCH_DIR."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-test-123")
-    monkeypatch.setenv("SUPERSTATE_EVAL_WORKDIR", "/workspace")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-test-123")
+    monkeypatch.setenv("BLYTE_EVAL_WORKDIR", "/workspace")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     dispatch_dir = tmp_path / "dispatches"
     monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))
@@ -144,7 +144,7 @@ def test_argv_contains_required_flags(monkeypatch: pytest.MonkeyPatch, tmp_path:
 
 def test_report_on_disk_is_summarised(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """A report on disk is summarised into {outcome, gate_attempts, gate_failures, turns, cost_usd, seconds, report}."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     dispatch_dir = tmp_path / "reports"
     monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))
@@ -195,7 +195,7 @@ def test_report_on_disk_is_summarised(monkeypatch: pytest.MonkeyPatch, tmp_path:
 
 def test_missing_report_gives_outcome_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """A missing report gives outcome: error."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     dispatch_dir = tmp_path / "reports"
     monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))
@@ -230,7 +230,7 @@ def test_missing_report_gives_outcome_error(monkeypatch: pytest.MonkeyPatch, tmp
 
 def test_gate_failures_cut_to_1000_characters(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """gate_failures in the report are each cut to 1,000 characters."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     dispatch_dir = tmp_path / "reports"
     monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))
@@ -285,7 +285,7 @@ def test_gate_failures_cut_to_1000_characters(monkeypatch: pytest.MonkeyPatch, t
 
 def test_dispatch_count_increments_per_call(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """<n> in dispatch-<n>.json counts from 1 across multiple dispatches."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     dispatch_dir = tmp_path / "reports"
     monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))
@@ -330,7 +330,7 @@ def test_dispatch_count_increments_per_call(monkeypatch: pytest.MonkeyPatch, tmp
 
 def test_blyte_bin_from_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The blyte binary is $BLYTE_BIN or blyte on PATH."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(tmp_path / "reports"))
     monkeypatch.setenv("BLYTE_BIN", "/custom/path/to/blyte")
@@ -362,7 +362,7 @@ def test_blyte_bin_from_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 
 def test_missing_dispatch_dir_gives_outcome_error(monkeypatch: pytest.MonkeyPatch) -> None:
     """Missing BLYTE_DISPATCH_DIR gives outcome: error when calling dispatch."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     monkeypatch.delenv("BLYTE_DISPATCH_DIR", raising=False)
 
@@ -415,7 +415,7 @@ def test_dispatch_invalid_arguments_rejected(monkeypatch: pytest.MonkeyPatch, ba
 
 def test_dispatch_keeps_blytes_event_log(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Each dispatch saves blyte's event stream, so the commands it ran can be counted."""
-    monkeypatch.setenv("SUPERSTATE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
     monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
     dispatch_dir = tmp_path / "reports"
     monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))

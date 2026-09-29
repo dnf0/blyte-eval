@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass, field
 import logging
 from typing import Any, Dict, List
 
-logger = logging.getLogger("superstate_eval.budget_policy")
+logger = logging.getLogger("blyte_eval.budget_policy")
 
 
 @dataclass

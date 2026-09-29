@@ -4,7 +4,7 @@ metrics keep the time breakdown and build from blyte's report (blyte #76, #77)."
 import pytest
 
 from lab.engine.budget_policy import RunTelemetry
-from lab.engine.drivers.superstate_native import run_metrics
+from lab.engine.drivers.blyte_native import run_metrics
 from lab.engine.harnesses import BARE_ARM, compare_harnesses, render_harness_comparison
 
 

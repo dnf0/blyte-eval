@@ -31,7 +31,7 @@ from lab.engine.verifier import HeldOutVerifier
 from lab.sandbox.answer_key import AnswerKeyGuard
 from lab.sandbox.docker_manager import DockerManager
 
-logger = logging.getLogger("superstate_eval.runner")
+logger = logging.getLogger("blyte_eval.runner")
 
 # Spec: every evaluation container is capped at 2.5 CPUs and 4 GB of memory.
 DEFAULT_NANO_CPUS = int(2.5 * 1e9)
@@ -83,7 +83,7 @@ class AblationRunner:
     ) -> None:
         self.docker_manager = docker_manager or DockerManager()
         self.governor = governor or ConcurrencyGovernor()
-        self.workspace_root = workspace_root or Path("/tmp/superstate_eval_workspaces")
+        self.workspace_root = workspace_root or Path("/tmp/blyte_eval_workspaces")
         self.min_free_disk_gb = min_free_disk_gb
         self.default_driver = default_driver
         self.nano_cpus = nano_cpus

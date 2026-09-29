@@ -51,7 +51,7 @@ def test_extract_and_grade_passing_reward_json(tmp_path: Path) -> None:
     result = extract_and_grade(
         container=mock_container,
         task=task,
-        arm="superstate",
+        arm="blyte",
         logs_dir=logs_dir,
     )
 
@@ -185,7 +185,7 @@ def test_held_out_verifier_grade_wins_over_agent_container(tmp_path: Path) -> No
     result = extract_and_grade(
         container=agent_container,
         task=_HeldOutTask(tests_dir=tmp_path / "tests"),
-        arm="superstate",
+        arm="blyte",
         logs_dir=logs_dir,
         verifier=verifier,
     )
@@ -365,7 +365,7 @@ def test_extract_and_grade_propagates_stats_from_held_out_verifier(tmp_path: Pat
     result = extract_and_grade(
         container=MagicMock(),
         task=task,
-        arm="superstate",
+        arm="blyte",
         logs_dir=logs_dir,
         verifier=verifier,
     )
@@ -443,7 +443,7 @@ def test_extract_and_grade_in_container_tests_injection(tmp_path: Path) -> None:
     result = extract_and_grade(
         container=container,
         task=InContainerTask(tests_dir),
-        arm="superstate",
+        arm="blyte",
         logs_dir=logs_dir,
     )
 

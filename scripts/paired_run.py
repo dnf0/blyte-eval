@@ -29,7 +29,7 @@ from lab.benchmarks.task_loader import load_benchmark_tasks, load_task_from_dir 
 from lab.benchmarks.task_sets import is_canary, is_discriminating  # noqa: E402
 from lab.engine.drivers.agy_cli import AgyCliDriver  # noqa: E402
 from lab.engine.drivers.claude_cli import ClaudeCliDriver  # noqa: E402
-from lab.engine.drivers.superstate_native import SuperstateNativeDriver  # noqa: E402
+from lab.engine.drivers.blyte_native import BlyteNativeDriver  # noqa: E402
 from lab.engine.harnesses import BARE_ARM, build_harness, by_harness, render_harness_comparison  # noqa: E402
 from lab.engine.plan_first import final_response, planning_task, with_plan  # noqa: E402
 from lab.engine.governor import ConcurrencyGovernor  # noqa: E402
@@ -42,7 +42,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
-logger = logging.getLogger("superstate_eval.paired")
+logger = logging.getLogger("blyte_eval.paired")
 
 DEFAULT_TASKS = Path.home() / ".cache/agent-rules/frontier-eval/tasks"
 
@@ -67,13 +67,13 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--only-with-verifier", action="store_true",
                     help="Skip tasks that ship no held-out verifier")
     ap.add_argument("--arms", nargs="+", default=["vanilla", "superpowers"])
-    ap.add_argument("--driver", choices=["agy", "claude", "superstate"], default="agy",
-                    help="Worker runtime: agy, claude, or the native superstate harness (default: agy)")
+    ap.add_argument("--driver", choices=["agy", "claude", "blyte"], default="agy",
+                    help="Worker runtime: agy, claude, or the native blyte harness (default: agy)")
     ap.add_argument("--context", choices=["conversational", "folded"], default="folded",
-                    help="Native superstate driver only: context strategy (default: folded)")
+                    help="Native blyte driver only: context strategy (default: folded)")
     ap.add_argument("--harnesses", nargs="+", default=None,
                     help="Harness-vs-harness mode: compare these harnesses on the bare task, first "
-                         "is the baseline, e.g. agy superstate[folded] superstate[folded,tdd,review]. "
+                         "is the baseline, e.g. agy blyte[folded] blyte[folded,tdd,review]. "
                          "Replaces --arms, --driver and --context")
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
@@ -81,7 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--repeats", type=int, default=1, help="Number of repetitions per task/arm")
     ap.add_argument("--concurrency", type=int, default=3, help="Max concurrent workers (default: 3)")
     ap.add_argument("--workspace-root", type=Path,
-                    default=Path("/tmp/superstate_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
+                    default=Path("/tmp/blyte_eval_runs") / time.strftime("%Y%m%d-%H%M%S"))
     ap.add_argument("--tasks", nargs="+", help="Specific task names or directories")
     ap.add_argument("--tier1", action="store_true", help="Run the 9 Tier-1 Frontier software engineering tasks")
     ap.add_argument("--core", action="store_true",
@@ -242,22 +242,22 @@ def _run(args) -> int:
     elif args.driver == "claude":
         model = args.model if args.model != "gemini-3.8-flash-high" else "claude-3-7-sonnet-20250219"
         driver = ClaudeCliDriver(model=model)
-    elif args.driver == "superstate":
+    elif args.driver == "blyte":
         # Same --model as every other driver, so model parity holds by construction.
         report_dir = (
             args.out.with_suffix(".native_reports") if args.out
             else args.workspace_root / "native_reports"
         )
-        driver = SuperstateNativeDriver(
+        driver = BlyteNativeDriver(
             model=args.model,
             context=args.context,
             report_dir=report_dir,
         )
         logger.info(
-            "Native superstate driver: bin=%s (sha256 %s, copied from %s), context=%s, "
+            "Native blyte driver: bin=%s (sha256 %s, copied from %s), context=%s, "
             "reports -> %s",
-            driver.superstate_bin, driver.superstate_bin_sha256[:12],
-            driver.superstate_bin_source, args.context, report_dir,
+            driver.blyte_bin, driver.blyte_bin_sha256[:12],
+            driver.blyte_bin_source, args.context, report_dir,
         )
     else:
         driver = AgyCliDriver(model=args.model)
@@ -278,7 +278,7 @@ def _run(args) -> int:
     # waited for a slot, gave up at 300s, and were recorded as task failures.
     declared_gb = [t.memory_mb / 1024 for t in tasks if getattr(t, "memory_mb", None)]
     ram_per_worker = float(
-        os.environ.get("SUPERSTATE_EVAL_RAM_PER_WORKER_GB")
+        os.environ.get("BLYTE_EVAL_RAM_PER_WORKER_GB")
         or (max(declared_gb) if declared_gb else 1.5)
     )
     if declared_gb and ram_per_worker > 1.5:
@@ -287,9 +287,9 @@ def _run(args) -> int:
             ram_per_worker,
         )
     governor = ConcurrencyGovernor(
-        cpus_per_worker=float(os.environ.get("SUPERSTATE_EVAL_CPUS_PER_WORKER", "1.0")),
+        cpus_per_worker=float(os.environ.get("BLYTE_EVAL_CPUS_PER_WORKER", "1.0")),
         ram_gb_per_worker=ram_per_worker,
-        ram_headroom_gb=float(os.environ.get("SUPERSTATE_EVAL_RAM_HEADROOM_GB", "4.0")),
+        ram_headroom_gb=float(os.environ.get("BLYTE_EVAL_RAM_HEADROOM_GB", "4.0")),
     ) if args.concurrency > 1 else None
     if governor is not None:
         ceiling = governor.calculate_max_concurrency()

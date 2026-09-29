@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import os
 
-logger = logging.getLogger("superstate_eval.prompt_contracts")
+logger = logging.getLogger("blyte_eval.prompt_contracts")
 
 GENERIC_EXECUTION_RULES = (
     "## EXECUTION DISCIPLINE\n"
@@ -24,7 +24,7 @@ GENERIC_EXECUTION_RULES = (
     "5. **DO NOT READ SKILL OR RULES FILES:** Do not inspect GEMINI.md, AGENTS.md, or .cursorrules."
 )
 
-GENERIC_RULES_ENV_FLAG = "SUPERSTATE_EVAL_GENERIC_RULES"
+GENERIC_RULES_ENV_FLAG = "BLYTE_EVAL_GENERIC_RULES"
 
 
 def generic_rules_enabled() -> bool:

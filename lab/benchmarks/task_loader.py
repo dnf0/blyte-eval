@@ -11,7 +11,7 @@ from pathlib import Path
 import tomllib
 from typing import Any
 
-logger = logging.getLogger("superstate_eval.task_loader")
+logger = logging.getLogger("blyte_eval.task_loader")
 
 
 @dataclass

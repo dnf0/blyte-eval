@@ -147,9 +147,9 @@ def test_plain_claude_arm_argv_and_env(tmp_path: Path) -> None:
     mcp_cfg_idx = argv.index("--mcp-config")
     config = json.loads(argv[mcp_cfg_idx + 1])
     server_env = config["mcpServers"]["task"]["env"]
-    assert server_env["SUPERSTATE_EVAL_CONTAINER"] == "cnt-test-123"
+    assert server_env["BLYTE_EVAL_CONTAINER"] == "cnt-test-123"
     assert "PYTHONPATH" in server_env
-    blyte_keys = [k for k in server_env if k.startswith("BLYTE_")]
+    blyte_keys = [k for k in server_env if k.startswith("BLYTE_") and k != "BLYTE_EVAL_CONTAINER"]
     assert blyte_keys == [], f"Plain claude arm must have no BLYTE_* env vars, got: {blyte_keys}"
 
 
@@ -177,7 +177,7 @@ def test_claude_blyte_arm_argv_and_env(tmp_path: Path) -> None:
     mcp_cfg_idx = argv.index("--mcp-config")
     config = json.loads(argv[mcp_cfg_idx + 1])
     server_env = config["mcpServers"]["task"]["env"]
-    assert server_env["SUPERSTATE_EVAL_CONTAINER"] == "cnt-test-123"
+    assert server_env["BLYTE_EVAL_CONTAINER"] == "cnt-test-123"
     assert server_env["BLYTE_IMPLEMENTER_MODEL"] == "gemini-3.8-flash-high"
     assert "BLYTE_DISPATCH_DIR" in server_env
     dispatch_path = Path(server_env["BLYTE_DISPATCH_DIR"])

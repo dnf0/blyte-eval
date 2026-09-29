@@ -1,11 +1,11 @@
-"""The native superstate harness as an evaluation driver.
+"""The native blyte harness as an evaluation driver.
 
-Superstate used to be measured as a layer attached to agy or Claude Code. It is now a harness
-in its own right (`superstate "<prompt>"`), so in this evaluation it sits where agy sits: it is
+Blyte used to be measured as a layer attached to agy or Claude Code. It is now a harness
+in its own right (`blyte "<prompt>"`), so in this evaluation it sits where agy sits: it is
 the worker runtime, and any arm can run on it. The first comparison is `vanilla` + agy against
-`vanilla` + superstate: same task, model and sealed grader, different harness.
+`vanilla` + blyte: same task, model and sealed grader, different harness.
 
-Spec: superstate/docs/superpowers/specs/2026-09-23-native-harness-eval-surface-design.md
+Spec: blyte/docs/superpowers/specs/2026-09-23-native-harness-eval-surface-design.md
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.base import AgentDriver, DriverTelemetry
 from lab.engine.drivers.agy_cli import estimate_cost_usd
 
-logger = logging.getLogger("superstate_eval.drivers.superstate_native")
+logger = logging.getLogger("blyte_eval.drivers.blyte_native")
 
 #: Where the runner mounts the task repository inside the sandbox (runner.CONTAINER_WORKSPACE).
 CONTAINER_WORKDIR = "/app"
@@ -43,30 +43,30 @@ REPORT_SCHEMA_VERSION = 1
 CONTEXTS = ("conversational", "folded")
 
 
-class SuperstateNativeDriverError(RuntimeError):
+class BlyteNativeDriverError(RuntimeError):
     """The driver cannot be configured to produce a valid measurement."""
 
 
 #: Where the native harness is built. The most recently built one wins, so a stale release build
 #: never shadows a fresh debug one.
 BLYTE_BUILDS = (
-    Path.home() / "repos/superstate/target/release/blyte",
-    Path.home() / "repos/superstate/target/debug/blyte",
+    Path.home() / "repos/blyte/target/release/blyte",
+    Path.home() / "repos/blyte/target/debug/blyte",
 )
 
 
 def _resolve_binary() -> Path:
-    """The `blyte` binary: BLYTE_BIN, else SUPERSTATE_BIN (older commands), else the newest
-    build. Kept apart from the legacy state engine's resolution, which needs pre-rename
-    `superstate` builds (its subcommands no longer exist in `blyte`)."""
-    for var in ("BLYTE_BIN", "SUPERSTATE_BIN"):
+    """The `blyte` binary: BLYTE_BIN, else SUPERSTATE_BIN (deprecated pre-rename name, still read
+    for older commands), else the newest build. Kept apart from the legacy state engine's
+    resolution, which needs pre-rename `superstate` builds (its subcommands no longer exist in `blyte`)."""
+    for var in ("BLYTE_BIN", "SUPERSTATE_BIN"):  # SUPERSTATE_BIN: deprecated fallback
         env_path = os.environ.get(var)
         if env_path and Path(env_path).is_file():
             return Path(env_path)
     existing = [c for c in BLYTE_BUILDS if c.is_file()]
     if not existing:
-        raise SuperstateNativeDriverError(
-            "No blyte binary found. Build it (`cargo build --release` in the superstate repo) "
+        raise BlyteNativeDriverError(
+            "No blyte binary found. Build it (`cargo build --release` in the blyte repo) "
             "or set BLYTE_BIN."
         )
     return max(existing, key=lambda c: c.stat().st_mtime)
@@ -95,10 +95,10 @@ def _read_report(path: Path) -> Optional[Dict[str, Any]]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        logger.warning("Unreadable superstate report %s: %s", path, exc)
+        logger.warning("Unreadable blyte report %s: %s", path, exc)
         return None
     if not isinstance(data, dict) or data.get("schema_version") != REPORT_SCHEMA_VERSION:
-        logger.warning("Superstate report %s has an unknown schema; not trusting it", path)
+        logger.warning("Blyte report %s has an unknown schema; not trusting it", path)
         return None
     return data
 
@@ -173,8 +173,8 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
     }
 
 
-class SuperstateNativeDriver(AgentDriver):
-    """Runs a whole task through the native superstate harness in one call."""
+class BlyteNativeDriver(AgentDriver):
+    """Runs a whole task through the native blyte harness in one call."""
 
     harness_name: str = "blyte"
     # Every tool call is a `docker exec` into the task container; the model never gets a host
@@ -186,15 +186,15 @@ class SuperstateNativeDriver(AgentDriver):
         model: str,
         context: str = "folded",
         fold_budget: Optional[int] = None,
-        superstate_bin: Optional[str | Path] = None,
+        blyte_bin: Optional[str | Path] = None,
         report_dir: Optional[str | Path] = None,
     ) -> None:
         if context not in CONTEXTS:
-            raise SuperstateNativeDriverError(
+            raise BlyteNativeDriverError(
                 f"context must be one of {CONTEXTS}, got {context!r}"
             )
         if not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
-            raise SuperstateNativeDriverError(
+            raise BlyteNativeDriverError(
                 "GEMINI_API_KEY (or GOOGLE_API_KEY) must be set: the native harness calls the "
                 "model API directly. Failing now, before any arm has run."
             )
@@ -211,14 +211,14 @@ class SuperstateNativeDriver(AgentDriver):
         self.harness_name = f"blyte[{','.join(config)}]"
         self.report_dir = Path(report_dir) if report_dir is not None else None
 
-        source = Path(superstate_bin) if superstate_bin is not None else _resolve_binary()
-        # Copy to a run-scoped path: `cargo build` rewrites target/*/superstate in place, and a
+        source = Path(blyte_bin) if blyte_bin is not None else _resolve_binary()
+        # Copy to a run-scoped path: `cargo build` rewrites target/*/blyte in place, and a
         # rebuild mid-run would make one run measure two binaries while reporting one (EXP-073).
-        self._work_dir = Path(tempfile.mkdtemp(prefix="superstate-native-"))
-        self.superstate_bin = self._work_dir / "blyte"
-        shutil.copy2(source, self.superstate_bin)
-        self.superstate_bin_source = source
-        self.superstate_bin_sha256 = hashlib.sha256(self.superstate_bin.read_bytes()).hexdigest()
+        self._work_dir = Path(tempfile.mkdtemp(prefix="blyte-native-"))
+        self.blyte_bin = self._work_dir / "blyte"
+        shutil.copy2(source, self.blyte_bin)
+        self.blyte_bin_source = source
+        self.blyte_bin_sha256 = hashlib.sha256(self.blyte_bin.read_bytes()).hexdigest()
         self.last_report: Optional[Dict[str, Any]] = None
         self.last_events_path: Optional[Path] = None
 
@@ -227,7 +227,7 @@ class SuperstateNativeDriver(AgentDriver):
     ) -> list[str]:
         """The argv for one task. Never a --gate: runs are ungated, and the sealed grader decides."""
         cmd = [
-            str(self.superstate_bin),
+            str(self.blyte_bin),
             "--model",
             self.model,
             "--context",
@@ -265,7 +265,7 @@ class SuperstateNativeDriver(AgentDriver):
                 raw_response="",
                 duration_seconds=0.0,
                 error_message=(
-                    "superstate native driver requires a sandbox container; "
+                    "blyte native driver requires a sandbox container; "
                     "refusing to run on the host"
                 ),
             )
@@ -309,9 +309,9 @@ class SuperstateNativeDriver(AgentDriver):
         self.last_report = report
         if report is None:
             reason = (
-                f"superstate killed after {elapsed:.0f}s with no report"
+                f"blyte killed after {elapsed:.0f}s with no report"
                 if killed
-                else f"superstate exited {returncode} with no report"
+                else f"blyte exited {returncode} with no report"
             )
             return DriverTelemetry(
                 success=False,
@@ -340,7 +340,7 @@ class SuperstateNativeDriver(AgentDriver):
         success = report.get("outcome") == "verified"
         error_message = None
         if not success:
-            error_message = report.get("error") or f"superstate outcome: {report.get('outcome')}"
+            error_message = report.get("error") or f"blyte outcome: {report.get('outcome')}"
         return DriverTelemetry(
             success=success,
             # blyte's last message: the plan, in a plan-first planning run (offload v2).
