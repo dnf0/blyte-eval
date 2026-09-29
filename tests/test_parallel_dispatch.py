@@ -130,3 +130,39 @@ def test_a_running_dispatch_does_not_hold_up_other_tool_calls(monkeypatch: pytes
     out = io.StringIO()
     mcp.serve(lines, out, Slow())
     assert [json.loads(line)["id"] for line in out.getvalue().splitlines()] == [2, 1]
+
+
+def test_started_dispatches_run_at_the_same_time_and_wait_collects_them(executor: mcp.ContainerExec) -> None:
+    # Claude Code runs an MCP server's calls one after another, so each start must return at once.
+    work = Path(executor.default_workdir)
+    start = time.monotonic()
+    ids = []
+    for task in ("write a.txt from-a", "write b.txt from-b"):
+        t0 = time.monotonic()
+        started = json.loads(executor.start_dispatch(task, "true")[0])
+        assert time.monotonic() - t0 < 1.0, "a start blocked until its dispatch finished"
+        assert started["status"] == "started"
+        ids.append(started["dispatch_id"])
+    results = json.loads(executor.wait_dispatches(ids)[0])["results"]
+    elapsed = time.monotonic() - start
+
+    assert elapsed < 2.8, f"the started dispatches ran one after another ({elapsed:.1f}s)"
+    assert [r["dispatch_id"] for r in results] == ids
+    assert [r["merge"] for r in results] == ["applied", "applied"]
+    assert (work / "a.txt").read_text() == "from-a\n"
+    assert (work / "b.txt").read_text() == "from-b\n"
+    assert json.loads(executor.wait_dispatches([ids[0]])[0])["results"][0]["outcome"] == "error"
+
+
+def test_start_and_wait_are_offered_with_the_implementer(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-test")
+    resp = mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}, mcp.ContainerExec())
+    assert resp is not None
+    names = [t["name"] for t in resp["result"]["tools"]]
+    assert names == [mcp.TOOL_NAME, mcp.DISPATCH_TOOL_NAME, mcp.DISPATCH_START_TOOL_NAME, mcp.DISPATCH_WAIT_TOOL_NAME]
+    bad = mcp.handle(
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+         "params": {"name": mcp.DISPATCH_WAIT_TOOL_NAME, "arguments": {"dispatch_ids": ["x"]}}},
+        mcp.ContainerExec(),
+    )
+    assert bad is not None and "error" in bad

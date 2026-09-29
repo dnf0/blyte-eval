@@ -73,8 +73,9 @@ DISPATCH_TOOL_DESCRIPTION = (
     "working in this same container. It edits files, runs commands, and stops when `gate` "
     "(a shell command, e.g. the relevant test command) exits 0 or its budget runs out. "
     "Each dispatch works in its own copy of the repository, taken from its current state "
-    "(uncommitted changes included), so several dispatches can run at the same time: call the "
-    "tool more than once in one turn for independent tasks that touch different files. When a "
+    "(uncommitted changes included). For several independent tasks that touch different "
+    "files, use dispatch_blyte_start for each and then dispatch_blyte_wait: they run at the same "
+    "time (calls to this tool run one after another). When a "
     "dispatch ends, its changes are applied to the repository; if they clash with changes "
     "applied since it started, nothing is applied and `merge` is \"conflict\", with the copy's "
     "path for you to inspect. The gate runs in the copy, so give it relative paths. Returns the "
@@ -103,6 +104,33 @@ DISPATCH_TOOL_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
+# Start-then-wait (2026-09-29): Claude Code runs an MCP server's tool calls one after another, so
+# parallel dispatch_blyte calls still ran in sequence. A start returns at once; wait collects.
+DISPATCH_START_TOOL_NAME = "dispatch_blyte_start"
+DISPATCH_START_TOOL_DESCRIPTION = (
+    "Start one implementation task on blyte in the background and return at once with its "
+    "`dispatch_id`. Same arguments and behaviour as dispatch_blyte (its own copy of the "
+    "repository, applied back when it ends). Start every independent task this way, then call "
+    "dispatch_blyte_wait to collect their results: the started tasks run at the same time."
+)
+DISPATCH_WAIT_TOOL_NAME = "dispatch_blyte_wait"
+DISPATCH_WAIT_TOOL_DESCRIPTION = (
+    "Wait for dispatches started with dispatch_blyte_start to finish and return their results "
+    "(the same fields as dispatch_blyte, plus `dispatch_id`), in the order given. With no ids, "
+    "waits for every started dispatch not yet collected."
+)
+DISPATCH_WAIT_TOOL_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "dispatch_ids": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "The dispatch_ids to wait for (optional; default: all not yet collected)",
+        },
+    },
+    "additionalProperties": False,
+}
+
 
 def log(message: str) -> None:
     """Diagnostics go to stderr; stdout carries protocol messages only."""
@@ -124,6 +152,10 @@ class ContainerExec:
         self.copy_root = os.environ.get("BLYTE_DISPATCH_COPY_ROOT", "/tmp")
         self._count_lock = threading.Lock()
         self._merge_lock = threading.Lock()
+        # Background dispatches (dispatch_blyte_start): id -> thread, and id -> result once done.
+        self._jobs: dict[int, threading.Thread] = {}
+        self._job_results: dict[int, str] = {}
+        self._job_count = 0
 
     def _resolve(self) -> Any:
         if self._container is None:
@@ -192,6 +224,35 @@ class ContainerExec:
             return {"merge": "conflict", "merge_detail": out[-1000:], "copy": copy, "patch": patch}
         self._sh(f"rm -rf {copy}")
         return {"merge": "no changes" if "no-changes" in out else "applied"}
+
+    def start_dispatch(self, task: str, gate: str, max_seconds: int = 1200) -> tuple[str, bool]:
+        """Run `dispatch` in a background thread; return its dispatch_id at once."""
+        with self._count_lock:
+            self._job_count += 1
+            job = self._job_count
+
+        def work() -> None:
+            text, _ = self.dispatch(task, gate, max_seconds)
+            self._job_results[job] = text
+
+        thread = threading.Thread(target=work, daemon=True)
+        self._jobs[job] = thread
+        thread.start()
+        return (json.dumps({"dispatch_id": job, "status": "started"}), False)
+
+    def wait_dispatches(self, ids: list[int] | None = None) -> tuple[str, bool]:
+        """Wait for the given background dispatches (default: all not yet collected)."""
+        if ids is None:
+            ids = sorted(self._jobs)
+        results: list[dict[str, Any]] = []
+        for job in ids:
+            thread = self._jobs.pop(job, None)
+            if thread is None:
+                results.append({"dispatch_id": job, "outcome": "error", "error": "no such running dispatch"})
+                continue
+            thread.join()
+            results.append({"dispatch_id": job, **json.loads(self._job_results.pop(job))})
+        return (json.dumps({"results": results}), False)
 
     def dispatch(
         self,
@@ -369,6 +430,20 @@ def handle(message: dict[str, Any], executor: ContainerExec) -> dict[str, Any] |
                     "inputSchema": DISPATCH_TOOL_SCHEMA,
                 }
             )
+            tools.append(
+                {
+                    "name": DISPATCH_START_TOOL_NAME,
+                    "description": DISPATCH_START_TOOL_DESCRIPTION,
+                    "inputSchema": DISPATCH_TOOL_SCHEMA,
+                }
+            )
+            tools.append(
+                {
+                    "name": DISPATCH_WAIT_TOOL_NAME,
+                    "description": DISPATCH_WAIT_TOOL_DESCRIPTION,
+                    "inputSchema": DISPATCH_WAIT_TOOL_SCHEMA,
+                }
+            )
         return _result(
             request_id,
             {"tools": tools},
@@ -387,7 +462,20 @@ def handle(message: dict[str, Any], executor: ContainerExec) -> dict[str, Any] |
                 request_id,
                 {"content": [{"type": "text", "text": text}], "isError": is_error},
             )
-        if tool_name == DISPATCH_TOOL_NAME and os.environ.get("BLYTE_IMPLEMENTER_MODEL", "").strip():
+        dispatching = bool(os.environ.get("BLYTE_IMPLEMENTER_MODEL", "").strip())
+        if tool_name == DISPATCH_WAIT_TOOL_NAME and dispatching:
+            args = params.get("arguments") or {}
+            raw_ids = args.get("dispatch_ids")
+            if raw_ids is not None and (
+                not isinstance(raw_ids, list) or not all(isinstance(i, int) and not isinstance(i, bool) for i in raw_ids)
+            ):
+                return _error(request_id, -32602, "'dispatch_ids' must be a list of integers")
+            text, is_error = executor.wait_dispatches(raw_ids)
+            return _result(
+                request_id,
+                {"content": [{"type": "text", "text": text}], "isError": is_error},
+            )
+        if tool_name in (DISPATCH_TOOL_NAME, DISPATCH_START_TOOL_NAME) and dispatching:
             args = params.get("arguments") or {}
             task = args.get("task")
             if not isinstance(task, str) or not task.strip():
@@ -404,7 +492,10 @@ def handle(message: dict[str, Any], executor: ContainerExec) -> dict[str, Any] |
                     raise ValueError
             except (ValueError, TypeError):
                 return _error(request_id, -32602, "'max_seconds' must be a positive integer")
-            text, is_error = executor.dispatch(task, gate, max_seconds)
+            if tool_name == DISPATCH_START_TOOL_NAME:
+                text, is_error = executor.start_dispatch(task, gate, max_seconds)
+            else:
+                text, is_error = executor.dispatch(task, gate, max_seconds)
             return _result(
                 request_id,
                 {"content": [{"type": "text", "text": text}], "isError": is_error},
