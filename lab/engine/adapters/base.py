@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import shutil
+import subprocess
 from typing import Any, Callable, Dict, Optional
 
 from lab.benchmarks.task_loader import TaskSpec
@@ -24,6 +25,29 @@ PREEXISTING_GUIDANCE = (
     ".cursorrules",
     ".windsurfrules",
 )
+
+
+def _hide_from_git(workspace_path: Path, removed: list[str]) -> None:
+    """Keep stripped guidance stripped. Marks the tracked copies skip-worktree, so the deletion
+    is not part of the agent's diff and `git checkout -- AGENTS.md` cannot bring the file back
+    (offload v2, 2026-09-28: Sonnet restored AGENTS.md with git checkout in some runs)."""
+    if not removed or not (workspace_path / ".git").exists():
+        return
+    try:
+        listed = subprocess.run(
+            ["git", "-C", str(workspace_path), "ls-files", "-z", "--", *removed],
+            capture_output=True,
+            check=True,
+        ).stdout.split(b"\0")
+        tracked = [p.decode() for p in listed if p]
+        if tracked:
+            subprocess.run(
+                ["git", "-C", str(workspace_path), "update-index", "--skip-worktree", "--", *tracked],
+                capture_output=True,
+                check=True,
+            )
+    except (OSError, subprocess.CalledProcessError) as err:
+        logger.warning("Could not hide stripped guidance from git in %s: %s", workspace_path, err)
 
 
 def strip_preexisting_guidance(workspace_path: Path) -> list[str]:
@@ -45,6 +69,7 @@ def strip_preexisting_guidance(workspace_path: Path) -> list[str]:
             removed.append(".agents/skills")
         except OSError as err:
             logger.warning("Failed to remove %s: %s", skills_dir, err)
+    _hide_from_git(workspace_path, removed)
     return removed
 
 # Returns the currently granted budget in seconds, after polling for progress.

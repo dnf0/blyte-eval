@@ -8,9 +8,8 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-import shutil
 
-from lab.engine.adapters.base import TurnBasedAdapter
+from lab.engine.adapters.base import TurnBasedAdapter, strip_preexisting_guidance
 
 logger = logging.getLogger("blyte_eval.adapters.vanilla")
 
@@ -27,26 +26,7 @@ class VanillaAdapter(TurnBasedAdapter):
 
     def clean_workspace(self, workspace_path: Path) -> None:
         """Sanitize workspace by removing all guidance, rule files, and skills."""
-        rule_files = [
-            workspace_path / "AGENTS.md",
-            workspace_path / "GEMINI.md",
-            workspace_path / "CLAUDE.md",
-            workspace_path / ".cursorrules",
-            workspace_path / ".windsurfrules",
-        ]
-        for rf in rule_files:
-            if rf.is_file():
-                try:
-                    rf.unlink()
-                except OSError as err:
-                    logger.warning("Failed to remove rule file %s: %s", rf, err)
-
-        skills_dir = workspace_path / ".agents" / "skills"
-        if skills_dir.is_dir():
-            try:
-                shutil.rmtree(skills_dir)
-            except OSError as err:
-                logger.warning("Failed to remove skills dir %s: %s", skills_dir, err)
+        strip_preexisting_guidance(workspace_path)
 
     def prepare_workspace(self, workspace_path: Path) -> None:
         """Ensure pristine unguided workspace before execution."""
