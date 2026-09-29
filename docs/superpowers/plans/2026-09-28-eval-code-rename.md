@@ -45,6 +45,12 @@
 (`target/release/superstate`) or the removed `superstate-core` crate, and that no test, `Makefile`
 target or other script uses, is dead: delete it (`git rm`). Otherwise, rename its references.
 
+**How (added 2026-09-29, after the first attempt ran out of turns editing file by file):** this is
+mechanical, so do it with a script, not by hand: `git mv` the driver module, then one pass of `sed -i
+''`/`perl -pi` (or a short Python script) over the in-scope files for each rename, skipping the kept
+cases (find them first with `git grep`, and exclude those files or restore those lines afterwards).
+Then fix what the checks report by hand. It should take well under 100 turns.
+
 **Done when:** `git grep -n -i superstate -- lab tests scripts Makefile pyproject.toml` lists only
 the kept cases above, and the full checks pass.
 
