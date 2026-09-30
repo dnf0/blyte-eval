@@ -77,6 +77,8 @@ def test_the_host_tools_are_off_and_the_container_server_is_approved(tmp_path: P
     assert '"BLYTE_EVAL_CONTAINER"' not in joined  # TOML keys are bare
     assert 'BLYTE_EVAL_CONTAINER="cnt-123"' in joined
     assert 'BLYTE_IMPLEMENTER_MODEL="gemini-3.8-flash-high"' in joined
+    # The MCP server (and the blyte it starts) keeps the real HOME, where blyte's key file is.
+    assert f"HOME={json.dumps(str(Path.home()))}" in joined
     assert cmd[-1] == "-"
     plain = CodexCliDriver(cli_path=str(_stub(tmp_path)))._build_command(tmp_path, "cnt-123", None)
     assert "BLYTE_IMPLEMENTER_MODEL" not in " ".join(plain)

@@ -98,6 +98,8 @@ class CodexCliDriver(AgentDriver):
         self.mcp_python = mcp_python or sys.executable
         self.auth_file = Path(auth_file) if auth_file else Path.home() / ".codex" / "auth.json"
         self.last_dispatch_dir: Optional[Path] = None
+        # The operator's real home, for the MCP server: only Codex itself runs in the scratch home.
+        self.real_home = str(Path.home())
         if implementer_model is not None:
             self.harness_name = "codex+blyte"
 
@@ -142,7 +144,9 @@ class CodexCliDriver(AgentDriver):
         for feature in DISABLED_FEATURES:
             cmd += ["--disable", feature]
         if container_id:
-            env = {"BLYTE_EVAL_CONTAINER": container_id, "PYTHONPATH": str(REPO_ROOT)}
+            # HOME is the real one: blyte, started by the server, reads its provider key from
+            # ~/.config/blyte/env, and under the scratch home it found none (2026-09-30, codex-1).
+            env = {"BLYTE_EVAL_CONTAINER": container_id, "PYTHONPATH": str(REPO_ROOT), "HOME": self.real_home}
             if self.implementer_model and dispatch_dir is not None:
                 env["BLYTE_IMPLEMENTER_MODEL"] = self.implementer_model
                 env["BLYTE_DISPATCH_DIR"] = str(dispatch_dir)
