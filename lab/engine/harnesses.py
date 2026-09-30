@@ -42,14 +42,14 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
     if name == "superstate":  # renamed to blyte on 2026-09-24
         name = "blyte"
     opts = [o for o in (m.group("opts") or "").split(",") if o]
-    if name in ("agy", "claude"):
+    if name in ("agy", "claude", "codex"):
         if opts:
             raise HarnessSpecError(f"{name} takes no options, got {opts}")
         return name, opts
-    if name == "claude+blyte":
+    if name in ("claude+blyte", "codex+blyte"):
         if len(opts) != 1:
             raise HarnessSpecError(
-                f"claude+blyte requires exactly one implementer model option, got {opts}"
+                f"{name} requires exactly one implementer model option, got {opts}"
             )
         return name, opts
     if name == "blyte":
@@ -68,7 +68,7 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
             raise HarnessSpecError(f"choose one fold budget, got {budgets}")
         return name, opts
     raise HarnessSpecError(
-        f"unknown harness {name!r}; known: agy, claude, claude+blyte, blyte (alias: superstate)"
+        f"unknown harness {name!r}; known: agy, claude, claude+blyte, codex, codex+blyte, blyte (alias: superstate)"
     )
 
 
@@ -103,6 +103,19 @@ def build_harness(
         return ClaudeCliDriver(
             model=model,
             implementer_model=opts[0],
+            report_dir=report_dir,
+        )
+    if name in ("codex", "codex+blyte"):
+        if model.startswith(("gemini", "claude", "sonnet", "opus", "haiku")):
+            raise HarnessSpecError(
+                f"{name} needs an OpenAI model, got {model!r}; compare it in a separate run "
+                "with --model gpt-…, since harnesses in one run share a model"
+            )
+        from lab.engine.drivers.codex_cli import CodexCliDriver
+
+        return CodexCliDriver(
+            model=model,
+            implementer_model=opts[0] if name == "codex+blyte" else None,
             report_dir=report_dir,
         )
     from lab.engine.drivers.blyte_native import BlyteNativeDriver
