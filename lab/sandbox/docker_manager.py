@@ -16,7 +16,7 @@ import shutil
 import tarfile
 import threading
 import time
-from typing import Any, Generator, Mapping
+from typing import Any, Generator, Mapping, Sequence
 
 import docker
 from docker.models.containers import Container
@@ -428,84 +428,28 @@ class DockerManager:
     def get_image_ids(self) -> set[str]:
         """Record the set of image IDs already present on host (`docker images -q`)."""
         ids: set[str] = set()
-        try:
-            for img in self.client.images.list():
-                img_id = getattr(img, "id", None)
-                if img_id and isinstance(img_id, str):
-                    ids.add(img_id)
-                    ids.add(img_id.removeprefix("sha256:"))
-                    ids.add(img_id[:12])
-                    ids.add(img_id.removeprefix("sha256:")[:12])
-                short_id = getattr(img, "short_id", None)
-                if short_id and isinstance(short_id, str):
-                    ids.add(short_id)
-                    ids.add(short_id.removeprefix("sha256:"))
-                tags = getattr(img, "tags", None)
-                if tags and isinstance(tags, list):
-                    for tag in tags:
-                        if isinstance(tag, str):
-                            ids.add(tag)
-        except Exception as err:
-            logger.warning("Could not list initial docker images: %s", err)
+        for img in self.client.images.list():
+            img_id = getattr(img, "id", None)
+            if img_id and isinstance(img_id, str):
+                ids.add(img_id)
         return ids
 
-    def is_image_in_use(self, image_tag: str, image_obj: Any = None) -> bool:
-        """Check if any container (running or stopped) uses `image_tag` or `image_obj`."""
+    def is_image_in_use(self, image_id: str, image_obj: Any = None) -> bool:
+        """Check if any container (running or stopped) uses `image_id`."""
         try:
             containers = self.client.containers.list(all=True)
         except Exception as err:
             logger.warning("Could not list containers to check image usage: %s", err)
             return True
 
-        target_ids: set[str] = set()
-        if image_obj is not None:
-            obj_id = getattr(image_obj, "id", None)
-            if obj_id and isinstance(obj_id, str):
-                target_ids.add(obj_id)
-                target_ids.add(obj_id.removeprefix("sha256:"))
-                target_ids.add(obj_id[:12])
-                target_ids.add(obj_id.removeprefix("sha256:")[:12])
-            short_id = getattr(image_obj, "short_id", None)
-            if short_id and isinstance(short_id, str):
-                target_ids.add(short_id)
-                target_ids.add(short_id.removeprefix("sha256:"))
-
-        target_tags = {image_tag}
-        if ":" not in image_tag and "/" not in image_tag:
-            target_tags.add(f"{image_tag}:latest")
+        target_id = getattr(image_obj, "id", None) or image_id
+        if not target_id:
+            return False
 
         for c in containers:
-            c_img = getattr(c, "image", None)
-            if c_img is not None:
-                c_img_id = getattr(c_img, "id", None)
-                if c_img_id and isinstance(c_img_id, str):
-                    if (
-                        c_img_id in target_ids
-                        or c_img_id.removeprefix("sha256:") in target_ids
-                        or c_img_id[:12] in target_ids
-                        or c_img_id.removeprefix("sha256:")[:12] in target_ids
-                    ):
-                        return True
-
-                c_tags = getattr(c_img, "tags", None) or []
-                if any(t in target_tags for t in c_tags if isinstance(t, str)):
-                    return True
-
             attrs = getattr(c, "attrs", None)
-            if isinstance(attrs, dict):
-                c_image_id = attrs.get("Image")
-                if c_image_id and isinstance(c_image_id, str):
-                    if (
-                        c_image_id in target_ids
-                        or c_image_id.removeprefix("sha256:") in target_ids
-                        or c_image_id[:12] in target_ids
-                        or c_image_id.removeprefix("sha256:")[:12] in target_ids
-                    ):
-                        return True
-
-                config_image = attrs.get("Config", {}).get("Image")
-                if config_image and config_image in target_tags:
-                    return True
+            if isinstance(attrs, Mapping) and attrs.get("Image") == target_id:
+                return True
 
         return False
 
@@ -586,13 +530,19 @@ class ImageTracker:
         self.docker_manager = docker_manager
         self.keep_images = keep_images
         self._initial_image_ids: set[str] = set()
+        self._initial_listing_succeeded: bool = False
         self._job_counts: dict[str, int] = {}
         self._lock = threading.Lock()
 
     def record_initial_images(self) -> None:
         """Record image IDs present before the run started."""
         with self._lock:
-            self._initial_image_ids = self.docker_manager.get_image_ids()
+            try:
+                self._initial_image_ids = self.docker_manager.get_image_ids()
+                self._initial_listing_succeeded = True
+            except Exception:
+                self._initial_listing_succeeded = False
+                logger.warning("image cleanup disabled: could not list images")
 
     def register_job(self, image: str | None) -> None:
         """Register a job that will use `image`."""
@@ -601,15 +551,10 @@ class ImageTracker:
         with self._lock:
             self._job_counts[image] = self._job_counts.get(image, 0) + 1
 
-    def register_jobs(self, jobs: Any) -> None:
-        """Register images for a sequence of jobs (each job having task as job[0] or job as task)."""
-        for item in jobs:
-            task = item[0] if isinstance(item, (tuple, list)) and item else item
-            image = getattr(task, "docker_image", None) or getattr(task, "image", None)
-            if not image and isinstance(task, dict):
-                image = task.get("docker_image") or task.get("image")
-            if image and isinstance(image, str):
-                self.register_job(image)
+    def register_jobs(self, jobs: Sequence[tuple[Any, ...]]) -> None:
+        """Register images for a sequence of jobs (each job being a tuple with task as first element)."""
+        for job in jobs:
+            self.register_job(job[0].docker_image)
 
     def job_finished(self, image: str | None) -> bool:
         """Notify that a job using `image` has finished.
@@ -618,7 +563,7 @@ class ImageTracker:
         and no container uses it.
         Returns True if image was removed, False otherwise.
         """
-        if not image or self.keep_images:
+        if not image or self.keep_images or not self._initial_listing_succeeded:
             return False
 
         with self._lock:
@@ -632,25 +577,12 @@ class ImageTracker:
 
         return self._maybe_remove_image(image)
 
-    def _is_image_present_at_start(
-        self, img_id: str | None, short_id: str | None, tag: str | None
-    ) -> bool:
-        if not self._initial_image_ids:
+    def _is_image_present_at_start(self, image_id: str | None) -> bool:
+        if not self._initial_listing_succeeded:
+            return True
+        if not image_id or not self._initial_image_ids:
             return False
-        candidates = set()
-        if img_id:
-            candidates.add(img_id)
-            candidates.add(img_id.removeprefix("sha256:"))
-            candidates.add(img_id[:12])
-            candidates.add(img_id.removeprefix("sha256:")[:12])
-        if short_id:
-            candidates.add(short_id)
-            candidates.add(short_id.removeprefix("sha256:"))
-        if tag:
-            candidates.add(tag)
-            if ":" not in tag and "/" not in tag:
-                candidates.add(f"{tag}:latest")
-        return bool(candidates & self._initial_image_ids)
+        return image_id in self._initial_image_ids
 
     def _maybe_remove_image(self, image: str) -> bool:
         """Check prerequisites and remove image if eligible."""
@@ -661,12 +593,14 @@ class ImageTracker:
             return False
 
         img_id = getattr(img, "id", None)
-        short_id = getattr(img, "short_id", None)
-        if self._is_image_present_at_start(img_id, short_id, image):
+        if not img_id or not isinstance(img_id, str):
+            return False
+
+        if self._is_image_present_at_start(img_id):
             logger.debug("Image %s was present before run; keeping it", image)
             return False
 
-        if self.docker_manager.is_image_in_use(image, img):
+        if self.docker_manager.is_image_in_use(img_id):
             logger.info("Image %s is still used by a container; keeping it", image)
             return False
 

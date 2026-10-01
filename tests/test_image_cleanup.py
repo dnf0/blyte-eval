@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import datetime
+import io
 import logging
 from pathlib import Path
-from unittest.mock import MagicMock
+import tarfile
+from unittest.mock import MagicMock, patch
 import pytest
 
 from lab.sandbox.docker_manager import DockerManager, ImageTracker
-from scripts.paired_run import build_parser
+from scripts.paired_run import _run, build_parser
 
 
 def test_image_present_before_run_never_removed() -> None:
@@ -17,8 +19,6 @@ def test_image_present_before_run_never_removed() -> None:
     mock_docker_client = MagicMock()
     preexisting_img = MagicMock()
     preexisting_img.id = "sha256:preexisting1234567890abcdef"
-    preexisting_img.short_id = "sha256:preexisting"
-    preexisting_img.tags = ["preexisting:latest"]
     preexisting_img.attrs = {"Size": 4 * 1024 * 1024 * 1024}
 
     # At start of run, this image exists
@@ -48,8 +48,6 @@ def test_two_jobs_sharing_image_removed_only_after_second_finishes(
 
     shared_img = MagicMock()
     shared_img.id = "sha256:shared1234567890abcdef"
-    shared_img.short_id = "sha256:shared123"
-    shared_img.tags = ["shared-image:v1"]
     shared_img.attrs = {"Size": int(4.2 * 1024 * 1024 * 1024)}
     mock_docker_client.images.get.return_value = shared_img
     mock_docker_client.containers.list.return_value = []
@@ -81,17 +79,12 @@ def test_image_still_used_by_container_is_kept() -> None:
 
     target_img = MagicMock()
     target_img.id = "sha256:inuse1234567890abcdef"
-    target_img.short_id = "sha256:inuse123"
-    target_img.tags = ["in-use:v1"]
     target_img.attrs = {"Size": 1024 * 1024 * 1024}
     mock_docker_client.images.get.return_value = target_img
 
     # A container is still using this image
     container = MagicMock()
-    container.image = MagicMock()
-    container.image.id = "sha256:inuse1234567890abcdef"
-    container.image.tags = ["in-use:v1"]
-    container.attrs = {"Image": "sha256:inuse1234567890abcdef", "Config": {"Image": "in-use:v1"}}
+    container.attrs = {"Image": "sha256:inuse1234567890abcdef"}
     mock_docker_client.containers.list.return_value = [container]
 
     manager = DockerManager(client=mock_docker_client)
@@ -112,8 +105,6 @@ def test_keep_images_removes_nothing() -> None:
 
     new_img = MagicMock()
     new_img.id = "sha256:newimage123"
-    new_img.short_id = "sha256:new"
-    new_img.tags = ["keep-me:latest"]
     new_img.attrs = {"Size": 1024 * 1024}
     mock_docker_client.images.get.return_value = new_img
     mock_docker_client.containers.list.return_value = []
@@ -134,6 +125,70 @@ def test_keep_images_removes_nothing() -> None:
     assert not args_default.keep_images
     args_keep = parser.parse_args(["--keep-images"])
     assert args_keep.keep_images
+
+
+def test_initial_listing_raises_no_image_removed_after_last_job(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """When the initial listing raises, no image is removed after the last job."""
+    mock_docker_client = MagicMock()
+    mock_docker_client.images.list.side_effect = RuntimeError("docker daemon error")
+
+    task_img = MagicMock()
+    task_img.id = "sha256:taskimg123"
+    task_img.attrs = {"Size": 1024 * 1024}
+    mock_docker_client.images.get.return_value = task_img
+    mock_docker_client.containers.list.return_value = []
+
+    manager = DockerManager(client=mock_docker_client)
+    tracker = ImageTracker(docker_manager=manager)
+
+    with caplog.at_level(logging.WARNING):
+        tracker.record_initial_images()
+
+    assert "image cleanup disabled: could not list images" in caplog.text
+
+    tracker.register_job("task-image:v1")
+    removed = tracker.job_finished("task-image:v1")
+
+    assert not removed
+    mock_docker_client.images.remove.assert_not_called()
+
+
+def test_job_finished_does_nothing_if_image_get_fails() -> None:
+    """If images.get(tag) fails when a job finishes (image already gone), do nothing."""
+    mock_docker_client = MagicMock()
+    mock_docker_client.images.list.return_value = []
+    mock_docker_client.images.get.side_effect = RuntimeError("image not found")
+
+    manager = DockerManager(client=mock_docker_client)
+    tracker = ImageTracker(docker_manager=manager)
+    tracker.record_initial_images()
+
+    tracker.register_job("missing-image:v1")
+    removed = tracker.job_finished("missing-image:v1")
+
+    assert not removed
+    mock_docker_client.images.remove.assert_not_called()
+
+
+def test_register_jobs_with_tuples() -> None:
+    """register_jobs takes a sequence of tuples and registers job[0].docker_image."""
+    manager = DockerManager(client=MagicMock())
+    tracker = ImageTracker(docker_manager=manager)
+
+    task1 = MagicMock(docker_image="image-a:v1")
+    task2 = MagicMock(docker_image="image-b:v1")
+    task3 = MagicMock(docker_image="image-a:v1")
+
+    jobs = [
+        (task1, "arm1", 1, 1, MagicMock()),
+        (task2, "arm1", 1, 1, MagicMock()),
+        (task3, "arm2", 1, 1, MagicMock()),
+    ]
+    tracker.register_jobs(jobs)
+
+    assert tracker._job_counts == {"image-a:v1": 2, "image-b:v1": 1}
 
 
 def test_spawned_containers_carry_label(tmp_path: Path) -> None:
@@ -157,9 +212,6 @@ def test_spawned_containers_carry_label(tmp_path: Path) -> None:
     assert run_kwargs["labels"].get("blyte-eval.run") == run_stamp
 
     # 2. seed_workspace_from_image
-    import io
-    import tarfile
-
     tar_bio = io.BytesIO()
     with tarfile.open(fileobj=tar_bio, mode="w"):
         pass
@@ -229,8 +281,6 @@ def test_removal_failure_logged_as_warning_never_fails_run(
 
     err_img = MagicMock()
     err_img.id = "sha256:err123"
-    err_img.short_id = "sha256:err"
-    err_img.tags = ["err-image:latest"]
     err_img.attrs = {"Size": 1024}
     mock_docker_client.images.get.return_value = err_img
     mock_docker_client.containers.list.return_value = []
@@ -253,22 +303,15 @@ def test_paired_run_cleans_images_and_warns_old_containers(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """paired_run _run records initial images, warns old containers, and cleans task images."""
-    from unittest.mock import patch
-    from scripts.paired_run import _run, build_parser
-
     mock_docker_client = MagicMock()
     # Initial image present before run
     initial_img = MagicMock()
     initial_img.id = "sha256:preexisting"
-    initial_img.short_id = "preexisting"
-    initial_img.tags = ["preexisting:latest"]
     initial_img.attrs = {"Size": 1000}
 
     # Task image brought in during run
     task_img = MagicMock()
     task_img.id = "sha256:taskimg123"
-    task_img.short_id = "taskimg123"
-    task_img.tags = ["task-image:v1"]
     task_img.attrs = {"Size": 4 * 1024 * 1024 * 1024}
 
     # At start of run, only initial_img is listed
@@ -319,13 +362,9 @@ def test_paired_run_cleans_images_and_warns_old_containers(
 
 def test_paired_run_keep_images_flag_preserves_images(tmp_path: Path) -> None:
     """paired_run with --keep-images does not remove any images."""
-    from unittest.mock import patch
-    from scripts.paired_run import _run, build_parser
-
     mock_docker_client = MagicMock()
     task_img = MagicMock()
     task_img.id = "sha256:taskimg123"
-    task_img.tags = ["task-image:v1"]
     task_img.attrs = {"Size": 4 * 1024 * 1024 * 1024}
 
     mock_docker_client.images.list.return_value = []
@@ -369,3 +408,52 @@ def test_paired_run_keep_images_flag_preserves_images(tmp_path: Path) -> None:
     # Image must NOT be removed
     mock_docker_client.images.remove.assert_not_called()
 
+
+def test_paired_run_initial_listing_raises_no_image_removed(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """paired_run does not remove any images when the initial listing raises."""
+    mock_docker_client = MagicMock()
+    mock_docker_client.images.list.side_effect = RuntimeError("Docker listing failed")
+    task_img = MagicMock()
+    task_img.id = "sha256:taskimg123"
+    task_img.attrs = {"Size": 4 * 1024 * 1024 * 1024}
+    mock_docker_client.images.get.return_value = task_img
+    mock_docker_client.containers.list.return_value = []
+
+    mock_task = MagicMock()
+    mock_task.id = "task-1"
+    mock_task.name = "task-1"
+    mock_task.docker_image = "task-image:v1"
+    mock_task.agent_timeout_sec = 60.0
+    mock_task.tests_dir = "tests"
+    mock_task.memory_mb = 1024
+
+    mock_driver = MagicMock()
+    mock_driver.harness_name = "agy"
+
+    mock_telemetry = MagicMock()
+    mock_telemetry.passed = True
+    mock_telemetry.cost_usd = 0.05
+    mock_telemetry.extra = {"turns": 2}
+    mock_telemetry.failure_reason = None
+    mock_telemetry.to_dict.return_value = {"passed": True}
+
+    parser = build_parser()
+    args = parser.parse_args([
+        "--tasks", "task-1",
+        "--arms", "vanilla",
+        "--concurrency", "1",
+        "--workspace-root", str(tmp_path / "run_20261001-120000"),
+    ])
+
+    with patch("lab.sandbox.docker_manager.docker.from_env", return_value=mock_docker_client), \
+         patch("scripts.paired_run.load_task_from_dir", return_value=mock_task), \
+         patch("scripts.paired_run.AgyCliDriver", return_value=mock_driver), \
+         patch("lab.engine.runner.AblationRunner.run_task", return_value=mock_telemetry):
+        with caplog.at_level(logging.WARNING):
+            exit_code = _run(args)
+
+    assert exit_code == 0
+    assert "image cleanup disabled: could not list images" in caplog.text
+    mock_docker_client.images.remove.assert_not_called()

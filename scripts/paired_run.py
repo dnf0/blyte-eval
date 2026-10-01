@@ -339,8 +339,7 @@ def _run(args) -> int:
         )
         logger.info("=" * 78)
         started = time.monotonic()
-        task_img = getattr(ptask, "docker_image", None) or getattr(ptask, "image", None)
-        image_tracker.register_job(task_img)
+        image_tracker.register_job(ptask.docker_image)
         try:
             tel = runner.run_task(
                 task_id=ptask.id,
@@ -351,8 +350,7 @@ def _run(args) -> int:
                 driver=driver,
             )
         finally:
-            if task_img:
-                image_tracker.job_finished(task_img)
+            image_tracker.job_finished(ptask.docker_image)
         # The plan's cost is charged to neither arm, so it is reported here on its own.
         logger.info("   Planning run: cost=$%.4f %.0fs", tel.cost_usd, time.monotonic() - started)
         logs_dir = Path(tel.extra["logs_dir"]) if tel.extra and "logs_dir" in tel.extra else None
@@ -405,7 +403,6 @@ def _run(args) -> int:
         task_budget = args.budget_sec or t.agent_timeout_sec or 3600.0
         logger.info("-> %s [%s]%s (budget: %.0fs)", t.name, label, rep_tag, task_budget)
         started = time.monotonic()
-        task_img = getattr(t, "docker_image", None) or getattr(t, "image", None)
         try:
             tel = runner.run_task(
                 task_id=t.id, arm=a, image=t.docker_image,
@@ -418,8 +415,7 @@ def _run(args) -> int:
             )
             return tel
         finally:
-            if task_img:
-                image_tracker.job_finished(task_img)
+            image_tracker.job_finished(t.docker_image)
 
     def _save_incremental(current_results: list[Any]) -> None:
         if args.out:
