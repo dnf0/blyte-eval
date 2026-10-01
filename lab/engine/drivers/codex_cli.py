@@ -158,6 +158,10 @@ class CodexCliDriver(AgentDriver):
                 "-c", f"{srv}.cwd={json.dumps(str(REPO_ROOT))}",
                 "-c", f"{srv}.env={env_toml}",
                 "-c", f'{srv}.default_tools_approval_mode="approve"',
+                # A dispatch runs for minutes (up to its own max_seconds, 1200 by default); Codex's
+                # per-call MCP limit cut every katex dispatch off at five minutes, and their
+                # results never came back (2026-09-30). One hour, the agent turn's own limit.
+                "-c", f"{srv}.tool_timeout_sec=3600",
             ]
         cmd.append("-")  # the prompt comes on stdin
         return cmd

@@ -111,3 +111,10 @@ def test_codex_harness_specs() -> None:
         parse_harness_spec("codex+blyte")
     with pytest.raises(HarnessSpecError):
         build_harness("codex", "sonnet")
+
+
+def test_a_dispatch_can_outlast_codex_s_default_tool_timeout(tmp_path: Path) -> None:
+    # Codex cut every katex dispatch off at five minutes, and no result came back (2026-09-30).
+    d = CodexCliDriver(cli_path=str(_stub(tmp_path)), implementer_model="gemini-3.8-flash-high")
+    joined = " ".join(d._build_command(tmp_path, "cnt-123", tmp_path / "dispatches"))
+    assert "mcp_servers.task.tool_timeout_sec=3600" in joined
