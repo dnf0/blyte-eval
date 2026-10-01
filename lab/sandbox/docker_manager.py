@@ -7,12 +7,15 @@ disk space safety checks to prevent host filesystem saturation.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import datetime
 import io
 import logging
 import os
 from pathlib import Path
 import shutil
 import tarfile
+import threading
+import time
 from typing import Any, Generator, Mapping
 
 import docker
@@ -68,11 +71,62 @@ def find_static_blyte_binary() -> Path | None:
     return None
 
 
+def format_size(size_bytes: int | float | str | None) -> str:
+    """Format byte count into human-readable string (e.g. 4.2 GB)."""
+    if size_bytes is None:
+        return "unknown size"
+    if isinstance(size_bytes, str):
+        return size_bytes
+    try:
+        val = float(size_bytes)
+    except (ValueError, TypeError):
+        return str(size_bytes)
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if abs(val) < 1024.0 or unit == "TB":
+            if unit == "B":
+                return f"{int(val)} B"
+            return f"{val:.1f} {unit}"
+        val /= 1024.0
+    return f"{val:.1f} GB"
+
+
+def _parse_created_time(val: Any) -> datetime.datetime | None:
+    """Parse container creation time from ISO-8601 string or numeric timestamp."""
+    if isinstance(val, (int, float)):
+        return datetime.datetime.fromtimestamp(val, tz=datetime.timezone.utc)
+    if isinstance(val, str):
+        s = val.rstrip("Z")
+        tz_offset = "+00:00" if val.endswith("Z") else ""
+        if "." in s:
+            main_part, frac = s.split(".", 1)
+            for sep in ("+", "-"):
+                if sep in frac:
+                    frac, tz = frac.split(sep, 1)
+                    tz_offset = sep + tz
+                    break
+            s = f"{main_part}.{frac[:6]}{tz_offset}"
+        elif tz_offset:
+            s = f"{s}{tz_offset}"
+        try:
+            dt = datetime.datetime.fromisoformat(s)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            return dt
+        except Exception:
+            return None
+    return None
+
+
 class DockerManager:
     """Manages Docker containers and host disk resource reclamation."""
 
-    def __init__(self, client: docker.DockerClient | None = None) -> None:
+    def __init__(
+        self,
+        client: docker.DockerClient | None = None,
+        run_stamp: str | None = None,
+    ) -> None:
         self._client = client
+        self.run_stamp = run_stamp or time.strftime("%Y%m%d-%H%M%S")
 
     @property
     def client(self) -> docker.DockerClient:
@@ -104,6 +158,7 @@ class DockerManager:
         logs_dir: Path | str | None = None,
         container_name: str | None = None,
         network: str | None = None,
+        labels: Mapping[str, str] | None = None,
     ) -> Generator[Container, None, None]:
         """Run a container with guaranteed teardown upon context exit.
 
@@ -146,6 +201,10 @@ class DockerManager:
             run_kwargs["mem_limit"] = mem_limit
         if container_name is not None:
             run_kwargs["name"] = container_name
+        combined_labels = {"blyte-eval.run": self.run_stamp}
+        if labels is not None:
+            combined_labels.update(labels)
+        run_kwargs["labels"] = combined_labels
 
         container = self.client.containers.run(**run_kwargs)
         logger.info(f"Spawned sandbox container: {container.id[:12]} ({image})")
@@ -188,7 +247,11 @@ class DockerManager:
         dest_path.mkdir(parents=True, exist_ok=True)
 
         try:
-            container = self.client.containers.create(image=image, command="true")
+            container = self.client.containers.create(
+                image=image,
+                command="true",
+                labels={"blyte-eval.run": self.run_stamp},
+            )
         except Exception as err:
             raise WorkspaceSeedError(
                 f"Cannot seed workspace: image '{image}' is unavailable ({err}). "
@@ -357,3 +420,270 @@ class DockerManager:
                 logger.warning(f"Error during opportunistic docker prune: {e}")
 
         return free_gb
+
+    def remove_image(self, image: str, force: bool = False) -> None:
+        """Remove an image by tag or ID."""
+        self.client.images.remove(image=image, force=force)
+
+    def get_image_ids(self) -> set[str]:
+        """Record the set of image IDs already present on host (`docker images -q`)."""
+        ids: set[str] = set()
+        try:
+            for img in self.client.images.list():
+                img_id = getattr(img, "id", None)
+                if img_id and isinstance(img_id, str):
+                    ids.add(img_id)
+                    ids.add(img_id.removeprefix("sha256:"))
+                    ids.add(img_id[:12])
+                    ids.add(img_id.removeprefix("sha256:")[:12])
+                short_id = getattr(img, "short_id", None)
+                if short_id and isinstance(short_id, str):
+                    ids.add(short_id)
+                    ids.add(short_id.removeprefix("sha256:"))
+                tags = getattr(img, "tags", None)
+                if tags and isinstance(tags, list):
+                    for tag in tags:
+                        if isinstance(tag, str):
+                            ids.add(tag)
+        except Exception as err:
+            logger.warning("Could not list initial docker images: %s", err)
+        return ids
+
+    def is_image_in_use(self, image_tag: str, image_obj: Any = None) -> bool:
+        """Check if any container (running or stopped) uses `image_tag` or `image_obj`."""
+        try:
+            containers = self.client.containers.list(all=True)
+        except Exception as err:
+            logger.warning("Could not list containers to check image usage: %s", err)
+            return True
+
+        target_ids: set[str] = set()
+        if image_obj is not None:
+            obj_id = getattr(image_obj, "id", None)
+            if obj_id and isinstance(obj_id, str):
+                target_ids.add(obj_id)
+                target_ids.add(obj_id.removeprefix("sha256:"))
+                target_ids.add(obj_id[:12])
+                target_ids.add(obj_id.removeprefix("sha256:")[:12])
+            short_id = getattr(image_obj, "short_id", None)
+            if short_id and isinstance(short_id, str):
+                target_ids.add(short_id)
+                target_ids.add(short_id.removeprefix("sha256:"))
+
+        target_tags = {image_tag}
+        if ":" not in image_tag and "/" not in image_tag:
+            target_tags.add(f"{image_tag}:latest")
+
+        for c in containers:
+            c_img = getattr(c, "image", None)
+            if c_img is not None:
+                c_img_id = getattr(c_img, "id", None)
+                if c_img_id and isinstance(c_img_id, str):
+                    if (
+                        c_img_id in target_ids
+                        or c_img_id.removeprefix("sha256:") in target_ids
+                        or c_img_id[:12] in target_ids
+                        or c_img_id.removeprefix("sha256:")[:12] in target_ids
+                    ):
+                        return True
+
+                c_tags = getattr(c_img, "tags", None) or []
+                if any(t in target_tags for t in c_tags if isinstance(t, str)):
+                    return True
+
+            attrs = getattr(c, "attrs", None)
+            if isinstance(attrs, dict):
+                c_image_id = attrs.get("Image")
+                if c_image_id and isinstance(c_image_id, str):
+                    if (
+                        c_image_id in target_ids
+                        or c_image_id.removeprefix("sha256:") in target_ids
+                        or c_image_id[:12] in target_ids
+                        or c_image_id.removeprefix("sha256:")[:12] in target_ids
+                    ):
+                        return True
+
+                config_image = attrs.get("Config", {}).get("Image")
+                if config_image and config_image in target_tags:
+                    return True
+
+        return False
+
+    def warn_old_containers(
+        self,
+        max_age_hours: float = 24.0,
+        now: datetime.datetime | None = None,
+    ) -> list[Any]:
+        """Warn about containers carrying blyte-eval.run label created > max_age_hours ago."""
+        try:
+            containers = self.client.containers.list(
+                all=True, filters={"label": "blyte-eval.run"}
+            )
+        except Exception as err:
+            logger.warning("Could not list containers to check for old runs: %s", err)
+            return []
+
+        current_time = now or datetime.datetime.now(datetime.timezone.utc)
+        old_containers: list[tuple[Any, str]] = []
+
+        for c in containers:
+            labels = getattr(c, "labels", None)
+            if labels is None and hasattr(c, "attrs") and isinstance(c.attrs, dict):
+                labels = c.attrs.get("Config", {}).get("Labels") or c.attrs.get("Labels")
+            if labels is not None and "blyte-eval.run" not in labels:
+                continue
+
+            created_val = None
+            if hasattr(c, "attrs") and isinstance(c.attrs, dict):
+                created_val = c.attrs.get("Created")
+            if created_val is None:
+                created_val = getattr(c, "created", None)
+
+            created_dt = _parse_created_time(created_val)
+            if created_dt is None:
+                continue
+
+            age_seconds = (current_time - created_dt).total_seconds()
+            if age_seconds > max_age_hours * 3600:
+                hours = age_seconds / 3600
+                if hours >= 48:
+                    age_str = f"{hours / 24:.1f}d"
+                else:
+                    age_str = f"{hours:.1f}h"
+                old_containers.append((c, age_str))
+
+        if old_containers:
+            ids = [
+                getattr(c, "short_id", getattr(c, "id", str(c)))[:12]
+                for c, _ in old_containers
+            ]
+            descriptions = []
+            for c, age_str in old_containers:
+                c_id = getattr(c, "short_id", getattr(c, "id", str(c)))[:12]
+                c_name = getattr(c, "name", "unknown")
+                descriptions.append(f"{c_name} (id={c_id}, age={age_str})")
+
+            logger.warning(
+                "Found %d orphaned container(s) from past runs (>%.0fh old): %s. "
+                "Remove them with: docker rm -f %s",
+                len(old_containers),
+                max_age_hours,
+                ", ".join(descriptions),
+                " ".join(ids),
+            )
+
+        return [c for c, _ in old_containers]
+
+
+class ImageTracker:
+    """Tracks unfinished jobs per image and removes images after their last job."""
+
+    def __init__(
+        self,
+        docker_manager: DockerManager,
+        keep_images: bool = False,
+    ) -> None:
+        self.docker_manager = docker_manager
+        self.keep_images = keep_images
+        self._initial_image_ids: set[str] = set()
+        self._job_counts: dict[str, int] = {}
+        self._lock = threading.Lock()
+
+    def record_initial_images(self) -> None:
+        """Record image IDs present before the run started."""
+        with self._lock:
+            self._initial_image_ids = self.docker_manager.get_image_ids()
+
+    def register_job(self, image: str | None) -> None:
+        """Register a job that will use `image`."""
+        if not image:
+            return
+        with self._lock:
+            self._job_counts[image] = self._job_counts.get(image, 0) + 1
+
+    def register_jobs(self, jobs: Any) -> None:
+        """Register images for a sequence of jobs (each job having task as job[0] or job as task)."""
+        for item in jobs:
+            task = item[0] if isinstance(item, (tuple, list)) and item else item
+            image = getattr(task, "docker_image", None) or getattr(task, "image", None)
+            if not image and isinstance(task, dict):
+                image = task.get("docker_image") or task.get("image")
+            if image and isinstance(image, str):
+                self.register_job(image)
+
+    def job_finished(self, image: str | None) -> bool:
+        """Notify that a job using `image` has finished.
+
+        If remaining count reaches 0, remove image if not present at start
+        and no container uses it.
+        Returns True if image was removed, False otherwise.
+        """
+        if not image or self.keep_images:
+            return False
+
+        with self._lock:
+            if image not in self._job_counts:
+                return False
+            self._job_counts[image] -= 1
+            remaining = self._job_counts[image]
+            if remaining > 0:
+                return False
+            del self._job_counts[image]
+
+        return self._maybe_remove_image(image)
+
+    def _is_image_present_at_start(
+        self, img_id: str | None, short_id: str | None, tag: str | None
+    ) -> bool:
+        if not self._initial_image_ids:
+            return False
+        candidates = set()
+        if img_id:
+            candidates.add(img_id)
+            candidates.add(img_id.removeprefix("sha256:"))
+            candidates.add(img_id[:12])
+            candidates.add(img_id.removeprefix("sha256:")[:12])
+        if short_id:
+            candidates.add(short_id)
+            candidates.add(short_id.removeprefix("sha256:"))
+        if tag:
+            candidates.add(tag)
+            if ":" not in tag and "/" not in tag:
+                candidates.add(f"{tag}:latest")
+        return bool(candidates & self._initial_image_ids)
+
+    def _maybe_remove_image(self, image: str) -> bool:
+        """Check prerequisites and remove image if eligible."""
+        try:
+            img = self.docker_manager.client.images.get(image)
+        except Exception as err:
+            logger.debug("Could not inspect image %s for cleanup: %s", image, err)
+            return False
+
+        img_id = getattr(img, "id", None)
+        short_id = getattr(img, "short_id", None)
+        if self._is_image_present_at_start(img_id, short_id, image):
+            logger.debug("Image %s was present before run; keeping it", image)
+            return False
+
+        if self.docker_manager.is_image_in_use(image, img):
+            logger.info("Image %s is still used by a container; keeping it", image)
+            return False
+
+        size_bytes = None
+        if hasattr(img, "attrs") and isinstance(img.attrs, dict):
+            size_bytes = img.attrs.get("Size")
+        size_str = format_size(size_bytes)
+
+        try:
+            if hasattr(self.docker_manager, "remove_image") and isinstance(
+                self.docker_manager, DockerManager
+            ):
+                self.docker_manager.remove_image(image)
+            else:
+                self.docker_manager.client.images.remove(image=image)
+            logger.info("removed image %s (%s) after its last job", image, size_str)
+            return True
+        except Exception as err:
+            logger.warning("Could not remove image %s: %s", image, err)
+            return False
