@@ -80,8 +80,11 @@ class AblationRunner:
         nano_cpus: int = DEFAULT_NANO_CPUS,
         mem_limit: str = DEFAULT_MEM_LIMIT,
         verifier: Optional[HeldOutVerifier] = None,
+        run_stamp: str | None = None,
     ) -> None:
-        self.docker_manager = docker_manager or DockerManager()
+        self.docker_manager = docker_manager or DockerManager(run_stamp=run_stamp)
+        if run_stamp and hasattr(self.docker_manager, "run_stamp"):
+            self.docker_manager.run_stamp = run_stamp
         self.governor = governor or ConcurrencyGovernor()
         self.workspace_root = workspace_root or Path("/tmp/blyte_eval_workspaces")
         self.min_free_disk_gb = min_free_disk_gb

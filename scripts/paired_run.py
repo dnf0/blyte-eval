@@ -36,6 +36,7 @@ from lab.engine.governor import ConcurrencyGovernor  # noqa: E402
 from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table  # noqa: E402
 from lab.engine.runner import AblationRunner  # noqa: E402
 from lab.sandbox.answer_key import AnswerKeyGuard  # noqa: E402
+from lab.sandbox.docker_manager import ImageTracker  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -96,6 +97,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not strip unrelated MCP servers for this run. They cost ~13,288 fresh input "
              "tokens on EVERY agy invocation (FINDINGS 13.17) and no benchmark task uses "
              "github/notion/slack, so this is only for debugging the harness itself.",
+    )
+    ap.add_argument(
+        "--keep-images",
+        action="store_true",
+        help="Do not remove Docker images brought in by the run after their last job",
     )
     plan_group = ap.add_mutually_exclusive_group()
     plan_group.add_argument(
@@ -311,7 +317,15 @@ def _run(args) -> int:
         workspace_root=args.workspace_root,
         default_driver=driver,
         governor=governor,
+        run_stamp=args.workspace_root.name,
     )
+
+    runner.docker_manager.warn_old_containers()
+    image_tracker = ImageTracker(
+        docker_manager=runner.docker_manager,
+        keep_images=args.keep_images,
+    )
+    image_tracker.record_initial_images()
 
     if args.plan_only:
         ptask = planning_task(tasks[0], parallel=args.plan_parallel)
@@ -325,14 +339,18 @@ def _run(args) -> int:
         )
         logger.info("=" * 78)
         started = time.monotonic()
-        tel = runner.run_task(
-            task_id=ptask.id,
-            arm=BARE_ARM,
-            image=ptask.docker_image,
-            base_budget_sec=task_budget,
-            task_spec=ptask,
-            driver=driver,
-        )
+        image_tracker.register_job(ptask.docker_image)
+        try:
+            tel = runner.run_task(
+                task_id=ptask.id,
+                arm=BARE_ARM,
+                image=ptask.docker_image,
+                base_budget_sec=task_budget,
+                task_spec=ptask,
+                driver=driver,
+            )
+        finally:
+            image_tracker.job_finished(ptask.docker_image)
         # The plan's cost is charged to neither arm, so it is reported here on its own.
         logger.info("   Planning run: cost=$%.4f %.0fs", tel.cost_usd, time.monotonic() - started)
         logs_dir = Path(tel.extra["logs_dir"]) if tel.extra and "logs_dir" in tel.extra else None
@@ -375,6 +393,8 @@ def _run(args) -> int:
                 for rep in range(1, reps + 1):
                     jobs.append((task, arm, rep, reps, driver))
 
+    image_tracker.register_jobs(jobs)
+
     results = []
 
     def execute_job(t: Any, a: str, r: int, total_reps: int, drv: Any) -> Any:
@@ -383,16 +403,19 @@ def _run(args) -> int:
         task_budget = args.budget_sec or t.agent_timeout_sec or 3600.0
         logger.info("-> %s [%s]%s (budget: %.0fs)", t.name, label, rep_tag, task_budget)
         started = time.monotonic()
-        tel = runner.run_task(
-            task_id=t.id, arm=a, image=t.docker_image,
-            base_budget_sec=task_budget, task_spec=t, driver=drv,
-        )
-        logger.info(
-            "   %s%s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
-            label, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
-            time.monotonic() - started, tel.failure_reason or "",
-        )
-        return tel
+        try:
+            tel = runner.run_task(
+                task_id=t.id, arm=a, image=t.docker_image,
+                base_budget_sec=task_budget, task_spec=t, driver=drv,
+            )
+            logger.info(
+                "   %s%s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
+                label, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
+                time.monotonic() - started, tel.failure_reason or "",
+            )
+            return tel
+        finally:
+            image_tracker.job_finished(t.docker_image)
 
     def _save_incremental(current_results: list[Any]) -> None:
         if args.out:
