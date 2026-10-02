@@ -76,7 +76,6 @@ def generate_comparison_summary(
             "void": void,
             "void_kinds": dict(void_kinds),
             "skipped": skipped,
-            "infra_skipped": skipped,
             "passes": passes,
             "failures": failures,
             "pass_rate_pct": pass_rate,
@@ -122,7 +121,7 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
             f"{tok_in if tok_in is not None else 'N/A'} | "
             f"{tok_out if tok_out is not None else 'N/A'} |"
         )
-        skipped = stats.get("infra_skipped") or stats.get("skipped", 0)
+        skipped = stats.get("skipped", 0)
         if skipped:
             skipped_notes.append(f"{arm}: {skipped} skipped (infrastructure)")
     if skipped_notes:
@@ -250,17 +249,13 @@ def compute_control_plane_lift(
                     "baseline_cost_usd": 0.0,
                     "arm_cost_usd": 0.0,
                     "skipped": 0,
-                    "infra_skipped": 0,
                     "baseline_skipped": 0,
-                    "baseline_infra_skipped": 0,
                 },
             )
             if is_infra_skip(run):
                 entry["skipped"] += 1
-                entry["infra_skipped"] += 1
             if is_infra_skip(baseline):
                 entry["baseline_skipped"] += 1
-                entry["baseline_infra_skipped"] += 1
 
             if is_infra_skip(baseline) or is_infra_skip(run):
                 continue
@@ -331,10 +326,10 @@ def render_lift_report(runs: List[RunTelemetry], baseline_arm: str = BASELINE_AR
     skipped_notes: list[str] = []
     for name in sorted(lift):
         e = lift[name]
-        arm_skipped = e.get("infra_skipped", 0) or e.get("skipped", 0)
+        arm_skipped = e.get("skipped", 0)
         if arm_skipped:
             skipped_notes.append(f"{e['arm']}: {arm_skipped} skipped (infrastructure)")
-        base_skipped = e.get("baseline_infra_skipped", 0) or e.get("baseline_skipped", 0)
+        base_skipped = e.get("baseline_skipped", 0)
         if base_skipped:
             skipped_notes.append(f"{baseline_arm}: {base_skipped} skipped (infrastructure)")
 

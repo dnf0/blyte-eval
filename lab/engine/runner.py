@@ -38,6 +38,10 @@ from lab.sandbox.docker_manager import (
 
 logger = logging.getLogger("blyte_eval.runner")
 
+
+class GovernorSlotTimeout(RuntimeError):
+    """No concurrency slot became free in time: an infrastructure skip, not the agent's result."""
+
 # Spec: every evaluation container is capped at 2.5 CPUs and 4 GB of memory.
 DEFAULT_NANO_CPUS = int(2.5 * 1e9)
 DEFAULT_MEM_LIMIT = "4g"
@@ -192,7 +196,7 @@ class AblationRunner:
                 # Full live execution path with container sandbox and grading
                 with self.governor.slot(ram_gb_per_worker=task_ram_gb) as acquired:
                     if not acquired:
-                        raise RuntimeError(
+                        raise GovernorSlotTimeout(
                             "Failed to acquire concurrency governor slot within timeout"
                         )
 
@@ -381,13 +385,8 @@ class AblationRunner:
                             **run_result.provenance,
                         }
         except Exception as e:
-            is_governor_slot_error = (
-                isinstance(e, RuntimeError)
-                and ("governor slot" in str(e).lower() or "Failed to acquire concurrency governor slot" in str(e))
-            )
             is_infra_error = (
-                is_governor_slot_error
-                or isinstance(e, WorkspaceSeedError)
+                isinstance(e, (GovernorSlotTimeout, WorkspaceSeedError))
                 or (not agent_started and isinstance(e, (ImageBuildError, DiskSpaceError)))
             )
             if is_infra_error:
@@ -539,8 +538,10 @@ class AblationRunner:
                         "Task %s under arm %s failed catastrophically: %s", t_id, a_name, err
                     )
                     is_infra = (
-                        (isinstance(err, RuntimeError) and "governor slot" in str(err).lower())
-                        or isinstance(err, (WorkspaceSeedError, ImageBuildError, DiskSpaceError))
+                        isinstance(
+                            err,
+                            (GovernorSlotTimeout, WorkspaceSeedError, ImageBuildError, DiskSpaceError),
+                        )
                     )
                     msg = str(err)
                     infra_reason = msg if msg.startswith("infrastructure: ") else f"infrastructure: {msg}"

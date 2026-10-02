@@ -143,7 +143,7 @@ def test_summary_reports_pass_rate_and_skips_with_infra_skip() -> None:
     assert v["failures"] == 1
     assert v["pass_rate_pct"] == 50.0
     assert v["skipped"] == 1
-    assert v["infra_skipped"] == 1
+    assert v["skipped"] == 1
 
     # Infra-skipped run is excluded from cost and time figures
     assert v["total_cost_usd"] == 0.50
@@ -205,7 +205,7 @@ def test_lift_comparison_excludes_infra_skips() -> None:
     assert entry["arm_passes"] == 2
     assert entry["arm_cost_usd"] == 0.60
     assert entry["skipped"] == 1
-    assert entry["infra_skipped"] == 1
+    assert entry["skipped"] == 1
 
     report = render_lift_report(runs, baseline_arm="vanilla")
     assert "1 skipped (infrastructure)" in report
