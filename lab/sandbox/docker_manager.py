@@ -19,6 +19,8 @@ import time
 from typing import Any, Generator, Mapping, Sequence
 
 import docker
+import docker.errors
+import docker.utils
 from docker.models.containers import Container
 
 logger = logging.getLogger("blyte_eval.docker_manager")
@@ -144,6 +146,24 @@ class DockerManager:
         """Connect container to the default bridge network for grading."""
         self.client.networks.get("bridge").connect(container)
 
+    def ensure_image(self, image: str) -> None:
+        """Ensure the specified image is locally available, pulling it if missing."""
+        try:
+            self.client.images.get(image)
+            return
+        except docker.errors.ImageNotFound:
+            pass
+
+        logger.info(f"pulling missing image {image}")
+        try:
+            repository, tag = docker.utils.parse_repository_tag(image)
+            self.client.images.pull(repository, tag=tag)
+        except Exception as err:
+            raise WorkspaceSeedError(
+                f"Cannot seed workspace: image '{image}' is unavailable ({err}). "
+                "Pull or build the task image before running the evaluation."
+            ) from err
+
     @contextmanager
     def run_sandbox(
         self,
@@ -206,6 +226,7 @@ class DockerManager:
             combined_labels.update(labels)
         run_kwargs["labels"] = combined_labels
 
+        self.ensure_image(image)
         container = self.client.containers.run(**run_kwargs)
         logger.info(f"Spawned sandbox container: {container.id[:12]} ({image})")
         # On a Linux host the bind-mounted repository is owned by the host user while the container
@@ -226,6 +247,7 @@ class DockerManager:
 
     # Convenience alias for run_sandbox
     spawn_sandbox = run_sandbox
+    run_container = run_sandbox
 
     def seed_workspace_from_image(
         self,
@@ -245,6 +267,8 @@ class DockerManager:
         """
         dest_path = Path(dest)
         dest_path.mkdir(parents=True, exist_ok=True)
+
+        self.ensure_image(image)
 
         try:
             container = self.client.containers.create(
