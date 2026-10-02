@@ -33,7 +33,12 @@ from lab.engine.drivers.blyte_native import BlyteNativeDriver  # noqa: E402
 from lab.engine.harnesses import BARE_ARM, build_harness, by_harness, render_harness_comparison  # noqa: E402
 from lab.engine.plan_first import final_response, planning_task, with_plan  # noqa: E402
 from lab.engine.governor import ConcurrencyGovernor  # noqa: E402
-from lab.engine.reporter import generate_comparison_summary, render_lift_report, render_summary_table  # noqa: E402
+from lab.engine.reporter import (  # noqa: E402
+    generate_comparison_summary,
+    is_infra_skip,
+    render_lift_report,
+    render_summary_table,
+)
 from lab.engine.runner import AblationRunner  # noqa: E402
 from lab.sandbox.answer_key import AnswerKeyGuard  # noqa: E402
 from lab.sandbox.docker_manager import ImageTracker  # noqa: E402
@@ -122,6 +127,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="With --plan-only: ask the planner for a shared first part and independent parts that can be dispatched at once",
     )
     return ap
+
+
+def format_attempt_log(tel: Any, label: str, rep_tag: str, elapsed_sec: float) -> str:
+    """Format the per-attempt log message."""
+    if is_infra_skip(tel):
+        reason = (tel.failure_reason or "").strip()
+        if reason.startswith("infrastructure:"):
+            reason = reason[len("infrastructure:"):].strip()
+        return f"   {label}{rep_tag}: skipped (infrastructure): {reason}"
+    return (
+        f"   {label}{rep_tag}: passed={tel.passed} cost=${tel.cost_usd:.4f} "
+        f"turns={(tel.extra or {}).get('turns')} {elapsed_sec:.0f}s  {tel.failure_reason or ''}"
+    )
+
+
+def print_skip_summary(results: list[Any]) -> None:
+    """Print count of skipped runs and warn if every attempt of any task was skipped."""
+    skipped_count = sum(1 for r in results if is_infra_skip(r))
+    if skipped_count:
+        print(f"\n{skipped_count} skipped (infrastructure)")
+        by_task: dict[str, list[Any]] = {}
+        for r in results:
+            by_task.setdefault(r.task_id, []).append(r)
+        for task_id, t_runs in by_task.items():
+            if all(is_infra_skip(r) for r in t_runs):
+                print(f"Every attempt of task '{task_id}' was skipped (infrastructure)")
+    else:
+        print("\n0 skipped (infrastructure)")
 
 
 def main() -> int:
@@ -408,11 +441,7 @@ def _run(args) -> int:
                 task_id=t.id, arm=a, image=t.docker_image,
                 base_budget_sec=task_budget, task_spec=t, driver=drv,
             )
-            logger.info(
-                "   %s%s: passed=%s cost=$%.4f turns=%s %.0fs  %s",
-                label, rep_tag, tel.passed, tel.cost_usd, (tel.extra or {}).get("turns"),
-                time.monotonic() - started, tel.failure_reason or "",
-            )
+            logger.info("%s", format_attempt_log(tel, label, rep_tag, time.monotonic() - started))
             return tel
         finally:
             image_tracker.job_finished(t.docker_image)
@@ -445,6 +474,8 @@ def _run(args) -> int:
         print(render_summary_table(generate_comparison_summary(results)))
         print()
         print(render_lift_report(results))
+
+    print_skip_summary(results)
 
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

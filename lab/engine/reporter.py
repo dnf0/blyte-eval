@@ -10,6 +10,21 @@ from lab.engine.budget_policy import RunTelemetry
 from lab.engine.void import is_void, void_kind
 
 
+def is_infra_skip(run: Any) -> bool:
+    """Whether a run ended due to an infrastructure failure and counts as a skip."""
+    if isinstance(run, dict):
+        extra = run.get("extra") or {}
+        if extra.get("infra_skip"):
+            return True
+        reason = run.get("failure_reason") or ""
+        return str(reason).startswith("infrastructure:")
+    extra = getattr(run, "extra", None) or {}
+    if extra.get("infra_skip"):
+        return True
+    reason = getattr(run, "failure_reason", None) or ""
+    return str(reason).startswith("infrastructure:")
+
+
 def generate_comparison_summary(
     runs: List[RunTelemetry], human_fail_cost_usd: float = 50.0
 ) -> Dict[str, Dict[str, Any]]:
@@ -22,30 +37,33 @@ def generate_comparison_summary(
 
     for arm, arm_runs in arms.items():
         attempted = len(arm_runs)
+        infra_runs = [r for r in arm_runs if is_infra_skip(r)]
+        active_runs = [r for r in arm_runs if not is_infra_skip(r)]
         # A run that produced no measurement -- nobody could grade the task, or this arm could
         # not derive a gate for it -- is not a failure and must leave the denominator. Counting
         # them made seven canaries read 0/3 when only two tasks could be scored at all
         # (FINDINGS 13.20). They are reported separately rather than dropped silently.
-        void_runs = [r for r in arm_runs if is_void(r.failure_reason)]
-        scored_runs = [r for r in arm_runs if not is_void(r.failure_reason)]
+        void_runs = [r for r in active_runs if is_void(r.failure_reason)]
+        scored_runs = [r for r in active_runs if not is_void(r.failure_reason)]
         void = len(void_runs)
+        skipped = len(infra_runs)
         total_tasks = len(scored_runs)
         passes = sum(1 for r in scored_runs if r.passed)
         failures = total_tasks - passes
         pass_rate = round((passes / total_tasks * 100.0) if total_tasks > 0 else 0.0, 1)
         void_kinds = Counter(void_kind(r.failure_reason) for r in void_runs)
-        total_cost = round(sum(r.cost_usd for r in arm_runs), 2)
-        total_wall_clock_sec = round(sum(r.wall_clock_sec for r in arm_runs), 1)
-        total_extensions = round(sum(r.lease_extensions_earned_sec for r in arm_runs), 1)
-        total_input_tokens = sum(r.input_tokens for r in arm_runs)
-        total_output_tokens = sum(r.output_tokens for r in arm_runs)
+        total_cost = round(sum(r.cost_usd for r in active_runs), 2)
+        total_wall_clock_sec = round(sum(r.wall_clock_sec for r in active_runs), 1)
+        total_extensions = round(sum(r.lease_extensions_earned_sec for r in active_runs), 1)
+        total_input_tokens = sum(r.input_tokens for r in active_runs)
+        total_output_tokens = sum(r.output_tokens for r in active_runs)
         cost_per_solve = round(total_cost / passes, 2) if passes > 0 else None
         input_tokens_per_solve = round(total_input_tokens / passes) if passes > 0 else None
         output_tokens_per_solve = round(total_output_tokens / passes) if passes > 0 else None
 
         # Value compute (succeeded) vs wasted compute (failed)
-        compute_value_usd = round(sum(r.cost_usd for r in arm_runs if r.passed), 2)
-        compute_wasted_usd = round(sum(r.cost_usd for r in arm_runs if not r.passed), 2)
+        compute_value_usd = round(sum(r.cost_usd for r in active_runs if r.passed), 2)
+        compute_wasted_usd = round(sum(r.cost_usd for r in active_runs if not r.passed), 2)
 
         # Total Cost of Ownership (TCO) with default $50/fail human fallback penalty
         human_remediation_cost_usd = round(failures * human_fail_cost_usd, 2)
@@ -57,6 +75,8 @@ def generate_comparison_summary(
             "attempted_tasks": attempted,
             "void": void,
             "void_kinds": dict(void_kinds),
+            "skipped": skipped,
+            "infra_skipped": skipped,
             "passes": passes,
             "failures": failures,
             "pass_rate_pct": pass_rate,
@@ -86,6 +106,7 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
         "Cost/Solve ($) | Wall-clock (m) | Lease Ext (m) | Tokens In/Solve | Tokens Out/Solve |",
         "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
+    skipped_notes: list[str] = []
     for arm, stats in summary.items():
         wall_min = round(stats["total_wall_clock_sec"] / 60.0, 1)
         ext_min = round(stats["total_lease_extensions_sec"] / 60.0, 1)
@@ -101,6 +122,12 @@ def render_summary_table(summary: Dict[str, Dict[str, Any]]) -> str:
             f"{tok_in if tok_in is not None else 'N/A'} | "
             f"{tok_out if tok_out is not None else 'N/A'} |"
         )
+        skipped = stats.get("infra_skipped") or stats.get("skipped", 0)
+        if skipped:
+            skipped_notes.append(f"{arm}: {skipped} skipped (infrastructure)")
+    if skipped_notes:
+        lines.append("")
+        lines.extend(skipped_notes)
     return "\n".join(lines)
 
 
@@ -150,7 +177,7 @@ def summarize_failures(runs: List[RunTelemetry]) -> Dict[str, List[Dict[str, Any
     """
     per_arm: Dict[str, Counter[str]] = {}
     for run in runs:
-        if run.passed:
+        if run.passed or is_infra_skip(run):
             continue
         per_arm.setdefault(run.arm, Counter())[_failure_signature(run.failure_reason)] += 1
 
@@ -222,8 +249,22 @@ def compute_control_plane_lift(
                     "lost": [],
                     "baseline_cost_usd": 0.0,
                     "arm_cost_usd": 0.0,
+                    "skipped": 0,
+                    "infra_skipped": 0,
+                    "baseline_skipped": 0,
+                    "baseline_infra_skipped": 0,
                 },
             )
+            if is_infra_skip(run):
+                entry["skipped"] += 1
+                entry["infra_skipped"] += 1
+            if is_infra_skip(baseline):
+                entry["baseline_skipped"] += 1
+                entry["baseline_infra_skipped"] += 1
+
+            if is_infra_skip(baseline) or is_infra_skip(run):
+                continue
+
             entry["paired_tasks"] += 1
             entry["baseline_passes"] += int(baseline.passed)
             entry["arm_passes"] += int(run.passed)
@@ -287,8 +328,29 @@ def render_lift_report(runs: List[RunTelemetry], baseline_arm: str = BASELINE_AR
             f"{d_solves} | ${d_cost} | {marg} |"
         )
 
-    smallest = min(e["paired_tasks"] for e in lift.values())
-    if smallest < 20:
+    skipped_notes: list[str] = []
+    for name in sorted(lift):
+        e = lift[name]
+        arm_skipped = e.get("infra_skipped", 0) or e.get("skipped", 0)
+        if arm_skipped:
+            skipped_notes.append(f"{e['arm']}: {arm_skipped} skipped (infrastructure)")
+        base_skipped = e.get("baseline_infra_skipped", 0) or e.get("baseline_skipped", 0)
+        if base_skipped:
+            skipped_notes.append(f"{baseline_arm}: {base_skipped} skipped (infrastructure)")
+
+    seen: set[str] = set()
+    unique_notes: list[str] = []
+    for note in skipped_notes:
+        if note not in seen:
+            seen.add(note)
+            unique_notes.append(note)
+    if unique_notes:
+        lines.append("")
+        lines.extend(unique_notes)
+
+    paired_task_counts = [e["paired_tasks"] for e in lift.values() if e["paired_tasks"] > 0]
+    smallest = min(paired_task_counts) if paired_task_counts else 0
+    if 0 < smallest < 20:
         step = round(100.0 / smallest, 1)
         lines += [
             "",
