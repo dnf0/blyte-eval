@@ -7,7 +7,7 @@ are faithfully extracted, computed, and attached to RunTelemetry extra metadata.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -291,4 +291,93 @@ def test_agent_failure_is_diagnosed_before_the_grading_symptom(tmp_path) -> None
     assert "exceeded timeout" in reason
     # The grading detail is kept, but as consequence rather than diagnosis.
     assert "grading then reported" in reason
+
+
+def test_governor_slot_not_acquired_produces_infra_skip(tmp_path: Path) -> None:
+    """When a governor slot cannot be acquired within timeout, record infra_skip."""
+    runner = _setup_runner(tmp_path)
+    cast(Any, runner.governor).slot.return_value.__enter__.return_value = False
+
+    telemetry = runner.run_task(
+        task_id="test/governor-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+    )
+
+    assert telemetry.passed is False
+    assert telemetry.extra.get("infra_skip") is True
+    assert telemetry.failure_reason == (
+        "infrastructure: Failed to acquire concurrency governor slot within timeout"
+    )
+
+
+def test_workspace_seed_error_produces_infra_skip(tmp_path: Path) -> None:
+    """When workspace cannot be seeded from image, record infra_skip."""
+    from lab.sandbox.docker_manager import WorkspaceSeedError
+
+    runner = _setup_runner(tmp_path)
+    cast(Any, runner.docker_manager).seed_workspace_from_image.side_effect = WorkspaceSeedError(
+        "Failed to extract archive: corrupted stream"
+    )
+
+    telemetry = runner.run_task(
+        task_id="test/seed-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+    )
+
+    assert telemetry.passed is False
+    assert telemetry.extra.get("infra_skip") is True
+    assert telemetry.failure_reason == (
+        "infrastructure: Failed to extract archive: corrupted stream"
+    )
+
+
+def test_disk_space_error_before_agent_produces_infra_skip(tmp_path: Path) -> None:
+    """When disk space fails before agent starts, record infra_skip."""
+    from lab.sandbox.docker_manager import DiskSpaceError
+
+    runner = _setup_runner(tmp_path)
+    cast(Any, runner.docker_manager).check_disk_space_or_prune.side_effect = DiskSpaceError(
+        "Free disk space (1.2 GB) below required minimum (5.0 GB)"
+    )
+
+    telemetry = runner.run_task(
+        task_id="test/disk-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+    )
+
+    assert telemetry.passed is False
+    assert telemetry.extra.get("infra_skip") is True
+    assert telemetry.failure_reason == (
+        "infrastructure: Free disk space (1.2 GB) below required minimum (5.0 GB)"
+    )
+
+
+def test_image_build_error_before_agent_produces_infra_skip(tmp_path: Path) -> None:
+    """When image build fails before agent starts, record infra_skip."""
+    from lab.sandbox.docker_manager import ImageBuildError
+
+    runner = _setup_runner(tmp_path)
+    cast(Any, runner.docker_manager).run_sandbox.side_effect = ImageBuildError(
+        "Failed to build image 'test:latest': Dockerfile syntax error"
+    )
+
+    telemetry = runner.run_task(
+        task_id="test/build-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+    )
+
+    assert telemetry.passed is False
+    assert telemetry.extra.get("infra_skip") is True
+    assert telemetry.failure_reason == (
+        "infrastructure: Failed to build image 'test:latest': Dockerfile syntax error"
+    )
+
 

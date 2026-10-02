@@ -29,9 +29,18 @@ from lab.engine.progress_tracker import ProgressTracker
 from lab.engine.trace import RunRecorder
 from lab.engine.verifier import HeldOutVerifier
 from lab.sandbox.answer_key import AnswerKeyGuard
-from lab.sandbox.docker_manager import DockerManager
+from lab.sandbox.docker_manager import (
+    DiskSpaceError,
+    DockerManager,
+    ImageBuildError,
+    WorkspaceSeedError,
+)
 
 logger = logging.getLogger("blyte_eval.runner")
+
+
+class GovernorSlotTimeout(RuntimeError):
+    """No concurrency slot became free in time: an infrastructure skip, not the agent's result."""
 
 # Spec: every evaluation container is capped at 2.5 CPUs and 4 GB of memory.
 DEFAULT_NANO_CPUS = int(2.5 * 1e9)
@@ -134,8 +143,6 @@ class AblationRunner:
         with self._active_lock:
             first_in_flight = self._active_runs == 0
             self._active_runs += 1
-        if first_in_flight:
-            self.docker_manager.check_disk_space_or_prune(min_free_gb=self.min_free_disk_gb)
 
         # 2. Configure budget policy: universal progress extensions enabled for all arms
         budget_policy = BudgetPolicy(
@@ -151,18 +158,25 @@ class AblationRunner:
         failure_reason = None
         extra: Dict[str, Any] = {}
         recorder: Optional[RunRecorder] = None
+        agent_started = False
 
         try:
+            if first_in_flight:
+                self.docker_manager.check_disk_space_or_prune(min_free_gb=self.min_free_disk_gb)
+
             logger.info(
                 "Starting task '%s' [Arm: %s] (Base budget: %.1fs)", task_id, arm, base_budget_sec
             )
             if executor_fn is not None:
+                agent_started = True
                 result = executor_fn(budget_policy)
                 passed = bool(result.get("passed", False))
                 cost_usd = float(result.get("cost_usd", 0.0))
                 input_tokens = int(result.get("input_tokens", 0))
                 output_tokens = int(result.get("output_tokens", 0))
                 failure_reason = result.get("failure_reason")
+                if "extra" in result and isinstance(result["extra"], dict):
+                    extra.update(result["extra"])
             else:
                 active_driver = driver or self.default_driver
                 if active_driver is None:
@@ -182,7 +196,7 @@ class AblationRunner:
                 # Full live execution path with container sandbox and grading
                 with self.governor.slot(ram_gb_per_worker=task_ram_gb) as acquired:
                     if not acquired:
-                        raise RuntimeError(
+                        raise GovernorSlotTimeout(
                             "Failed to acquire concurrency governor slot within timeout"
                         )
 
@@ -285,6 +299,7 @@ class AblationRunner:
                         )
 
                         with self.answer_key_guard.sealed(seal_paths) as sealed_paths:
+                            agent_started = True
                             run_result = adapter.execute(
                                 workspace_dir,
                                 active_task,
@@ -370,8 +385,23 @@ class AblationRunner:
                             **run_result.provenance,
                         }
         except Exception as e:
-            logger.exception("Error during execution of task '%s' [Arm: %s]: %s", task_id, arm, e)
-            failure_reason = str(e)
+            is_infra_error = (
+                isinstance(e, (GovernorSlotTimeout, WorkspaceSeedError))
+                or (not agent_started and isinstance(e, (ImageBuildError, DiskSpaceError)))
+            )
+            if is_infra_error:
+                logger.warning(
+                    "Infrastructure skip during execution of task '%s' [Arm: %s]: %s",
+                    task_id,
+                    arm,
+                    e,
+                )
+                extra["infra_skip"] = True
+                msg = str(e)
+                failure_reason = msg if msg.startswith("infrastructure: ") else f"infrastructure: {msg}"
+            else:
+                logger.exception("Error during execution of task '%s' [Arm: %s]: %s", task_id, arm, e)
+                failure_reason = str(e)
             passed = False
         finally:
             wall_clock_sec = round(time.time() - start_time, 2)
@@ -507,6 +537,14 @@ class AblationRunner:
                     logger.error(
                         "Task %s under arm %s failed catastrophically: %s", t_id, a_name, err
                     )
+                    is_infra = (
+                        isinstance(
+                            err,
+                            (GovernorSlotTimeout, WorkspaceSeedError, ImageBuildError, DiskSpaceError),
+                        )
+                    )
+                    msg = str(err)
+                    infra_reason = msg if msg.startswith("infrastructure: ") else f"infrastructure: {msg}"
                     results.append(
                         RunTelemetry(
                             task_id=t_id,
@@ -516,7 +554,8 @@ class AblationRunner:
                             cost_usd=0.0,
                             input_tokens=0,
                             output_tokens=0,
-                            failure_reason=str(err),
+                            failure_reason=infra_reason if is_infra else msg,
+                            extra={"infra_skip": True} if is_infra else {},
                         )
                     )
 
