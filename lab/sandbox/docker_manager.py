@@ -247,7 +247,6 @@ class DockerManager:
 
     # Convenience alias for run_sandbox
     spawn_sandbox = run_sandbox
-    run_container = run_sandbox
 
     def seed_workspace_from_image(
         self,
