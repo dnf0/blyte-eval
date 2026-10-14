@@ -86,7 +86,7 @@ class BlytePairDriver(BlyteNativeDriver):
             report_dir=report_dir,
         )
         self.implementer_model = implementer_model
-        self.harness_name = "blyte+blyte"
+        self.harness_name = f"blyte+blyte[{implementer_model}]"
         self.dispatch_dir = Path(dispatch_dir) if dispatch_dir is not None else None
         self.dispatch_cmd = (
             dispatch_cmd

@@ -116,7 +116,7 @@ def test_parse_blyte_pair_rejects_missing_or_extra_options(spec: str) -> None:
 
 def test_blyte_pair_build_harness(blyte_stub: Path) -> None:
     drv = build_harness("blyte+blyte:gemini-3.8-flash-high", MODEL)
-    assert drv.harness_name == "blyte+blyte"
+    assert drv.harness_name == "blyte+blyte[gemini-3.8-flash-high]"
     assert drv.model == MODEL
     assert drv.implementer_model == "gemini-3.8-flash-high"
 
