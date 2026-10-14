@@ -48,20 +48,26 @@ def _aggregate_dispatches(dispatch_dir: Optional[Path]) -> tuple[float, int, lis
     report_files = sorted(dispatch_dir.glob("*.json"), key=_natural_sort_key)
     for rf in report_files:
         try:
-            data = json.loads(rf.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                cost += float(data.get("cost_usd", 0.0) or 0.0)
-                sec = data.get("wall_clock_secs")
-                if sec is None:
-                    sec = data.get("seconds")
-                if sec is None:
-                    sec = data.get("duration_seconds")
-                if sec is not None:
-                    wall_clock += float(sec)
-                if "outcome" in data and data["outcome"] is not None:
-                    outcomes.append(str(data["outcome"]))
-        except (json.JSONDecodeError, OSError):
-            pass
+            raw = rf.read_text(encoding="utf-8")
+            if not raw.strip():
+                logger.warning("Skipping empty dispatch report %s", rf)
+                continue
+            data = json.loads(raw)
+            if not isinstance(data, dict):
+                logger.warning("Skipping non-object dispatch report %s", rf)
+                continue
+            cost += float(data.get("cost_usd", 0.0) or 0.0)
+            sec = data.get("wall_clock_secs")
+            if sec is None:
+                sec = data.get("seconds")
+            if sec is None:
+                sec = data.get("duration_seconds")
+            if sec is not None:
+                wall_clock += float(sec)
+            if "outcome" in data and data["outcome"] is not None:
+                outcomes.append(str(data["outcome"]))
+        except (json.JSONDecodeError, OSError, ValueError, TypeError) as exc:
+            logger.warning("Skipping unparsable dispatch report %s: %s", rf, exc)
     return cost, len(report_files), outcomes, wall_clock
 
 
@@ -216,6 +222,7 @@ class BlytePairDriver(BlyteNativeDriver):
                 run_dispatch_dir
             )
             metrics = {
+                "clean_exit": not killed,
                 "frontier_cost_usd": 0.0,
                 "implementer_cost_usd": implementer_cost,
                 "dispatches": dispatches,
@@ -257,6 +264,8 @@ class BlytePairDriver(BlyteNativeDriver):
         total_cost_usd = frontier_cost_usd + implementer_cost_usd
 
         metrics = run_metrics(report, _text(stdout))
+        if killed:
+            metrics["clean_exit"] = False
         metrics.update(
             {
                 "frontier_cost_usd": frontier_cost_usd,

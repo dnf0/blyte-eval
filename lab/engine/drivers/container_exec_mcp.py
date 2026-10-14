@@ -145,6 +145,21 @@ def log(message: str) -> None:
     print(f"[container-exec-mcp] {message}", file=sys.stderr, flush=True)
 
 
+def _claim_dispatch_slot(reports_dir: Path) -> tuple[int, Path]:
+    """Claim the lowest untaken `dispatch-{n}.json` in `reports_dir` atomically."""
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    n = 1
+    while True:
+        report_path = reports_dir / f"dispatch-{n}.json"
+        try:
+            fd = os.open(report_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            n += 1
+            continue
+        os.close(fd)
+        return n, report_path
+
+
 class ContainerExec:
     """Execs commands in a single, fixed container."""
 
@@ -154,7 +169,6 @@ class ContainerExec:
         self.timeout = int(os.environ.get("BLYTE_EVAL_EXEC_TIMEOUT", "600"))
         self.max_output = int(os.environ.get("BLYTE_EVAL_MAX_OUTPUT", "30000"))
         self._container: Any = None
-        self.dispatch_count: int = 0
         # Parallel dispatches (2026-09-29): each works in a copy under copy_root, as `blyte dispatch`
         # gives each task its own worktree, and lands in the workdir one at a time.
         self.copy_root = os.environ.get("BLYTE_DISPATCH_COPY_ROOT", "/tmp")
@@ -325,12 +339,8 @@ class ContainerExec:
                 False,
             )
 
-        with self._count_lock:
-            self.dispatch_count += 1
-            n = self.dispatch_count
         reports_dir = Path(dispatch_dir)
-        reports_dir.mkdir(parents=True, exist_ok=True)
-        report_path = reports_dir / f"dispatch-{n}.json"
+        n, report_path = _claim_dispatch_slot(reports_dir)
         # blyte's event stream (one line per tool call, with the command). The report says how
         # long commands took but not which ones; without this, how often a dispatch ran the full
         # test suite could only be estimated (offload v2, 2026-09-28).
@@ -379,7 +389,7 @@ class ContainerExec:
             log(f"could not write {events_path}: {err}")
 
         merge = self._merge_back(copy)
-        if not report_path.is_file():
+        if not report_path.is_file() or report_path.stat().st_size == 0:
             err_msg = (proc.stderr or "").strip() or f"Dispatch report not found at {report_path}"
             return (
                 json.dumps({"outcome": "error", "error": err_msg, **merge}),

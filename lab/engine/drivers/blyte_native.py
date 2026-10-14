@@ -150,6 +150,8 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
     gate_attempts = report.get("gate_attempts")
     harness_build = report.get("harness_build")
     tool_counts = report.get("tool_counts")
+    error = report.get("error")
+    clean_exit = not (isinstance(error, str) and error.startswith("stopped "))
     return {
         "harness_turns": int(report.get("turns") or 0),
         "reads": reads,
@@ -171,6 +173,7 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
         "gate_attempts": int(gate_attempts) if gate_attempts is not None else None,
         "harness_build": str(harness_build) if harness_build is not None else None,
         "tool_counts": dict(tool_counts) if isinstance(tool_counts, dict) else {},
+        "clean_exit": clean_exit,
     }
 
 
@@ -343,6 +346,7 @@ class BlyteNativeDriver(AgentDriver):
                 raw_response="",
                 duration_seconds=elapsed,
                 error_message=f"{reason}: {_tail(stderr)}",
+                metrics={"clean_exit": not killed},
             )
 
         if self.report_dir is not None:
@@ -370,6 +374,8 @@ class BlyteNativeDriver(AgentDriver):
             )
             cost_source = "estimate"
         metrics = run_metrics(report, _text(stdout))
+        if killed:
+            metrics["clean_exit"] = False
         metrics["cost_source"] = cost_source
         if metrics["harness_turns"]:
             metrics["cost_per_turn"] = round(cost_usd / metrics["harness_turns"], 6)

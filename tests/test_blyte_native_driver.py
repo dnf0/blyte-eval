@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
 import sys
 import textwrap
 from typing import Any, Optional
@@ -477,3 +478,46 @@ def test_build_command_omits_max_cost_when_env_unset(
         timeout_sec=60.0,
     )
     assert "--max-cost" not in cmd
+
+
+def test_clean_exit_metric_false_when_stopped_or_killed_true_otherwise(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from lab.engine.drivers.blyte_native import run_metrics
+
+    assert run_metrics(_report(outcome="verified", error=None), "")["clean_exit"] is True
+    assert (
+        run_metrics(_report(outcome="budget_exhausted", error="turn limit"), "")["clean_exit"]
+        is True
+    )
+    assert (
+        run_metrics(
+            _report(outcome="error", error="stopped after 1200s (--max-seconds 1200)"), ""
+        )["clean_exit"]
+        is False
+    )
+
+    stub_ok = _make_stub(tmp_path, _report(outcome="verified", error=None))
+    tel_ok = _driver(tmp_path, stub_ok).run(
+        _task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer()
+    )
+    assert tel_ok.metrics["clean_exit"] is True
+
+    stub_stopped = _make_stub(
+        tmp_path,
+        _report(outcome="error", error="stopped past max-seconds"),
+        exit_code=1,
+    )
+    tel_stopped = _driver(tmp_path, stub_stopped).run(
+        _task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer()
+    )
+    assert tel_stopped.metrics["clean_exit"] is False
+
+    def _raise_timeout(*args: Any, **kwargs: Any) -> Any:
+        raise subprocess.TimeoutExpired(cmd=args[0], timeout=36.0, stderr="hung")
+
+    monkeypatch.setattr("lab.engine.drivers.blyte_native.subprocess.run", _raise_timeout)
+    tel_killed = _driver(tmp_path, stub_ok).run(
+        _task(tmp_path), tmp_path, timeout_sec=6.0, container=FakeContainer()
+    )
+    assert tel_killed.metrics["clean_exit"] is False

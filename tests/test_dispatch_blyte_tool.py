@@ -400,6 +400,43 @@ def test_dispatch_count_increments_per_call(monkeypatch: pytest.MonkeyPatch, tmp
     assert Path(report_paths[1]).name == "dispatch-2.json"
 
 
+def test_two_container_exec_instances_claim_distinct_reports_and_copy_dirs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Two separate ContainerExec instances (as two hook processes make) get dispatch-1 and dispatch-2."""
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")
+    monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
+    dispatch_dir = tmp_path / "reports"
+    monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(dispatch_dir))
+
+    report_paths: list[Path] = []
+    copy_dirs: list[str] = []
+
+    def mock_run(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        report_arg = Path(cmd[cmd.index("--report") + 1])
+        workdir_arg = cmd[cmd.index("--container-workdir") + 1]
+        report_paths.append(report_arg)
+        copy_dirs.append(workdir_arg)
+        report_arg.write_text(json.dumps({"outcome": "verified"}), encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    exec1 = ContainerExec()
+    out1, err1 = exec1.dispatch("task 1", "pytest")
+    assert err1 is False and json.loads(out1)["outcome"] == "verified"
+
+    exec2 = ContainerExec()
+    out2, err2 = exec2.dispatch("task 2", "pytest")
+    assert err2 is False and json.loads(out2)["outcome"] == "verified"
+
+    assert [p.name for p in report_paths] == ["dispatch-1.json", "dispatch-2.json"]
+    assert copy_dirs[0] != copy_dirs[1]
+    assert copy_dirs == ["/tmp/blyte-dispatch-1", "/tmp/blyte-dispatch-2"]
+    assert (dispatch_dir / "dispatch-1.events.log").is_file()
+    assert (dispatch_dir / "dispatch-2.events.log").is_file()
+
+
 def test_blyte_bin_from_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The blyte binary is $BLYTE_BIN or blyte on PATH."""
     monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")

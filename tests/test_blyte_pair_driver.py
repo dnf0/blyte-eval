@@ -15,7 +15,7 @@ import pytest
 from lab.benchmarks.task_loader import TaskSpec
 from lab.engine.adapters.vanilla import VanillaAdapter
 from lab.engine.drivers import dispatch_hook
-from lab.engine.drivers.blyte_pair import BlytePairDriver
+from lab.engine.drivers.blyte_pair import BlytePairDriver, _aggregate_dispatches
 from lab.engine.drivers.container_exec_mcp import ContainerExec
 
 MODEL = "gemini-3.8-flash-high"
@@ -354,3 +354,59 @@ def test_build_command_omits_max_cost_when_env_unset(
         timeout_sec=60.0,
     )
     assert "--max-cost" not in cmd
+
+
+def test_aggregation_with_two_good_reports_and_one_empty_file(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    dispatch_dir = tmp_path / "dispatches"
+    dispatch_dir.mkdir()
+    (dispatch_dir / "dispatch-1.json").write_text(
+        json.dumps({"outcome": "gated", "cost_usd": 0.12, "wall_clock_secs": 10.0}),
+        encoding="utf-8",
+    )
+    (dispatch_dir / "dispatch-2.json").write_text(
+        json.dumps({"outcome": "verified", "cost_usd": 0.18, "wall_clock_secs": 20.0}),
+        encoding="utf-8",
+    )
+    (dispatch_dir / "dispatch-3.json").write_text("", encoding="utf-8")
+
+    cost, count, outcomes, wall_clock = _aggregate_dispatches(dispatch_dir)
+    assert cost == pytest.approx(0.30)
+    assert count == 3
+    assert outcomes == ["gated", "verified"]
+    assert wall_clock == pytest.approx(30.0)
+    assert any("dispatch-3.json" in rec.message for rec in caplog.records)
+
+    stub = _make_stub(tmp_path, _report(cost_usd=0.50, outcome="completed"))
+    driver = BlytePairDriver(
+        model=MODEL,
+        implementer_model=IMPL_MODEL,
+        blyte_bin=stub,
+        dispatch_dir=dispatch_dir,
+    )
+    tel = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    assert tel.cost_usd == pytest.approx(0.80)
+    assert tel.metrics["implementer_cost_usd"] == pytest.approx(0.30)
+    assert tel.metrics["dispatches"] == 3
+    assert tel.metrics["dispatch_outcomes"] == ["gated", "verified"]
+
+
+def test_clean_exit_inherited_by_pair_driver(tmp_path: Path) -> None:
+    stub_ok = _make_stub(tmp_path, _report(outcome="completed", error=None))
+    driver_ok = BlytePairDriver(model=MODEL, implementer_model=IMPL_MODEL, blyte_bin=stub_ok)
+    tel_ok = driver_ok.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    assert tel_ok.metrics["clean_exit"] is True
+
+    stub_stopped = _make_stub(
+        tmp_path,
+        _report(outcome="error", error="stopped after 60s (--max-seconds 60)"),
+        exit_code=1,
+    )
+    driver_stopped = BlytePairDriver(
+        model=MODEL, implementer_model=IMPL_MODEL, blyte_bin=stub_stopped
+    )
+    tel_stopped = driver_stopped.run(
+        _task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer()
+    )
+    assert tel_stopped.metrics["clean_exit"] is False
