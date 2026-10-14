@@ -63,3 +63,20 @@ Task E1 is independent. Task E2 builds against blyte's new `--orchestrate -- "<p
 - `dispatch_hook` is fed stdin JSON with `ContainerExec.dispatch` monkeypatched; its stdout and exit code are checked.
 - Cost aggregation from a temporary dispatch dir with two report JSONs plus an orchestrator report.
 - No test needs Docker or a real blyte.
+
+### Task E3
+
+**Goal:** a per-process spend cap. A runaway run cannot blow the benchmark budget.
+
+**Change:**
+- `scripts/paired_run.py` gets `--max-cost USD`, a float, default none. When set, it is exported as the environment variable `BLYTE_EVAL_MAX_COST` for the whole run.
+- Every blyte process the eval starts passes `--max-cost <value>` when `BLYTE_EVAL_MAX_COST` is set, and nothing when it is unset. blyte already supports `--max-cost <USD>`: the run stops before a model call once that is spent. The processes are:
+  - `BlyteNativeDriver.build_command` (`lab/engine/drivers/blyte_native.py`, around line 225), which covers the solo arm;
+  - `BlytePairDriver.build_command` (`lab/engine/drivers/blyte_pair.py`), which covers the orchestrator;
+  - the dispatch argv in `ContainerExec.dispatch` (`lab/engine/drivers/container_exec_mcp.py`, around line 311), which covers each implementer.
+- The cap is per process. A pair run's worst case is the orchestrator cap plus the cap times the number of dispatches. Say so in the `--max-cost` help text.
+- Read the value in one small helper, so the three call sites stay consistent, and reject a non-positive value.
+
+**Tests:**
+- Each of the three argv builders includes `--max-cost 2.5` when `BLYTE_EVAL_MAX_COST=2.5`, and omits it when the variable is unset. Use monkeypatched environment variables, with no Docker and no real blyte.
+- The `paired_run` argument is parsed and exported.
