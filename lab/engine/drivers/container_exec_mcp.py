@@ -300,8 +300,6 @@ class ContainerExec:
         ]
         return cmd
 
-    build_dispatch_command = build_command
-
     def dispatch(
         self,
         task: str,

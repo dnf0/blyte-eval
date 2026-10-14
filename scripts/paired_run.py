@@ -203,10 +203,6 @@ def main() -> int:
 
 
 def _run(args) -> int:
-
-    if getattr(args, "max_cost", None) is not None:
-        export_max_cost(args.max_cost)
-
     tier1_names = {
         "anko-typed-variable-bindings",
         "fastapi-deprecation-response-headers",
