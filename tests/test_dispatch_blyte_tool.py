@@ -157,6 +157,63 @@ def test_argv_contains_required_flags(monkeypatch: pytest.MonkeyPatch, tmp_path:
     assert captured_cmd[sep_idx + 1 :] == ["implement the feature"]
 
 
+def test_dispatch_argv_includes_max_cost_when_env_set(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("BLYTE_EVAL_MAX_COST", "2.5")
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-test-123")
+    monkeypatch.setenv("BLYTE_EVAL_WORKDIR", "/workspace")
+    monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
+    monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(tmp_path / "dispatches"))
+
+    captured_cmd: list[str] = []
+
+    def mock_run(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured_cmd.extend(cmd)
+        report_idx = cmd.index("--report")
+        report_file = Path(cmd[report_idx + 1])
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        report_file.write_text(json.dumps({"outcome": "verified"}))
+        return subprocess.CompletedProcess(cmd, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    executor = ContainerExec()
+    executor.dispatch("implement the feature", "pytest tests/test_feature.py")
+
+    assert "--max-cost" in captured_cmd
+    idx = captured_cmd.index("--max-cost")
+    assert captured_cmd[idx + 1] == "2.5"
+    assert idx < captured_cmd.index("--")
+
+
+def test_dispatch_argv_omits_max_cost_when_env_unset(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("BLYTE_EVAL_MAX_COST", raising=False)
+    monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-test-123")
+    monkeypatch.setenv("BLYTE_EVAL_WORKDIR", "/workspace")
+    monkeypatch.setenv("BLYTE_IMPLEMENTER_MODEL", "gemini-3.8-flash-high")
+    monkeypatch.setenv("BLYTE_DISPATCH_DIR", str(tmp_path / "dispatches"))
+
+    captured_cmd: list[str] = []
+
+    def mock_run(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured_cmd.extend(cmd)
+        report_idx = cmd.index("--report")
+        report_file = Path(cmd[report_idx + 1])
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        report_file.write_text(json.dumps({"outcome": "verified"}))
+        return subprocess.CompletedProcess(cmd, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    executor = ContainerExec()
+    executor.dispatch("implement the feature", "pytest tests/test_feature.py")
+
+    assert "--max-cost" not in captured_cmd
+
+
 def test_report_on_disk_is_summarised(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """A report on disk is summarised into {outcome, gate_attempts, gate_failures, turns, cost_usd, seconds, report}."""
     monkeypatch.setenv("BLYTE_EVAL_CONTAINER", "cnt-1")

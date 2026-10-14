@@ -20,6 +20,7 @@ Environment:
     BLYTE_IMPLEMENTER_MODEL     optional, enables dispatch_blyte tool when set
     BLYTE_DISPATCH_DIR          required when dispatch_blyte is enabled
     BLYTE_BIN                   optional path to blyte binary (default: blyte on PATH)
+    BLYTE_EVAL_MAX_COST         optional spend cap in USD passed to blyte as --max-cost
 """
 
 from __future__ import annotations
@@ -31,6 +32,8 @@ import subprocess
 import sys
 import threading
 from typing import Any, Iterable, TextIO
+
+from lab.engine.drivers.blyte_native import read_max_cost
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "blyte-eval-container-exec"
@@ -259,6 +262,46 @@ class ContainerExec:
             results.append({"dispatch_id": job, **json.loads(self._job_results.pop(job))})
         return (json.dumps({"results": results}), False)
 
+    def build_command(
+        self,
+        task: str,
+        gate: str,
+        copy: str = "/tmp/blyte-dispatch-1",
+        model: str = "gemini-3.8-flash-high",
+        report_path: Path | str = "/tmp/report.json",
+        max_seconds: int = 1200,
+    ) -> list[str]:
+        """Build the argv for a dispatch to blyte."""
+        blyte_bin = os.environ.get("BLYTE_BIN", "").strip() or "blyte"
+        cmd = [
+            blyte_bin,
+            "--container",
+            self.container_id,
+            "--container-workdir",
+            copy,
+            "--model",
+            model,
+            "--gate",
+            gate,
+            "--rollback=false",
+            "--max-seconds",
+            str(max_seconds),
+            "--max-turns",
+            str(DISPATCH_MAX_TURNS),
+            "--report",
+            str(report_path),
+        ]
+        max_cost = read_max_cost()
+        if max_cost is not None:
+            cmd += ["--max-cost", str(max_cost)]
+        cmd += [
+            "--",
+            task,
+        ]
+        return cmd
+
+    build_dispatch_command = build_command
+
     def dispatch(
         self,
         task: str,
@@ -308,27 +351,14 @@ class ContainerExec:
                 False,
             )
 
-        blyte_bin = os.environ.get("BLYTE_BIN", "").strip() or "blyte"
-        cmd = [
-            blyte_bin,
-            "--container",
-            self.container_id,
-            "--container-workdir",
-            copy,
-            "--model",
-            model,
-            "--gate",
-            gate,
-            "--rollback=false",
-            "--max-seconds",
-            str(max_seconds),
-            "--max-turns",
-            str(DISPATCH_MAX_TURNS),
-            "--report",
-            str(report_path),
-            "--",
-            task,
-        ]
+        cmd = self.build_command(
+            task=task,
+            gate=gate,
+            copy=copy,
+            model=model,
+            report_path=report_path,
+            max_seconds=max_seconds,
+        )
 
         try:
             proc = subprocess.run(

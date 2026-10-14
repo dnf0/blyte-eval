@@ -5,6 +5,8 @@ from lab.engine.drivers.claude_cli import ClaudeCliDriver, ClaudeCliDriverError
 from lab.engine.drivers.blyte_native import (
     BlyteNativeDriver,
     BlyteNativeDriverError,
+    get_eval_max_cost,
+    read_max_cost,
 )
 from lab.engine.drivers.blyte_pair import BlytePairDriver
 
@@ -16,4 +18,6 @@ __all__ = [
     "BlyteNativeDriver",
     "BlyteNativeDriverError",
     "BlytePairDriver",
+    "get_eval_max_cost",
+    "read_max_cost",
 ]

@@ -444,3 +444,36 @@ def test_cost_source_reaches_task_result_provenance(tmp_path: Path) -> None:
     )
     assert result.cost_usd == 1.23
     assert result.provenance["cost_source"] == "report"
+
+
+def test_build_command_includes_max_cost_when_env_set(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("BLYTE_EVAL_MAX_COST", "2.5")
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub)
+    cmd = driver.build_command(
+        prompt="Fix the bug.",
+        container_id="cnt-1",
+        report_path=tmp_path / "report.json",
+        timeout_sec=60.0,
+    )
+    assert "--max-cost" in cmd
+    idx = cmd.index("--max-cost")
+    assert cmd[idx + 1] == "2.5"
+    assert idx < cmd.index("--")
+
+
+def test_build_command_omits_max_cost_when_env_unset(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("BLYTE_EVAL_MAX_COST", raising=False)
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub)
+    cmd = driver.build_command(
+        prompt="Fix the bug.",
+        container_id="cnt-1",
+        report_path=tmp_path / "report.json",
+        timeout_sec=60.0,
+    )
+    assert "--max-cost" not in cmd

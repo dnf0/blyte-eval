@@ -174,6 +174,27 @@ def run_metrics(report: Dict[str, Any], events_text: str) -> Dict[str, Any]:
     }
 
 
+def read_max_cost() -> Optional[float]:
+    """Read BLYTE_EVAL_MAX_COST from the environment, rejecting non-positive values.
+
+    Returns the float value in USD if set, or None if unset or empty.
+    Raises ValueError if the value is not a valid float or is <= 0.
+    """
+    raw = os.environ.get("BLYTE_EVAL_MAX_COST")
+    if raw is None:
+        return None
+    raw = raw.strip()
+    if not raw:
+        return None
+    val = float(raw)
+    if val <= 0:
+        raise ValueError(f"BLYTE_EVAL_MAX_COST must be positive, got {val}")
+    return val
+
+
+get_eval_max_cost = read_max_cost
+
+
 class BlyteNativeDriver(AgentDriver):
     """Runs a whole task through the native blyte harness in one call."""
 
@@ -246,6 +267,9 @@ class BlyteNativeDriver(AgentDriver):
         ]
         if self.fold_budget:
             cmd += ["--fold-budget", str(self.fold_budget)]
+        max_cost = read_max_cost()
+        if max_cost is not None:
+            cmd += ["--max-cost", str(max_cost)]
         # `--` so an instruction that starts with a dash is never parsed as a flag.
         cmd += ["--", prompt]
         return cmd

@@ -84,6 +84,14 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--model", default="gemini-3.8-flash-high")
     ap.add_argument("--budget-sec", type=float, default=None,
                     help="Budget per arm in seconds (default: task declared agent_timeout_sec or 3600.0s)")
+    ap.add_argument(
+        "--max-cost",
+        type=float,
+        default=None,
+        metavar="USD",
+        help="Spend cap per process in USD. The cap is per process. A pair run's worst case is the "
+             "orchestrator cap plus the cap times the number of dispatches.",
+    )
     ap.add_argument("--repeats", type=int, default=1, help="Number of repetitions per task/arm")
     ap.add_argument("--concurrency", type=int, default=3, help="Max concurrent workers (default: 3)")
     ap.add_argument("--workspace-root", type=Path,
@@ -157,6 +165,14 @@ def print_skip_summary(results: list[Any]) -> None:
         print("\n0 skipped (infrastructure)")
 
 
+def export_max_cost(max_cost: float | None) -> None:
+    """Export BLYTE_EVAL_MAX_COST for the whole run if set."""
+    if max_cost is not None:
+        if max_cost <= 0:
+            raise ValueError("--max-cost must be positive")
+        os.environ["BLYTE_EVAL_MAX_COST"] = str(max_cost)
+
+
 def main() -> int:
     """Strip unrelated MCP servers for the whole run, then execute it.
 
@@ -171,6 +187,11 @@ def main() -> int:
     ap = build_parser()
     args = ap.parse_args()
 
+    if args.max_cost is not None:
+        if args.max_cost <= 0:
+            ap.error("--max-cost must be positive")
+        export_max_cost(args.max_cost)
+
     keep = mcp_isolation.servers_to_keep(harness_mode=bool(args.harnesses))
     with mcp_isolation.stripped_mcp_servers(keep=keep, enabled=not args.keep_mcp) as stripped:
         if stripped:
@@ -182,6 +203,9 @@ def main() -> int:
 
 
 def _run(args) -> int:
+
+    if getattr(args, "max_cost", None) is not None:
+        export_max_cost(args.max_cost)
 
     tier1_names = {
         "anko-typed-variable-bindings",

@@ -25,6 +25,7 @@ from lab.engine.drivers.blyte_native import (
     _read_report,
     _tail,
     _text,
+    read_max_cost,
     run_metrics,
 )
 
@@ -98,7 +99,7 @@ class BlytePairDriver(BlyteNativeDriver):
         self, prompt: str, container_id: str, report_path: Path, timeout_sec: float
     ) -> list[str]:
         """The argv for one task. Never a --gate: runs are ungated, and the sealed grader decides."""
-        return [
+        cmd = [
             str(self.blyte_bin),
             "--orchestrate",
             "--model",
@@ -113,9 +114,15 @@ class BlytePairDriver(BlyteNativeDriver):
             str(report_path),
             "--dispatch-cmd",
             self.dispatch_cmd,
+        ]
+        max_cost = read_max_cost()
+        if max_cost is not None:
+            cmd += ["--max-cost", str(max_cost)]
+        cmd += [
             "--",
             prompt,
         ]
+        return cmd
 
     def run(
         self,
