@@ -161,6 +161,7 @@ def test_telemetry_uses_agy_token_accounting(tmp_path: Path) -> None:
     assert (t.input_tokens, t.output_tokens) == (1000, 200)
     assert (t.cached_input_tokens, t.thinking_tokens) == (5000, 300)
     assert t.cost_usd == estimate_cost_usd(MODEL, 1000, 200, cached_tokens=5000, thinking_tokens=300)
+    assert t.metrics["cost_source"] == "estimate"
     assert t.raw_response == ""
     assert t.conversation_id is None
     assert driver.last_report is not None
@@ -407,3 +408,39 @@ def test_blytes_final_message_is_the_response(tmp_path: Path) -> None:
     driver = _driver(tmp_path, stub)
     t = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
     assert t.raw_response.strip() == "the plan"
+
+
+def test_report_with_cost_uses_report_cost(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report(cost_usd=1.23))
+    driver = _driver(tmp_path, stub)
+    t = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    assert t.cost_usd == 1.23
+    assert t.metrics["cost_source"] == "report"
+
+
+def test_report_without_cost_falls_back_to_estimate(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report())
+    driver = _driver(tmp_path, stub)
+    t = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    expected = estimate_cost_usd(MODEL, 1000, 200, cached_tokens=5000, thinking_tokens=300)
+    assert t.cost_usd == expected
+    assert t.metrics["cost_source"] == "estimate"
+
+
+def test_report_with_null_cost_falls_back_to_estimate(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report(cost_usd=None))
+    driver = _driver(tmp_path, stub)
+    t = driver.run(_task(tmp_path), tmp_path, timeout_sec=60.0, container=FakeContainer())
+    expected = estimate_cost_usd(MODEL, 1000, 200, cached_tokens=5000, thinking_tokens=300)
+    assert t.cost_usd == expected
+    assert t.metrics["cost_source"] == "estimate"
+
+
+def test_cost_source_reaches_task_result_provenance(tmp_path: Path) -> None:
+    stub = _make_stub(tmp_path, _report(cost_usd=1.23))
+    driver = _driver(tmp_path, stub)
+    result = VanillaAdapter().execute(
+        tmp_path, _task(tmp_path), driver, timeout_sec=60.0, container=FakeContainer()
+    )
+    assert result.cost_usd == 1.23
+    assert result.provenance["cost_source"] == "report"

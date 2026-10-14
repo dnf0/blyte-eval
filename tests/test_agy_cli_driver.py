@@ -204,6 +204,20 @@ def test_pricing_table_covers_gemini_models() -> None:
     assert estimate_cost_usd("unknown-model", 1_000_000, 1_000_000) == 0.0
 
 
+def test_argon_model_is_priced_at_more_than_zero() -> None:
+    assert estimate_cost_usd("gemini-4-argon", 1_000, 1_000) > 0.0
+    assert estimate_cost_usd("vertex/gemini-4-argon", 1_000, 1_000) > 0.0
+    assert estimate_cost_usd("gemini-4-argon-high", 1_000, 1_000) > 0.0
+    assert estimate_cost_usd("vertex/gemini-4-argon-high", 1_000, 1_000) > 0.0
+    # $2.00/MTok input + $10.00/MTok output + $0.10/MTok cached
+    assert estimate_cost_usd(
+        "gemini-4-argon", 1_000_000, 1_000_000, cached_tokens=1_000_000
+    ) == pytest.approx(12.10)
+    assert estimate_cost_usd(
+        "vertex/gemini-4-argon", 1_000_000, 1_000_000, cached_tokens=1_000_000
+    ) == pytest.approx(12.10)
+
+
 def test_effort_variants_are_priced_as_their_base_model() -> None:
     """agy exposes one model per effort level; effort changes tokens, not price."""
     from lab.engine.drivers.agy_cli import base_model_name, estimate_cost_usd

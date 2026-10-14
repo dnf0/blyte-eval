@@ -35,6 +35,8 @@ MODEL_PRICING: dict[str, tuple[float, float, float]] = {
     "gemini-3.8-flash": (0.75, 3.75, 0.075),
     "gemini-2.5-flash": (0.15, 0.60, 0.15),
     "gemini-2.5-pro": (1.25, 5.00, 1.25),
+    "gemini-4-argon": (2.00, 10.00, 0.10),
+    "vertex/gemini-4-argon": (2.00, 10.00, 0.10),
 }
 
 CONTAINER_GUIDANCE_TEMPLATE = """

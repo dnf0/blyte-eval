@@ -14,6 +14,7 @@ from collections import Counter
 import hashlib
 import json
 import logging
+import math
 import os
 from pathlib import Path
 import re
@@ -331,10 +332,21 @@ class BlyteNativeDriver(AgentDriver):
         output_tokens = int(usage.get("output", 0))
         cached_input_tokens = int(usage.get("cached", 0))
         thinking_tokens = int(usage.get("thinking", 0))
-        cost_usd = estimate_cost_usd(
-            self.model, input_tokens, output_tokens, cached_input_tokens, thinking_tokens
-        )
+        report_cost = report.get("cost_usd")
+        if (
+            isinstance(report_cost, (int, float))
+            and not isinstance(report_cost, bool)
+            and not math.isnan(report_cost)
+        ):
+            cost_usd = float(report_cost)
+            cost_source = "report"
+        else:
+            cost_usd = estimate_cost_usd(
+                self.model, input_tokens, output_tokens, cached_input_tokens, thinking_tokens
+            )
+            cost_source = "estimate"
         metrics = run_metrics(report, _text(stdout))
+        metrics["cost_source"] = cost_source
         if metrics["harness_turns"]:
             metrics["cost_per_turn"] = round(cost_usd / metrics["harness_turns"], 6)
         success = report.get("outcome") == "verified"
