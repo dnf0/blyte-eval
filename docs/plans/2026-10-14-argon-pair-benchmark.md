@@ -80,3 +80,36 @@ Task E1 is independent. Task E2 builds against blyte's new `--orchestrate -- "<p
 **Tests:**
 - Each of the three argv builders includes `--max-cost 2.5` when `BLYTE_EVAL_MAX_COST=2.5`, and omits it when the variable is unset. Use monkeypatched environment variables, with no Docker and no real blyte.
 - The `paired_run` argument is parsed and exported.
+
+### Task E4
+
+**Goal:** every dispatch in a pair run keeps its own report, so pair costs are complete; and
+each run records whether blyte exited on its own.
+
+**Bug:** `dispatch_hook` builds a new `ContainerExec` per call, and `ContainerExec.dispatch`
+(`lab/engine/drivers/container_exec_mcp.py`, around lines 328-340) numbers reports from the
+instance's `self.dispatch_count`, which starts at 0 in each process. Every dispatch writes
+`dispatch-1.json` and `dispatch-1.events.log` and reuses the copy dir `blyte-dispatch-1`, so
+each dispatch overwrites the one before it.
+
+**Change:**
+1. In `ContainerExec.dispatch`, choose `n` as the lowest number whose report is not taken in
+   `reports_dir`, claimed atomically so two concurrent hooks can't pick the same one (for
+   example, create `dispatch-{n}.json` with `os.open(..., O_CREAT | O_EXCL)` in a loop and let
+   blyte overwrite it). Use the same `n` for the events log and the copy dir. Keep the
+   in-process counter only if something else still needs it.
+   - `BlytePairDriver` sums `dispatch_dir.glob("*.json")` (`blyte_pair.py` line 48): make sure
+     a claimed-but-empty or unparsable report (a dispatch that crashed) is skipped with a
+     warning, not a crash, and still counts as a dispatch.
+2. A `clean_exit` metric on blyte runs (`BlyteNativeDriver`, inherited by `BlytePairDriver`):
+   true when blyte ended on its own, false when its report's `error` says it was stopped past
+   `--max-seconds` (the watchdog message starts with `stopped `) or when the eval killed it.
+   Add it next to the existing metrics; don't change `success`.
+
+**Tests** (no Docker, no real blyte):
+- Two `ContainerExec` instances (as two hook processes would make) dispatching into the same
+  dir, with `_sh` and the blyte call monkeypatched, get report paths `dispatch-1.json` and
+  `dispatch-2.json` and different copy dirs.
+- Aggregation over a dir with two good reports and one empty file sums the two and counts 3
+  dispatches.
+- `clean_exit` is false for a report whose `error` starts with `stopped `, true otherwise.
