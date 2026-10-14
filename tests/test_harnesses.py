@@ -84,6 +84,50 @@ def test_claude_refuses_a_gemini_model() -> None:
         build_harness("claude", MODEL)
 
 
+def test_parse_blyte_pair() -> None:
+    assert parse_harness_spec("blyte+blyte:gemini-3.8-flash-high") == (
+        "blyte+blyte",
+        ["gemini-3.8-flash-high"],
+    )
+    assert parse_harness_spec("blyte+blyte[gemini-3.8-flash-high]") == (
+        "blyte+blyte",
+        ["gemini-3.8-flash-high"],
+    )
+    assert parse_harness_spec("blyte+blyte:vertex/gemini-4-argon") == (
+        "blyte+blyte",
+        ["vertex/gemini-4-argon"],
+    )
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "blyte+blyte",
+        "blyte+blyte[]",
+        "blyte+blyte:",
+        "blyte+blyte[gemini-3.8-flash-high,other-model]",
+        "blyte+blyte:gemini-3.8-flash-high,other-model",
+    ],
+)
+def test_parse_blyte_pair_rejects_missing_or_extra_options(spec: str) -> None:
+    with pytest.raises(HarnessSpecError, match="exactly one implementer model option"):
+        parse_harness_spec(spec)
+
+
+def test_blyte_pair_build_harness(blyte_stub: Path) -> None:
+    drv = build_harness("blyte+blyte:gemini-3.8-flash-high", MODEL)
+    assert drv.harness_name == "blyte+blyte"
+    assert drv.model == MODEL
+    assert drv.implementer_model == "gemini-3.8-flash-high"
+
+
+def test_blyte_pair_refuses_non_gemini_model(blyte_stub: Path) -> None:
+    with pytest.raises(HarnessSpecError, match="Gemini model"):
+        build_harness("blyte+blyte:gemini-3.8-flash-high", "claude-sonnet-5")
+    with pytest.raises(HarnessSpecError, match="Gemini model"):
+        build_harness("blyte+blyte:gemini-3.8-flash-high", "gpt-4o")
+
+
 def test_the_bare_arm_is_the_pass_through_adapter() -> None:
     assert isinstance(AblationRunner._get_adapter(None, BARE_ARM), VanillaAdapter)  # type: ignore[arg-type]
 

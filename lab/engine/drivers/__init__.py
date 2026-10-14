@@ -6,6 +6,7 @@ from lab.engine.drivers.blyte_native import (
     BlyteNativeDriver,
     BlyteNativeDriverError,
 )
+from lab.engine.drivers.blyte_pair import BlytePairDriver
 
 __all__ = [
     "AgyCliDriver",
@@ -14,4 +15,5 @@ __all__ = [
     "ClaudeCliDriverError",
     "BlyteNativeDriver",
     "BlyteNativeDriverError",
+    "BlytePairDriver",
 ]

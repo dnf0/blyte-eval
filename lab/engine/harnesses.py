@@ -21,7 +21,9 @@ from lab.engine.budget_policy import RunTelemetry
 #: The pass-through arm every harness runs under. An alias of the legacy `vanilla` adapter.
 BARE_ARM = "bare"
 
-_SPEC_RE = re.compile(r"^(?P<name>[a-z+]+)(?:\[(?P<opts>[a-zA-Z0-9,._-]*)\])?$")
+_SPEC_RE = re.compile(
+    r"^(?P<name>[a-z+]+)(?:\[(?P<opts>[a-zA-Z0-9,._/-]*)\]|:(?P<opts_colon>[a-zA-Z0-9,._/-]*))?$"
+)
 _BLYTE_CONTEXTS = ("conversational", "folded")
 _BLYTE_OPTIONS = _BLYTE_CONTEXTS + ()
 _FOLD_BUDGET_RE = re.compile(r"fold-budget-(\d+)k")
@@ -41,12 +43,13 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
     name = m.group("name")
     if name == "superstate":  # renamed to blyte on 2026-09-24
         name = "blyte"
-    opts = [o for o in (m.group("opts") or "").split(",") if o]
+    opts_raw = m.group("opts") or m.group("opts_colon") or ""
+    opts = [o for o in opts_raw.split(",") if o]
     if name in ("agy", "claude", "codex"):
         if opts:
             raise HarnessSpecError(f"{name} takes no options, got {opts}")
         return name, opts
-    if name in ("claude+blyte", "codex+blyte"):
+    if name in ("claude+blyte", "codex+blyte", "blyte+blyte"):
         if len(opts) != 1:
             raise HarnessSpecError(
                 f"{name} requires exactly one implementer model option, got {opts}"
@@ -68,7 +71,7 @@ def parse_harness_spec(spec: str) -> tuple[str, list[str]]:
             raise HarnessSpecError(f"choose one fold budget, got {budgets}")
         return name, opts
     raise HarnessSpecError(
-        f"unknown harness {name!r}; known: agy, claude, claude+blyte, codex, codex+blyte, blyte (alias: superstate)"
+        f"unknown harness {name!r}; known: agy, claude, claude+blyte, codex, codex+blyte, blyte+blyte, blyte (alias: superstate)"
     )
 
 
@@ -101,6 +104,19 @@ def build_harness(
         from lab.engine.drivers.claude_cli import ClaudeCliDriver
 
         return ClaudeCliDriver(
+            model=model,
+            implementer_model=opts[0],
+            report_dir=report_dir,
+        )
+    if name == "blyte+blyte":
+        if not (model.startswith(("gemini", "vertex/gemini")) or "gemini" in model):
+            raise HarnessSpecError(
+                f"blyte+blyte needs a Gemini model, got {model!r}; compare it in a separate run "
+                "with --model gemini-…, since harnesses in one run share a model"
+            )
+        from lab.engine.drivers.blyte_pair import BlytePairDriver
+
+        return BlytePairDriver(
             model=model,
             implementer_model=opts[0],
             report_dir=report_dir,
