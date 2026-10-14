@@ -152,6 +152,8 @@ class BlytePairDriver(BlyteNativeDriver):
         else:
             task_name = getattr(task, "name", "task")
             run_dispatch_dir = Path(tempfile.mkdtemp(prefix=f"blyte-dispatches-{task_name}-"))
+        # Absolute: blyte runs the dispatch hook from its own working directory.
+        run_dispatch_dir = run_dispatch_dir.resolve()
         run_dispatch_dir.mkdir(parents=True, exist_ok=True)
         self.last_dispatch_dir = run_dispatch_dir
 
