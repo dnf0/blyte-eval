@@ -33,8 +33,8 @@ class ConcurrencyGovernor:
         cpus_per_worker: float = 2.5,
         ram_gb_per_worker: float = 4.0,
         ram_headroom_gb: float = 8.0,
-        disk_headroom_gb: float = 20.0,
-        disk_gb_per_worker: float = 10.0,
+        disk_headroom_gb: float = 10.0,
+        disk_gb_per_worker: float = 5.0,
         disk_check_path: Path | str = "/",
     ) -> None:
         self.cpus_per_worker = cpus_per_worker

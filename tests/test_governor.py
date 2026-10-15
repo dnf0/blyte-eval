@@ -60,7 +60,7 @@ def test_calculate_concurrency_zero_when_disk_headroom_breached() -> None:
         logical_cpus=12,
         total_ram_gb=24.0,
         available_ram_gb=16.0,
-        free_disk_gb=15.0,  # Below the 20 GB safety margin
+        free_disk_gb=8.0,  # Below the 10 GB safety margin
     )
     # Usable disk is 0.0 -> must strictly return 0 workers to prevent host crash
     concurrency = governor.calculate_max_concurrency(specs)
