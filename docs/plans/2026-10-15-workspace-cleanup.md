@@ -52,6 +52,10 @@ keep it. `logs/` and `mcp/` stay.
 
 ### Task E6
 
+**Dropped (2026-10-15):** the premise was wrong. `_merge_back` already removes the copy after a
+clean merge (`rm -rf {copy}`) and keeps it on a conflict for inspection, so only the error paths
+were left, and the rewrite this produced wasn't worth merging.
+
 **Goal:** a dispatch's working copy inside the task container is removed once its changes are
 merged back, so copies don't pile up in the container or in the snapshot image the grader commits
 from it.
