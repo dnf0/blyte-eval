@@ -11,6 +11,7 @@ The guards see every read and every command, so they are the cheapest place to r
 `guard-activity.jsonl` is that record; this reads it back.
 
     scripts/guard_activity.py /tmp/blyte_eval_runs/<stamp>/eval-.../workspace
+    scripts/guard_activity.py /tmp/blyte_eval_runs/<stamp>/eval-.../logs
 """
 
 from __future__ import annotations
@@ -27,13 +28,22 @@ BYTES_PER_LINE = 40  # rough, and only used for an order-of-magnitude estimate
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("workspace", type=Path)
+    ap.add_argument(
+        "workspace",
+        type=Path,
+        help="Workspace or run logs/ directory containing guard-activity.jsonl",
+    )
     ap.add_argument("--top", type=int, default=10)
     args = ap.parse_args()
 
-    log = args.workspace / ".agent-state" / "guard-activity.jsonl"
-    if not log.is_file():
-        print(f"no activity trace at {log}", file=sys.stderr)
+    candidates = [
+        args.workspace / ".agent-state" / "guard-activity.jsonl",
+        args.workspace / "artifacts" / "guard-activity.jsonl",
+    ]
+    log = next((p for p in candidates if p.is_file()), None)
+    if log is None:
+        tried = ", ".join(str(p) for p in candidates)
+        print(f"no activity trace at {tried}", file=sys.stderr)
         return 1
 
     entries = []

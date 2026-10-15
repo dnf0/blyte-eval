@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
-import threading
 from pathlib import Path
+import shutil
+import threading
 import time
 from typing import Any, Callable, Dict, List, Optional, Sequence
 import uuid
@@ -90,6 +91,7 @@ class AblationRunner:
         mem_limit: str = DEFAULT_MEM_LIMIT,
         verifier: Optional[HeldOutVerifier] = None,
         run_stamp: str | None = None,
+        keep_workspaces: bool = False,
     ) -> None:
         self.docker_manager = docker_manager or DockerManager(run_stamp=run_stamp)
         if run_stamp and hasattr(self.docker_manager, "run_stamp"):
@@ -101,6 +103,7 @@ class AblationRunner:
         self.nano_cpus = nano_cpus
         self.mem_limit = mem_limit
         self.verifier = verifier or HeldOutVerifier(docker_manager=self.docker_manager)
+        self.keep_workspaces = keep_workspaces
         self.answer_key_guard = AnswerKeyGuard()
         # Docker maintenance is shared state. Pruning while sibling runs hold
         # containers can tear down resources they are still using, so it is
@@ -159,6 +162,8 @@ class AblationRunner:
         extra: Dict[str, Any] = {}
         recorder: Optional[RunRecorder] = None
         agent_started = False
+        logs_dir: Optional[Path] = None
+        workspace_dir: Optional[Path] = None
 
         try:
             if first_in_flight:
@@ -439,6 +444,21 @@ class AblationRunner:
                     "mem_limit": extra.get("mem_limit"),
                 },
             )
+
+        if not self.keep_workspaces and workspace_dir is not None and workspace_dir.exists():
+            if logs_dir is not None:
+                try:
+                    guard_log = workspace_dir / ".agent-state" / "guard-activity.jsonl"
+                    if guard_log.is_file():
+                        artifacts_dir = logs_dir / "artifacts"
+                        artifacts_dir.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(guard_log, artifacts_dir / "guard-activity.jsonl")
+                except Exception as err:
+                    logger.warning("Failed to archive guard-activity.jsonl: %s", err)
+            try:
+                shutil.rmtree(workspace_dir, ignore_errors=True)
+            except Exception as err:
+                logger.warning("Failed to remove workspace %s: %s", workspace_dir, err)
 
         logger.info(
             "Finished task '%s' [Arm: %s]: Passed=%s, WallClock=%.2fs, Cost=$%.2f, "

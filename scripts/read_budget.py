@@ -12,7 +12,7 @@ predates knowing a call had a fixed cost.
 This replays a `guard-activity.jsonl` trace at different thresholds and reports total tokens,
 so the value is chosen from evidence rather than guessed.
 
-    scripts/read_budget.py <workspace> [--preamble 2500] [--tokens-per-line 11]
+    scripts/read_budget.py <workspace-or-logs-dir> [--preamble 2500] [--tokens-per-line 11]
 """
 
 from __future__ import annotations
@@ -61,15 +61,24 @@ def cost_at(threshold: int, files: dict, preamble: int, tpl: int) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("workspace", type=Path)
+    ap.add_argument(
+        "workspace",
+        type=Path,
+        help="Workspace or run logs/ directory containing guard-activity.jsonl",
+    )
     ap.add_argument("--preamble", type=int, default=2500,
                     help="fresh tokens a tool call costs before any content (13.17)")
     ap.add_argument("--tokens-per-line", type=int, default=11)
     args = ap.parse_args()
 
-    log = args.workspace / ".agent-state" / "guard-activity.jsonl"
-    if not log.is_file():
-        print(f"no activity trace at {log}", file=sys.stderr)
+    candidates = [
+        args.workspace / ".agent-state" / "guard-activity.jsonl",
+        args.workspace / "artifacts" / "guard-activity.jsonl",
+    ]
+    log = next((p for p in candidates if p.is_file()), None)
+    if log is None:
+        tried = ", ".join(str(p) for p in candidates)
+        print(f"no activity trace at {tried}", file=sys.stderr)
         return 1
     rows = []
     for line in log.read_text(encoding="utf-8").splitlines():

@@ -116,6 +116,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Do not remove Docker images brought in by the run after their last job",
     )
+    ap.add_argument(
+        "--keep-workspaces",
+        action="store_true",
+        help="keep each run's workspace directory after grading; by default it is deleted and only logs/ is kept",
+    )
     plan_group = ap.add_mutually_exclusive_group()
     plan_group.add_argument(
         "--plan-only",
@@ -371,6 +376,7 @@ def _run(args) -> int:
         default_driver=driver,
         governor=governor,
         run_stamp=args.workspace_root.name,
+        keep_workspaces=args.keep_workspaces,
     )
 
     runner.docker_manager.warn_old_containers()

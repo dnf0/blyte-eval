@@ -210,6 +210,7 @@ def test_ablation_runner_default_execution_mounts_workspace_into_container(tmp_p
         docker_manager=mock_docker_mgr,
         workspace_root=tmp_path / "workspaces",
         default_driver=StubDriver(),
+        keep_workspaces=True,
     )
 
     # A sealed grader is required for a run to be gradeable at all: without tests_dir the
@@ -414,3 +415,210 @@ def test_small_sample_warning_is_shown() -> None:
     runs = [_paired("t1", "vanilla", False, 0.1), _paired("t1", "blyte", True, 0.2)]
     report = render_lift_report(runs)
     assert "one task is worth 100.0pp" in report
+
+
+def test_workspace_deleted_by_default_and_guard_activity_archived(tmp_path: Path) -> None:
+    from lab.engine.adapters.base import AgentDriver, DriverTelemetry
+    from lab.engine.runner import AblationRunner
+
+    class StubDriver(AgentDriver):
+        def run(
+            self,
+            task,
+            workspace_path,
+            prompt_override=None,
+            conversation_id=None,
+            timeout_sec=3600.0,
+            container=None,
+        ) -> DriverTelemetry:
+            (workspace_path / "solution.py").write_text("# solved\n")
+            state_dir = workspace_path / ".agent-state"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            (state_dir / "guard-activity.jsonl").write_text(
+                '{"kind": "read_whole", "decision": "allow", "target": "solution.py", "lines": 10}\n',
+                encoding="utf-8",
+            )
+            # Sibling directory under run_dir (e.g. mcp/) must not be deleted.
+            (workspace_path.parent / "mcp").mkdir(exist_ok=True)
+            return DriverTelemetry(
+                success=True,
+                raw_response="Done.",
+                duration_seconds=1.0,
+                input_tokens=10,
+                output_tokens=5,
+                cost_usd=0.01,
+            )
+
+    mock_docker_mgr = MagicMock()
+    mock_container = MagicMock()
+    mock_docker_mgr.run_sandbox.side_effect = _fake_sandbox_factory(mock_container)
+
+    task_dir = tmp_path / "sample-task"
+    (task_dir / "tests").mkdir(parents=True)
+    (task_dir / "tests" / "test_held_out.py").write_text("def test_x():\n    assert True\n")
+
+    runner = AblationRunner(
+        docker_manager=mock_docker_mgr,
+        workspace_root=tmp_path / "workspaces",
+        default_driver=StubDriver(),
+    )
+    telemetry = runner.run_task(
+        task_id="test/sample-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+        task_spec=TaskSpec(
+            id="test/sample-task",
+            name="sample-task",
+            instruction="Solve it",
+            docker_image="test:latest",
+            verification_cmd="pytest tests/",
+            task_dir=task_dir,
+        ),
+    )
+
+    assert telemetry.passed is True
+    logs_dir = Path(telemetry.extra["logs_dir"])
+    run_dir = logs_dir.parent
+    assert not (run_dir / "workspace").exists()
+    assert (logs_dir / "run.json").is_file()
+    archived = logs_dir / "artifacts" / "guard-activity.jsonl"
+    assert archived.is_file()
+    assert "solution.py" in archived.read_text(encoding="utf-8")
+    assert (run_dir / "mcp").is_dir()
+
+
+def test_workspace_deleted_when_driver_raises_and_telemetry_unchanged(tmp_path: Path) -> None:
+    from lab.engine.adapters.base import AgentDriver, DriverTelemetry
+    from lab.engine.runner import AblationRunner
+
+    captured_ws: list[Path] = []
+
+    class RaisingDriver(AgentDriver):
+        def run(
+            self,
+            task,
+            workspace_path,
+            prompt_override=None,
+            conversation_id=None,
+            timeout_sec=3600.0,
+            container=None,
+        ) -> DriverTelemetry:
+            captured_ws.append(workspace_path)
+            (workspace_path / "partial.py").write_text("# crash\n")
+            raise RuntimeError("driver exploded")
+
+    mock_docker_mgr = MagicMock()
+    mock_container = MagicMock()
+    mock_docker_mgr.run_sandbox.side_effect = _fake_sandbox_factory(mock_container)
+
+    runner = AblationRunner(
+        docker_manager=mock_docker_mgr,
+        workspace_root=tmp_path / "workspaces",
+        default_driver=RaisingDriver(),
+    )
+    telemetry = runner.run_task(
+        task_id="test/crash-task",
+        arm="vanilla",
+        image="test:latest",
+        base_budget_sec=600.0,
+    )
+
+    assert telemetry.passed is False
+    assert telemetry.failure_reason == "driver exploded"
+    assert len(captured_ws) == 1
+    ws_path = captured_ws[0]
+    assert not ws_path.exists()
+    assert (ws_path.parent / "logs" / "run.json").is_file()
+
+
+def test_paired_run_keep_workspaces_flag(tmp_path: Path) -> None:
+    from scripts.paired_run import _run, build_parser
+
+    parser = build_parser()
+    default_args = parser.parse_args([])
+    assert default_args.keep_workspaces is False
+
+    keep_args = parser.parse_args(["--keep-workspaces"])
+    assert keep_args.keep_workspaces is True
+
+    args = parser.parse_args(
+        [
+            "--task",
+            str(tmp_path / "task"),
+            "--arms",
+            "vanilla",
+            "--concurrency",
+            "1",
+            "--workspace-root",
+            str(tmp_path / "runs"),
+            "--keep-workspaces",
+        ]
+    )
+    mock_task = TaskSpec(
+        id="t1",
+        name="t1",
+        instruction="solve",
+        docker_image="img:1",
+        task_dir=tmp_path / "task",
+    )
+    mock_tel = RunTelemetry(
+        task_id="t1",
+        arm="vanilla",
+        passed=True,
+        wall_clock_sec=1.0,
+        cost_usd=0.01,
+        input_tokens=1,
+        output_tokens=1,
+    )
+    with patch("scripts.paired_run.load_task_from_dir", return_value=mock_task), \
+         patch("scripts.paired_run.AgyCliDriver", return_value=MagicMock(harness_name="agy")), \
+         patch("scripts.paired_run.ImageTracker"), \
+         patch("scripts.paired_run.AblationRunner") as mock_runner_cls:
+        mock_runner_cls.return_value.run_task.return_value = mock_tel
+        rc = _run(args)
+
+    assert rc == 0
+    assert mock_runner_cls.call_args.kwargs["keep_workspaces"] is True
+
+
+def test_guard_activity_and_read_budget_find_archived_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import sys
+
+    from scripts import guard_activity, read_budget
+
+    logs_dir = tmp_path / "logs"
+    artifacts_dir = logs_dir / "artifacts"
+    artifacts_dir.mkdir(parents=True)
+    trace_line = (
+        '{"kind": "read_window", "decision": "allow", "target": "src/main.py", '
+        '"lines": 500, "start": 1, "end": 200}\n'
+    )
+    (artifacts_dir / "guard-activity.jsonl").write_text(trace_line, encoding="utf-8")
+
+    monkeypatch.setattr(sys, "argv", ["guard_activity.py", str(logs_dir)])
+    assert guard_activity.main() == 0
+    out = capsys.readouterr().out
+    assert "1 guard evaluations" in out
+
+    monkeypatch.setattr(sys, "argv", ["read_budget.py", str(logs_dir)])
+    assert read_budget.main() == 0
+    out = capsys.readouterr().out
+    assert "1 file(s) read with windows" in out
+
+    empty_dir = tmp_path / "empty"
+    empty_dir.mkdir()
+    monkeypatch.setattr(sys, "argv", ["guard_activity.py", str(empty_dir)])
+    assert guard_activity.main() == 1
+    err = capsys.readouterr().err
+    assert ".agent-state/guard-activity.jsonl" in err
+    assert "artifacts/guard-activity.jsonl" in err
+
+    monkeypatch.setattr(sys, "argv", ["read_budget.py", str(empty_dir)])
+    assert read_budget.main() == 1
+    err = capsys.readouterr().err
+    assert ".agent-state/guard-activity.jsonl" in err
+    assert "artifacts/guard-activity.jsonl" in err
+
